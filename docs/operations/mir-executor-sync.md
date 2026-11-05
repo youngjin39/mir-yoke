@@ -160,6 +160,30 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   exports before declaring these fields. Audit and budget callbacks remain owned
   by the consumer's Python adapter.
 
+  `brief_profile: {"name":"execution_v1"}` owns `validate_brief` and
+  `render_brief`. It preserves bounded ASCII identifiers, nullable `phase_id`,
+  ordered tuple duplicate/blank diagnostics, confined POSIX references and TDD
+  fragments. Plain text passes through. Rendering uses schema field order,
+  two-space indentation and literal Unicode in the complete typed contract.
+
+  `brief_controls: {"mode":"execution_subset"}` requires `execution_v1` and
+  `verifier_aliases: {"configuration_root":"target"}` and an explicit
+  `target_admission.family` resolution policy (an empty alias map is valid).
+  It owns `pre_execute`: family resolution precedes verifier mapping,
+  then dispatch brief loading, resolved resume-path equality, agent-profile
+  existence, optional TDD-change membership, subset scope and declared command
+  or registered argv checks, in that order. Loading/binding OSError/ValueError
+  diagnostics receive the `DispatchBrief error: ` prefix. Controls are preserved
+  apart from verifier aliases. No brief is loaded outside brief dispatch.
+
+  Preparation explicitly supplies the active instruction to the invocation's
+  hook session, replacing the Python rendering cache. Initial execution selects
+  the prompt from argv or the input file; resume selects persisted job argv.
+  Empty prompts use the goal. Rendering consumes that instruction once for the
+  resolved resume path; subsequent rendering falls back to the goal. Native
+  ownership rejects duplicate Python exports before importing them. Durable
+  dispatch logging and other consumer callbacks remain Python-owned.
+
   `brief_profile: {"name":"capability_v1"}` owns `validate_brief` and
   `render_brief`. It extends `base_v1` with nonempty canonical capability slugs
   (default `bounded_review`), rejects blank goals, and authorizes file briefs

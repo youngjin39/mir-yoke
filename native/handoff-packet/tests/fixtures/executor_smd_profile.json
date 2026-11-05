@@ -1,0 +1,2648 @@
+{
+  "runtime": {
+    "python": "3.12.13",
+    "pydantic": "2.13.4",
+    "unicode": "15.0.0"
+  },
+  "sha256": {
+    "contracts": "4193e0f14721d85532727ba72797317db99b1e72d3e9a743aa453bcee3be67a1",
+    "loader": "703b5be8a0ef9d9a582b29d17e832168d34c6f97b4a09f9f0466733041b832ea",
+    "local": "12dc59e6f6b24bff2c2c2a03dc11a40162454fc475bfd0b5ca16e2ddb922a3e4"
+  },
+  "oracle_source": "\"\"\"DispatchBrief contract for execution-lane handoff and durable resume.\"\"\"\nfrom __future__ import annotations\n\nfrom pathlib import PurePosixPath\n\nfrom pydantic import BaseModel, ConfigDict, Field, model_validator\n\n_ID_PATTERN = r\"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$\"\n\n\nclass DispatchBriefSourceRefs(BaseModel):\n    \"\"\"Source references used to derive a dispatch brief.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    task_spec: str = Field(min_length=1)\n    plan: str = Field(default=\"tasks/plan.md\")\n    phase: str = Field(min_length=1)\n\n\nclass DispatchBrief(BaseModel):\n    \"\"\"Execution-ready handoff artifact for one target agent and one slice.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    version: int = Field(default=1)\n    task_id: str = Field(min_length=1, pattern=_ID_PATTERN)\n    phase_id: str | None = Field(default=None, pattern=_ID_PATTERN)\n    slice_id: str = Field(min_length=1, pattern=_ID_PATTERN)\n    target_agent: str = Field(min_length=1, pattern=_ID_PATTERN)\n    user_intent: str = Field(min_length=1)\n    expanded_goal: str = Field(min_length=1)\n    owned_scope: tuple[str, ...] = Field(min_length=1)\n    out_of_scope: tuple[str, ...] = ()\n    verification_commands: tuple[str, ...] = Field(min_length=1)\n    stop_conditions: tuple[str, ...] = Field(min_length=1)\n    handoff_refs: tuple[str, ...] = ()\n    tdd_change_refs: tuple[str, ...] = ()\n    resume_state_ref: str = Field(min_length=1)\n    source_refs: DispatchBriefSourceRefs\n\n    @model_validator(mode=\"after\")\n    def _validate_contract(self) -> DispatchBrief:\n        if self.version != 1:\n            raise ValueError(\"DispatchBrief.version must be 1\")\n        expected_resume_ref = f\"tasks/dispatch/{self.task_id}/{self.slice_id}.json\"\n        if self.resume_state_ref != expected_resume_ref:\n            raise ValueError(\n                \"DispatchBrief.resume_state_ref must match \"\n                f\"{expected_resume_ref!r}\"\n            )\n        if self.source_refs.plan != \"tasks/plan.md\":\n            raise ValueError(\"DispatchBrief.source_refs.plan must be 'tasks/plan.md'\")\n        for field_name in (\n            \"owned_scope\",\n            \"out_of_scope\",\n            \"verification_commands\",\n            \"stop_conditions\",\n            \"handoff_refs\",\n            \"tdd_change_refs\",\n        ):\n            values = getattr(self, field_name)\n            if len(values) != len(set(values)):\n                raise ValueError(f\"DispatchBrief.{field_name} must not contain duplicates\")\n            if any(not value.strip() for value in values):\n                raise ValueError(f\"DispatchBrief.{field_name} values must be non-empty\")\n        for scope in self.owned_scope:\n            if scope == \"<unspecified>\":\n                continue\n            _validate_relative_ref(scope.removesuffix(\"/**\"), \"owned_scope\")\n        _validate_relative_ref(self.resume_state_ref, \"resume_state_ref\")\n        for ref in self.handoff_refs:\n            _validate_relative_ref(ref, \"handoff_refs\")\n        for ref in self.tdd_change_refs:\n            if not ref.startswith(\"tasks/tdd.json#\") or not ref.removeprefix(\n                \"tasks/tdd.json#\"\n            ):\n                raise ValueError(\n                    \"DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id>\"\n                )\n        return self\n\n\ndef _validate_relative_ref(value: str, field_name: str) -> None:\n    path = PurePosixPath(value)\n    if path.is_absolute() or \"..\" in path.parts or \".\" in path.parts or \"\\\\\" in value:\n        raise ValueError(f\"DispatchBrief.{field_name} must be a confined relative path\")\n\ndef load_dispatch_brief(path: Path) -> DispatchBrief:\n    \"\"\"Load and validate a persisted DispatchBrief JSON file.\"\"\"\n    payload: dict[str, Any] = json.loads(path.read_text(encoding=\"utf-8\"))\n    return DispatchBrief(**payload)",
+  "cases": [
+    {
+      "name": "valid",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "missing_all",
+      "text": "{}",
+      "kind": "ValidationError",
+      "message": "10 validation errors for DispatchBrief\ntask_id\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nslice_id\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\ntarget_agent\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nuser_intent\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nexpanded_goal\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nowned_scope\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nverification_commands\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nstop_conditions\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nresume_state_ref\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsource_refs\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"
+    },
+    {
+      "name": "root_list",
+      "text": "[]",
+      "kind": "TypeError",
+      "message": "mir.core.contracts.dispatch_brief.DispatchBrief() argument after ** must be a mapping, not list"
+    },
+    {
+      "name": "root_null",
+      "text": "null",
+      "kind": "TypeError",
+      "message": "mir.core.contracts.dispatch_brief.DispatchBrief() argument after ** must be a mapping, not NoneType"
+    },
+    {
+      "name": "task_id_0",
+      "text": "{\"task_id\": null, \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "task_id_1",
+      "text": "{\"task_id\": \"\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch//slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short"
+    },
+    {
+      "name": "task_id_2",
+      "text": "{\"task_id\": \"a\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/a/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "a",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/a/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "task_id_3",
+      "text": "{\"task_id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "task_id_4",
+      "text": "{\"task_id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='aaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaa', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "task_id_5",
+      "text": "{\"task_id\": \"-a\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/-a/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='-a', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "task_id_6",
+      "text": "{\"task_id\": \"a.b_C-0\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/a.b_C-0/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "a.b_C-0",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/a.b_C-0/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "task_id_7",
+      "text": "{\"task_id\": \"a/b\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/a/b/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='a/b', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "task_id_8",
+      "text": "{\"task_id\": \"a\\n\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/a\\n/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='a\\n', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "task_id_9",
+      "text": "{\"task_id\": \"\\u00e9\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/\\u00e9/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='\u00e9', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "task_id_10",
+      "text": "{\"task_id\": 7, \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  Input should be a valid string [type=string_type, input_value=7, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "phase_id_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": null}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "phase_id_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nphase_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "phase_id_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"a\"}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": "a",
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "phase_id_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "phase_id_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nphase_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='aaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaa', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "phase_id_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"-a\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nphase_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='-a', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "phase_id_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"a.b_C-0\"}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": "a.b_C-0",
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "phase_id_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"a/b\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nphase_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='a/b', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "phase_id_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"a\\n\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nphase_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='a\\n', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "phase_id_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"\\u00e9\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nphase_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='\u00e9', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "phase_id_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": 7}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nphase_id\n  Input should be a valid string [type=string_type, input_value=7, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "slice_id_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": null, \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nslice_id\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "slice_id_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nslice_id\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short"
+    },
+    {
+      "name": "slice_id_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"a\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/a.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "a",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/a.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "slice_id_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "slice_id_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nslice_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='aaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaa', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "slice_id_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"-a\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/-a.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nslice_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='-a', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "slice_id_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"a.b_C-0\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/a.b_C-0.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "a.b_C-0",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/a.b_C-0.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "slice_id_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"a/b\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/a/b.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nslice_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='a/b', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "slice_id_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"a\\n\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/a\\n.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nslice_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='a\\n', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "slice_id_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"\\u00e9\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/\\u00e9.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nslice_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='\u00e9', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "slice_id_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": 7, \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nslice_id\n  Input should be a valid string [type=string_type, input_value=7, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "target_agent_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": null, \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntarget_agent\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "target_agent_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntarget_agent\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short"
+    },
+    {
+      "name": "target_agent_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"a\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "a",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "target_agent_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "target_agent_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntarget_agent\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='aaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaa', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "target_agent_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"-a\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntarget_agent\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='-a', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "target_agent_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"a.b_C-0\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "a.b_C-0",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "target_agent_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"a/b\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntarget_agent\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='a/b', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "target_agent_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"a\\n\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntarget_agent\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='a\\n', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "target_agent_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"\\u00e9\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntarget_agent\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='\u00e9', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch"
+    },
+    {
+      "name": "target_agent_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": 7, \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntarget_agent\n  Input should be a valid string [type=string_type, input_value=7, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "owned_scope_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "owned_scope_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"same\", \"same\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope must not contain duplicates [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "owned_scope_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\" \\t\\n\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "owned_scope_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "owned_scope_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [1, null], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "3 validation errors for DispatchBrief\nowned_scope.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nowned_scope.1\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1, None], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "owned_scope_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [1], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nowned_scope.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "owned_scope_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": null, \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope\n  Input should be a valid tuple [type=tuple_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "owned_scope_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": \"src\", \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope\n  Input should be a valid tuple [type=tuple_type, input_value='src', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "owned_scope_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/./module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/./module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "owned_scope_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src//module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src//module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "owned_scope_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"../escape\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope must be a confined relative path [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "owned_scope_11",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"/absolute\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope must be a confined relative path [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "owned_scope_12",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src\\\\file\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope must be a confined relative path [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "owned_scope_13",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"<unspecified>\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "<unspecified>"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "owned_scope_14",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/**\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/**"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "owned_scope_15",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"tasks/tdd.json#id\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "tasks/tdd.json#id"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "owned_scope_16",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"tasks/tdd.json#\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "tasks/tdd.json#"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": []}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"same\", \"same\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.out_of_scope must not contain duplicates [type=value_error, input_value={'task_id': 'task', 'slic...cope': ['same', 'same']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "out_of_scope_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\" \\t\\n\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.out_of_scope values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...ut_of_scope': [' \\t\\n']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "out_of_scope_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.out_of_scope values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...}, 'out_of_scope': ['']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "out_of_scope_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [1, null]}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nout_of_scope.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nout_of_scope.1\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "out_of_scope_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [1]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nout_of_scope.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "out_of_scope_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": null}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nout_of_scope\n  Input should be a valid tuple [type=tuple_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "out_of_scope_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": \"src\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nout_of_scope\n  Input should be a valid tuple [type=tuple_type, input_value='src', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "out_of_scope_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"src/./module.rs\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [
+          "src/./module.rs"
+        ],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"src//module.rs\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [
+          "src//module.rs"
+        ],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"../escape\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [
+          "../escape"
+        ],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_11",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"/absolute\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [
+          "/absolute"
+        ],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_12",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"src\\\\file\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [
+          "src\\file"
+        ],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_13",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"<unspecified>\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [
+          "<unspecified>"
+        ],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_14",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"src/**\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [
+          "src/**"
+        ],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_15",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"tasks/tdd.json#id\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [
+          "tasks/tdd.json#id"
+        ],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "out_of_scope_16",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"tasks/tdd.json#\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [
+          "tasks/tdd.json#"
+        ],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nverification_commands\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "verification_commands_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"same\", \"same\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.verification_commands must not contain duplicates [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "verification_commands_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\" \\t\\n\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.verification_commands values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "verification_commands_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.verification_commands values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "verification_commands_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [1, null], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "3 validation errors for DispatchBrief\nverification_commands.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nverification_commands.1\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nverification_commands\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1, None], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "verification_commands_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [1], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nverification_commands.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nverification_commands\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "verification_commands_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": null, \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nverification_commands\n  Input should be a valid tuple [type=tuple_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "verification_commands_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": \"src\", \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nverification_commands\n  Input should be a valid tuple [type=tuple_type, input_value='src', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "verification_commands_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"src/./module.rs\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "src/./module.rs"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"src//module.rs\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "src//module.rs"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"../escape\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "../escape"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_11",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"/absolute\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "/absolute"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_12",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"src\\\\file\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "src\\file"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_13",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"<unspecified>\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "<unspecified>"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_14",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"src/**\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "src/**"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_15",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"tasks/tdd.json#id\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "tasks/tdd.json#id"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_16",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"tasks/tdd.json#\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "tasks/tdd.json#"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "stop_conditions_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nstop_conditions\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "stop_conditions_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"same\", \"same\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.stop_conditions must not contain duplicates [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "stop_conditions_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\" \\t\\n\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.stop_conditions values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "stop_conditions_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.stop_conditions values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "stop_conditions_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [1, null], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "3 validation errors for DispatchBrief\nstop_conditions.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nstop_conditions.1\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nstop_conditions\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1, None], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "stop_conditions_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [1], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nstop_conditions.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nstop_conditions\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "stop_conditions_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": null, \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nstop_conditions\n  Input should be a valid tuple [type=tuple_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "stop_conditions_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": \"src\", \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nstop_conditions\n  Input should be a valid tuple [type=tuple_type, input_value='src', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "stop_conditions_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"src/./module.rs\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "src/./module.rs"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "stop_conditions_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"src//module.rs\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "src//module.rs"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "stop_conditions_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"../escape\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "../escape"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "stop_conditions_11",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"/absolute\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "/absolute"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "stop_conditions_12",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"src\\\\file\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "src\\file"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "stop_conditions_13",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"<unspecified>\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "<unspecified>"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "stop_conditions_14",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"src/**\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "src/**"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "stop_conditions_15",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"tasks/tdd.json#id\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "tasks/tdd.json#id"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "stop_conditions_16",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"tasks/tdd.json#\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "tasks/tdd.json#"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "handoff_refs_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": []}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "handoff_refs_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"same\", \"same\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.handoff_refs must not contain duplicates [type=value_error, input_value={'task_id': 'task', 'slic...refs': ['same', 'same']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "handoff_refs_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\" \\t\\n\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.handoff_refs values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...andoff_refs': [' \\t\\n']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "handoff_refs_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.handoff_refs values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...}, 'handoff_refs': ['']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "handoff_refs_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [1, null]}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nhandoff_refs.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nhandoff_refs.1\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "handoff_refs_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [1]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nhandoff_refs.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "handoff_refs_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": null}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nhandoff_refs\n  Input should be a valid tuple [type=tuple_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "handoff_refs_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": \"src\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nhandoff_refs\n  Input should be a valid tuple [type=tuple_type, input_value='src', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "handoff_refs_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"src/./module.rs\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [
+          "src/./module.rs"
+        ],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "handoff_refs_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"src//module.rs\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [
+          "src//module.rs"
+        ],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "handoff_refs_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"../escape\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.handoff_refs must be a confined relative path [type=value_error, input_value={'task_id': 'task', 'slic...ff_refs': ['../escape']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "handoff_refs_11",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"/absolute\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.handoff_refs must be a confined relative path [type=value_error, input_value={'task_id': 'task', 'slic...ff_refs': ['/absolute']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "handoff_refs_12",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"src\\\\file\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.handoff_refs must be a confined relative path [type=value_error, input_value={'task_id': 'task', 'slic...ff_refs': ['src\\\\file']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "handoff_refs_13",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"<unspecified>\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [
+          "<unspecified>"
+        ],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "handoff_refs_14",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"src/**\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [
+          "src/**"
+        ],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "handoff_refs_15",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"tasks/tdd.json#id\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [
+          "tasks/tdd.json#id"
+        ],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "handoff_refs_16",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\"tasks/tdd.json#\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [
+          "tasks/tdd.json#"
+        ],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "tdd_change_refs_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": []}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "tdd_change_refs_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"same\", \"same\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs must not contain duplicates [type=value_error, input_value={'task_id': 'task', 'slic...refs': ['same', 'same']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\" \\t\\n\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...change_refs': [' \\t\\n']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...'tdd_change_refs': ['']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [1, null]}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\ntdd_change_refs.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\ntdd_change_refs.1\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "tdd_change_refs_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [1]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntdd_change_refs.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "tdd_change_refs_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": null}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntdd_change_refs\n  Input should be a valid tuple [type=tuple_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "tdd_change_refs_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": \"src\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntdd_change_refs\n  Input should be a valid tuple [type=tuple_type, input_value='src', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "tdd_change_refs_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"src/./module.rs\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id> [type=value_error, input_value={'task_id': 'task', 'slic...s': ['src/./module.rs']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"src//module.rs\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id> [type=value_error, input_value={'task_id': 'task', 'slic...fs': ['src//module.rs']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"../escape\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id> [type=value_error, input_value={'task_id': 'task', 'slic...ge_refs': ['../escape']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_11",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"/absolute\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id> [type=value_error, input_value={'task_id': 'task', 'slic...ge_refs': ['/absolute']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_12",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"src\\\\file\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id> [type=value_error, input_value={'task_id': 'task', 'slic...ge_refs': ['src\\\\file']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_13",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"<unspecified>\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id> [type=value_error, input_value={'task_id': 'task', 'slic...efs': ['<unspecified>']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_14",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"src/**\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id> [type=value_error, input_value={'task_id': 'task', 'slic...hange_refs': ['src/**']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "tdd_change_refs_15",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#id\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [
+          "tasks/tdd.json#id"
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "tdd_change_refs_16",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id> [type=value_error, input_value={'task_id': 'task', 'slic...s': ['tasks/tdd.json#']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "path_whitespace_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"\\u001c\\u001f\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "path_whitespace_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"\\u0085\\u2007\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "path_whitespace_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"\\u200b\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "\u200b"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "path_whitespace_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"./\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "./"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "path_whitespace_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"a/../b\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope must be a confined relative path [type=value_error, input_value={'task_id': 'task', 'slic...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "path_whitespace_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"a/..hidden\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "a/..hidden"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "path_whitespace_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"C:/file\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "C:/file"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "path_whitespace_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/line\\nbreak\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/line\nbreak"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "path_whitespace_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/zero\\u0000byte\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "src/zero\u0000byte"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "duplicate_before_blank",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\" \", \" \"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"out_of_scope\": [\"x\", \"x\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.owned_scope must not contain duplicates [type=value_error, input_value={'task_id': 'task', 'slic...t_of_scope': ['x', 'x']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_first",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"x\", \"x\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"version\": 2}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 [type=value_error, input_value={'task_id': 'task', 'slic...se.json'}, 'version': 2}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "multiple_fields",
+      "text": "{\"task_id\": \"/bad\", \"slice_id\": \"-bad\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [], \"verification_commands\": [1], \"stop_conditions\": [], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"phase_id\": \"\", \"extra\": 1}",
+      "kind": "ValidationError",
+      "message": "8 validation errors for DispatchBrief\ntask_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='/bad', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch\nphase_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch\nslice_id\n  String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' [type=string_pattern_mismatch, input_value='-bad', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_pattern_mismatch\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short\nverification_commands.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nverification_commands\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short\nstop_conditions\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short\nextra\n  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden"
+    },
+    {
+      "name": "normalized_refs",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"./src//file\", \"src/./**\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\".\", \"./\", \"a//b\", \"\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.handoff_refs values must be non-empty [type=value_error, input_value={'task_id': 'task', 'slic...['.', './', 'a//b', '']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "normalized_refs_valid",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"./src//file\", \"src/./**\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"handoff_refs\": [\".\", \"./\", \"a//b\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Bounded work",
+        "expanded_goal": "Update caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+        "owned_scope": [
+          "./src//file",
+          "src/./**"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside scope"
+        ],
+        "handoff_refs": [
+          ".",
+          "./",
+          "a//b"
+        ],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "source_multiple",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"src/module.rs\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"\", \"phase\": 2, \"plan\": \"\", \"extra\": 1}}",
+      "kind": "ValidationError",
+      "message": "3 validation errors for DispatchBrief\nsource_refs.task_spec\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short\nsource_refs.phase\n  Input should be a valid string [type=string_type, input_value=2, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nsource_refs.extra\n  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden"
+    },
+    {
+      "name": "plan_before_tuple",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Bounded work\", \"expanded_goal\": \"Update caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"owned_scope\": [\"x\", \"x\"], \"verification_commands\": [\"cargo test\"], \"stop_conditions\": [\"Stop outside scope\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"x\", \"phase\": \"x\", \"plan\": \"other\"}}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.source_refs.plan must be 'tasks/plan.md' [type=value_error, input_value={'task_id': 'task', 'slic...: 'x', 'plan': 'other'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    }
+  ]
+}

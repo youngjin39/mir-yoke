@@ -1,0 +1,1330 @@
+{
+  "oracle_source": "from __future__ import annotations\nimport argparse, json, pathlib, shlex\nfrom collections.abc import Mapping\nfrom tools.mir_executor.local_hooks import local_config\n_INSTRUCTIONS = {}\n\"\"\"DispatchBrief contract for execution-lane handoff and durable resume.\"\"\"\n\n\nfrom pathlib import PurePosixPath\n\nfrom pydantic import BaseModel, ConfigDict, Field, model_validator\n\n_ID_PATTERN = r\"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$\"\n\n\nclass DispatchBriefSourceRefs(BaseModel):\n    \"\"\"Source references used to derive a dispatch brief.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    task_spec: str = Field(min_length=1)\n    plan: str = Field(default=\"tasks/plan.md\")\n    phase: str = Field(min_length=1)\n\n\nclass DispatchBrief(BaseModel):\n    \"\"\"Execution-ready handoff artifact for one target agent and one slice.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    version: int = Field(default=1)\n    task_id: str = Field(min_length=1, pattern=_ID_PATTERN)\n    phase_id: str | None = Field(default=None, pattern=_ID_PATTERN)\n    slice_id: str = Field(min_length=1, pattern=_ID_PATTERN)\n    target_agent: str = Field(min_length=1, pattern=_ID_PATTERN)\n    user_intent: str = Field(min_length=1)\n    expanded_goal: str = Field(min_length=1)\n    owned_scope: tuple[str, ...] = Field(min_length=1)\n    out_of_scope: tuple[str, ...] = ()\n    verification_commands: tuple[str, ...] = Field(min_length=1)\n    stop_conditions: tuple[str, ...] = Field(min_length=1)\n    handoff_refs: tuple[str, ...] = ()\n    tdd_change_refs: tuple[str, ...] = ()\n    resume_state_ref: str = Field(min_length=1)\n    source_refs: DispatchBriefSourceRefs\n\n    @model_validator(mode=\"after\")\n    def _validate_contract(self) -> DispatchBrief:\n        if self.version != 1:\n            raise ValueError(\"DispatchBrief.version must be 1\")\n        expected_resume_ref = f\"tasks/dispatch/{self.task_id}/{self.slice_id}.json\"\n        if self.resume_state_ref != expected_resume_ref:\n            raise ValueError(\n                \"DispatchBrief.resume_state_ref must match \"\n                f\"{expected_resume_ref!r}\"\n            )\n        if self.source_refs.plan != \"tasks/plan.md\":\n            raise ValueError(\"DispatchBrief.source_refs.plan must be 'tasks/plan.md'\")\n        for field_name in (\n            \"owned_scope\",\n            \"out_of_scope\",\n            \"verification_commands\",\n            \"stop_conditions\",\n            \"handoff_refs\",\n            \"tdd_change_refs\",\n        ):\n            values = getattr(self, field_name)\n            if len(values) != len(set(values)):\n                raise ValueError(f\"DispatchBrief.{field_name} must not contain duplicates\")\n            if any(not value.strip() for value in values):\n                raise ValueError(f\"DispatchBrief.{field_name} values must be non-empty\")\n        for scope in self.owned_scope:\n            if scope == \"<unspecified>\":\n                continue\n            _validate_relative_ref(scope.removesuffix(\"/**\"), \"owned_scope\")\n        _validate_relative_ref(self.resume_state_ref, \"resume_state_ref\")\n        for ref in self.handoff_refs:\n            _validate_relative_ref(ref, \"handoff_refs\")\n        for ref in self.tdd_change_refs:\n            if not ref.startswith(\"tasks/tdd.json#\") or not ref.removeprefix(\n                \"tasks/tdd.json#\"\n            ):\n                raise ValueError(\n                    \"DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id>\"\n                )\n        return self\n\n\ndef _validate_relative_ref(value: str, field_name: str) -> None:\n    path = PurePosixPath(value)\n    if path.is_absolute() or \"..\" in path.parts or \".\" in path.parts or \"\\\\\" in value:\n        raise ValueError(f\"DispatchBrief.{field_name} must be a confined relative path\")\n\ndef load_dispatch_brief(path: pathlib.Path) -> DispatchBrief:\n    \"\"\"Load and validate a persisted DispatchBrief JSON file.\"\"\"\n    payload: dict[str, Any] = json.loads(path.read_text(encoding=\"utf-8\"))\n    return DispatchBrief(**payload)\ndef validate_brief(brief: pathlib.Path | str, repo_root: pathlib.Path):\n    \"\"\"Keep the typed DispatchBrief file schema while accepting plain prompts.\"\"\"\n    if isinstance(brief, pathlib.Path):\n        from mir.core.conductor.dispatch_brief import load_dispatch_brief  # noqa: PLC0415\n\n        return load_dispatch_brief(brief)\n    return None\n\ndef pre_execute(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    \"\"\"Resolve --family, map verifier strings and bind the brief to runtime inputs.\"\"\"\n    _resolve_family(args)\n    root = pathlib.Path(args.repo_root).resolve()\n    _map_verify_commands(args, root)\n    brief_arg = getattr(args, \"dispatch_brief\", None)\n    if not getattr(args, \"dispatch\", False) or brief_arg is None:\n        return\n    brief_path = pathlib.Path(brief_arg).resolve()\n    try:\n        brief = validate_brief(brief_path, root)\n        _validate_dispatch_brief_execution(\n            brief_path=brief_path,\n            brief=brief,\n            repo_root=root,\n            change_id=args.change_id,\n            allow_paths=getattr(args, \"allow_paths\", None) or [],\n            verify_cmds=getattr(args, \"verify_cmds\", None) or [],\n            verifiers=local_config(root).get(\"verifiers\", {}),\n        )\n    except (OSError, ValueError) as exc:\n        raise ValueError(f\"DispatchBrief error: {exc}\") from exc\n    _INSTRUCTIONS[brief_path] = _active_instruction(args, brief)\n\ndef render_brief(validated, repo_root: pathlib.Path) -> str | None:\n    \"\"\"Render the complete typed brief plus the active loop-step instruction.\"\"\"\n    if validated is None:\n        return None\n    brief_path = (pathlib.Path(repo_root) / validated.resume_state_ref).resolve()\n    instruction = _INSTRUCTIONS.pop(brief_path, validated.expanded_goal)\n    payload = json.dumps(validated.model_dump(mode=\"json\"), ensure_ascii=False, indent=2)\n    return (\n        \"# DispatchBrief\\n\\n\"\n        f\"Target profile: `{validated.target_agent}`\\n\\n\"\n        \"## Active step instruction\\n\\n\"\n        f\"{instruction.strip()}\\n\\n\"\n        \"## Typed execution contract\\n\\n\"\n        f\"```json\\n{payload}\\n```\\n\"\n    )\n\ndef _resolve_family(args: argparse.Namespace) -> None:\n    \"\"\"Select the repo root registered for --family (profile_compiler registry).\"\"\"\n    family = getattr(args, \"family\", None)\n    if family is None:\n        return\n    from tools.profile_compiler.cli import resolve_family_path  # noqa: PLC0415\n\n    try:\n        family_root = resolve_family_path(family).resolve()\n    except KeyError as exc:\n        raise ValueError(f\"Unknown family slug: {family!r}. {exc}\") from exc\n    requested = pathlib.Path(args.repo_root).resolve()\n    # The common --repo-root defaults to cwd, so only another explicit root conflicts.\n    if requested not in (pathlib.Path.cwd().resolve(), family_root):\n        raise ValueError(f\"--family {family!r} resolves to {family_root}, not {requested}\")\n    args.repo_root = family_root\n\ndef _map_verify_commands(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    \"\"\"Map a command string equal to a registered verifier argv onto its ID.\n\n    `scripts/loop_driver.sh` passes `tasks/tdd.json` command strings. Only exact\n    argv matches are mapped; anything else stays and the merge gate rejects it.\n    \"\"\"\n    commands = getattr(args, \"verify_cmds\", None)\n    if not commands:\n        return\n    verifiers = local_config(repo_root).get(\"verifiers\", {})\n    by_argv = {tuple(argv): verifier_id for verifier_id, argv in verifiers.items()}\n    args.verify_cmds = [\n        command if command in verifiers else by_argv.get(_argv(command), command)\n        for command in commands\n    ]\n\ndef _argv(command: str) -> tuple[str, ...] | None:\n    try:\n        return tuple(shlex.split(command))\n    except ValueError:\n        return None\n\ndef _scope_covers(owned_scope: str, requested_path: str) -> bool:\n    owned = owned_scope.removeprefix(\"./\").rstrip(\"/\")\n    requested = requested_path.removeprefix(\"./\").rstrip(\"/\")\n    if owned.endswith(\"/**\"):\n        prefix = owned.removesuffix(\"/**\")\n        return requested == prefix or requested.startswith(prefix + \"/\")\n    return requested == owned or requested.startswith(owned + \"/\")\n\ndef _validate_dispatch_brief_execution(\n    *,\n    brief_path: pathlib.Path,\n    brief,\n    repo_root: pathlib.Path,\n    change_id: str | None,\n    allow_paths: list[str],\n    verify_cmds: list[str],\n    verifiers: Mapping[str, list[str]] | None = None,\n) -> None:\n    \"\"\"Bind execution profile, scope, TDD ref, resume path, and merge checks.\"\"\"\n    expected_path = (repo_root / brief.resume_state_ref).resolve()\n    if brief_path.resolve() != expected_path:\n        raise ValueError(\"DispatchBrief path must match its resume_state_ref\")\n    profile_path = repo_root / \".claude\" / \"agents\" / f\"{brief.target_agent}.md\"\n    if not profile_path.is_file():\n        raise ValueError(f\"DispatchBrief target_agent profile is missing: {brief.target_agent}\")\n    if change_id is not None and f\"tasks/tdd.json#{change_id}\" not in brief.tdd_change_refs:\n        raise ValueError(\"DispatchBrief does not bind the requested TDD change\")\n    for requested in allow_paths:\n        if not any(_scope_covers(owned, requested) for owned in brief.owned_scope):\n            raise ValueError(f\"allow path is outside DispatchBrief owned_scope: {requested}\")\n    declared_argv = {_argv(command) for command in brief.verification_commands}\n    verifiers = verifiers or {}\n    undeclared_verifiers = [\n        command\n        for command in verify_cmds\n        if command not in brief.verification_commands\n        and (command not in verifiers or tuple(verifiers[command]) not in declared_argv)\n    ]\n    if undeclared_verifiers:\n        raise ValueError(\n            \"verification command is not declared by DispatchBrief: \"\n            + \", \".join(undeclared_verifiers)\n        )\n\ndef _active_instruction(args: argparse.Namespace, brief) -> str:\n    \"\"\"Return the prompt the common handler will send, as the fork rendered it.\"\"\"\n    from tools.mir_executor import cli  # noqa: PLC0415\n\n    resume_job_id = getattr(args, \"resume_job_id\", None)\n    if resume_job_id:\n        from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415\n\n        registry = JobRegistry(pathlib.Path(args.jobs_db))\n        try:\n            job = registry.get(resume_job_id)\n        finally:\n            registry.close()\n        codex_args = list(job.codex_args) if job is not None else []\n    else:\n        codex_args = cli._resolve_execute_codex_args(args)\n    return cli._prompt_from_codex_args(codex_args) or brief.expanded_goal.strip()\nimport sys, types\n_loader = types.ModuleType(\"mir.core.conductor.dispatch_brief\")\n_loader.load_dispatch_brief = load_dispatch_brief\nsys.modules[_loader.__name__] = _loader\n",
+  "cases": [
+    {
+      "name": "default",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "rendered": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n",
+      "rendered_again": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n"
+    },
+    {
+      "name": "subset",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "src/a",
+          "./code.txt/"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "src/a",
+          "./code.txt/"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "rendered": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n",
+      "rendered_again": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n"
+    },
+    {
+      "name": "outside",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "other.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "other.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: allow path is outside DispatchBrief owned_scope: other.txt"
+    },
+    {
+      "name": "scope_prefix",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "src-other/a"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "src-other/a"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: allow path is outside DispatchBrief owned_scope: src-other/a"
+    },
+    {
+      "name": "tdd_mismatch",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": "other",
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": "other",
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: DispatchBrief does not bind the requested TDD change"
+    },
+    {
+      "name": "tdd_exact",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": "change",
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": "change",
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "rendered": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n",
+      "rendered_again": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n"
+    },
+    {
+      "name": "mapped_argv",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "check"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"check\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "check"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "last"
+        ]
+      },
+      "rendered": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"check\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n",
+      "rendered_again": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"check\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n"
+    },
+    {
+      "name": "quoted_argv",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "'check'"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"'check'\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "check"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "last"
+        ]
+      },
+      "rendered": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"'check'\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n",
+      "rendered_again": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"'check'\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n"
+    },
+    {
+      "name": "malformed_declared",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "'check"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"'check\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "'check"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "'check"
+        ]
+      },
+      "rendered": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"'check\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n",
+      "rendered_again": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"'check\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n"
+    },
+    {
+      "name": "malformed_requested",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "'check"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "'check"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: verification command is not declared by DispatchBrief: 'check"
+    },
+    {
+      "name": "undeclared_verifier",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "other",
+          "unknown"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "other",
+          "unknown"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: verification command is not declared by DispatchBrief: other, unknown"
+    },
+    {
+      "name": "missing_agent",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: DispatchBrief target_agent profile is missing: offline-agent"
+    },
+    {
+      "name": "wrong_path",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/brief.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/brief.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: DispatchBrief path must match its resume_state_ref"
+    },
+    {
+      "name": "mapped_path_error",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/brief.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "check"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/brief.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "last"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: DispatchBrief path must match its resume_state_ref"
+    },
+    {
+      "name": "multiple_binding_errors",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": "other",
+        "allow_paths": [
+          "other"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": "other",
+        "allow_paths": [
+          "other"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: DispatchBrief target_agent profile is missing: offline-agent"
+    },
+    {
+      "name": "malformed_json",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+    },
+    {
+      "name": "missing_file",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "kind": "ValueError",
+      "message": "DispatchBrief error: [Errno 2] No such file or directory: '<root>/tasks/dispatch/task/slice.json'"
+    },
+    {
+      "name": "initial_instruction",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args": "exec --model fixture '  active caf\u00e9 \u6f22\u5b57 \ud83d\ude00  '"
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args": "exec --model fixture '  active caf\u00e9 \u6f22\u5b57 \ud83d\ude00  '"
+      },
+      "rendered": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nactive caf\u00e9 \u6f22\u5b57 \ud83d\ude00\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n",
+      "rendered_again": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n"
+    },
+    {
+      "name": "file_instruction",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args_file": "<root>/instruction.txt"
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args_file": "<root>/instruction.txt"
+      },
+      "rendered": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nfile caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nstep\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n",
+      "rendered_again": "# DispatchBrief\n\nTarget profile: `offline-agent`\n\n## Active step instruction\n\nexact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal\n\n## Typed execution contract\n\n```json\n{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"phase_id\": null,\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\\ncontract goal  \",\n  \"owned_scope\": [\n    \"code.txt\",\n    \"src/**\"\n  ],\n  \"out_of_scope\": [],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"handoff_refs\": [],\n  \"tdd_change_refs\": [\n    \"tasks/tdd.json#change\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"plan\": \"tasks/plan.md\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}\n```\n"
+    },
+    {
+      "name": "malformed_instruction",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args": "'unterminated"
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args": "'unterminated"
+      },
+      "kind": "ValueError",
+      "message": "No closing quotation"
+    },
+    {
+      "name": "conflicting_instruction",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args": "exec instruction",
+        "codex_args_file": "<root>/instruction.txt"
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args": "exec instruction",
+        "codex_args_file": "<root>/instruction.txt"
+      },
+      "kind": "ValueError",
+      "message": "exactly one of --codex-args or --codex-args-file must be provided"
+    },
+    {
+      "name": "missing_instruction",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args_file": "<root>/missing.txt"
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": true,
+        "dispatch_brief": "<root>/tasks/dispatch/task/slice.json",
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ],
+        "codex_args_file": "<root>/missing.txt"
+      },
+      "kind": "FileNotFoundError",
+      "message": "[Errno 2] No such file or directory: '<root>/missing.txt'"
+    },
+    {
+      "name": "plain",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "  exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal  ",
+        "owned_scope": [
+          "code.txt",
+          "src/**"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        },
+        "tdd_change_refs": [
+          "tasks/tdd.json#change"
+        ]
+      },
+      "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"  exact caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\\ncontract goal  \", \"owned_scope\": [\"code.txt\", \"src/**\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}, \"tdd_change_refs\": [\"tasks/tdd.json#change\"]}",
+      "args": {
+        "repo_root": "<root>",
+        "dispatch": false,
+        "dispatch_brief": null,
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      },
+      "patch": {
+        "repo_root": "<root>",
+        "dispatch": false,
+        "dispatch_brief": null,
+        "change_id": null,
+        "allow_paths": [
+          "code.txt"
+        ],
+        "verify_cmds": [
+          "offline"
+        ]
+      }
+    }
+  ],
+  "verifiers": {
+    "offline": [
+      "check"
+    ],
+    "last": [
+      "check"
+    ],
+    "other": [
+      "other"
+    ]
+  },
+  "missing_resume_instruction": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\ncontract goal",
+  "config_raw": "{\"verifiers\": {\"offline\": [\"check\"], \"last\": [\"check\"], \"other\": [\"other\"]}}",
+  "sha256": {
+    "local": "12dc59e6f6b24bff2c2c2a03dc11a40162454fc475bfd0b5ca16e2ddb922a3e4",
+    "contracts": "4193e0f14721d85532727ba72797317db99b1e72d3e9a743aa453bcee3be67a1",
+    "loader": "703b5be8a0ef9d9a582b29d17e832168d34c6f97b4a09f9f0466733041b832ea"
+  },
+  "runtime": {
+    "python": "3.12.13",
+    "pydantic": "2.13.4",
+    "unicode": "15.0.0"
+  }
+}

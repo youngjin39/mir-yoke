@@ -480,6 +480,17 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 return Err("missing post-hook namespace".into());
             }
         }
+        if let Some(bridge) = lease.bridge.as_mut() {
+            let argv = prepared.codex_args.as_array().map(|v| {
+                v.iter()
+                    .filter_map(Value::as_str)
+                    .map(str::to_owned)
+                    .collect()
+            });
+            bridge
+                .bind_instruction(&cli.root, cwd, &prepared.args, argv)
+                .map_err(|e| pre_execute_refusal(has_options, &e.kind, &e.message))?;
+        }
         if fs::canonicalize(execute::value_path(&prepared.args["repo_root"], cwd))
             .ok()
             .map(crate::supply::plain)

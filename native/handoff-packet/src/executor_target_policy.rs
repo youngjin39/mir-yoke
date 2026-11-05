@@ -62,6 +62,7 @@ pub struct NativePolicy {
     pub brief_controls: bool,
     resume_fill: bool,
     authorized_exact: bool,
+    execution_subset: bool,
     pub job_identity: Option<crate::executor_job_identity::JobIdentity>,
     pub result_policy: Option<crate::executor_result_policy::ResultPolicy>,
 }
@@ -417,10 +418,24 @@ impl NativePolicy {
             .transpose()?;
         let mut resume_fill = false;
         let mut authorized_exact = false;
+        let mut execution_subset = false;
         let brief_controls = if let Some(value) = data.get("brief_controls") {
             let section = object(value, &["mode"], "brief_controls")?;
             match string(section, "mode")? {
                 "brief_owned" => (),
+                "execution_subset" => {
+                    execution_subset = true;
+                    if !brief_profile
+                        .as_ref()
+                        .is_some_and(|profile| profile.execution())
+                        || verifier_aliases != Some(true)
+                        || !matches!(family, Some(FamilyPolicy::Resolve { .. }))
+                    {
+                        return Err(invalid(
+                            "execution_subset requires execution_v1, target verifier_aliases and family resolution",
+                        ));
+                    }
+                }
                 "authorized_exact" => {
                     authorized_exact = true;
                     if !brief_profile
@@ -472,6 +487,7 @@ impl NativePolicy {
             brief_controls,
             resume_fill,
             authorized_exact,
+            execution_subset,
             result_policy,
             owns_pre_execute: data.contains_key("target_admission")
                 || verifier_aliases.is_some()
@@ -498,7 +514,7 @@ impl NativePolicy {
         if self
             .brief_profile
             .as_ref()
-            .is_some_and(|profile| profile.capabilities())
+            .is_some_and(|profile| profile.capabilities() || profile.execution())
         {
             hooks.push("render_brief");
         }
@@ -561,6 +577,18 @@ impl NativePolicy {
         self.check_repository(cwd, &target, args, environment)?;
         if target != root {
             set_root(args, &target)?;
+        }
+        if self.execution_subset {
+            self.map_verifiers(&target, args)?;
+            if args["dispatch"] == true && !args["dispatch_brief"].is_null() {
+                let profile = self.brief_profile.as_ref().ok_or_else(|| PolicyFailure {
+                    kind: "ValueError".into(),
+                    message: "brief_controls requires brief_profile".into(),
+                    stderr: None,
+                })?;
+                crate::executor_brief_execution::bind(profile, &target, cwd, args)?;
+            }
+            return Ok(());
         }
         if self.authorized_exact {
             return self.authorized_controls(cwd, root, args);

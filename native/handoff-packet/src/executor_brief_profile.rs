@@ -12,6 +12,7 @@ enum Contract {
     BaseV1,
     CapabilityV1,
     ClosedVerifierV2,
+    ExecutionV1,
 }
 #[derive(Clone, Debug)]
 pub struct BriefProfile {
@@ -31,11 +32,12 @@ impl BriefProfile {
         }
         let contract = match data.get("name").and_then(Value::as_str) {
             Some("base_v1") => Contract::BaseV1,
+            Some("execution_v1") => Contract::ExecutionV1,
             Some("capability_v1") => Contract::CapabilityV1,
             Some("closed_verifier_v2") => Contract::ClosedVerifierV2,
             _ => {
                 return Err(invalid(
-                    "brief_profile.name must be base_v1, capability_v1 or closed_verifier_v2",
+                    "brief_profile.name must be base_v1, capability_v1, closed_verifier_v2 or execution_v1",
                 ));
             }
         };
@@ -115,6 +117,9 @@ impl BriefProfile {
             ));
         }
         Ok(())
+    }
+    pub fn execution(&self) -> bool {
+        self.contract == Contract::ExecutionV1
     }
     pub fn capabilities(&self) -> bool {
         self.contract == Contract::CapabilityV1
@@ -230,7 +235,18 @@ impl BriefProfile {
                     if value.is_none_or(Value::is_null) {
                         output.insert((*key).into(), Value::Null);
                     } else if let Some(value) = value {
-                        string_field(value, location, false, &mut output, key, &mut issues, reprs);
+                        string_field(
+                            value,
+                            location.clone(),
+                            false,
+                            &mut output,
+                            key,
+                            &mut issues,
+                            reprs,
+                        );
+                        if self.execution() {
+                            execution_id(value, location, &mut issues, reprs);
+                        }
                     }
                 }
                 "source_refs" => {
@@ -352,7 +368,21 @@ impl BriefProfile {
                 }
                 _ => match value {
                     Some(value) => {
-                        string_field(value, location, true, &mut output, key, &mut issues, reprs)
+                        string_field(
+                            value,
+                            location.clone(),
+                            true,
+                            &mut output,
+                            key,
+                            &mut issues,
+                            reprs,
+                        );
+                        if self.execution()
+                            && ["task_id", "slice_id", "target_agent"].contains(key)
+                            && value.as_str().is_some_and(|text| !text.is_empty())
+                        {
+                            execution_id(value, location, &mut issues, reprs);
+                        }
                     }
                     None => {
                         issues.push(issue(location, "Field required", "missing", payload, reprs))
@@ -373,6 +403,9 @@ impl BriefProfile {
         }
         if issues.is_empty()
             && let Some(message) = contract_error(&output, typed).or_else(|| {
+                if self.execution() {
+                    return execution_contract_error(&output);
+                }
                 if !self.capabilities() {
                     return None;
                 }
@@ -598,6 +631,96 @@ fn integer(value: &Value, raw: Option<&str>) -> Result<Value, (&'static str, &'s
         _ => Err(bad),
     }
 }
+fn execution_id(
+    value: &Value,
+    location: Vec<String>,
+    issues: &mut Vec<ValidationIssue>,
+    reprs: &BTreeMap<Vec<String>, String>,
+) {
+    let Some(text) = value.as_str() else { return };
+    let bytes = text.as_bytes();
+    if !(1..=128).contains(&bytes.len())
+        || !bytes[0].is_ascii_alphanumeric()
+        || !bytes
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"._-".contains(byte))
+    {
+        issues.push(issue(
+            location,
+            "String should match pattern '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'",
+            "string_pattern_mismatch",
+            value,
+            reprs,
+        ));
+    }
+}
+fn execution_contract_error(output: &Map<String, Value>) -> Option<String> {
+    for key in [
+        "owned_scope",
+        "out_of_scope",
+        "verification_commands",
+        "stop_conditions",
+        "handoff_refs",
+        "tdd_change_refs",
+    ] {
+        let values = output[key].as_array()?;
+        if values
+            .iter()
+            .enumerate()
+            .any(|(index, value)| values[..index].contains(value))
+        {
+            return Some(format!("DispatchBrief.{key} must not contain duplicates"));
+        }
+        if values.iter().filter_map(Value::as_str).any(|value| {
+            value
+                .trim_matches(crate::executor_brief_authority::python_space)
+                .is_empty()
+        }) {
+            return Some(format!("DispatchBrief.{key} values must be non-empty"));
+        }
+    }
+    let confined = |value: &str| {
+        !value.starts_with('/')
+            && !value.contains('\\')
+            && !value.split('/').any(|part| part == "..")
+    };
+    for value in output["owned_scope"]
+        .as_array()?
+        .iter()
+        .filter_map(Value::as_str)
+    {
+        if value != "<unspecified>" && !confined(value.strip_suffix("/**").unwrap_or(value)) {
+            return Some("DispatchBrief.owned_scope must be a confined relative path".into());
+        }
+    }
+    if !confined(output["resume_state_ref"].as_str()?) {
+        return Some("DispatchBrief.resume_state_ref must be a confined relative path".into());
+    }
+    for value in output["handoff_refs"]
+        .as_array()?
+        .iter()
+        .filter_map(Value::as_str)
+    {
+        if !confined(value) {
+            return Some("DispatchBrief.handoff_refs must be a confined relative path".into());
+        }
+    }
+    for value in output["tdd_change_refs"]
+        .as_array()?
+        .iter()
+        .filter_map(Value::as_str)
+    {
+        if value
+            .strip_prefix("tasks/tdd.json#")
+            .is_none_or(str::is_empty)
+        {
+            return Some(
+                "DispatchBrief.tdd_change_refs must use tasks/tdd.json#<change_id>".into(),
+            );
+        }
+    }
+    None
+}
 fn contract_error(output: &Map<String, Value>, typed: bool) -> Option<String> {
     let version = output["version"].as_i64();
     if typed {
@@ -822,6 +945,23 @@ mod tests {
                     assert_eq!(error.kind, case["kind"], "{name}/{}", case["name"]);
                     assert_eq!(error.message, case["message"], "{name}/{}", case["name"]);
                 }
+            }
+        }
+    }
+    #[test]
+    fn execution_schema_matches_python_oracle() {
+        let fixtures: Value =
+            serde_json::from_str(include_str!("../tests/fixtures/executor_smd_profile.json"))
+                .unwrap();
+        let profile = BriefProfile::parse(&json!({"name":"execution_v1"})).unwrap();
+        for case in fixtures["cases"].as_array().unwrap() {
+            let result = profile.validate_bytes(case["text"].as_str().unwrap().as_bytes());
+            if let Some(expected) = case.get("value") {
+                assert_eq!(result.unwrap(), *expected, "{}", case["name"]);
+            } else {
+                let error = result.unwrap_err();
+                assert_eq!(error.kind, case["kind"], "{}", case["name"]);
+                assert_eq!(error.message, case["message"], "{}", case["name"]);
             }
         }
     }

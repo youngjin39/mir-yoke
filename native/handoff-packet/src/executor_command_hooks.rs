@@ -39,6 +39,7 @@ pub struct CommandHooks {
     outcome: TeardownOutcome,
     brief_profile: Option<crate::executor_brief_profile::BriefProfile>,
     job_identity: Option<crate::executor_job_identity::JobIdentity>,
+    instruction: Option<(std::path::PathBuf, String)>,
 }
 impl CommandHooks {
     pub fn start_in(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>, BridgeError> {
@@ -83,7 +84,7 @@ impl CommandHooks {
             .unwrap_or_else(|| json!({"hooks":[],"register_execute_options":false}));
         if brief_profile
             .as_ref()
-            .is_some_and(|profile| profile.capabilities())
+            .is_some_and(|profile| profile.capabilities() || profile.execution())
             && let Some(hooks) = hello["hooks"].as_array_mut()
         {
             hooks.push(json!("render_brief"));
@@ -93,12 +94,74 @@ impl CommandHooks {
             native,
             brief_profile,
             job_identity,
+            instruction: None,
             hello,
             context: json!({"repo_root":config.target_root,"cwd":cwd,
                 "invocation_id":crate::executor_execute::unique_id(),"job_id":null,"attempt_id":null}),
             token: None,
             outcome: TeardownOutcome::Uncertain,
         }))
+    }
+    /// Supply the invocation instruction explicitly; rendering consumes it once.
+    pub(crate) fn bind_instruction(
+        &mut self,
+        root: &Path,
+        cwd: &Path,
+        args: &Value,
+        resumed: Option<Vec<String>>,
+    ) -> Result<(), crate::executor_target_policy::PolicyFailure> {
+        if !self.brief_profile.as_ref().is_some_and(|p| p.execution())
+            || args["dispatch"] != true
+            || args["dispatch_brief"].is_null()
+        {
+            return Ok(());
+        }
+        let raw = crate::executor_execute::value_path(&args["dispatch_brief"], cwd);
+        let path = crate::executor_admission::resolved(&raw, cwd)
+            .map_err(|e| crate::executor_brief_profile::io_failure(e, &raw))?;
+        let fail = |message: String| crate::executor_target_policy::PolicyFailure {
+            kind: "ValueError".into(),
+            message,
+            stderr: None,
+        };
+        let argv = if let Some(argv) = resumed {
+            argv
+        } else if args["codex_args"].is_null() && args["codex_args_file"].is_null() {
+            vec![]
+        } else {
+            if !args["codex_args"].is_null() && !args["codex_args_file"].is_null() {
+                return Err(fail(
+                    "exactly one of --codex-args or --codex-args-file must be provided".into(),
+                ));
+            }
+            let local =
+                crate::executor_local::LocalConfig::load(root).map_err(|e| fail(e.to_string()))?;
+            // Read the file with Python's exception text before the common argv
+            // resolver; this instruction selection is outside the brief wrapper.
+            if !args["codex_args_file"].is_null() {
+                let file = crate::executor_execute::value_path(&args["codex_args_file"], cwd);
+                let bytes = std::fs::read(&file)
+                    .map_err(|e| crate::executor_brief_profile::io_failure(e, &file))?;
+                local
+                    .validate_input_size(bytes.len() as u64)
+                    .map_err(|e| fail(e.to_string()))?;
+                let text = String::from_utf8(bytes).map_err(|e| {
+                    let error = crate::executor_local::Error::Unicode(e);
+                    crate::executor_target_policy::PolicyFailure {
+                        kind: error.kind().into(),
+                        message: error.to_string(),
+                        stderr: None,
+                    }
+                })?;
+                vec![text.replace("\r\n", "\n").replace('\r', "\n")]
+            } else {
+                crate::executor_execute::resolve_args(args, cwd, &local).map_err(fail)?
+            }
+        };
+        let instruction = crate::executor_execute::prompt(&argv);
+        // Empty prompts use the goal at render time, matching _active_instruction.
+        self.instruction = Some((path, instruction));
+        Ok(())
     }
     pub fn hello(&self) -> &Value {
         &self.hello
@@ -184,6 +247,33 @@ impl HookClient for CommandHooks {
                     json!({"ok":false,"error":{"type":error.kind,"message":error.message}})
                 }
             });
+        }
+        if name == "render_brief" && self.brief_profile.as_ref().is_some_and(|p| p.execution()) {
+            let Some(brief) = args.first().filter(|v| !v.is_null()) else {
+                return Ok(json!({"ok":true,"result":null,"handle":null}));
+            };
+            let root = args
+                .get(1)
+                .and_then(|v| v["value"].as_str())
+                .unwrap_or_default();
+            let raw = Path::new(root).join(brief["resume_state_ref"].as_str().unwrap_or_default());
+            let path = crate::executor_admission::resolved(&raw, Path::new(root))
+                .map_err(|_| BridgeError::Protocol("invalid brief render path"))?;
+            let instruction = if self
+                .instruction
+                .as_ref()
+                .is_some_and(|(key, _)| *key == path)
+            {
+                self.instruction.take().map(|(_, text)| text)
+            } else {
+                None
+            };
+            let result = crate::executor_brief_execution::render(
+                brief,
+                instruction.as_deref().filter(|s| !s.is_empty()),
+            )
+            .map_err(|_| BridgeError::Protocol("invalid brief rendering"))?;
+            return Ok(json!({"ok":true,"result":result,"handle":null}));
         }
         if name == "render_brief"
             && self
@@ -277,5 +367,60 @@ fn native_value(value: &Value) -> Value {
                 .collect(),
         ),
         _ => value.clone(),
+    }
+}
+
+#[cfg(test)]
+mod execution_tests {
+    use super::*;
+
+    #[test]
+    fn instruction_is_consumed_once_and_null_does_not_consume() {
+        let root = std::env::current_dir().unwrap();
+        let profile =
+            crate::executor_brief_profile::BriefProfile::parse(&json!({"name":"execution_v1"}))
+                .unwrap();
+        let golden: Value =
+            serde_json::from_str(include_str!("../tests/fixtures/executor_smd_profile.json"))
+                .unwrap();
+        let brief = profile
+            .validate_bytes(golden["cases"][0]["text"].as_str().unwrap().as_bytes())
+            .unwrap();
+        let target = root.join(brief["resume_state_ref"].as_str().unwrap());
+        let target = crate::executor_admission::resolved(&target, &root).unwrap();
+        let mut hooks = CommandHooks {
+            python: None,
+            native: None,
+            hello: json!({}),
+            context: json!({}),
+            token: None,
+            outcome: TeardownOutcome::Clean,
+            brief_profile: Some(profile),
+            job_identity: None,
+            instruction: Some((target, "  active café 漢字 😀  ".into())),
+        };
+        let path = json!({"$type":"path","value":root});
+        assert_eq!(
+            hooks
+                .call("render_brief", vec![Value::Null, path.clone()], json!({}))
+                .unwrap()["result"],
+            Value::Null
+        );
+        let first = hooks
+            .call("render_brief", vec![brief.clone(), path.clone()], json!({}))
+            .unwrap();
+        assert_eq!(
+            first["result"],
+            crate::executor_brief_execution::render(&brief, Some("active café 漢字 😀")).unwrap()
+        );
+        assert!(hooks.instruction.is_none());
+        let second = hooks
+            .call("render_brief", vec![brief.clone(), path], json!({}))
+            .unwrap();
+        assert_eq!(
+            second["result"],
+            crate::executor_brief_execution::render(&brief, None).unwrap()
+        );
+        assert_ne!(first["result"], second["result"]);
     }
 }

@@ -42,7 +42,7 @@ fn strings(
         })
         .collect()
 }
-fn python_space(c: char) -> bool {
+pub(crate) fn python_space(c: char) -> bool {
     c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
 }
 fn prefix(pattern: &str) -> Vec<&str> {
