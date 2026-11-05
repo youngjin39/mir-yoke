@@ -61,12 +61,10 @@ fn captured_resume_patches_and_failures_match() {
         }
         // Substitute the root as JSON string content: Windows paths carry backslashes.
         let escaped_root = json!(root.to_string_lossy()).to_string();
-        let mut args: Value = serde_json::from_str(
-            &case["args"]
-                .to_string()
-                .replace("<root>", &escaped_root[1..escaped_root.len() - 1]),
-        )
-        .unwrap();
+        let escaped_root = &escaped_root[1..escaped_root.len() - 1];
+        let mut args: Value =
+            serde_json::from_str(&case["args"].to_string().replace("<root>", escaped_root))
+                .unwrap();
         let result = policy.pre_execute(&root, &root, &root, &mut args, &BTreeMap::new());
         let normalize = |value: &str| value.replace(root.to_str().unwrap(), "<root>");
         match result {
@@ -87,7 +85,8 @@ fn captured_resume_patches_and_failures_match() {
                 );
             }
         }
-        let patch: Value = serde_json::from_str(&normalize(&args.to_string())).unwrap();
+        let patch: Value =
+            serde_json::from_str(&args.to_string().replace(escaped_root, "<root>")).unwrap();
         assert_eq!(patch, case["patch"], "{}", case["name"]);
     }
     fs::remove_dir_all(root).unwrap();
