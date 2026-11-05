@@ -8,6 +8,12 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.71] — 2026-11-05 — Native ontology tools; declarative executor brief policies
+
+### Added
+- The native `mir-mcp` server answers `ontology_validate`, `ontology_lookup` and `ontology_impact` itself (M1c); inputs whose Python semantics it does not reproduce exactly are forwarded to the reference, and `relations_query` stays forwarded.
+- `native_policy` brief policies that let a consumer drop Python executor hooks (Y2b): `brief_profile.input_bound` and `job_identity` (`codex_mcp_v1` with an owner-supplied package version, `scope_capabilities_v1`); `brief_controls` modes `resume_fill`, `authorized_exact` and `execution_subset`; profiles `capability_v1`, `execution_v1` and `development_packet_v1`. Each is byte-compared with a pinned Python oracle; stateful consumer callbacks stay Python.
+
 ## [v0.13.70] — 2026-11-05 — Release-runner build fix for the delegation gate parity test
 
 ### Fixed
