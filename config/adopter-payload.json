@@ -3065,7 +3065,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/lib.rs",
-      "sha256": "8bcb9b7621cdcfdd291a5130adbfb0e79e01f19345c5385f5c7c2ebe989d3831"
+      "sha256": "b62bb55f6bf52a74350291562a54a00ef6434eaa2f8824ae5c4a2dd61da3cedf"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3119,7 +3119,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/supply.rs",
-      "sha256": "26f7982ad6c2bb343fb5dd50d31e8df46f4a6c5eb33f38e72abc38b2928d0d9e"
+      "sha256": "8b5763e550da3117be594a409ce0899dbe247573bdf3338048d44e64d0154acb"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3137,7 +3137,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/transcript.rs",
-      "sha256": "7e83211e38c36f3a7a179ec49fe00e5c6bd2b855ed2868a605c422ca14929677"
+      "sha256": "592d9e03babe774dcb43bb127e149ff94577fe485bf68c8905265996d27ce5c8"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/transcript_windows.rs",
+      "sha256": "e43fe2becc96048284cd46ffba8505c87930dff88746600adbef2f59b25cd313"
     },
     {
       "classification": "template-maintainer-tool",

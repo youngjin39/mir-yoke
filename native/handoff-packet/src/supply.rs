@@ -238,7 +238,73 @@ fn bounded_wait(child: &mut Child, timeout: Duration) -> std::io::Result<bool> {
         thread::sleep(Duration::from_millis(2));
     }
 }
-fn stop_runner(child: &mut Child) {
+#[cfg(any(windows, test))]
+trait WindowsCleanup {
+    fn tree_kill(&mut self, timeout: Duration) -> std::io::Result<()>;
+    fn kill(&mut self);
+    fn drain(&mut self, timeout: Duration) -> bool;
+    fn wait(&mut self, timeout: Duration);
+}
+#[cfg(any(windows, test))]
+fn stop_windows_runner(process: &mut impl WindowsCleanup) {
+    let bound = Duration::from_secs(1);
+    let _ = process.tree_kill(bound);
+    process.kill();
+    if !process.drain(bound) {
+        process.wait(bound);
+    }
+}
+type PipeResult = (usize, std::io::Result<Vec<u8>>);
+#[cfg(windows)]
+struct RunnerCleanup<'a> {
+    child: &'a mut Child,
+    output: &'a mpsc::Receiver<PipeResult>,
+    remaining: usize,
+}
+#[cfg(windows)]
+impl WindowsCleanup for RunnerCleanup<'_> {
+    fn tree_kill(&mut self, timeout: Duration) -> std::io::Result<()> {
+        let root = std::env::var_os("SystemRoot")
+            .ok_or_else(|| std::io::Error::other("SystemRoot unavailable"))?;
+        let root = Path::new(&root);
+        if !root.is_absolute() {
+            return Err(std::io::Error::other("SystemRoot must be absolute"));
+        }
+        let mut killer = Command::new(root.join("System32/taskkill.exe"))
+            .args(["/T", "/F", "/PID", &self.child.id().to_string()])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()?;
+        if !bounded_wait(&mut killer, timeout).unwrap_or(false) {
+            let _ = killer.kill();
+            // Windows has no zombie processes; poll once after termination so
+            // cleanup never grants taskkill a second timeout budget.
+            let _ = killer.try_wait();
+        }
+        Ok(())
+    }
+    fn kill(&mut self) {
+        let _ = self.child.kill();
+    }
+    fn drain(&mut self, timeout: Duration) -> bool {
+        let start = Instant::now();
+        for _ in 0..self.remaining {
+            if self
+                .output
+                .recv_timeout(timeout.saturating_sub(start.elapsed()))
+                .is_err()
+            {
+                return false;
+            }
+        }
+        // Reap the runner even when both output streams closed first.
+        bounded_wait(self.child, timeout.saturating_sub(start.elapsed())).unwrap_or(false)
+    }
+    fn wait(&mut self, timeout: Duration) {
+        let _ = bounded_wait(self.child, timeout);
+    }
+}
+fn stop_runner(child: &mut Child, output: &mpsc::Receiver<PipeResult>, remaining: usize) {
     #[cfg(unix)]
     {
         let _ = Command::new("/bin/kill")
@@ -248,23 +314,17 @@ fn stop_runner(child: &mut Child) {
             .status();
     }
     #[cfg(windows)]
-    if let Some(root) = std::env::var_os("SystemRoot") {
-        let root = Path::new(&root);
-        if root.is_absolute()
-            && let Ok(mut killer) = Command::new(root.join("System32/taskkill.exe"))
-                .args(["/T", "/F", "/PID", &child.id().to_string()])
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .spawn()
-        {
-            if !bounded_wait(&mut killer, Duration::from_secs(1)).unwrap_or(false) {
-                let _ = killer.kill();
-            }
-            let _ = killer.wait();
-        }
+    stop_windows_runner(&mut RunnerCleanup {
+        child,
+        output,
+        remaining,
+    });
+    #[cfg(not(windows))]
+    {
+        let _ = (output, remaining);
+        let _ = child.kill();
+        let _ = bounded_wait(child, Duration::from_secs(1));
     }
-    let _ = child.kill();
-    let _ = bounded_wait(child, Duration::from_secs(1));
 }
 pub(crate) fn run_pins(
     event: &Value,
@@ -325,10 +385,10 @@ pub(crate) fn run_pins(
     }
     let start = Instant::now();
     let mut stdout = Vec::new();
-    for _ in 0..2 {
+    for received_count in 0..2 {
         let received = rx.recv_timeout(timeout.saturating_sub(start.elapsed()));
         let Ok((index, data)) = received else {
-            stop_runner(&mut child);
+            stop_runner(&mut child, &rx, 2 - received_count);
             return Err(Error::Shape);
         };
         let data = data?;
@@ -337,7 +397,7 @@ pub(crate) fn run_pins(
         }
     }
     if !bounded_wait(&mut child, timeout.saturating_sub(start.elapsed()))? {
-        stop_runner(&mut child);
+        stop_runner(&mut child, &rx, 0);
         return Err(Error::Shape);
     }
     if !child.wait()?.success() {
@@ -358,4 +418,85 @@ pub(crate) fn run_pins(
         return Err(Error::Shape);
     }
     Ok(pins)
+}
+
+#[cfg(test)]
+mod windows_cleanup_tests {
+    use super::*;
+    #[derive(Clone, Copy)]
+    enum TreeResult {
+        Success,
+        Failure,
+        Missing,
+        Timeout,
+    }
+    struct Fake {
+        result: TreeResult,
+        drain_timeout: bool,
+        calls: Vec<&'static str>,
+        child_alive: bool,
+    }
+    impl WindowsCleanup for Fake {
+        fn tree_kill(&mut self, timeout: Duration) -> std::io::Result<()> {
+            assert_eq!(timeout, Duration::from_secs(1));
+            self.calls.push("tree");
+            match self.result {
+                TreeResult::Success => {
+                    self.child_alive = false;
+                    Ok(())
+                }
+                TreeResult::Failure => Err(std::io::Error::other("nonzero exit")),
+                TreeResult::Missing => Err(std::io::ErrorKind::NotFound.into()),
+                TreeResult::Timeout => Err(std::io::ErrorKind::TimedOut.into()),
+            }
+        }
+        fn kill(&mut self) {
+            self.calls.push("kill");
+        }
+        fn drain(&mut self, timeout: Duration) -> bool {
+            assert_eq!(timeout, Duration::from_secs(1));
+            self.calls.push("drain");
+            !self.drain_timeout
+        }
+        fn wait(&mut self, timeout: Duration) {
+            assert_eq!(timeout, Duration::from_secs(1));
+            self.calls.push("wait");
+        }
+    }
+    fn cleanup(result: TreeResult, drain_timeout: bool) {
+        let mut fake = Fake {
+            result,
+            drain_timeout,
+            calls: vec![],
+            child_alive: true,
+        };
+        stop_windows_runner(&mut fake);
+        assert_eq!(
+            fake.calls,
+            if drain_timeout {
+                vec!["tree", "kill", "drain", "wait"]
+            } else {
+                vec!["tree", "kill", "drain"]
+            }
+        );
+        if matches!(result, TreeResult::Success) {
+            assert!(!fake.child_alive);
+        }
+    }
+    macro_rules! case {
+        ($name:ident, $result:ident, $drain:literal) => {
+            #[test]
+            fn $name() {
+                cleanup(TreeResult::$result, $drain);
+            }
+        };
+    }
+    case!(tree_success_drain_success, Success, false);
+    case!(tree_failure_drain_success, Failure, false);
+    case!(tree_missing_drain_success, Missing, false);
+    case!(tree_timeout_drain_success, Timeout, false);
+    case!(tree_success_drain_timeout, Success, true);
+    case!(tree_failure_drain_timeout, Failure, true);
+    case!(tree_missing_drain_timeout, Missing, true);
+    case!(tree_timeout_drain_timeout, Timeout, true);
 }

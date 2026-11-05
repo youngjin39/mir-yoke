@@ -85,6 +85,10 @@ mod transcript;
 use patterns as p;
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
+// Stable Win32 file identity requires this small, isolated FFI boundary.
+#[cfg(windows)]
+#[allow(unsafe_code)]
+mod transcript_windows;
 pub const LIMIT: usize = 1024 * 1024;
 #[derive(Debug)]
 pub enum Error {

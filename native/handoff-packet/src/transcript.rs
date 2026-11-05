@@ -77,6 +77,24 @@ pub(crate) fn hook_prompts(row: &Value) -> Result<Vec<(String, String)>> {
     }
     Ok(vec![])
 }
+// Own the opened resource so refusal closes it before returning.
+#[cfg(any(windows, test))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct FileIdentity {
+    pub volume: u64,
+    pub index: u64,
+}
+#[cfg(any(windows, test))]
+fn verified_file<T>(
+    before: FileIdentity,
+    opened: T,
+    identity: impl FnOnce(&T) -> Result<FileIdentity>,
+) -> Result<T> {
+    if before != identity(&opened)? {
+        return Err(std::io::Error::other("transcript changed while opening").into());
+    }
+    Ok(opened)
+}
 pub(crate) fn transcript_records(event: &Value) -> Result<Vec<Value>> {
     let path = Path::new(event["transcript_path"].as_str().ok_or(Error::Shape)?);
     let mut options = File::options();
@@ -97,7 +115,22 @@ pub(crate) fn transcript_records(event: &Value) -> Result<Vec<Value>> {
         use std::os::windows::fs::OpenOptionsExt;
         options.custom_flags(0x00200000);
     }
-    let mut file = options.open(path)?;
+    #[cfg(windows)]
+    let before = {
+        use std::os::windows::fs::MetadataExt;
+        let metadata = std::fs::symlink_metadata(path)?;
+        if !metadata.is_file() || metadata.file_attributes() & 0x400 != 0 {
+            return Err(Error::Shape);
+        }
+        let checked = options.open(path)?;
+        crate::transcript_windows::identity(&checked)?
+    };
+    let file = options.open(path)?;
+    #[cfg(windows)]
+    let file = verified_file(before, file, |file| {
+        Ok(crate::transcript_windows::identity(file)?)
+    })?;
+    let mut file = file;
     if !file.metadata()?.is_file() || std::fs::symlink_metadata(path)?.file_type().is_symlink() {
         return Err(Error::Shape);
     }
@@ -207,5 +240,52 @@ pub(crate) fn truthy(v: &Value) -> bool {
         Value::String(s) => !s.is_empty(),
         Value::Array(a) => !a.is_empty(),
         Value::Object(m) => !m.is_empty(),
+    }
+}
+
+#[cfg(test)]
+mod identity_tests {
+    use super::*;
+    use std::cell::Cell;
+    struct Opened<'a>(&'a Cell<bool>);
+    impl Drop for Opened<'_> {
+        fn drop(&mut self) {
+            self.0.set(true);
+        }
+    }
+    fn changed_identity_closes_file(volume: u64, index: u64) {
+        let closed = Cell::new(false);
+        let result = verified_file(
+            FileIdentity {
+                volume: 1,
+                index: 2,
+            },
+            Opened(&closed),
+            |_| Ok(FileIdentity { volume, index }),
+        );
+        assert!(
+            matches!(result, Err(Error::Io(ref e)) if e.to_string() == "transcript changed while opening")
+        );
+        assert!(closed.get(), "refusal leaked the opened file");
+    }
+    #[test]
+    fn changed_volume_refuses_and_closes_file() {
+        changed_identity_closes_file(3, 2);
+    }
+    #[test]
+    fn changed_index_refuses_and_closes_file() {
+        changed_identity_closes_file(1, 3);
+    }
+    #[test]
+    fn unchanged_identity_keeps_file_open() {
+        let closed = Cell::new(false);
+        let id = FileIdentity {
+            volume: 1,
+            index: 2,
+        };
+        let opened = verified_file(id, Opened(&closed), |_| Ok(id)).ok().unwrap();
+        assert!(!closed.get());
+        drop(opened);
+        assert!(closed.get());
     }
 }
