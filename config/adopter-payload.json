@@ -413,7 +413,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/native-artifacts.yml",
-      "sha256": "e943acc9e8abecb3c165bbebe9d788e292557c2b7edadb3452c64e2ea95212f6"
+      "sha256": "6df956832842180f582da7b01f7b191275280ea9aab54caa17288362bcbc76d9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2279,7 +2279,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/mir-executor-sync.md",
-      "sha256": "6828e4d4e5fdd9b39a20de35b14f23d875446df4bb6626016afa77a04ff1f1d6"
+      "sha256": "a69087750647ea6a0dbe1cfe40b5d382147a522f4f37961a6c79984eba7bea43"
     },
     {
       "classification": "reference",
@@ -2783,7 +2783,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/Cargo.toml",
-      "sha256": "8660f91dc945ecb7d3cceac7c843291d3155d55be4f1a007d95981381618326b"
+      "sha256": "8886b713e1cdcaac5de75577ad47f49b68c45a91978eb5e39aeff4607cf78b50"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3084,6 +3084,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/src/patterns.rs",
       "sha256": "ada9dcd67c46eef562d8c1b620075f62c6f8078857d5a887d87907477a79954c"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/project_hooks.rs",
+      "sha256": "443712c6d549b454af1875947474538d4533e2697ef6bcf9d71cbc0c659ac05f"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3600,6 +3606,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/native_hooks.rs",
       "sha256": "cbb369a5b010c1e74c1b2eaf4fdc73fadfb18a4abe806500878e1549999f9504"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/project_hooks.rs",
+      "sha256": "7c2809cab6e096abdcc753a1eead015d390e39f858ffd4019e658f95fff19c2d"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4955,7 +4967,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/cli/_adoption_native.py",
-      "sha256": "11f4611e956475e1cc9366b0f4898510e2183232ea64286ee9b0b51d2a4a10cd"
+      "sha256": "07af17d2e2bdc1ef02f49a84f3465c14cb75c99b374b5ba1ece738447bcd7031"
     },
     {
       "classification": "optional-consumer-tool",
@@ -5093,7 +5105,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/native.py",
-      "sha256": "d27c3a55afac372e042d544bd5f3d2a42059b9e1069bfb32d227d67e6a981e8b"
+      "sha256": "c4b05fedbd44f91d15863eed0a14210de99b139e3cab5b90b1185023290ec77a"
     },
     {
       "classification": "optional-consumer-tool",
@@ -5819,7 +5831,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_native_artifacts.py",
-      "sha256": "9683490412b6a492d12e314c939ecc5fdd700c871bd3327824114b8558476215"
+      "sha256": "a30790c2f95fe41d15ea619ed54886da0850012389fd0aaac4ab3a18366a27cd"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5987,7 +5999,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_sync.py",
-      "sha256": "df8b491f6213a7ddf2de23b1599b79cfa44951046e2836780e7fd0d41365311d"
+      "sha256": "063132914cc9ca9d9eb681c5a7e69a4cb8ba4251859bf732835ee065a3408196"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6221,7 +6233,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_native_release.py",
-      "sha256": "61ef32d0fdc9257748e841d77cacbc6be99fc0696b4fdeb1abb0c35604501d21"
+      "sha256": "1504fe9ae3487a527a346b25722ac807cfbc8177ae4e0350f81e63498445cc32"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6545,7 +6557,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tools/executor_sync.py",
-      "sha256": "0ce23401f819903f4168feef9032f4dbac97e7c1927723b845340c9f94c168f3"
+      "sha256": "626750298134558733455a2102f10fd6e095c3f380b091d5e9240de54a7a2ad6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6989,7 +7001,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tools/native_release.py",
-      "sha256": "a265b508cf0f82ee480eba0450d65e6815aabb32d60c7a26745d94e1a46313f9"
+      "sha256": "516e0ce913f892d524cea682924c45c69d6ab4363a56e7d1fcb518b33fe7b3a2"
     },
     {
       "classification": "optional-consumer-tool",

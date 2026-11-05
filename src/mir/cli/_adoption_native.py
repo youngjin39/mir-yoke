@@ -42,6 +42,11 @@ def install_delegation_gate(root: Path, *, source_root: Path) -> dict[str, str] 
     return _install(root, source_root=source_root, name="delegation-gate")
 
 
+def install_project_hooks(root: Path, *, source_root: Path) -> dict[str, str] | None:
+    """Pin generic project hooks when the provider lock has a released host artifact."""
+    return _install(root, source_root=source_root, name="project-hooks")
+
+
 def _install(
     root: Path, *, source_root: Path, name: str, local_source: Path | None = None,
 ) -> dict[str, str] | None:

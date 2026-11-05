@@ -863,3 +863,39 @@ and installs the binary. There is no shell policy fallback or jq/Python dependen
 
 Windows execution, Claude exec-form registration, and per-target release digests
 require validation with the built release artifacts on the target platform.
+
+
+## Native release inventory and generic project hooks
+
+The native release train declares eight binaries: `handoff-packet`,
+`runtime-continuity`, `bootstrap-gate`, `runtime-verify`, `executor-query`,
+`delegation-gate`, `project-hooks` (all from `native/handoff-packet`) and
+`mir-mcp` (from `native/mir-mcp`). The native-artifacts workflow builds each
+for macOS arm64/x86_64, Linux arm64/x86_64 and Windows x86_64 MSVC. Publication
+requires 40 binaries plus five target checksum files, or 45 assets.
+`tools/native_release.py` rejects missing assets, wrong sizes and wrong SHA-256
+digests before writing any pins.
+
+`project-hooks` is a source-only release declaration until its first native
+prerelease is published and verified. The tracked capability lock keeps existing
+released pins and omits `project-hooks`; it must not contain fabricated pins.
+The optional `native_artifacts` validation schema already admits omitted binary
+records. Neither a Cargo declaration nor a release inventory entry implies a
+released or installed artifact. Binding a complete published prerelease adds
+`project-hooks` through the same `plugin`, `install_path`, `targets` record
+shape as the other lifecycle binaries, with a URL, SHA-256 and size per target.
+
+Capability placement uses `mir-lifecycle-hooks/bin/project-hooks` (with `.exe`
+on Windows), verifies size and SHA-256 and excludes only verified declared
+artifacts from the strict source-tree view. Explicit executor sync with `--apply`
+can also install the host-pinned binary at `.mir/bin/project-hooks` (or `.exe`),
+then atomically write `.mir/bin/project-hooks.json` with `path` and `sha256`.
+Sync checks verify this receipt when present. Without a released host pin, sync
+skips installation and removes a stale receipt; dry-run never installs it.
+Existing binaries are preserved when no replacement is available.
+
+The initial entrypoint only supports `capabilities`, which prints
+`mir-project-hooks-v1` and exits 0, and `--mir-warmup`, which returns silently
+before dispatch without reading stdin. Missing or unknown subcommands exit 64
+with an explicit diagnostic. Hook families, launchers and registrations are
+reserved for later slices; installing the binary registers no hooks.

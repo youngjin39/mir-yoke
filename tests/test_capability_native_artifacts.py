@@ -46,13 +46,17 @@ def test_host_target(system, machine, expected):
     assert api().host_target(system, machine) == expected
 
 
+@pytest.mark.parametrize("name", ["handoff-packet", "project-hooks"])
 @pytest.mark.parametrize("uri", [False, True])
 @pytest.mark.parametrize("target", ["aarch64-apple-darwin", "x86_64-pc-windows-msvc"])
-def test_placement(tmp_path, monkeypatch, uri, target):
+def test_placement(tmp_path, monkeypatch, uri, target, name):
     source = tmp_path / "source"
     source.write_bytes(DATA)
     records = manifest(source.as_uri() if uri else str(source))
-    records["handoff-packet"]["targets"][target] = records["handoff-packet"]["targets"].pop(
+    records[name] = records.pop("handoff-packet")
+    records[name]["install_path"] = f"bin/{name}"
+    assert api().validate_artifacts(records, {"mir-lifecycle-hooks"}) == records
+    records[name]["targets"][target] = records[name]["targets"].pop(
         "aarch64-apple-darwin"
     )
     root = tmp_path / "plugin"
@@ -60,7 +64,7 @@ def test_placement(tmp_path, monkeypatch, uri, target):
     (root / "reference").write_bytes(b"python")
     monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "1")
     api().place_artifacts(root, "mir-lifecycle-hooks", records, target=target)
-    path = root / ("bin/handoff-packet.exe" if "windows" in target else "bin/handoff-packet")
+    path = root / (f"bin/{name}" + (".exe" if "windows" in target else ""))
     assert path.read_bytes() == DATA
     assert path.stat().st_mode & 0o111
     with api().source_tree(root, "mir-lifecycle-hooks", records, target=target) as view:
@@ -628,3 +632,15 @@ def test_update_warms_each_runtime_cache_copy(tmp_path, monkeypatch, target):
         assert sum(str(claude / "plugins/cache") in argv[0] for argv in calls) == 1
     else:
         assert calls == []
+
+
+@pytest.mark.parametrize("field,value", [
+    ("sha256", "bad"), ("size", 0), ("url", ""),
+])
+def test_project_hooks_schema_rejects_invalid_pin(field, value):
+    records = manifest()
+    records["project-hooks"] = records.pop("handoff-packet")
+    records["project-hooks"]["install_path"] = "bin/project-hooks"
+    records["project-hooks"]["targets"]["aarch64-apple-darwin"][field] = value
+    with pytest.raises(ValueError, match="invalid native artifact target pin"):
+        api().validate_artifacts(records, {"mir-lifecycle-hooks"})

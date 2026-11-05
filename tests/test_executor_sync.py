@@ -303,7 +303,7 @@ def test_should_leave_git_index_unchanged_during_dry_run(source, tmp_path):
     assert index.read_bytes() == before
 
 
-@pytest.mark.parametrize('name', ['executor-query', 'delegation-gate'])
+@pytest.mark.parametrize('name', ['executor-query', 'delegation-gate', 'project-hooks'])
 def test_should_remove_stale_local_pin_when_host_artifact_disappears(
     source, tmp_path, monkeypatch, name,
 ):
@@ -377,31 +377,39 @@ def test_should_preserve_pin_if_atomic_replace_fails(tmp_path, monkeypatch):
     assert pin.read_bytes() == b'old pin'
 
 
+@pytest.mark.parametrize('name,label', [
+    ('delegation-gate', 'gate'), ('project-hooks', 'project hooks'),
+])
 @pytest.mark.parametrize('host', ['aarch64-apple-darwin', 'x86_64-pc-windows-msvc'])
-def test_should_install_provider_pinned_delegation_gate(source, tmp_path, monkeypatch, host):
-    lock = _native_source(source, monkeypatch, target=host, name='delegation-gate')
+def test_should_install_provider_pinned_hook_binary(
+    source, tmp_path, monkeypatch, host, name, label,
+):
+    lock = _native_source(source, monkeypatch, target=host, name=name)
     api = _api()
     api.generate_manifest(source)
     target = _target(tmp_path)
     assert api.main(['--target', str(target), '--source-root', str(source), '--apply']) == 0
-    relative = '.mir/bin/delegation-gate' + ('.exe' if 'windows' in host else '')
-    pin = lock['native_artifacts']['delegation-gate']['targets'][host]
-    assert json.loads((target / '.mir/bin/delegation-gate.json').read_text()) == {
+    relative = f'.mir/bin/{name}' + ('.exe' if 'windows' in host else '')
+    pin = lock['native_artifacts'][name]['targets'][host]
+    assert json.loads((target / f'.mir/bin/{name}.json').read_text()) == {
         'path': relative, 'sha256': pin['sha256'],
     }
     binary = target / relative
-    assert binary.read_bytes() == (source / 'delegation-gate').read_bytes()
+    assert binary.read_bytes() == (source / name).read_bytes()
     assert binary.stat().st_mode & 0o111
     assert api.check(target, source_root=None) == []
     binary.write_bytes(b'tampered')
-    assert api.check(target, source_root=None) == ['native gate drift: delegation-gate']
+    assert api.check(target, source_root=None) == [f'native {label} drift: {name}']
 
 
-@pytest.mark.parametrize('guard', ['missing_host', 'hash', 'disabled', 'symlink'])
-def test_should_omit_unavailable_delegation_gate_pin(source, tmp_path, monkeypatch, guard):
-    lock = _native_source(source, monkeypatch, name='delegation-gate')
-    record = lock['native_artifacts']['delegation-gate']
-    if guard == 'missing_host':
+@pytest.mark.parametrize('name', ['delegation-gate', 'project-hooks'])
+@pytest.mark.parametrize('guard', ['unreleased', 'missing_host', 'hash', 'disabled', 'symlink'])
+def test_should_omit_unavailable_hook_pin(source, tmp_path, monkeypatch, guard, name):
+    lock = _native_source(source, monkeypatch, name=name)
+    record = lock['native_artifacts'][name]
+    if guard == 'unreleased':
+        del lock['native_artifacts'][name]
+    elif guard == 'missing_host':
         record['targets'] = {}
     elif guard == 'hash':
         record['targets']['aarch64-apple-darwin']['sha256'] = '0' * 64
@@ -416,17 +424,18 @@ def test_should_omit_unavailable_delegation_gate_pin(source, tmp_path, monkeypat
         outside.mkdir()
         (target / '.mir').symlink_to(outside, target_is_directory=True)
     else:
-        pin = target / '.mir/bin/delegation-gate.json'
+        pin = target / f'.mir/bin/{name}.json'
         pin.parent.mkdir(parents=True)
         pin.write_text('{}')
     api.sync(target, source_root=source, apply=True)
-    assert not (target / '.mir/bin/delegation-gate.json').exists()
-    assert not (target / '.mir/bin/delegation-gate').exists()
+    assert not (target / f'.mir/bin/{name}.json').exists()
+    assert not (target / f'.mir/bin/{name}').exists()
     assert api.check(target, source_root=None) == []
 
 
-def test_should_never_install_delegation_gate_during_dry_run(source, tmp_path, monkeypatch):
-    _native_source(source, monkeypatch, name='delegation-gate')
+@pytest.mark.parametrize('name', ['delegation-gate', 'project-hooks'])
+def test_should_never_install_hook_during_dry_run(source, tmp_path, monkeypatch, name):
+    _native_source(source, monkeypatch, name=name)
     api = _api()
     api.generate_manifest(source)
     target = _target(tmp_path)

@@ -42,3 +42,7 @@ path = "src/executor_query.rs"
 [[bin]]
 name = "delegation-gate"
 path = "src/delegation_gate.rs"
+
+[[bin]]
+name = "project-hooks"
+path = "src/project_hooks.rs"

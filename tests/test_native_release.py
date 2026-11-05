@@ -16,7 +16,7 @@ TARGETS = (
 )
 NAMES = (
     'handoff-packet', 'runtime-continuity', 'bootstrap-gate', 'runtime-verify', 'executor-query',
-    'delegation-gate', 'mir-mcp',
+    'delegation-gate', 'project-hooks', 'mir-mcp',
 )
 SOURCE = 'a' * 40
 TAG = 'native-' + SOURCE[:12]
@@ -272,3 +272,26 @@ def test_native_workflow_smokes_delegation_gate():
     smoke = next(step['run'] for step in workflow['jobs']['build']['steps']
                  if step.get('name') == 'smoke run')
     assert 'delegation-gate${{ matrix.exe }}' in smoke
+
+
+def test_rejects_missing_project_hooks_windows_asset_without_lock_writes(assets):
+    directory, lock = assets
+    path = directory / 'release.json'
+    release = json.loads(path.read_text())
+    missing = 'project-hooks-x86_64-pc-windows-msvc.exe'
+    release['assets'] = [asset for asset in release['assets'] if asset['name'] != missing]
+    (directory / missing).unlink()
+    path.write_text(json.dumps(release))
+    before = lock.read_bytes()
+    result = run_tool(directory, lock)
+    assert result.returncode == 1 and b'incomplete release' in result.stderr
+    assert lock.read_bytes() == before
+
+
+def test_native_workflow_smokes_project_hooks():
+    workflow = yaml.safe_load((ROOT / '.github/workflows/native-artifacts.yml').read_text())
+    smoke = next(step['run'] for step in workflow['jobs']['build']['steps']
+                 if step.get('name') == 'smoke run')
+    assert 'project-hooks${{ matrix.exe }}' in smoke
+    assert 'mir-project-hooks-v1' in smoke
+    assert '--mir-warmup' in smoke

@@ -35,7 +35,12 @@ def host_target(system: str | None = None, machine: str | None = None) -> str | 
 
 
 def validate_artifacts(records: object, plugins, *, portable: bool = False) -> dict:
-    """Validate the optional section, with stricter source portability for published locks."""
+    """Validate lock records, with stricter portability for published locks.
+
+    Binary names are open, not a release inventory. A source-declared binary
+    (for example project-hooks) may be omitted until published pins exist; no
+    declaration synthesizes a URL, digest or installation.
+    """
     if not isinstance(records, dict):
         raise ValueError("native artifacts must be an object")
     paths = set()

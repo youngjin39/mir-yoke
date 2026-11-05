@@ -28,6 +28,7 @@ BINARIES = {
     "runtime-verify": "mir-lifecycle-hooks",
     "executor-query": "mir-lifecycle-hooks",
     "delegation-gate": "mir-lifecycle-hooks",
+    "project-hooks": "mir-lifecycle-hooks",
     "mir-mcp": "mir-mcp",
 }
 

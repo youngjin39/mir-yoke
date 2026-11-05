@@ -151,12 +151,18 @@ def sync(target: pathlib.Path, *, source_root: pathlib.Path = SOURCE_ROOT,
     if dirty:
         raise ValueError(f'Refusing dirty common files in {target}:\n{dirty}')
     if apply:
-        from mir.cli._adoption_native import install_delegation_gate, install_executor_query
+        from mir.cli._adoption_native import (
+            install_delegation_gate,
+            install_executor_query,
+            install_project_hooks,
+        )
 
         pin = install_executor_query(target, source_root=source_root)
         _write_query_pin(target, pin)
         gate_pin = install_delegation_gate(target, source_root=source_root)
         _write_native_pin(target, 'delegation-gate', gate_pin)
+        hooks_pin = install_project_hooks(target, source_root=source_root)
+        _write_native_pin(target, 'project-hooks', hooks_pin)
     lines = [f'{"APPLY" if apply else "DRY-RUN"} {target}',
              f'Source commit: {deployed["source_commit"]}']
     for name, content in payloads.items():
@@ -201,7 +207,10 @@ def check(target: pathlib.Path, *, source_root: pathlib.Path | None = SOURCE_ROO
                 errors.append(f'target drift: {name}')
         except ValueError as exc:
             errors.append(str(exc))
-    for name, label in [('executor-query', 'query'), ('delegation-gate', 'gate')]:
+    for name, label in [
+        ('executor-query', 'query'), ('delegation-gate', 'gate'),
+        ('project-hooks', 'project hooks'),
+    ]:
         relative = f'.mir/bin/{name}.json'
         pin_path = target / relative
         if not (pin_path.exists() or pin_path.is_symlink()):
