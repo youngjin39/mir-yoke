@@ -1,0 +1,1575 @@
+[
+  {
+    "id": "mir-stop:empty",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "empty",
+    "stdin": "",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAnJwpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICcnCmN3ZDogJ0BUTVBAJwpob29rX2V2ZW50X25hbWU6ICdTdG9wJwo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:missing",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "missing",
+    "stdin": "e30=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAnJwpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICcnCmN3ZDogJ0BUTVBAJwpob29rX2V2ZW50X25hbWU6ICdTdG9wJwo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:malformed",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "malformed",
+    "stdin": "ew==",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApwYXJzZV9lcnJvcjogJ0V4cGVjdGluZyBwcm9wZXJ0eSBuYW1lIGVuY2xvc2VkIGluIGRvdWJsZSBxdW90ZXM6IGxpbmUgMSBjb2x1bW4gMiAoY2hhciAxKScKc3RvcF9ob29rX2FjdGl2ZTogcGFyc2UtZmFpbHVyZQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython JSON parse exception text is retired; native uses invalid JSON."
+  },
+  {
+    "id": "mir-stop:list",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "list",
+    "stdin": "W10=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIkBUTVBAL3RtcC9yZWZlcmVuY2UucHkiLCBsaW5lIDM0LCBpbiA8bW9kdWxlPgogICAgc3RvcF9ob29rX2FjdGl2ZSA9IGV2ZW50LmdldCgic3RvcF9ob29rX2FjdGl2ZSIsICIiKQogICAgICAgICAgICAgICAgICAgICAgIF5eXl5eXl5eXgpBdHRyaWJ1dGVFcnJvcjogJ2xpc3QnIG9iamVjdCBoYXMgbm8gYXR0cmlidXRlICdnZXQnCg==",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython non-object AttributeError traceback is retired; native creates the sessions directory and no log or traceback."
+  },
+  {
+    "id": "mir-stop:null",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "null",
+    "stdin": "bnVsbA==",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIkBUTVBAL3RtcC9yZWZlcmVuY2UucHkiLCBsaW5lIDM0LCBpbiA8bW9kdWxlPgogICAgc3RvcF9ob29rX2FjdGl2ZSA9IGV2ZW50LmdldCgic3RvcF9ob29rX2FjdGl2ZSIsICIiKQogICAgICAgICAgICAgICAgICAgICAgIF5eXl5eXl5eXgpBdHRyaWJ1dGVFcnJvcjogJ05vbmVUeXBlJyBvYmplY3QgaGFzIG5vIGF0dHJpYnV0ZSAnZ2V0Jwo=",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython non-object AttributeError traceback is retired; native creates the sessions directory and no log or traceback."
+  },
+  {
+    "id": "mir-stop:scalar",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "scalar",
+    "stdin": "NDI=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIkBUTVBAL3RtcC9yZWZlcmVuY2UucHkiLCBsaW5lIDM0LCBpbiA8bW9kdWxlPgogICAgc3RvcF9ob29rX2FjdGl2ZSA9IGV2ZW50LmdldCgic3RvcF9ob29rX2FjdGl2ZSIsICIiKQogICAgICAgICAgICAgICAgICAgICAgIF5eXl5eXl5eXgpBdHRyaWJ1dGVFcnJvcjogJ2ludCcgb2JqZWN0IGhhcyBubyBhdHRyaWJ1dGUgJ2dldCcK",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython non-object AttributeError traceback is retired; native creates the sessions directory and no log or traceback."
+  },
+  {
+    "id": "mir-stop:string-root",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "string-root",
+    "stdin": "Ingi",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIkBUTVBAL3RtcC9yZWZlcmVuY2UucHkiLCBsaW5lIDM0LCBpbiA8bW9kdWxlPgogICAgc3RvcF9ob29rX2FjdGl2ZSA9IGV2ZW50LmdldCgic3RvcF9ob29rX2FjdGl2ZSIsICIiKQogICAgICAgICAgICAgICAgICAgICAgIF5eXl5eXl5eXgpBdHRyaWJ1dGVFcnJvcjogJ3N0cicgb2JqZWN0IGhhcyBubyBhdHRyaWJ1dGUgJ2dldCcK",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython non-object AttributeError traceback is retired; native creates the sessions directory and no log or traceback."
+  },
+  {
+    "id": "mir-stop:type-0",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-0",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogInBsYWluIiwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiAicGxhaW4iLCAiY3dkIjogInBsYWluIiwgImhvb2tfZXZlbnRfbmFtZSI6ICJwbGFpbiIsICJzZXNzaW9uX2lkIjogInBsYWluIiwgImVycm9yX3R5cGUiOiAicGxhaW4iLCAidHJhbnNjcmlwdF9wYXRoIjogInBsYWluIn0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAncGxhaW4nCmxhc3RfYXNzaXN0YW50X21lc3NhZ2Vfc25pcHBldDogJ3BsYWluJwpjd2Q6ICdwbGFpbicKaG9va19ldmVudF9uYW1lOiAncGxhaW4nCg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-1",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-1",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogNDIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogNDIsICJjd2QiOiA0MiwgImhvb2tfZXZlbnRfbmFtZSI6IDQyLCAic2Vzc2lvbl9pZCI6IDQyLCAiZXJyb3JfdHlwZSI6IDQyLCAidHJhbnNjcmlwdF9wYXRoIjogNDJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiA0MgpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICc0MicKY3dkOiA0Mgpob29rX2V2ZW50X25hbWU6IDQyCg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-2",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-2",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogLTIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogLTIsICJjd2QiOiAtMiwgImhvb2tfZXZlbnRfbmFtZSI6IC0yLCAic2Vzc2lvbl9pZCI6IC0yLCAiZXJyb3JfdHlwZSI6IC0yLCAidHJhbnNjcmlwdF9wYXRoIjogLTJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAtMgpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICctMicKY3dkOiAtMgpob29rX2V2ZW50X25hbWU6IC0yCg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-3",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-3",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogMS4yNSwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiAxLjI1LCAiY3dkIjogMS4yNSwgImhvb2tfZXZlbnRfbmFtZSI6IDEuMjUsICJzZXNzaW9uX2lkIjogMS4yNSwgImVycm9yX3R5cGUiOiAxLjI1LCAidHJhbnNjcmlwdF9wYXRoIjogMS4yNX0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAxLjI1Cmxhc3RfYXNzaXN0YW50X21lc3NhZ2Vfc25pcHBldDogJzEuMjUnCmN3ZDogMS4yNQpob29rX2V2ZW50X25hbWU6IDEuMjUK",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-4",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-4",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogdHJ1ZSwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiB0cnVlLCAiY3dkIjogdHJ1ZSwgImhvb2tfZXZlbnRfbmFtZSI6IHRydWUsICJzZXNzaW9uX2lkIjogdHJ1ZSwgImVycm9yX3R5cGUiOiB0cnVlLCAidHJhbnNjcmlwdF9wYXRoIjogdHJ1ZX0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiBUcnVlCmxhc3RfYXNzaXN0YW50X21lc3NhZ2Vfc25pcHBldDogJ1RydWUnCmN3ZDogVHJ1ZQpob29rX2V2ZW50X25hbWU6IFRydWUK",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-5",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-5",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogZmFsc2UsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogZmFsc2UsICJjd2QiOiBmYWxzZSwgImhvb2tfZXZlbnRfbmFtZSI6IGZhbHNlLCAic2Vzc2lvbl9pZCI6IGZhbHNlLCAiZXJyb3JfdHlwZSI6IGZhbHNlLCAidHJhbnNjcmlwdF9wYXRoIjogZmFsc2V9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiBGYWxzZQpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICdGYWxzZScKY3dkOiBGYWxzZQpob29rX2V2ZW50X25hbWU6IEZhbHNlCg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-6",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-6",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogbnVsbCwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiBudWxsLCAiY3dkIjogbnVsbCwgImhvb2tfZXZlbnRfbmFtZSI6IG51bGwsICJzZXNzaW9uX2lkIjogbnVsbCwgImVycm9yX3R5cGUiOiBudWxsLCAidHJhbnNjcmlwdF9wYXRoIjogbnVsbH0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiBOb25lCmxhc3RfYXNzaXN0YW50X21lc3NhZ2Vfc25pcHBldDogJ05vbmUnCmN3ZDogTm9uZQpob29rX2V2ZW50X25hbWU6IE5vbmUK",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-7",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-7",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogWzEsICJ4IiwgZmFsc2VdLCAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSI6IFsxLCAieCIsIGZhbHNlXSwgImN3ZCI6IFsxLCAieCIsIGZhbHNlXSwgImhvb2tfZXZlbnRfbmFtZSI6IFsxLCAieCIsIGZhbHNlXSwgInNlc3Npb25faWQiOiBbMSwgIngiLCBmYWxzZV0sICJlcnJvcl90eXBlIjogWzEsICJ4IiwgZmFsc2VdLCAidHJhbnNjcmlwdF9wYXRoIjogWzEsICJ4IiwgZmFsc2VdfQ==",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiBbMSwgJ3gnLCBGYWxzZV0KbGFzdF9hc3Npc3RhbnRfbWVzc2FnZV9zbmlwcGV0OiAiWzEsICd4JywgRmFsc2VdIgpjd2Q6IFsxLCAneCcsIEZhbHNlXQpob29rX2V2ZW50X25hbWU6IFsxLCAneCcsIEZhbHNlXQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-8",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-8",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogeyJ6IjogMSwgImEiOiBbbnVsbCwgdHJ1ZV19LCAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSI6IHsieiI6IDEsICJhIjogW251bGwsIHRydWVdfSwgImN3ZCI6IHsieiI6IDEsICJhIjogW251bGwsIHRydWVdfSwgImhvb2tfZXZlbnRfbmFtZSI6IHsieiI6IDEsICJhIjogW251bGwsIHRydWVdfSwgInNlc3Npb25faWQiOiB7InoiOiAxLCAiYSI6IFtudWxsLCB0cnVlXX0sICJlcnJvcl90eXBlIjogeyJ6IjogMSwgImEiOiBbbnVsbCwgdHJ1ZV19LCAidHJhbnNjcmlwdF9wYXRoIjogeyJ6IjogMSwgImEiOiBbbnVsbCwgdHJ1ZV19fQ==",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiB7J3onOiAxLCAnYSc6IFtOb25lLCBUcnVlXX0KbGFzdF9hc3Npc3RhbnRfbWVzc2FnZV9zbmlwcGV0OiAieyd6JzogMSwgJ2EnOiBbTm9uZSwgVHJ1ZV19Igpjd2Q6IHsneic6IDEsICdhJzogW05vbmUsIFRydWVdfQpob29rX2V2ZW50X25hbWU6IHsneic6IDEsICdhJzogW05vbmUsIFRydWVdfQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-9",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-9",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogImNhbid0IiwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiAiY2FuJ3QiLCAiY3dkIjogImNhbid0IiwgImhvb2tfZXZlbnRfbmFtZSI6ICJjYW4ndCIsICJzZXNzaW9uX2lkIjogImNhbid0IiwgImVycm9yX3R5cGUiOiAiY2FuJ3QiLCAidHJhbnNjcmlwdF9wYXRoIjogImNhbid0In0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAiY2FuJ3QiCmxhc3RfYXNzaXN0YW50X21lc3NhZ2Vfc25pcHBldDogImNhbid0Igpjd2Q6ICJjYW4ndCIKaG9va19ldmVudF9uYW1lOiAiY2FuJ3QiCg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-10",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-10",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMFx1MDBhMFx1MjAwYlx1ZTAwMCIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMFx1MDBhMFx1MjAwYlx1ZTAwMCIsICJjd2QiOiAiYm90aCdcIlxcXG5cdFxyXHUwMDAwXHUwMGEwXHUyMDBiXHVlMDAwIiwgImhvb2tfZXZlbnRfbmFtZSI6ICJib3RoJ1wiXFxcblx0XHJcdTAwMDBcdTAwYTBcdTIwMGJcdWUwMDAiLCAic2Vzc2lvbl9pZCI6ICJib3RoJ1wiXFxcblx0XHJcdTAwMDBcdTAwYTBcdTIwMGJcdWUwMDAiLCAiZXJyb3JfdHlwZSI6ICJib3RoJ1wiXFxcblx0XHJcdTAwMDBcdTAwYTBcdTIwMGJcdWUwMDAiLCAidHJhbnNjcmlwdF9wYXRoIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMFx1MDBhMFx1MjAwYlx1ZTAwMCJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAnYm90aFwnIlxcXG5cdFxyXHgwMFx4YTBcdTIwMGJcdWUwMDAnCmxhc3RfYXNzaXN0YW50X21lc3NhZ2Vfc25pcHBldDogJ2JvdGhcJyJcXFxuXHRcclx4MDBceGEwXHUyMDBiXHVlMDAwJwpjd2Q6ICdib3RoXCciXFxcblx0XHJceDAwXHhhMFx1MjAwYlx1ZTAwMCcKaG9va19ldmVudF9uYW1lOiAnYm90aFwnIlxcXG5cdFxyXHgwMFx4YTBcdTIwMGJcdWUwMDAnCg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-11",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-11",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogIlx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMCIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogIlx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMCIsICJjd2QiOiAiXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwIiwgImhvb2tfZXZlbnRfbmFtZSI6ICJcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDAiLCAic2Vzc2lvbl9pZCI6ICJcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDAiLCAiZXJyb3JfdHlwZSI6ICJcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDAiLCAidHJhbnNjcmlwdF9wYXRoIjogIlx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMCJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAn7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iAJwpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICftlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riAJwpjd2Q6ICftlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIAnCmhvb2tfZXZlbnRfbmFtZTogJ+2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgCcK",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:type-12",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "type-12",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogInh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eCIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogInh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eCIsICJjd2QiOiAieHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4IiwgImhvb2tfZXZlbnRfbmFtZSI6ICJ4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHgiLCAic2Vzc2lvbl9pZCI6ICJ4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHgiLCAiZXJyb3JfdHlwZSI6ICJ4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHgiLCAidHJhbnNjcmlwdF9wYXRoIjogInh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eCJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAneHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4JwpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICd4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eCcKY3dkOiAneHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4Jwpob29rX2V2ZW50X25hbWU6ICd4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHgnCg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:unicode-order",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "unicode-order",
+    "stdin": "eyJjd2QiOnsieiI6MSwiYSI6eyJkIjpmYWxzZSwiYyI6bnVsbH19LCJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjoiXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwIiwic3RvcF9ob29rX2FjdGl2ZSI6Ilx1MjAyOFx1MDA4NSJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAnXHUyMDI4XHg4NScKbGFzdF9hc3Npc3RhbnRfbWVzc2FnZV9zbmlwcGV0OiAn7ZWc6riA8J+YgCcKY3dkOiB7J3onOiAxLCAnYSc6IHsnZCc6IEZhbHNlLCAnYyc6IE5vbmV9fQpob29rX2V2ZW50X25hbWU6ICdTdG9wJwo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:duplicate",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "duplicate",
+    "stdin": "eyJjd2QiOnsieiI6MSwiYSI6MiwieiI6M319",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAnJwpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICcnCmN3ZDogeyd6JzogMywgJ2EnOiAyfQpob29rX2V2ZW50X25hbWU6ICdTdG9wJwo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:unwritable",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "unwritable",
+    "stdin": "e30=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      },
+      "tasks/sessions": {
+        "directory": true,
+        "mode": 365
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "bWlyLXN0b3A6IHdhcm5pbmc6IGNvdWxkIG5vdCB3cml0ZSBhdWRpdCBsb2c6IFtFcnJubyAxM10gUGVybWlzc2lvbiBkZW5pZWQ6ICdAVE1QQC9wcm9qZWN0L3Rhc2tzL3Nlc3Npb25zL3N0b3AtQFRJTUVALUBQSURALUBSQU5ET01ALmxvZycK",
+      "delta": {},
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:existing",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "existing",
+    "stdin": "e30=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      },
+      "tasks/sessions/stop-20000101T000000Z-1-abcdef.log": {
+        "base64": "c2VudGluZWwK",
+        "mode": 420
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAnJwpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICcnCmN3ZDogJ0BUTVBAJwpob29rX2V2ZW50X25hbWU6ICdTdG9wJwo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "mir-stop:review",
+    "family": ".claude/hooks/mir-stop.sh",
+    "case": "review",
+    "stdin": "eyJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjoicmV2aWV3In0KCg==",
+    "env": {
+      "MIR_REVIEW_GATE": "1"
+    },
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      },
+      "tools/__init__.py": {
+        "base64": "",
+        "mode": 420
+      },
+      "tools/mir_executor.py": {
+        "base64": "aW1wb3J0IGpzb24sc3lzCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aApQYXRoKCJyZXZpZXctYXJndi5qc29uIikud3JpdGVfdGV4dChqc29uLmR1bXBzKHN5cy5hcmd2WzE6XSkpCnN5cy5leGl0KDkpCg==",
+        "mode": 420
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "review-argv.json": {
+          "base64": "WyJleGVjdXRlIiwgIi0tYmFja2dyb3VuZCIsICItLWNoYW5nZS1pZCIsICJhdXRvLXJldmlldy1AVElNRUAtZjMwZjI4NzIzZmI1IiwgIi0tY2F0ZWdvcnkiLCAicmV2aWV3IiwgIi0tY29kZXgtYXJncyIsICJleGVjIC0tcmV2aWV3IiwgIi0tZmFtaWx5IiwgInlvdXItaGFybmVzcyJd",
+          "mode": 420
+        },
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "dGltZXN0YW1wOiBAVVRDQApzdG9wX2hvb2tfYWN0aXZlOiAnJwpsYXN0X2Fzc2lzdGFudF9tZXNzYWdlX3NuaXBwZXQ6ICdyZXZpZXcnCmN3ZDogJ0BUTVBAJwpob29rX2V2ZW50X25hbWU6ICdTdG9wJwo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:empty",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "empty",
+    "stdin": "",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiBudWxsLAogICJlcnJvcl90eXBlIjogbnVsbCwKICAiaG9va19ldmVudF9uYW1lIjogbnVsbCwKICAiY3dkIjogbnVsbCwKICAidHJhbnNjcmlwdF9wYXRoIjogbnVsbCwKICAicmF3X2tleXMiOiBbXQp9Cg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:missing",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "missing",
+    "stdin": "e30=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiBudWxsLAogICJlcnJvcl90eXBlIjogbnVsbCwKICAiaG9va19ldmVudF9uYW1lIjogbnVsbCwKICAiY3dkIjogbnVsbCwKICAidHJhbnNjcmlwdF9wYXRoIjogbnVsbCwKICAicmF3X2tleXMiOiBbXQp9Cg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:malformed",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "malformed",
+    "stdin": "ew==",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IGZhbHNlLAogICJwYXJzZV9lcnJvciI6ICJFeHBlY3RpbmcgcHJvcGVydHkgbmFtZSBlbmNsb3NlZCBpbiBkb3VibGUgcXVvdGVzOiBsaW5lIDEgY29sdW1uIDIgKGNoYXIgMSkiLAogICJzZXNzaW9uX2lkIjogbnVsbCwKICAiZXJyb3JfdHlwZSI6IG51bGwsCiAgImhvb2tfZXZlbnRfbmFtZSI6IG51bGwsCiAgImN3ZCI6IG51bGwsCiAgInRyYW5zY3JpcHRfcGF0aCI6IG51bGwsCiAgInJhd19rZXlzIjogW10KfQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython JSON parse exception text is retired; native uses invalid JSON."
+  },
+  {
+    "id": "stop-failure-audit:list",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "list",
+    "stdin": "W10=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIkBUTVBAL3RtcC9yZWZlcmVuY2UucHkiLCBsaW5lIDQwLCBpbiA8bW9kdWxlPgogICAgInNlc3Npb25faWQiOiBldmVudC5nZXQoInNlc3Npb25faWQiKSwKICAgICAgICAgICAgICAgICAgXl5eXl5eXl5eCkF0dHJpYnV0ZUVycm9yOiAnbGlzdCcgb2JqZWN0IGhhcyBubyBhdHRyaWJ1dGUgJ2dldCcK",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython non-object AttributeError traceback is retired; native creates the sessions directory and no log or traceback."
+  },
+  {
+    "id": "stop-failure-audit:null",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "null",
+    "stdin": "bnVsbA==",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIkBUTVBAL3RtcC9yZWZlcmVuY2UucHkiLCBsaW5lIDQwLCBpbiA8bW9kdWxlPgogICAgInNlc3Npb25faWQiOiBldmVudC5nZXQoInNlc3Npb25faWQiKSwKICAgICAgICAgICAgICAgICAgXl5eXl5eXl5eCkF0dHJpYnV0ZUVycm9yOiAnTm9uZVR5cGUnIG9iamVjdCBoYXMgbm8gYXR0cmlidXRlICdnZXQnCg==",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython non-object AttributeError traceback is retired; native creates the sessions directory and no log or traceback."
+  },
+  {
+    "id": "stop-failure-audit:scalar",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "scalar",
+    "stdin": "NDI=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIkBUTVBAL3RtcC9yZWZlcmVuY2UucHkiLCBsaW5lIDQwLCBpbiA8bW9kdWxlPgogICAgInNlc3Npb25faWQiOiBldmVudC5nZXQoInNlc3Npb25faWQiKSwKICAgICAgICAgICAgICAgICAgXl5eXl5eXl5eCkF0dHJpYnV0ZUVycm9yOiAnaW50JyBvYmplY3QgaGFzIG5vIGF0dHJpYnV0ZSAnZ2V0Jwo=",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython non-object AttributeError traceback is retired; native creates the sessions directory and no log or traceback."
+  },
+  {
+    "id": "stop-failure-audit:string-root",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "string-root",
+    "stdin": "Ingi",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIkBUTVBAL3RtcC9yZWZlcmVuY2UucHkiLCBsaW5lIDQwLCBpbiA8bW9kdWxlPgogICAgInNlc3Npb25faWQiOiBldmVudC5nZXQoInNlc3Npb25faWQiKSwKICAgICAgICAgICAgICAgICAgXl5eXl5eXl5eCkF0dHJpYnV0ZUVycm9yOiAnc3RyJyBvYmplY3QgaGFzIG5vIGF0dHJpYnV0ZSAnZ2V0Jwo=",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "deleted": []
+    },
+    "retired": "CPython non-object AttributeError traceback is retired; native creates the sessions directory and no log or traceback."
+  },
+  {
+    "id": "stop-failure-audit:type-0",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-0",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogInBsYWluIiwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiAicGxhaW4iLCAiY3dkIjogInBsYWluIiwgImhvb2tfZXZlbnRfbmFtZSI6ICJwbGFpbiIsICJzZXNzaW9uX2lkIjogInBsYWluIiwgImVycm9yX3R5cGUiOiAicGxhaW4iLCAidHJhbnNjcmlwdF9wYXRoIjogInBsYWluIn0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiAicGxhaW4iLAogICJlcnJvcl90eXBlIjogInBsYWluIiwKICAiaG9va19ldmVudF9uYW1lIjogInBsYWluIiwKICAiY3dkIjogInBsYWluIiwKICAidHJhbnNjcmlwdF9wYXRoIjogInBsYWluIiwKICAicmF3X2tleXMiOiBbCiAgICAiY3dkIiwKICAgICJlcnJvcl90eXBlIiwKICAgICJob29rX2V2ZW50X25hbWUiLAogICAgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiLAogICAgInNlc3Npb25faWQiLAogICAgInN0b3BfaG9va19hY3RpdmUiLAogICAgInRyYW5zY3JpcHRfcGF0aCIKICBdCn0K",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-1",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-1",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogNDIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogNDIsICJjd2QiOiA0MiwgImhvb2tfZXZlbnRfbmFtZSI6IDQyLCAic2Vzc2lvbl9pZCI6IDQyLCAiZXJyb3JfdHlwZSI6IDQyLCAidHJhbnNjcmlwdF9wYXRoIjogNDJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiA0MiwKICAiZXJyb3JfdHlwZSI6IDQyLAogICJob29rX2V2ZW50X25hbWUiOiA0MiwKICAiY3dkIjogNDIsCiAgInRyYW5zY3JpcHRfcGF0aCI6IDQyLAogICJyYXdfa2V5cyI6IFsKICAgICJjd2QiLAogICAgImVycm9yX3R5cGUiLAogICAgImhvb2tfZXZlbnRfbmFtZSIsCiAgICAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSIsCiAgICAic2Vzc2lvbl9pZCIsCiAgICAic3RvcF9ob29rX2FjdGl2ZSIsCiAgICAidHJhbnNjcmlwdF9wYXRoIgogIF0KfQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-2",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-2",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogLTIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogLTIsICJjd2QiOiAtMiwgImhvb2tfZXZlbnRfbmFtZSI6IC0yLCAic2Vzc2lvbl9pZCI6IC0yLCAiZXJyb3JfdHlwZSI6IC0yLCAidHJhbnNjcmlwdF9wYXRoIjogLTJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiAtMiwKICAiZXJyb3JfdHlwZSI6IC0yLAogICJob29rX2V2ZW50X25hbWUiOiAtMiwKICAiY3dkIjogLTIsCiAgInRyYW5zY3JpcHRfcGF0aCI6IC0yLAogICJyYXdfa2V5cyI6IFsKICAgICJjd2QiLAogICAgImVycm9yX3R5cGUiLAogICAgImhvb2tfZXZlbnRfbmFtZSIsCiAgICAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSIsCiAgICAic2Vzc2lvbl9pZCIsCiAgICAic3RvcF9ob29rX2FjdGl2ZSIsCiAgICAidHJhbnNjcmlwdF9wYXRoIgogIF0KfQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-3",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-3",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogMS4yNSwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiAxLjI1LCAiY3dkIjogMS4yNSwgImhvb2tfZXZlbnRfbmFtZSI6IDEuMjUsICJzZXNzaW9uX2lkIjogMS4yNSwgImVycm9yX3R5cGUiOiAxLjI1LCAidHJhbnNjcmlwdF9wYXRoIjogMS4yNX0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiAxLjI1LAogICJlcnJvcl90eXBlIjogMS4yNSwKICAiaG9va19ldmVudF9uYW1lIjogMS4yNSwKICAiY3dkIjogMS4yNSwKICAidHJhbnNjcmlwdF9wYXRoIjogMS4yNSwKICAicmF3X2tleXMiOiBbCiAgICAiY3dkIiwKICAgICJlcnJvcl90eXBlIiwKICAgICJob29rX2V2ZW50X25hbWUiLAogICAgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiLAogICAgInNlc3Npb25faWQiLAogICAgInN0b3BfaG9va19hY3RpdmUiLAogICAgInRyYW5zY3JpcHRfcGF0aCIKICBdCn0K",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-4",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-4",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogdHJ1ZSwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiB0cnVlLCAiY3dkIjogdHJ1ZSwgImhvb2tfZXZlbnRfbmFtZSI6IHRydWUsICJzZXNzaW9uX2lkIjogdHJ1ZSwgImVycm9yX3R5cGUiOiB0cnVlLCAidHJhbnNjcmlwdF9wYXRoIjogdHJ1ZX0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiB0cnVlLAogICJlcnJvcl90eXBlIjogdHJ1ZSwKICAiaG9va19ldmVudF9uYW1lIjogdHJ1ZSwKICAiY3dkIjogdHJ1ZSwKICAidHJhbnNjcmlwdF9wYXRoIjogdHJ1ZSwKICAicmF3X2tleXMiOiBbCiAgICAiY3dkIiwKICAgICJlcnJvcl90eXBlIiwKICAgICJob29rX2V2ZW50X25hbWUiLAogICAgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiLAogICAgInNlc3Npb25faWQiLAogICAgInN0b3BfaG9va19hY3RpdmUiLAogICAgInRyYW5zY3JpcHRfcGF0aCIKICBdCn0K",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-5",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-5",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogZmFsc2UsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogZmFsc2UsICJjd2QiOiBmYWxzZSwgImhvb2tfZXZlbnRfbmFtZSI6IGZhbHNlLCAic2Vzc2lvbl9pZCI6IGZhbHNlLCAiZXJyb3JfdHlwZSI6IGZhbHNlLCAidHJhbnNjcmlwdF9wYXRoIjogZmFsc2V9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiBmYWxzZSwKICAiZXJyb3JfdHlwZSI6IGZhbHNlLAogICJob29rX2V2ZW50X25hbWUiOiBmYWxzZSwKICAiY3dkIjogZmFsc2UsCiAgInRyYW5zY3JpcHRfcGF0aCI6IGZhbHNlLAogICJyYXdfa2V5cyI6IFsKICAgICJjd2QiLAogICAgImVycm9yX3R5cGUiLAogICAgImhvb2tfZXZlbnRfbmFtZSIsCiAgICAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSIsCiAgICAic2Vzc2lvbl9pZCIsCiAgICAic3RvcF9ob29rX2FjdGl2ZSIsCiAgICAidHJhbnNjcmlwdF9wYXRoIgogIF0KfQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-6",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-6",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogbnVsbCwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiBudWxsLCAiY3dkIjogbnVsbCwgImhvb2tfZXZlbnRfbmFtZSI6IG51bGwsICJzZXNzaW9uX2lkIjogbnVsbCwgImVycm9yX3R5cGUiOiBudWxsLCAidHJhbnNjcmlwdF9wYXRoIjogbnVsbH0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiBudWxsLAogICJlcnJvcl90eXBlIjogbnVsbCwKICAiaG9va19ldmVudF9uYW1lIjogbnVsbCwKICAiY3dkIjogbnVsbCwKICAidHJhbnNjcmlwdF9wYXRoIjogbnVsbCwKICAicmF3X2tleXMiOiBbCiAgICAiY3dkIiwKICAgICJlcnJvcl90eXBlIiwKICAgICJob29rX2V2ZW50X25hbWUiLAogICAgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiLAogICAgInNlc3Npb25faWQiLAogICAgInN0b3BfaG9va19hY3RpdmUiLAogICAgInRyYW5zY3JpcHRfcGF0aCIKICBdCn0K",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-7",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-7",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogWzEsICJ4IiwgZmFsc2VdLCAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSI6IFsxLCAieCIsIGZhbHNlXSwgImN3ZCI6IFsxLCAieCIsIGZhbHNlXSwgImhvb2tfZXZlbnRfbmFtZSI6IFsxLCAieCIsIGZhbHNlXSwgInNlc3Npb25faWQiOiBbMSwgIngiLCBmYWxzZV0sICJlcnJvcl90eXBlIjogWzEsICJ4IiwgZmFsc2VdLCAidHJhbnNjcmlwdF9wYXRoIjogWzEsICJ4IiwgZmFsc2VdfQ==",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiBbCiAgICAxLAogICAgIngiLAogICAgZmFsc2UKICBdLAogICJlcnJvcl90eXBlIjogWwogICAgMSwKICAgICJ4IiwKICAgIGZhbHNlCiAgXSwKICAiaG9va19ldmVudF9uYW1lIjogWwogICAgMSwKICAgICJ4IiwKICAgIGZhbHNlCiAgXSwKICAiY3dkIjogWwogICAgMSwKICAgICJ4IiwKICAgIGZhbHNlCiAgXSwKICAidHJhbnNjcmlwdF9wYXRoIjogWwogICAgMSwKICAgICJ4IiwKICAgIGZhbHNlCiAgXSwKICAicmF3X2tleXMiOiBbCiAgICAiY3dkIiwKICAgICJlcnJvcl90eXBlIiwKICAgICJob29rX2V2ZW50X25hbWUiLAogICAgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiLAogICAgInNlc3Npb25faWQiLAogICAgInN0b3BfaG9va19hY3RpdmUiLAogICAgInRyYW5zY3JpcHRfcGF0aCIKICBdCn0K",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-8",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-8",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogeyJ6IjogMSwgImEiOiBbbnVsbCwgdHJ1ZV19LCAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSI6IHsieiI6IDEsICJhIjogW251bGwsIHRydWVdfSwgImN3ZCI6IHsieiI6IDEsICJhIjogW251bGwsIHRydWVdfSwgImhvb2tfZXZlbnRfbmFtZSI6IHsieiI6IDEsICJhIjogW251bGwsIHRydWVdfSwgInNlc3Npb25faWQiOiB7InoiOiAxLCAiYSI6IFtudWxsLCB0cnVlXX0sICJlcnJvcl90eXBlIjogeyJ6IjogMSwgImEiOiBbbnVsbCwgdHJ1ZV19LCAidHJhbnNjcmlwdF9wYXRoIjogeyJ6IjogMSwgImEiOiBbbnVsbCwgdHJ1ZV19fQ==",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiB7CiAgICAieiI6IDEsCiAgICAiYSI6IFsKICAgICAgbnVsbCwKICAgICAgdHJ1ZQogICAgXQogIH0sCiAgImVycm9yX3R5cGUiOiB7CiAgICAieiI6IDEsCiAgICAiYSI6IFsKICAgICAgbnVsbCwKICAgICAgdHJ1ZQogICAgXQogIH0sCiAgImhvb2tfZXZlbnRfbmFtZSI6IHsKICAgICJ6IjogMSwKICAgICJhIjogWwogICAgICBudWxsLAogICAgICB0cnVlCiAgICBdCiAgfSwKICAiY3dkIjogewogICAgInoiOiAxLAogICAgImEiOiBbCiAgICAgIG51bGwsCiAgICAgIHRydWUKICAgIF0KICB9LAogICJ0cmFuc2NyaXB0X3BhdGgiOiB7CiAgICAieiI6IDEsCiAgICAiYSI6IFsKICAgICAgbnVsbCwKICAgICAgdHJ1ZQogICAgXQogIH0sCiAgInJhd19rZXlzIjogWwogICAgImN3ZCIsCiAgICAiZXJyb3JfdHlwZSIsCiAgICAiaG9va19ldmVudF9uYW1lIiwKICAgICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIiwKICAgICJzZXNzaW9uX2lkIiwKICAgICJzdG9wX2hvb2tfYWN0aXZlIiwKICAgICJ0cmFuc2NyaXB0X3BhdGgiCiAgXQp9Cg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-9",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-9",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogImNhbid0IiwgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiOiAiY2FuJ3QiLCAiY3dkIjogImNhbid0IiwgImhvb2tfZXZlbnRfbmFtZSI6ICJjYW4ndCIsICJzZXNzaW9uX2lkIjogImNhbid0IiwgImVycm9yX3R5cGUiOiAiY2FuJ3QiLCAidHJhbnNjcmlwdF9wYXRoIjogImNhbid0In0=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiAiY2FuJ3QiLAogICJlcnJvcl90eXBlIjogImNhbid0IiwKICAiaG9va19ldmVudF9uYW1lIjogImNhbid0IiwKICAiY3dkIjogImNhbid0IiwKICAidHJhbnNjcmlwdF9wYXRoIjogImNhbid0IiwKICAicmF3X2tleXMiOiBbCiAgICAiY3dkIiwKICAgICJlcnJvcl90eXBlIiwKICAgICJob29rX2V2ZW50X25hbWUiLAogICAgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiLAogICAgInNlc3Npb25faWQiLAogICAgInN0b3BfaG9va19hY3RpdmUiLAogICAgInRyYW5zY3JpcHRfcGF0aCIKICBdCn0K",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-10",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-10",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMFx1MDBhMFx1MjAwYlx1ZTAwMCIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMFx1MDBhMFx1MjAwYlx1ZTAwMCIsICJjd2QiOiAiYm90aCdcIlxcXG5cdFxyXHUwMDAwXHUwMGEwXHUyMDBiXHVlMDAwIiwgImhvb2tfZXZlbnRfbmFtZSI6ICJib3RoJ1wiXFxcblx0XHJcdTAwMDBcdTAwYTBcdTIwMGJcdWUwMDAiLCAic2Vzc2lvbl9pZCI6ICJib3RoJ1wiXFxcblx0XHJcdTAwMDBcdTAwYTBcdTIwMGJcdWUwMDAiLCAiZXJyb3JfdHlwZSI6ICJib3RoJ1wiXFxcblx0XHJcdTAwMDBcdTAwYTBcdTIwMGJcdWUwMDAiLCAidHJhbnNjcmlwdF9wYXRoIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMFx1MDBhMFx1MjAwYlx1ZTAwMCJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiAiYm90aCdcIlxcXG5cdFxyXHUwMDAwwqDigIvugIAiLAogICJlcnJvcl90eXBlIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMMKg4oCL7oCAIiwKICAiaG9va19ldmVudF9uYW1lIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMMKg4oCL7oCAIiwKICAiY3dkIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMMKg4oCL7oCAIiwKICAidHJhbnNjcmlwdF9wYXRoIjogImJvdGgnXCJcXFxuXHRcclx1MDAwMMKg4oCL7oCAIiwKICAicmF3X2tleXMiOiBbCiAgICAiY3dkIiwKICAgICJlcnJvcl90eXBlIiwKICAgICJob29rX2V2ZW50X25hbWUiLAogICAgImxhc3RfYXNzaXN0YW50X21lc3NhZ2UiLAogICAgInNlc3Npb25faWQiLAogICAgInN0b3BfaG9va19hY3RpdmUiLAogICAgInRyYW5zY3JpcHRfcGF0aCIKICBdCn0K",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-11",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-11",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogIlx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMCIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogIlx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMCIsICJjd2QiOiAiXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwIiwgImhvb2tfZXZlbnRfbmFtZSI6ICJcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDAiLCAic2Vzc2lvbl9pZCI6ICJcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDAiLCAiZXJyb3JfdHlwZSI6ICJcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDBcdWQ1NWNcdWFlMDBcdWQ4M2RcdWRlMDAiLCAidHJhbnNjcmlwdF9wYXRoIjogIlx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMFx1ZDU1Y1x1YWUwMFx1ZDgzZFx1ZGUwMCJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiAi7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iAIiwKICAiZXJyb3JfdHlwZSI6ICLtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIAiLAogICJob29rX2V2ZW50X25hbWUiOiAi7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iAIiwKICAiY3dkIjogIu2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgCIsCiAgInRyYW5zY3JpcHRfcGF0aCI6ICLtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIDtlZzquIDwn5iA7ZWc6riA8J+YgO2VnOq4gPCfmIAiLAogICJyYXdfa2V5cyI6IFsKICAgICJjd2QiLAogICAgImVycm9yX3R5cGUiLAogICAgImhvb2tfZXZlbnRfbmFtZSIsCiAgICAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSIsCiAgICAic2Vzc2lvbl9pZCIsCiAgICAic3RvcF9ob29rX2FjdGl2ZSIsCiAgICAidHJhbnNjcmlwdF9wYXRoIgogIF0KfQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:type-12",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "type-12",
+    "stdin": "eyJzdG9wX2hvb2tfYWN0aXZlIjogInh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eCIsICJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjogInh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eCIsICJjd2QiOiAieHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4IiwgImhvb2tfZXZlbnRfbmFtZSI6ICJ4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHgiLCAic2Vzc2lvbl9pZCI6ICJ4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHgiLCAiZXJyb3JfdHlwZSI6ICJ4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHgiLCAidHJhbnNjcmlwdF9wYXRoIjogInh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eCJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiAieHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4IiwKICAiZXJyb3JfdHlwZSI6ICJ4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHgiLAogICJob29rX2V2ZW50X25hbWUiOiAieHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4IiwKICAiY3dkIjogInh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eCIsCiAgInRyYW5zY3JpcHRfcGF0aCI6ICJ4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHgiLAogICJyYXdfa2V5cyI6IFsKICAgICJjd2QiLAogICAgImVycm9yX3R5cGUiLAogICAgImhvb2tfZXZlbnRfbmFtZSIsCiAgICAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSIsCiAgICAic2Vzc2lvbl9pZCIsCiAgICAic3RvcF9ob29rX2FjdGl2ZSIsCiAgICAidHJhbnNjcmlwdF9wYXRoIgogIF0KfQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:unicode-order",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "unicode-order",
+    "stdin": "eyJjd2QiOnsieiI6MSwiYSI6eyJkIjpmYWxzZSwiYyI6bnVsbH19LCJsYXN0X2Fzc2lzdGFudF9tZXNzYWdlIjoiXHVkNTVjXHVhZTAwXHVkODNkXHVkZTAwIiwic3RvcF9ob29rX2FjdGl2ZSI6Ilx1MjAyOFx1MDA4NSJ9",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiBudWxsLAogICJlcnJvcl90eXBlIjogbnVsbCwKICAiaG9va19ldmVudF9uYW1lIjogbnVsbCwKICAiY3dkIjogewogICAgInoiOiAxLAogICAgImEiOiB7CiAgICAgICJkIjogZmFsc2UsCiAgICAgICJjIjogbnVsbAogICAgfQogIH0sCiAgInRyYW5zY3JpcHRfcGF0aCI6IG51bGwsCiAgInJhd19rZXlzIjogWwogICAgImN3ZCIsCiAgICAibGFzdF9hc3Npc3RhbnRfbWVzc2FnZSIsCiAgICAic3RvcF9ob29rX2FjdGl2ZSIKICBdCn0K",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:duplicate",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "duplicate",
+    "stdin": "eyJjd2QiOnsieiI6MSwiYSI6MiwieiI6M319",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions": {
+          "directory": true,
+          "mode": 493
+        },
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiBudWxsLAogICJlcnJvcl90eXBlIjogbnVsbCwKICAiaG9va19ldmVudF9uYW1lIjogbnVsbCwKICAiY3dkIjogewogICAgInoiOiAzLAogICAgImEiOiAyCiAgfSwKICAidHJhbnNjcmlwdF9wYXRoIjogbnVsbCwKICAicmF3X2tleXMiOiBbCiAgICAiY3dkIgogIF0KfQo=",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:unwritable",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "unwritable",
+    "stdin": "e30=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      },
+      "tasks/sessions": {
+        "directory": true,
+        "mode": 365
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "W21pciBzdG9wLWZhaWx1cmUtYXVkaXRdIGNhbm5vdCB3cml0ZSBsb2c6IFtFcnJubyAxM10gUGVybWlzc2lvbiBkZW5pZWQ6ICdAVE1QQC9wcm9qZWN0L3Rhc2tzL3Nlc3Npb25zL3N0b3AtZmFpbHVyZS1AVElNRUAtQFBJREAtQFJBTkRPTUAubG9nJwo=",
+      "delta": {},
+      "deleted": []
+    },
+    "retired": ""
+  },
+  {
+    "id": "stop-failure-audit:existing",
+    "family": ".claude/hooks/stop-failure-audit.sh",
+    "case": "existing",
+    "stdin": "e30=",
+    "env": {},
+    "setup": {
+      ".venv/bin/python": {
+        "symlink": "@PYTHON@"
+      },
+      "tasks/sessions/stop-20000101T000000Z-1-abcdef.log": {
+        "base64": "c2VudGluZWwK",
+        "mode": 420
+      }
+    },
+    "expected": {
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "delta": {
+        "tasks/sessions/stop-failure-@TIME@-@PID@-@RANDOM@.log": {
+          "base64": "ewogICJob29rIjogIlN0b3BGYWlsdXJlIiwKICAidHMiOiAiQFVUQ0AiLAogICJwYXJzZV9vayI6IHRydWUsCiAgInBhcnNlX2Vycm9yIjogIiIsCiAgInNlc3Npb25faWQiOiBudWxsLAogICJlcnJvcl90eXBlIjogbnVsbCwKICAiaG9va19ldmVudF9uYW1lIjogbnVsbCwKICAiY3dkIjogbnVsbCwKICAidHJhbnNjcmlwdF9wYXRoIjogbnVsbCwKICAicmF3X2tleXMiOiBbXQp9Cg==",
+          "mode": 420
+        }
+      },
+      "deleted": []
+    },
+    "retired": ""
+  }
+]

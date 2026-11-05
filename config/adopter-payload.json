@@ -3131,7 +3131,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/project_hooks.rs",
-      "sha256": "d91879f212b52bb0bce547c14d1d376e733c917c0dd92b414bc1c79faa4c4e75"
+      "sha256": "382fcf2f095acb3adac3ec29cfff5230247e097d1d4d5b6b37e217cdf01bf238"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3162,6 +3162,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/src/stop.rs",
       "sha256": "b7771e6e7f0415fbcef22799ddd7a93284bc3ad10359cde14a97fe645f3fd8c4"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/stop_audit.rs",
+      "sha256": "7e614608bb5b3c3df5dd21bc43097e34db1c16e11b2c60612ee22392bb5360bc"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3646,6 +3652,18 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w1-stop-audit/README.md",
+      "sha256": "a00c68823faf83f8cebe5cf395e593b88ed0bd10e6b5cfdc48ce824d538f0b39"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w1-stop-audit/records.json",
+      "sha256": "40d45fccf2dcd20492955bf3aa2c0ba2fe9b54b46236da7f3e14f8ba95e07669"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/README.md",
       "sha256": "9fd7369798c0d9bb20fb0bcf77bf212de1e6b46a2ecd1ac55fdb656a335dcd2e"
     },
@@ -3695,7 +3713,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/project_hooks.rs",
-      "sha256": "cfa76d3f363296857bc94cc04f6d886385427fe7cab63f51319e0c7729d57bc9"
+      "sha256": "e807055553d7401df3625aaec992b3ec8e0357bfd217a3474595acec5a1d62bf"
     },
     {
       "classification": "template-maintainer-tool",

@@ -4,6 +4,7 @@ mod checkpoint;
 mod compact_snapshot;
 mod post_edit_check;
 mod prompt_submit;
+mod stop_audit;
 mod tdd_ledger;
 
 use std::{
@@ -20,7 +21,7 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
     if args.len() == 1 && args[0] == "capabilities" {
         return (
             0,
-            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\n",
+            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\n",
             "",
         );
     }
@@ -29,6 +30,10 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
 
 fn main() -> ExitCode {
     let args: Vec<_> = env::args_os().skip(1).collect();
+    if args.len() == 1 && (args[0] == "stop-audit" || args[0] == "stop-failure-audit") {
+        stop_audit::run(args[0] == "stop-failure-audit");
+        return ExitCode::SUCCESS;
+    }
     if args.len() == 1 && args[0] == "prompt-submit" {
         let (stdout, stderr) = prompt_submit::run(io::stdin().lock());
         if io::stdout()
@@ -164,7 +169,7 @@ mod tests {
             response(&["capabilities".into()]),
             (
                 0,
-                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\n",
+                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\n",
                 ""
             )
         );
