@@ -2,7 +2,7 @@ use crate::forward::Forward;
 use serde_json::{Value, json};
 const MODERN: &str = "2026-07-28";
 const LEGACY: &str = "2025-11-25";
-const VERSION: &str = "0.13.71";
+const VERSION: &str = "0.13.72";
 const PV: &str = "io.modelcontextprotocol/protocolVersion";
 const CAPS: &str = "io.modelcontextprotocol/clientCapabilities";
 const INFO: &str = "io.modelcontextprotocol/clientInfo";

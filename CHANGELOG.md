@@ -8,6 +8,13 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.72] — 2026-11-05 — Windows delegation usability fixes
+
+### Fixed
+- On Windows, when `CODEX_BIN` is unset or empty, the native executor (execute, dispatch and its reviewer) and the Python Codex client resolve `codex` through `PATH` and `PATHEXT` in order, so npm installs that provide only `codex.cmd` no longer stop with `lane-unavailable`. POSIX lookup is unchanged.
+- After `mir capability update --apply` places native executables on Windows, it runs each placed copy once with the new `--mir-warmup` argument (30 s bound, failures ignored), including the Codex and Claude plugin caches, so the antivirus first-run scan no longer times out lifecycle hooks in the first session.
+- The `force_codex` block message of the reference and native delegation gates now names `python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background`, which works on Windows.
+
 ## [v0.13.71] — 2026-11-05 — Native ontology tools; declarative executor brief policies
 
 ### Added
