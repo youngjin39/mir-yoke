@@ -119,6 +119,30 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   argument/file cap still runs before these hooks and can refuse plain inputs
   earlier. No executable validators are accepted.
 
+  `brief_profile: {"name":"development_packet_v1"}` owns `validate_brief`
+  and `render_brief` for typed development packets. File inputs first use the
+  `base_v1` DispatchBrief loader; the validated `expanded_goal` must contain a
+  `mir.development-packet/1` object. Plain inputs carry that object directly.
+  Closed fields, nested duplicate keys, bounded printable task text, kind,
+  reference count, verifier IDs and optional agent names follow the captured
+  packet contract. `development_packet.ref_prefixes` and `verifiers` come from
+  the target's `config/mir-executor.local.json`. References use lexical prefix
+  and symbol checks, Git tracked-path checks and regular-file metadata; reference
+  bodies are never read. Direct symlinks fail; ancestor symlinks retain the
+  captured behavior. File input fills an absent `target_agent` from the outer
+  brief, preserving explicit null or conflicting values. Rendering sorts keys,
+  preserves Unicode, uses Python's default JSON separators and adds no newline.
+  This profile does not own `pre_execute`: retain the target's complete Python
+  argv fence, family/backend decisions and verifier mapping. Duplicate Python
+  validation/render exports fail closed. Undeclared targets keep their hooks.
+  Task printability uses the captured CPython Unicode 15.0.0 table; the packet
+  contract does not casefold text. Lone surrogate
+  escapes, nonfinite or out-of-range JSON numbers and JSON nesting beyond the
+  native parser limit decline to Python before importing target hooks or claiming
+  command ownership. Execute checks shell-extracted prompts, raw input files and
+  both the outer brief and its packet text. Resume checks saved argv and the
+  effective saved brief using the read-only registry path before authorization.
+
   Optional `job_identity: {"name":"codex_mcp_v1","package":"owner-package",
   "package_version":"owner-supplied-version"}` owns `job_identity` for dispatch
   and background execute. It records the exact prompt UTF-8 SHA-256, the explicit

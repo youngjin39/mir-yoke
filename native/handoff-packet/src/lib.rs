@@ -679,7 +679,9 @@ mod tests;
 pub(crate) mod executor_brief_authority;
 pub mod executor_brief_profile;
 pub(crate) mod executor_brief_render;
+pub mod executor_development_packet;
 pub mod executor_job_identity;
+pub(crate) mod executor_packet_preflight;
 
 #[forbid(unsafe_code)]
 mod executor_brief_execution;

@@ -1,0 +1,1778 @@
+{
+  "runtime": {
+    "python": "3.12.13",
+    "pydantic": "2.13.4",
+    "unicode": "15.0.0"
+  },
+  "sources": [
+    {
+      "sha256": {
+        "local": "b3e87c49907a670eaf434832a3f31bb0095793cffff1370f24abba837aeb0c48",
+        "contracts": "d42dee5aa53c2386b6ce19c8eb7057a28ee83f650b26539288937b7d35b01b1f",
+        "loader": "c207f1df7e028394b551574ae557dd91f98e6861c7d0b3a4ecd2fdad57fc9a3a"
+      },
+      "oracle_source": "from __future__ import annotations\nimport argparse\nimport json\nimport pathlib\nfrom pathlib import Path\nimport re\nimport shlex\nimport subprocess\nimport sys\nimport tomllib\nimport types\nfrom tools.mir_executor.local_hooks import local_config\nfrom tools.mir_executor import policy\n\"\"\"DispatchBrief contract for execution-lane handoff and durable resume.\"\"\"\n\n\n\nfrom pydantic import BaseModel, ConfigDict, Field, model_validator\n\n\nclass DispatchBriefSourceRefs(BaseModel):\n    \"\"\"Source references used to derive a dispatch brief.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    task_spec: str = Field(min_length=1)\n    plan: str = Field(default=\"tasks/plan.md\")\n    phase: str = Field(min_length=1)\n\n\nclass DispatchBrief(BaseModel):\n    \"\"\"Execution-ready handoff artifact for one target agent and one slice.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    version: int = Field(default=1)\n    task_id: str = Field(min_length=1)\n    phase_id: str | None = None\n    slice_id: str = Field(min_length=1)\n    target_agent: str = Field(min_length=1)\n    user_intent: str = Field(min_length=1)\n    expanded_goal: str = Field(min_length=1)\n    owned_scope: tuple[str, ...] = Field(min_length=1)\n    out_of_scope: tuple[str, ...] = ()\n    verification_commands: tuple[str, ...] = Field(min_length=1)\n    stop_conditions: tuple[str, ...] = Field(min_length=1)\n    handoff_refs: tuple[str, ...] = ()\n    tdd_change_refs: tuple[str, ...] = ()\n    resume_state_ref: str = Field(min_length=1)\n    source_refs: DispatchBriefSourceRefs\n\n    @model_validator(mode=\"after\")\n    def _validate_contract(self) -> DispatchBrief:\n        if self.version != 1:\n            raise ValueError(\"DispatchBrief.version must be 1\")\n        expected_resume_ref = f\"tasks/dispatch/{self.task_id}/{self.slice_id}.json\"\n        if self.resume_state_ref != expected_resume_ref:\n            raise ValueError(f\"DispatchBrief.resume_state_ref must match {expected_resume_ref!r}\")\n        if self.source_refs.plan != \"tasks/plan.md\":\n            raise ValueError(\"DispatchBrief.source_refs.plan must be 'tasks/plan.md'\")\n        return self\n\nDispatchBrief.__module__ = \"mir.core.contracts.dispatch_brief\"\nDispatchBriefSourceRefs.__module__ = \"mir.core.contracts.dispatch_brief\"\n\ndef load_dispatch_brief(path: Path) -> DispatchBrief:\n    payload: dict[str, Any] = json.loads(path.read_text(encoding='utf-8'))\n    return DispatchBrief(**payload)\n_PACKET = 'mir.development-packet/1'\n_PACKET_FIELDS = frozenset({'packet', 'task', 'kind', 'refs', 'verify', 'target_agent'})\n_PACKET_KINDS = frozenset({'fix', 'feature', 'refactor', 'test'})\n_MAX_TASK_CHARS = 160\n_MAX_REFS = 20\n_SYMBOL = re.compile('[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*')\n_AGENT = re.compile('[a-z][a-z0-9-]*')\n\ndef validate_brief(brief: pathlib.Path | str, repo_root: pathlib.Path):\n    if isinstance(brief, pathlib.Path):\n        from mir.core.conductor.dispatch_brief import load_dispatch_brief\n        loaded = load_dispatch_brief(brief)\n        packet = _development_packet(loaded.expanded_goal, repo_root)\n        packet.setdefault('target_agent', loaded.target_agent)\n        return packet\n    return _development_packet(brief, repo_root)\n\ndef render_brief(packet: dict, repo_root: pathlib.Path) -> str:\n    return json.dumps(packet, ensure_ascii=False, sort_keys=True)\n\ndef _unique_object(pairs: list[tuple[str, object]]) -> dict:\n    keys = [key for key, _value in pairs]\n    if len(keys) != len(set(keys)):\n        raise ValueError('development packet must not repeat a key')\n    return dict(pairs)\n\ndef _development_packet(text: object, repo_root: pathlib.Path) -> dict:\n    try:\n        packet = json.loads(text, object_pairs_hook=_unique_object) if isinstance(text, str) else None\n    except json.JSONDecodeError:\n        packet = None\n    if not isinstance(packet, dict) or packet.get('packet') != _PACKET:\n        raise ValueError(f'development dispatch accepts only a typed packet ({_PACKET})')\n    unknown = set(packet) - _PACKET_FIELDS\n    if unknown:\n        raise ValueError(f'packet has untyped fields: {sorted(unknown)}')\n    task = packet.get('task')\n    if not (isinstance(task, str) and task.strip() and (len(task) <= _MAX_TASK_CHARS) and task.isprintable()):\n        raise ValueError(f'packet task must be one printable line of <= {_MAX_TASK_CHARS} chars')\n    if packet.get('kind') not in _PACKET_KINDS:\n        raise ValueError(f'packet kind must be one of {sorted(_PACKET_KINDS)}')\n    refs = packet.get('refs')\n    if not isinstance(refs, list) or not 1 <= len(refs) <= _MAX_REFS:\n        raise ValueError(f'packet refs must list 1-{_MAX_REFS} technical references')\n    config = local_config(repo_root)\n    prefixes = tuple(config.get('development_packet', {}).get('ref_prefixes', ()))\n    for ref in refs:\n        _check_ref(ref, prefixes, pathlib.Path(repo_root))\n    verify = packet.get('verify', [])\n    if not isinstance(verify, list) or any((not isinstance(name, str) or name not in config.get('verifiers', {}) for name in verify)):\n        raise ValueError('packet verify must name registered verifier IDs')\n    agent = packet.get('target_agent')\n    if agent is not None and (not (isinstance(agent, str) and _AGENT.fullmatch(agent))):\n        raise ValueError('packet target_agent must be an agent name')\n    return packet\n\ndef _check_ref(ref: object, prefixes: tuple[str, ...], repo_root: pathlib.Path) -> None:\n    if not isinstance(ref, str):\n        raise ValueError('packet ref must be a string')\n    path, _, symbol = ref.partition('::')\n    parts = pathlib.PurePosixPath(path).parts\n    if not prefixes or not path.startswith(prefixes) or path.startswith('/') or ('\\\\' in path) or ('..' in parts) or (symbol and (not _SYMBOL.fullmatch(symbol))):\n        raise ValueError(f'packet ref is not an allowlisted technical reference: {ref!r}')\n    tracked = subprocess.run(['git', '-C', str(repo_root), 'ls-files', '--error-unmatch', '--', path], capture_output=True, text=True, check=False)\n    target = repo_root / path\n    if tracked.returncode != 0 or target.is_symlink() or (not target.is_file()):\n        raise ValueError(f'packet ref is not a tracked regular file: {ref!r}')\n\ndef pre_execute(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    _refuse_family(args)\n    _require_packet_argv(args, repo_root)\n    _map_verify_commands(args, repo_root)\n\ndef _require_packet_argv(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    file = getattr(args, 'codex_args_file', None)\n    text = getattr(args, 'codex_args', None)\n    if file is not None:\n        prompt = pathlib.Path(file).read_text(encoding='utf-8')\n    elif text is not None:\n        from tools.mir_executor.cli import _prompt_from_codex_args\n        prompt = _prompt_from_codex_args(shlex.split(text))\n    else:\n        return\n    _development_packet(prompt, repo_root)\n\ndef _refuse_family(args: argparse.Namespace) -> None:\n    if getattr(args, 'family', None) is None:\n        return\n    print('[mir_executor] --family is unavailable here: this repository has no profile_compiler family registry (fleet-manager repositories only). Pass --repo-root instead.', file=sys.stderr)\n    raise SystemExit(1)\n\ndef _map_verify_commands(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    commands = getattr(args, 'verify_cmds', None)\n    if not commands:\n        return\n    verifiers = local_config(repo_root).get('verifiers', {})\n    by_argv = {tuple(argv): verifier_id for verifier_id, argv in verifiers.items()}\n    mapped = []\n    for command in commands:\n        if command not in verifiers:\n            try:\n                command = by_argv.get(tuple(shlex.split(command)), command)\n            except ValueError:\n                pass\n        mapped.append(command)\n    args.verify_cmds = mapped\n_loader = types.ModuleType(\"mir.core.conductor.dispatch_brief\")\n_loader.load_dispatch_brief = load_dispatch_brief\nsys.modules[_loader.__name__] = _loader\n",
+      "cases": [
+        {
+          "name": "valid",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "root_list",
+          "text": "[]",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "root_null",
+          "text": "null",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "root_string",
+          "text": "\"text\"",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "root_number",
+          "text": "1",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "root_bool",
+          "text": "true",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "missing_packet",
+          "text": "{\"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "packet_0",
+          "text": "{\"packet\": null, \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "packet_1",
+          "text": "{\"packet\": 1, \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "packet_2",
+          "text": "{\"packet\": \"mir.development-packet/2\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "packet_3",
+          "text": "{\"packet\": [], \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "missing_task",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": null, \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \" \\t\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "task_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "task_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"caf\u00e9 \u6f22\u5b57 \ud83d\ude00\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "task_7",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "task_8",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_9",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"a\\n\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_10",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"a\\t\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_11",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"a\\u0000\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_12",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u0085\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_13",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u00a0\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_14",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u200b\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_15",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u2028\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_16",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\ue000\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_17",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\udb40\\udc01\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_18",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": 7, \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "missing_kind",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet kind must be one of ['feature', 'fix', 'refactor', 'test']"
+        },
+        {
+          "name": "kind_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": null, \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet kind must be one of ['feature', 'fix', 'refactor', 'test']"
+        },
+        {
+          "name": "kind_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"feature\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "feature",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"feature\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "kind_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"refactor\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "refactor",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"refactor\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "kind_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"test\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "test",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"test\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "kind_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"FIX\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet kind must be one of ['feature', 'fix', 'refactor', 'test']"
+        },
+        {
+          "name": "kind_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": 1, \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet kind must be one of ['feature', 'fix', 'refactor', 'test']"
+        },
+        {
+          "name": "kind_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": [], \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "TypeError",
+          "message": "unhashable type: 'list'"
+        },
+        {
+          "name": "kind_7",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": {}, \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "TypeError",
+          "message": "unhashable type: 'dict'"
+        },
+        {
+          "name": "missing_refs",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": null, \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": \"src/module.rs\", \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [null], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref must be a string"
+        },
+        {
+          "name": "refs_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [7], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref must be a string"
+        },
+        {
+          "name": "refs_7",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs::Thing::method\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs::Thing::method"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs::Thing::method\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_8",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs::\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs::"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs::\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_9",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs::bad-name\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src/module.rs::bad-name'"
+        },
+        {
+          "name": "refs_10",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs:::method\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src/module.rs:::method'"
+        },
+        {
+          "name": "refs_11",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/../code.txt\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src/../code.txt'"
+        },
+        {
+          "name": "refs_12",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"/src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: '/src/module.rs'"
+        },
+        {
+          "name": "refs_13",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src\\\\module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src\\\\module.rs'"
+        },
+        {
+          "name": "refs_14",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/untracked.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not a tracked regular file: 'src/untracked.rs'"
+        },
+        {
+          "name": "refs_15",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/deleted.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not a tracked regular file: 'src/deleted.rs'"
+        },
+        {
+          "name": "refs_16",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/direct.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not a tracked regular file: 'src/direct.rs'"
+        },
+        {
+          "name": "refs_17",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/alias/inside.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/alias/inside.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/alias/inside.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_18",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src2/collision.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src2/collision.rs'"
+        },
+        {
+          "name": "refs_19",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/./module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/./module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/./module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_20",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src//module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src//module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src//module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_21",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/caf\\u00e9.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/caf\u00e9.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/caf\u00e9.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_22",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/a'quote.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/a'quote.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/a'quote.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_23",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not a tracked regular file: 'src/'"
+        },
+        {
+          "name": "refs_24",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"SRC/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'SRC/module.rs'"
+        },
+        {
+          "name": "missing_verify",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\"}"
+        },
+        {
+          "name": "verify_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": null}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": \"offline\"}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [null]}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [7]}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"missing\"]}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": []}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": []
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": []}"
+        },
+        {
+          "name": "verify_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\", \"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline",
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\", \"offline\"]}"
+        },
+        {
+          "name": "missing_target_agent",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "target_agent_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": null}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": null
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": null, \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "target_agent_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"other-agent\"}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "other-agent"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"other-agent\", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "target_agent_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"\"}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "target_agent_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"Agent\"}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "target_agent_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"bad_agent\"}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "target_agent_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": 7}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "target_agent_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"a-0\"}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "a-0"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"a-0\", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "target_agent_7",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"a\\n\"}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "unknown_fields",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"z\": 1, \"a\": 2}",
+          "kind": "ValueError",
+          "message": "packet has untyped fields: ['a', 'z']"
+        },
+        {
+          "name": "unicode_unknown",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"\\u00e9\": 1, \"\\u6f22\": 2}",
+          "kind": "ValueError",
+          "message": "packet has untyped fields: ['\u00e9', '\u6f22']"
+        },
+        {
+          "name": "duplicate_root",
+          "text": "{\"packet\":1,\"packet\":2}",
+          "kind": "ValueError",
+          "message": "development packet must not repeat a key"
+        },
+        {
+          "name": "duplicate_nested",
+          "text": "{\"extra\":{\"x\":1,\"x\":2}}",
+          "kind": "ValueError",
+          "message": "development packet must not repeat a key"
+        },
+        {
+          "name": "malformed_json",
+          "text": "{not-json",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "plain_prose",
+          "text": "Update the file.",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        }
+      ],
+      "file_cases": [
+        {
+          "name": "agent_absent",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"Bounded update\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"]}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "offline-agent"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"offline-agent\", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "agent_null",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"Bounded update\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"], \\\"target_agent\\\": null}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": null
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": null, \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "agent_conflict",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"Bounded update\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"], \\\"target_agent\\\": \\\"other-agent\\\"}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "other-agent"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"other-agent\", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "outer_agent_whitespace",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \" \", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"Bounded update\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"]}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": " "
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \" \", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "unicode_render",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"caf\\\\u00e9 \\\\u6f22\\\\u5b57 \\\\ud83d\\\\ude00\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"]}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "offline-agent"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"offline-agent\", \"task\": \"caf\u00e9 \u6f22\u5b57 \ud83d\ude00\", \"verify\": [\"offline\"]}"
+        }
+      ],
+      "pre_execute_order": [
+        "_refuse_family",
+        "_require_packet_argv",
+        "_map_verify_commands"
+      ]
+    },
+    {
+      "sha256": {
+        "local": "52add9b9bb6cae89b07ec8e211c0fba0c770fe604573d5e4e5bd3ab2dd8b14d8",
+        "contracts": "4261212c8df5177646513775d92c286abb6dd1afb3000a1b1254cd1cac4e22fa",
+        "loader": "8171f3ea0f41a84adcde60858d80a1c156a1ecb23ac58602275e0eff7edc80af"
+      },
+      "oracle_source": "from __future__ import annotations\nimport argparse\nimport json\nimport pathlib\nfrom pathlib import Path\nimport re\nimport shlex\nimport subprocess\nimport sys\nimport tomllib\nimport types\nfrom tools.mir_executor.local_hooks import local_config\nfrom tools.mir_executor import policy\n\"\"\"DispatchBrief contract for execution-lane handoff and durable resume.\"\"\"\n\n\nfrom pydantic import BaseModel, ConfigDict, Field, model_validator\n\n\nclass DispatchBriefSourceRefs(BaseModel):\n    \"\"\"Source references used to derive a dispatch brief.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    task_spec: str = Field(min_length=1)\n    plan: str = Field(default=\"tasks/plan.md\")\n    phase: str = Field(min_length=1)\n\n\nclass DispatchBrief(BaseModel):\n    \"\"\"Execution-ready handoff artifact for one target agent and one slice.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    version: int = Field(default=1)\n    task_id: str = Field(min_length=1)\n    phase_id: str | None = None\n    slice_id: str = Field(min_length=1)\n    target_agent: str = Field(min_length=1)\n    user_intent: str = Field(min_length=1)\n    expanded_goal: str = Field(min_length=1)\n    owned_scope: tuple[str, ...] = Field(min_length=1)\n    out_of_scope: tuple[str, ...] = ()\n    verification_commands: tuple[str, ...] = Field(min_length=1)\n    stop_conditions: tuple[str, ...] = Field(min_length=1)\n    handoff_refs: tuple[str, ...] = ()\n    tdd_change_refs: tuple[str, ...] = ()\n    resume_state_ref: str = Field(min_length=1)\n    source_refs: DispatchBriefSourceRefs\n\n    @model_validator(mode=\"after\")\n    def _validate_contract(self) -> DispatchBrief:\n        if self.version != 1:\n            raise ValueError(\"DispatchBrief.version must be 1\")\n        expected_resume_ref = f\"tasks/dispatch/{self.task_id}/{self.slice_id}.json\"\n        if self.resume_state_ref != expected_resume_ref:\n            raise ValueError(\n                \"DispatchBrief.resume_state_ref must match \"\n                f\"{expected_resume_ref!r}\"\n            )\n        if self.source_refs.plan != \"tasks/plan.md\":\n            raise ValueError(\"DispatchBrief.source_refs.plan must be 'tasks/plan.md'\")\n        return self\n\nDispatchBrief.__module__ = \"mir.core.contracts.dispatch_brief\"\nDispatchBriefSourceRefs.__module__ = \"mir.core.contracts.dispatch_brief\"\n\ndef load_dispatch_brief(path: Path) -> DispatchBrief:\n    payload: dict[str, Any] = json.loads(path.read_text(encoding='utf-8'))\n    return DispatchBrief(**payload)\n_DISPATCH_BACKENDS = frozenset({'codex', 'claude'})\n_PACKET = 'mir.development-packet/1'\n_PACKET_FIELDS = frozenset({'packet', 'task', 'kind', 'refs', 'verify', 'target_agent'})\n_PACKET_KINDS = frozenset({'fix', 'feature', 'refactor', 'test'})\n_MAX_TASK_CHARS = 160\n_MAX_REFS = 20\n_SYMBOL = re.compile('[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*')\n_AGENT = re.compile('[a-z][a-z0-9-]*')\n\ndef validate_brief(brief: pathlib.Path | str, repo_root: pathlib.Path):\n    if isinstance(brief, pathlib.Path):\n        from mir.core.conductor.dispatch_brief import load_dispatch_brief\n        loaded = load_dispatch_brief(brief)\n        packet = _development_packet(loaded.expanded_goal, repo_root)\n        packet.setdefault('target_agent', loaded.target_agent)\n        return packet\n    return _development_packet(brief, repo_root)\n\ndef render_brief(packet: dict, repo_root: pathlib.Path) -> str:\n    return json.dumps(packet, ensure_ascii=False, sort_keys=True)\n\ndef _unique_object(pairs: list[tuple[str, object]]) -> dict:\n    keys = [key for key, _value in pairs]\n    if len(keys) != len(set(keys)):\n        raise ValueError('development packet must not repeat a key')\n    return dict(pairs)\n\ndef _development_packet(text: object, repo_root: pathlib.Path) -> dict:\n    try:\n        packet = json.loads(text, object_pairs_hook=_unique_object) if isinstance(text, str) else None\n    except json.JSONDecodeError:\n        packet = None\n    if not isinstance(packet, dict) or packet.get('packet') != _PACKET:\n        raise ValueError(f'development dispatch accepts only a typed packet ({_PACKET})')\n    unknown = set(packet) - _PACKET_FIELDS\n    if unknown:\n        raise ValueError(f'packet has untyped fields: {sorted(unknown)}')\n    task = packet.get('task')\n    if not (isinstance(task, str) and task.strip() and (len(task) <= _MAX_TASK_CHARS) and task.isprintable()):\n        raise ValueError(f'packet task must be one printable line of <= {_MAX_TASK_CHARS} chars')\n    if packet.get('kind') not in _PACKET_KINDS:\n        raise ValueError(f'packet kind must be one of {sorted(_PACKET_KINDS)}')\n    refs = packet.get('refs')\n    if not isinstance(refs, list) or not 1 <= len(refs) <= _MAX_REFS:\n        raise ValueError(f'packet refs must list 1-{_MAX_REFS} technical references')\n    config = local_config(repo_root)\n    prefixes = tuple(config.get('development_packet', {}).get('ref_prefixes', ()))\n    for ref in refs:\n        _check_ref(ref, prefixes, pathlib.Path(repo_root))\n    verify = packet.get('verify', [])\n    if not isinstance(verify, list) or any((not isinstance(name, str) or name not in config.get('verifiers', {}) for name in verify)):\n        raise ValueError('packet verify must name registered verifier IDs')\n    agent = packet.get('target_agent')\n    if agent is not None and (not (isinstance(agent, str) and _AGENT.fullmatch(agent))):\n        raise ValueError('packet target_agent must be an agent name')\n    return packet\n\ndef _check_ref(ref: object, prefixes: tuple[str, ...], repo_root: pathlib.Path) -> None:\n    if not isinstance(ref, str):\n        raise ValueError('packet ref must be a string')\n    path, _, symbol = ref.partition('::')\n    parts = pathlib.PurePosixPath(path).parts\n    if not prefixes or not path.startswith(prefixes) or path.startswith('/') or ('\\\\' in path) or ('..' in parts) or (symbol and (not _SYMBOL.fullmatch(symbol))):\n        raise ValueError(f'packet ref is not an allowlisted technical reference: {ref!r}')\n    tracked = subprocess.run(['git', '-C', str(repo_root), 'ls-files', '--error-unmatch', '--', path], capture_output=True, text=True, check=False)\n    target = repo_root / path\n    if tracked.returncode != 0 or target.is_symlink() or (not target.is_file()):\n        raise ValueError(f'packet ref is not a tracked regular file: {ref!r}')\n\ndef pre_execute(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    _check_family(args, repo_root)\n    _require_packet_argv(args, repo_root)\n    _fill_per_project_backend(args, repo_root)\n    _map_verify_commands(args, repo_root)\n\ndef _require_packet_argv(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    file = getattr(args, 'codex_args_file', None)\n    text = getattr(args, 'codex_args', None)\n    if file is not None:\n        prompt = pathlib.Path(file).read_text(encoding='utf-8')\n    elif text is not None:\n        from tools.mir_executor.cli import _prompt_from_codex_args\n        prompt = _prompt_from_codex_args(shlex.split(text))\n    else:\n        return\n    _development_packet(prompt, repo_root)\n\ndef _fail(message: str) -> None:\n    print(f'[mir_executor] {message}', file=sys.stderr)\n    raise SystemExit(1)\n\ndef _check_family(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    family = getattr(args, 'family', None)\n    if family is None:\n        return\n    try:\n        from tools.profile_compiler.cli import resolve_family_path\n    except ImportError as exc:\n        _fail(f'Family registry unavailable for {family!r}: {exc}')\n    try:\n        family_root = resolve_family_path(family).resolve()\n    except KeyError as exc:\n        _fail(f'Unknown family slug: {family!r}. {exc}')\n    if family_root != pathlib.Path(repo_root).resolve():\n        _fail(f'--family {family!r} resolves to {family_root}; pass --repo-root {family_root}')\n\ndef _repo_policy_slug(repo_root: pathlib.Path) -> str | None:\n    try:\n        with (repo_root / '.mir' / 'repo-profile.toml').open('rb') as fh:\n            profile = tomllib.load(fh)\n    except (OSError, tomllib.TOMLDecodeError):\n        profile = {}\n    repo_section = profile.get('repo')\n    if isinstance(repo_section, dict):\n        slug = repo_section.get('slug')\n        if isinstance(slug, str) and slug.strip():\n            return slug.strip()\n    repos_dir = repo_root / 'config' / 'repos'\n    if not repos_dir.is_dir():\n        return None\n    candidates = [p for p in sorted(repos_dir.glob('*.json')) if not p.name.startswith('_')]\n    if len(candidates) != 1:\n        return None\n    try:\n        entry = json.loads(candidates[0].read_text(encoding='utf-8'))\n    except (OSError, ValueError):\n        return None\n    slug = entry.get('slug') if isinstance(entry, dict) else None\n    return slug.strip() if isinstance(slug, str) and slug.strip() else None\n\ndef _per_project_backend(entry: object) -> str | None:\n    if isinstance(entry, str):\n        return entry if entry in _DISPATCH_BACKENDS else None\n    if isinstance(entry, dict):\n        for key in ('backend', 'mode'):\n            value = entry.get(key)\n            if not isinstance(value, str):\n                continue\n            if value in _DISPATCH_BACKENDS:\n                return value\n            if value in {'force_codex', 'force_claude'}:\n                return value.removeprefix('force_')\n    return None\n\ndef _fill_per_project_backend(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    if getattr(args, 'execution_backend', None) is not None:\n        return\n    sub_agent_policy = policy.load_sub_agent_policy(repo_root)\n    mode = sub_agent_policy.effective_delegation_mode()\n    if policy.MODE_ALIASES.get(mode, mode) != 'user_command_priority':\n        return\n    per_project = getattr(sub_agent_policy, 'per_project', {})\n    slug = _repo_policy_slug(repo_root)\n    if not isinstance(per_project, dict) or slug is None or slug not in per_project:\n        return\n    backend = _per_project_backend(per_project[slug])\n    if backend is not None:\n        args.execution_backend = backend\n\ndef _map_verify_commands(args: argparse.Namespace, repo_root: pathlib.Path) -> None:\n    commands = getattr(args, 'verify_cmds', None)\n    if not commands:\n        return\n    verifiers = local_config(repo_root).get('verifiers', {})\n    by_argv = {tuple(argv): verifier_id for verifier_id, argv in verifiers.items()}\n    mapped = []\n    for command in commands:\n        if command not in verifiers:\n            try:\n                command = by_argv.get(tuple(shlex.split(command)), command)\n            except ValueError:\n                pass\n        mapped.append(command)\n    args.verify_cmds = mapped\n_loader = types.ModuleType(\"mir.core.conductor.dispatch_brief\")\n_loader.load_dispatch_brief = load_dispatch_brief\nsys.modules[_loader.__name__] = _loader\n",
+      "cases": [
+        {
+          "name": "valid",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "root_list",
+          "text": "[]",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "root_null",
+          "text": "null",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "root_string",
+          "text": "\"text\"",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "root_number",
+          "text": "1",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "root_bool",
+          "text": "true",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "missing_packet",
+          "text": "{\"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "packet_0",
+          "text": "{\"packet\": null, \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "packet_1",
+          "text": "{\"packet\": 1, \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "packet_2",
+          "text": "{\"packet\": \"mir.development-packet/2\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "packet_3",
+          "text": "{\"packet\": [], \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "missing_task",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": null, \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \" \\t\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "task_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "task_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"caf\\u00e9 \\u6f22\\u5b57 \\ud83d\\ude00\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"caf\u00e9 \u6f22\u5b57 \ud83d\ude00\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "task_7",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "task_8",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\\u00e9\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_9",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"a\\n\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_10",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"a\\t\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_11",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"a\\u0000\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_12",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u0085\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_13",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u00a0\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_14",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u200b\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_15",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\u2028\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_16",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\ue000\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_17",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"\\udb40\\udc01\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "task_18",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": 7, \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet task must be one printable line of <= 160 chars"
+        },
+        {
+          "name": "missing_kind",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet kind must be one of ['feature', 'fix', 'refactor', 'test']"
+        },
+        {
+          "name": "kind_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": null, \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet kind must be one of ['feature', 'fix', 'refactor', 'test']"
+        },
+        {
+          "name": "kind_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"feature\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "feature",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"feature\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "kind_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"refactor\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "refactor",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"refactor\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "kind_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"test\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "test",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"test\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "kind_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"FIX\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet kind must be one of ['feature', 'fix', 'refactor', 'test']"
+        },
+        {
+          "name": "kind_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": 1, \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet kind must be one of ['feature', 'fix', 'refactor', 'test']"
+        },
+        {
+          "name": "kind_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": [], \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "TypeError",
+          "message": "unhashable type: 'list'"
+        },
+        {
+          "name": "kind_7",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": {}, \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "TypeError",
+          "message": "unhashable type: 'dict'"
+        },
+        {
+          "name": "missing_refs",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": null, \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs",
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\", \"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": \"src/module.rs\", \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet refs must list 1-20 technical references"
+        },
+        {
+          "name": "refs_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [null], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref must be a string"
+        },
+        {
+          "name": "refs_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [7], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref must be a string"
+        },
+        {
+          "name": "refs_7",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs::Thing::method\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs::Thing::method"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs::Thing::method\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_8",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs::\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs::"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs::\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_9",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs::bad-name\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src/module.rs::bad-name'"
+        },
+        {
+          "name": "refs_10",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs:::method\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src/module.rs:::method'"
+        },
+        {
+          "name": "refs_11",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/../code.txt\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src/../code.txt'"
+        },
+        {
+          "name": "refs_12",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"/src/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: '/src/module.rs'"
+        },
+        {
+          "name": "refs_13",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src\\\\module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src\\\\module.rs'"
+        },
+        {
+          "name": "refs_14",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/untracked.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not a tracked regular file: 'src/untracked.rs'"
+        },
+        {
+          "name": "refs_15",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/deleted.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not a tracked regular file: 'src/deleted.rs'"
+        },
+        {
+          "name": "refs_16",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/direct.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not a tracked regular file: 'src/direct.rs'"
+        },
+        {
+          "name": "refs_17",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/alias/inside.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/alias/inside.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/alias/inside.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_18",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src2/collision.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'src2/collision.rs'"
+        },
+        {
+          "name": "refs_19",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/./module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/./module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/./module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_20",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src//module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src//module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src//module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_21",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/caf\\u00e9.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/caf\u00e9.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/caf\u00e9.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_22",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/a'quote.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/a'quote.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/a'quote.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "refs_23",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not a tracked regular file: 'src/'"
+        },
+        {
+          "name": "refs_24",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"SRC/module.rs\"], \"verify\": [\"offline\"]}",
+          "kind": "ValueError",
+          "message": "packet ref is not an allowlisted technical reference: 'SRC/module.rs'"
+        },
+        {
+          "name": "missing_verify",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\"}"
+        },
+        {
+          "name": "verify_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": null}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": \"offline\"}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [null]}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [7]}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"missing\"]}",
+          "kind": "ValueError",
+          "message": "packet verify must name registered verifier IDs"
+        },
+        {
+          "name": "verify_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": []}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": []
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": []}"
+        },
+        {
+          "name": "verify_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\", \"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline",
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\", \"offline\"]}"
+        },
+        {
+          "name": "missing_target_agent",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"]}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ]
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "target_agent_0",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": null}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": null
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": null, \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "target_agent_1",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"other-agent\"}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "other-agent"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"other-agent\", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "target_agent_2",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"\"}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "target_agent_3",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"Agent\"}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "target_agent_4",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"bad_agent\"}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "target_agent_5",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": 7}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "target_agent_6",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"a-0\"}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "a-0"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"a-0\", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "target_agent_7",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"target_agent\": \"a\\n\"}",
+          "kind": "ValueError",
+          "message": "packet target_agent must be an agent name"
+        },
+        {
+          "name": "unknown_fields",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"z\": 1, \"a\": 2}",
+          "kind": "ValueError",
+          "message": "packet has untyped fields: ['a', 'z']"
+        },
+        {
+          "name": "unicode_unknown",
+          "text": "{\"packet\": \"mir.development-packet/1\", \"task\": \"Bounded update\", \"kind\": \"fix\", \"refs\": [\"src/module.rs\"], \"verify\": [\"offline\"], \"\\u00e9\": 1, \"\\u6f22\": 2}",
+          "kind": "ValueError",
+          "message": "packet has untyped fields: ['\u00e9', '\u6f22']"
+        },
+        {
+          "name": "duplicate_root",
+          "text": "{\"packet\":1,\"packet\":2}",
+          "kind": "ValueError",
+          "message": "development packet must not repeat a key"
+        },
+        {
+          "name": "duplicate_nested",
+          "text": "{\"extra\":{\"x\":1,\"x\":2}}",
+          "kind": "ValueError",
+          "message": "development packet must not repeat a key"
+        },
+        {
+          "name": "malformed_json",
+          "text": "{not-json",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        },
+        {
+          "name": "plain_prose",
+          "text": "Update the file.",
+          "kind": "ValueError",
+          "message": "development dispatch accepts only a typed packet (mir.development-packet/1)"
+        }
+      ],
+      "file_cases": [
+        {
+          "name": "agent_absent",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"Bounded update\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"]}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "offline-agent"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"offline-agent\", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "agent_null",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"Bounded update\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"], \\\"target_agent\\\": null}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": null
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": null, \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "agent_conflict",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"Bounded update\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"], \\\"target_agent\\\": \\\"other-agent\\\"}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "other-agent"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"other-agent\", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "outer_agent_whitespace",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \" \", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"Bounded update\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"]}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "Bounded update",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": " "
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \" \", \"task\": \"Bounded update\", \"verify\": [\"offline\"]}"
+        },
+        {
+          "name": "unicode_render",
+          "raw": "{\"version\": 1, \"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"offline-agent\", \"user_intent\": \"Update the owned file.\", \"expanded_goal\": \"{\\\"packet\\\": \\\"mir.development-packet/1\\\", \\\"task\\\": \\\"caf\\\\u00e9 \\\\u6f22\\\\u5b57 \\\\ud83d\\\\ude00\\\", \\\"kind\\\": \\\"fix\\\", \\\"refs\\\": [\\\"src/module.rs\\\"], \\\"verify\\\": [\\\"offline\\\"]}\", \"owned_scope\": [\"code.txt\"], \"verification_commands\": [\"offline\"], \"stop_conditions\": [\"Stop outside scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://task\", \"phase\": \"tasks/phase.json\"}}",
+          "value": {
+            "packet": "mir.development-packet/1",
+            "task": "caf\u00e9 \u6f22\u5b57 \ud83d\ude00",
+            "kind": "fix",
+            "refs": [
+              "src/module.rs"
+            ],
+            "verify": [
+              "offline"
+            ],
+            "target_agent": "offline-agent"
+          },
+          "rendered": "{\"kind\": \"fix\", \"packet\": \"mir.development-packet/1\", \"refs\": [\"src/module.rs\"], \"target_agent\": \"offline-agent\", \"task\": \"caf\u00e9 \u6f22\u5b57 \ud83d\ude00\", \"verify\": [\"offline\"]}"
+        }
+      ],
+      "pre_execute_order": [
+        "_check_family",
+        "_require_packet_argv",
+        "_fill_per_project_backend",
+        "_map_verify_commands"
+      ]
+    }
+  ]
+}

@@ -82,10 +82,9 @@ impl CommandHooks {
             .as_ref()
             .map(|b| b.hello().clone())
             .unwrap_or_else(|| json!({"hooks":[],"register_execute_options":false}));
-        if brief_profile
-            .as_ref()
-            .is_some_and(|profile| profile.capabilities() || profile.execution())
-            && let Some(hooks) = hello["hooks"].as_array_mut()
+        if brief_profile.as_ref().is_some_and(|profile| {
+            profile.capabilities() || profile.execution() || profile.packet()
+        }) && let Some(hooks) = hello["hooks"].as_array_mut()
         {
             hooks.push(json!("render_brief"));
         }
@@ -187,6 +186,24 @@ impl CommandHooks {
 }
 impl HookClient for CommandHooks {
     fn call(&mut self, name: &str, args: Vec<Value>, options: Value) -> Result<Value, BridgeError> {
+        if name == "bridge.target_agent" && self.brief_profile.as_ref().is_some_and(|p| p.packet())
+        {
+            let target = args
+                .first()
+                .map(|packet| packet["target_agent"].clone())
+                .unwrap_or(Value::Null);
+            if !target.is_null()
+                && target.as_str().is_none_or(|text| {
+                    text.trim_matches(crate::executor_brief_authority::python_space)
+                        .is_empty()
+                })
+            {
+                return Ok(
+                    json!({"ok":false,"error":{"type":"ValueError","message":"DispatchBrief target_agent must be a non-empty string"}}),
+                );
+            }
+            return Ok(json!({"ok":true,"result":target,"handle":null}));
+        }
         if name == "job_identity"
             && let Some(identity) = &self.job_identity
         {
@@ -230,16 +247,33 @@ impl HookClient for CommandHooks {
                         if profile.capabilities() {
                             crate::executor_brief_authority::authorize(Path::new(root), &value)?;
                         }
-                        Ok(value)
+                        if profile.packet() {
+                            let mut packet = crate::executor_development_packet::validate(
+                                value["expanded_goal"].as_str().unwrap_or_default(),
+                                Path::new(root),
+                            )?;
+                            if let Some(fields) = packet.as_object_mut() {
+                                fields
+                                    .entry("target_agent")
+                                    .or_insert_with(|| value["target_agent"].clone());
+                            }
+                            Ok(packet)
+                        } else {
+                            Ok(value)
+                        }
                     })
                 } else {
                     let text = args
                         .first()
                         .and_then(Value::as_str)
                         .ok_or(BridgeError::Protocol("brief text must be a string"))?;
-                    profile
-                        .bound_text(text, Path::new(root))
-                        .map(|()| Value::Null)
+                    if profile.packet() {
+                        crate::executor_development_packet::validate(text, Path::new(root))
+                    } else {
+                        profile
+                            .bound_text(text, Path::new(root))
+                            .map(|()| Value::Null)
+                    }
                 };
             return Ok(match result {
                 Ok(value) => json!({"ok":true,"result":value,"handle":null}),
@@ -247,6 +281,10 @@ impl HookClient for CommandHooks {
                     json!({"ok":false,"error":{"type":error.kind,"message":error.message}})
                 }
             });
+        }
+        if name == "render_brief" && self.brief_profile.as_ref().is_some_and(|p| p.packet()) {
+            let result = args.first().map(crate::executor_development_packet::render);
+            return Ok(json!({"ok":true,"result":result,"handle":null}));
         }
         if name == "render_brief" && self.brief_profile.as_ref().is_some_and(|p| p.execution()) {
             let Some(brief) = args.first().filter(|v| !v.is_null()) else {

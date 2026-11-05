@@ -320,6 +320,16 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             return crate::executor_protocol::decline("resume unsupported backend");
         }
     }
+    let target_policy = crate::executor_admission::native_policy(&cli.root);
+    if let (Ok(Some(policy)), Some(row)) = (&target_policy, &row)
+        && policy
+            .brief_profile
+            .as_ref()
+            .is_some_and(|profile| profile.packet())
+        && !crate::executor_packet_preflight::resume(row, cwd)
+    {
+        return crate::executor_protocol::decline("resume development packet representation");
+    }
     if cross_target {
         let family = row.as_ref().and_then(|row| row["family"].as_str());
         match crate::executor_admission::authorize_command(home, cwd, &cli.root, family) {
@@ -348,7 +358,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         Err(_) => return crate::executor_protocol::decline("resume local source read"),
     }
     let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
-    let target_policy = match crate::executor_admission::native_policy(&cli.root) {
+    let target_policy = match target_policy {
         Ok(policy) => policy,
         Err(error) => {
             crate::executor_protocol::claim();

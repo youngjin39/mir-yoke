@@ -13,6 +13,7 @@ enum Contract {
     CapabilityV1,
     ClosedVerifierV2,
     ExecutionV1,
+    DevelopmentPacketV1,
 }
 #[derive(Clone, Debug)]
 pub struct BriefProfile {
@@ -32,12 +33,13 @@ impl BriefProfile {
         }
         let contract = match data.get("name").and_then(Value::as_str) {
             Some("base_v1") => Contract::BaseV1,
+            Some("development_packet_v1") => Contract::DevelopmentPacketV1,
             Some("execution_v1") => Contract::ExecutionV1,
             Some("capability_v1") => Contract::CapabilityV1,
             Some("closed_verifier_v2") => Contract::ClosedVerifierV2,
             _ => {
                 return Err(invalid(
-                    "brief_profile.name must be base_v1, capability_v1, closed_verifier_v2 or execution_v1",
+                    "brief_profile.name must be base_v1, capability_v1, closed_verifier_v2, execution_v1 or development_packet_v1",
                 ));
             }
         };
@@ -117,6 +119,9 @@ impl BriefProfile {
             ));
         }
         Ok(())
+    }
+    pub fn packet(&self) -> bool {
+        self.contract == Contract::DevelopmentPacketV1
     }
     pub fn execution(&self) -> bool {
         self.contract == Contract::ExecutionV1

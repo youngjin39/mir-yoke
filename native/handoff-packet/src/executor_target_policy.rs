@@ -511,11 +511,9 @@ impl NativePolicy {
         if self.brief_profile.is_some() {
             hooks.push("validate_brief");
         }
-        if self
-            .brief_profile
-            .as_ref()
-            .is_some_and(|profile| profile.capabilities() || profile.execution())
-        {
+        if self.brief_profile.as_ref().is_some_and(|profile| {
+            profile.capabilities() || profile.execution() || profile.packet()
+        }) {
             hooks.push("render_brief");
         }
         if self

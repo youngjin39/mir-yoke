@@ -245,6 +245,15 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
             return 1;
         }
     };
+    if target_policy.as_ref().is_some_and(|policy| {
+        policy
+            .brief_profile
+            .as_ref()
+            .is_some_and(|profile| profile.packet())
+    }) && !crate::executor_packet_preflight::execute(&argv, cwd)
+    {
+        return crate::executor_protocol::decline("execute development packet representation");
+    }
     let native_only = target_policy.is_some()
         && !argv_root(&argv, cwd)
             .join("tools")
@@ -675,7 +684,7 @@ pub(crate) fn resolve_args(args: &Value, cwd: &Path, local: &LocalConfig) -> Res
         .map_err(|e| e.to_string())?;
     shell_words(text)
 }
-fn shell_words(text: &str) -> Result<Vec<String>> {
+pub(crate) fn shell_words(text: &str) -> Result<Vec<String>> {
     let mut chars = text.chars();
     let mut out = Vec::new();
     let mut word = String::new();
