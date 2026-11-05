@@ -3,10 +3,10 @@ use crate::compact_snapshot::{BEGIN, END, read_handoff};
 use regex::Regex;
 use std::{
     fs,
-    io::{self, Write},
+    io::{self, Read, Seek, Write},
     path::{Path, PathBuf},
-    process::Command,
-    time::{Instant, SystemTime, UNIX_EPOCH},
+    process::{Command, Output, Stdio},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 const SCAFFOLD: &str = "# Session Handoff — Current\n\n## Completed Work\n- Add only completed outcomes useful to the next session.\n\n## Decisions\n- Add only durable decisions needed by the next session.\n\n## Unresolved Issues\n- Add only unresolved work or blockers.\n\n## Next Actions\n- Add only the next actions needed to resume.\n\n## Modified Files\n- Add only files or groups needed to understand the handoff.\n\n## Verification Results\n- Add the checks run and their observed results.\n\n## Key Risks\n- Add only risks that remain relevant to the next session.\n";
@@ -68,14 +68,63 @@ pub fn atomic_write(
     Ok(())
 }
 
-fn files(root: &Path, extension: &str, output: &mut Vec<PathBuf>) {
+// One shared budget for both Git commands and recursive runner/dispatch discovery.
+const COLLECTION_BUDGET: Duration = Duration::from_secs(2);
+
+fn git(project: &Path, args: &[&str], deadline: Instant) -> io::Result<Output> {
+    if Instant::now() >= deadline {
+        return Err(io::ErrorKind::TimedOut.into());
+    }
+    // File-backed capture avoids pipe-buffer deadlock while polling the child.
+    let mut stdout = tempfile::tempfile()?;
+    let mut stderr = tempfile::tempfile()?;
+    let mut child = Command::new("git")
+        .arg("-C")
+        .arg(project)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(stdout.try_clone()?)
+        .stderr(stderr.try_clone()?)
+        .spawn()?;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(5)),
+            result => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(result
+                    .err()
+                    .unwrap_or_else(|| io::ErrorKind::TimedOut.into()));
+            }
+        }
+    };
+    stdout.rewind()?;
+    stderr.rewind()?;
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    stdout.read_to_end(&mut out)?;
+    stderr.read_to_end(&mut err)?;
+    Ok(Output {
+        status,
+        stdout: out,
+        stderr: err,
+    })
+}
+
+fn files(root: &Path, extension: &str, output: &mut Vec<PathBuf>, deadline: Instant) {
+    if Instant::now() >= deadline {
+        return;
+    }
     if let Ok(entries) = fs::read_dir(root) {
         for entry in entries.flatten() {
+            if Instant::now() >= deadline {
+                break;
+            }
             let path = entry.path();
             // Do not follow directory symlinks, matching find without -L.
             if let Ok(kind) = entry.file_type() {
                 if kind.is_dir() {
-                    files(&path, extension, output);
+                    files(&path, extension, output, deadline);
                 } else if kind.is_file() && path.extension().is_some_and(|ext| ext == extension) {
                     output.push(path);
                 }
@@ -84,7 +133,7 @@ fn files(root: &Path, extension: &str, output: &mut Vec<PathBuf>) {
     }
 }
 
-fn snapshot(project: &Path) -> (String, String) {
+fn snapshot(project: &Path, deadline: Instant) -> (String, String) {
     let mut body = format!("{BEGIN}\n## Runtime Snapshot (Generated)\n\n### Active Plan Items\n");
     if let Ok(plan) = fs::read_to_string(project.join("tasks/plan.md")) {
         let pattern = Regex::new(
@@ -113,17 +162,19 @@ fn snapshot(project: &Path) -> (String, String) {
         body.push_str("- No active plan cursor.");
     }
     body.push_str("\n\n### Working Tree\n");
-    let git = |args: &[&str]| {
-        Command::new("git")
-            .arg("-C")
-            .arg(project)
-            .args(args)
-            .output()
-    };
-    if git(&["rev-parse", "--is-inside-work-tree"]).is_ok_and(|output| output.status.success()) {
-        let count = git(&["status", "--short", "--untracked-files=all"])
-            .map(|output| output.stdout.iter().filter(|byte| **byte == b'\n').count())
-            .unwrap_or(0);
+    let status = git(project, &["rev-parse", "--is-inside-work-tree"], deadline)
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|_| {
+            git(
+                project,
+                &["status", "--short", "--untracked-files=all"],
+                deadline,
+            )
+            .ok()
+        });
+    if let Some(output) = status {
+        let count = output.stdout.iter().filter(|byte| **byte == b'\n').count();
         if count == 0 {
             body.push_str("- Working tree clean.\n");
         } else {
@@ -135,12 +186,15 @@ fn snapshot(project: &Path) -> (String, String) {
         body.push_str("- Git status unavailable.\n");
     }
     let mut runners = Vec::new();
-    files(&project.join("tasks/runner"), "md", &mut runners);
+    files(&project.join("tasks/runner"), "md", &mut runners, deadline);
     runners.sort_by(|a, b| b.cmp(a));
     let active = Regex::new(
         r"(?i)^- status:[\t\r\x0b\x0c ]*`?(active|running|in_progress)`?[\t\r\x0b\x0c ]*$",
     );
     let runner = runners.into_iter().find_map(|path| {
+        if Instant::now() >= deadline {
+            return None;
+        }
         let text = fs::read_to_string(&path).ok()?;
         text.lines()
             .any(|line| active.as_ref().is_ok_and(|re| re.is_match(line)))
@@ -166,7 +220,12 @@ fn snapshot(project: &Path) -> (String, String) {
             body.push('\n');
         }
         let mut dispatches = Vec::new();
-        files(&project.join("tasks/dispatch"), "json", &mut dispatches);
+        files(
+            &project.join("tasks/dispatch"),
+            "json",
+            &mut dispatches,
+            deadline,
+        );
         dispatches.sort_by(|a, b| b.cmp(a));
         if let Some(path) = dispatches.first() {
             body.push_str(&format!(
@@ -208,12 +267,12 @@ fn python_value(value: &serde_json::Value) -> String {
 
 pub fn pre_compact(project: &Path) -> (String, String) {
     let start = Instant::now();
-    let result = checkpoint(project);
+    let result = checkpoint(project, start + COLLECTION_BUDGET);
     telemetry(project, "pre-compact", 0, start);
     result
 }
 
-fn checkpoint(project: &Path) -> (String, String) {
+fn checkpoint(project: &Path, deadline: Instant) -> (String, String) {
     let dir = project.join("tasks/handoffs");
     let path = dir.join("session-handoff-LATEST.md");
     if fs::create_dir_all(&dir).is_err() {
@@ -225,7 +284,7 @@ fn checkpoint(project: &Path) -> (String, String) {
     if !path.is_file() {
         let _ = fs::write(&path, SCAFFOLD);
     }
-    let (snapshot, mut stderr) = snapshot(project);
+    let (snapshot, mut stderr) = snapshot(project, deadline);
     let rendered = read_handoff(&path)
         .map_err(|_| (0, "canonical handoff is unreadable"))
         .and_then(|body| replace_section(&body, &snapshot));

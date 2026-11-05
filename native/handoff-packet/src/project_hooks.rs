@@ -61,8 +61,9 @@ fn main() -> ExitCode {
         let project = env::var_os("CLAUDE_PROJECT_DIR")
             .filter(|path| !path.is_empty())
             .unwrap_or_else(|| ".".into());
-        let path =
-            std::path::PathBuf::from(project).join("tasks/handoffs/session-handoff-LATEST.md");
+        let project = std::path::PathBuf::from(project);
+        let path = project.join("tasks/handoffs/session-handoff-LATEST.md");
+        let started = std::time::Instant::now();
         let mut input = Vec::new();
         // PostCompact ignores stdin, as the shell reference does.
         let stdout = if args[0] == "post-compact" {
@@ -71,6 +72,9 @@ fn main() -> ExitCode {
             let _ = io::stdin().read_to_end(&mut input);
             compact_snapshot::compact_resume(&path, &input)
         };
+        if args[0] == "post-compact" || !stdout.is_empty() {
+            checkpoint::telemetry(&project, args[0].to_str().unwrap(), 0, started);
+        }
         return match io::stdout().write_all(stdout.as_bytes()) {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {

@@ -2,33 +2,13 @@
 #[path = "../src/compact_snapshot.rs"]
 mod compact_snapshot;
 
-use serde_json::Value;
-use std::{
-    fs,
-    io::Write,
-    process::{Command, Stdio},
-};
+#[cfg(unix)]
+#[path = "support/replay.rs"]
+mod frozen;
+use std::fs;
 
-fn decode(value: &Value) -> Vec<u8> {
-    let alphabet = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut accumulator = 0u32;
-    let mut bits = 0;
-    let mut output = Vec::new();
-    for byte in value.as_str().unwrap().bytes().take_while(|b| *b != b'=') {
-        let digit = alphabet.iter().position(|b| *b == byte).unwrap() as u32;
-        accumulator = (accumulator << 6) | digit;
-        bits += 6;
-        if bits >= 8 {
-            bits -= 8;
-            output.push((accumulator >> bits) as u8);
-        }
-    }
-    output
-}
-
+#[cfg(unix)]
 fn replay(template: bool, command: &str, count: usize) {
-    let records: Vec<Value> =
-        serde_json::from_str(include_str!("fixtures/w1/records.json")).unwrap();
     let family = format!(
         "{}.claude/hooks/{command}.sh",
         if template {
@@ -37,71 +17,25 @@ fn replay(template: bool, command: &str, count: usize) {
             ""
         }
     );
-    let mut seen = 0;
-    for record in records.iter().filter(|r| r["family"] == family) {
-        let id = record["id"].as_str().unwrap();
-        let root = std::env::temp_dir().join(format!(
-            "project-hooks-{}-{}-{}-{}",
-            std::process::id(),
-            template,
-            command,
-            record["case"].as_str().unwrap()
-        ));
-        fs::create_dir_all(root.join("tasks/handoffs")).unwrap();
-        let handoff = root.join("tasks/handoffs/session-handoff-LATEST.md");
-        if let Some(entry) = record["setup"].get("project/tasks/handoffs/session-handoff-LATEST.md")
-        {
-            fs::write(&handoff, decode(&entry["base64"])).unwrap();
-        }
-        let mut child = Command::new(env!("CARGO_BIN_EXE_project-hooks"))
-            .arg(command)
-            .env("CLAUDE_PROJECT_DIR", &root)
-            .current_dir(&root)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .unwrap();
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(&decode(&record["stdin"]))
-            .unwrap();
-        let output = child.wait_with_output().unwrap();
-        assert_eq!(
-            output.status.code(),
-            Some(record["expected"]["exit"].as_i64().unwrap() as i32),
-            "{id}"
-        );
-        assert_eq!(
-            output.stdout,
-            decode(&record["expected"]["stdout"]),
-            "{id}: stdout"
-        );
-        assert_eq!(
-            output.stderr,
-            decode(&record["expected"]["stderr"]),
-            "{id}: stderr"
-        );
-        fs::remove_dir_all(root).unwrap();
-        seen += 1;
-    }
-    assert_eq!(seen, count);
+    frozen::replay(&family, count);
 }
 
+#[cfg(unix)]
 #[test]
 fn own_post_compact_replay() {
     replay(false, "post-compact", 7);
 }
+#[cfg(unix)]
 #[test]
 fn template_post_compact_replay() {
     replay(true, "post-compact", 7);
 }
+#[cfg(unix)]
 #[test]
 fn own_compact_resume_replay() {
     replay(false, "compact-resume", 9);
 }
+#[cfg(unix)]
 #[test]
 fn template_compact_resume_replay() {
     replay(true, "compact-resume", 9);
