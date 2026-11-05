@@ -199,16 +199,18 @@ mod tests {
                 fs::remove_file(agent).unwrap();
             }
             let result = policy.pre_execute(&root, &root, &root, &mut args, &Default::default());
-            let expected = case.get("message").map(|v| {
-                v.as_str()
-                    .unwrap()
-                    .replace("<root>", root.to_str().unwrap())
-            });
-            match expected {
+            // Error text carries the path raw and as a Python repr (backslashes doubled on Windows).
+            let repr_root = root.to_str().unwrap().replace('\\', "\\\\");
+            let normalize = |value: &str| {
+                value
+                    .replace(&repr_root, "<root>")
+                    .replace(root.to_str().unwrap(), "<root>")
+            };
+            match case.get("message").and_then(Value::as_str) {
                 Some(expected) => {
                     let error = result.unwrap_err();
                     assert_eq!(error.kind, case["kind"].as_str().unwrap(), "{name}");
-                    assert_eq!(error.message, expected, "{name}");
+                    assert_eq!(normalize(&error.message), expected, "{name}");
                 }
                 None => result.unwrap(),
             }

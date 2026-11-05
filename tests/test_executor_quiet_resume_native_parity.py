@@ -67,7 +67,9 @@ def test_captured_owner(tmp_path, monkeypatch, case):
         except (Exception, SystemExit) as caught:
             error = dict(kind=type(caught).__name__, message=str(caught))
     assert error == {key: case[key] for key in ('kind', 'message') if key in case}
-    assert stderr.getvalue().replace(str(tmp_path), '<root>') == case['stderr']
+    repr_root = str(tmp_path).replace('\\', '\\\\')  # Python repr doubles backslashes.
+    assert stderr.getvalue().replace(repr_root, '<root>').replace(
+        str(tmp_path), '<root>') == case['stderr']
     assert json.loads(json.dumps(vars(args)).replace(root, '<root>')) == case['patch']
     assert namespace['_REQUESTED_BACKEND'].get() == case['requested_backend']
 
