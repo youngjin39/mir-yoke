@@ -23,6 +23,7 @@ serde = "1"
 tempfile = "3"
 serde_json = { version = "1", features = ["unbounded_depth", "float_roundtrip", "raw_value"] }
 regex = "1"
+sqlite-vec = "=0.1.9"
 fancy-regex = "0.14"
 toml = { version = "=0.8.2", default-features = false, features = ["parse", "preserve_order"] }
 rusqlite = { version = "=0.40.2", features = ["bundled", "trace", "functions"] }

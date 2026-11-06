@@ -1,4 +1,4 @@
-//! Connection and migration parity with memory/store.py (vec disabled slice).
+//! Connection and migration parity with memory/store.py (explicit bundled vec loading).
 use rusqlite::{Connection as Sqlite, OpenFlags};
 use std::{ffi::CString, fmt, path::Path, time::Duration};
 #[derive(Debug)]
@@ -74,8 +74,79 @@ pub struct Connection {
     pub conn: Sqlite,
     pub vec_available: bool,
     pub vec_reason: &'static str,
+    vec_error: Option<String>,
 }
-pub fn connect(path: &Path, timeout: Option<f64>) -> Result<Connection, Error> {
+impl Connection {
+    /// Optional Python-compatible reason; the legacy field remains caller-compatible.
+    pub fn vec_reason(&self) -> Option<&str> {
+        if self.vec_available {
+            None
+        } else {
+            Some(self.vec_error.as_deref().unwrap_or(self.vec_reason))
+        }
+    }
+}
+#[derive(Clone, Copy)]
+pub enum VecLoading {
+    Disabled,
+    Bundled,
+    /// Inject unavailable loading without process-global state, as in the Python oracle.
+    Unavailable(&'static str),
+}
+pub struct ConnectOptions {
+    pub timeout: Option<f64>,
+    pub vec_loading: VecLoading,
+}
+impl From<Option<f64>> for ConnectOptions {
+    fn from(timeout: Option<f64>) -> Self {
+        Self {
+            timeout,
+            vec_loading: VecLoading::Disabled,
+        }
+    }
+}
+// Register only on this connection; no global extension or dynamic loading permission.
+#[allow(unsafe_code)]
+fn load_sqlite_vec(conn: &Sqlite) -> Result<(), rusqlite::Error> {
+    type Init = unsafe extern "C" fn(
+        *mut rusqlite::ffi::sqlite3,
+        *mut *mut std::ffi::c_char,
+        *const rusqlite::ffi::sqlite3_api_routines,
+    ) -> std::ffi::c_int;
+    let mut message: *mut std::ffi::c_char = std::ptr::null_mut();
+    // SAFETY: sqlite-vec 0.1.9 exports this exact C ABI but declares an untyped symbol.
+    // Its crate builds SQLITE_CORE, so pApi is unused. On failure the init writes an
+    // sqlite3_mprintf string through pzErrMsg, which points at the live local `message`.
+    // The connection owns a live handle, used synchronously with no outstanding statements.
+    let rc = unsafe {
+        let init: Init = std::mem::transmute(sqlite_vec::sqlite3_vec_init as *const ());
+        init(conn.handle(), &mut message, std::ptr::null())
+    };
+    let detail = (!message.is_null()).then(|| {
+        // SAFETY: a non-null message is a NUL-terminated sqlite3_mprintf allocation that
+        // this function owns; it is copied once and then released with sqlite3_free.
+        unsafe {
+            let text = std::ffi::CStr::from_ptr(message)
+                .to_string_lossy()
+                .into_owned();
+            rusqlite::ffi::sqlite3_free(message.cast());
+            text
+        }
+    });
+    if rc == rusqlite::ffi::SQLITE_OK {
+        Ok(())
+    } else {
+        Err(rusqlite::Error::SqliteFailure(
+            rusqlite::ffi::Error::new(rc),
+            detail,
+        ))
+    }
+}
+pub fn connect(path: &Path, options: impl Into<ConnectOptions>) -> Result<Connection, Error> {
+    let ConnectOptions {
+        timeout,
+        vec_loading,
+    } = options.into();
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -91,10 +162,23 @@ pub fn connect(path: &Path, timeout: Option<f64>) -> Result<Connection, Error> {
     conn.execute_batch(
         "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA foreign_keys=ON;",
     )?;
+    let (vec_available, vec_reason, vec_error) = match vec_loading {
+        VecLoading::Disabled => (false, "vec loading disabled by caller", None),
+        VecLoading::Unavailable(reason) => (false, reason, None),
+        VecLoading::Bundled => match load_sqlite_vec(&conn) {
+            Ok(()) => (true, "", None),
+            Err(e) => (
+                false,
+                "load_extension failed",
+                Some(format!("load_extension failed: {e}")),
+            ),
+        },
+    };
     Ok(Connection {
         conn,
-        vec_available: false,
-        vec_reason: "vec loading disabled by caller",
+        vec_available,
+        vec_reason,
+        vec_error,
     })
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,7 +191,9 @@ pub fn migrations() -> Vec<MigrationEntry> {
     macro_rules! embedded {
         ($($name:literal),*) => { vec![$(MigrationEntry {
             version: $name[..3].into(), name: $name.into(),
-            body: include_str!(concat!("../../../../../src/mir/core/engine/memory/migrations/", $name)).into(),
+            body: include_str!(concat!(
+                "../../../../../src/mir/core/engine/memory/migrations/", $name
+            )).into(),
         }),*] };
     }
     embedded!(
@@ -143,7 +229,10 @@ pub fn discover(root: &Path) -> Result<Vec<MigrationEntry>, Error> {
     entries.sort_by(|a, b| a.version.cmp(&b.version));
     Ok(entries)
 }
-pub const SCHEMA_MIGRATIONS_DDL: &str = "CREATE TABLE IF NOT EXISTS schema_migrations (\n  version    TEXT PRIMARY KEY,\n  name       TEXT NOT NULL,\n  applied_at TEXT NOT NULL\n);";
+pub const SCHEMA_MIGRATIONS_DDL: &str = concat!(
+    "CREATE TABLE IF NOT EXISTS schema_migrations (\n  version    TEXT PRIMARY KEY,\n",
+    "  name       TEXT NOT NULL,\n  applied_at TEXT NOT NULL\n);"
+);
 pub fn complete_statements(body: &str) -> Result<Vec<String>, Error> {
     let (mut buffer, mut statements) = (String::new(), Vec::new());
     for line in body.split_inclusive('\n') {
@@ -186,7 +275,18 @@ pub fn apply_entries(conn: &Sqlite, entries: &[MigrationEntry]) -> Result<Vec<St
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(std::io::Error::other)?;
-        tx.execute("INSERT INTO schema_migrations(version, name, applied_at) VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%S', ?, 'unixepoch') || printf('.%06d+00:00', ?))", rusqlite::params![m.version, m.name, now.as_secs().to_string(), now.subsec_micros()])?;
+        tx.execute(
+            concat!(
+                "INSERT INTO schema_migrations(version, name, applied_at) VALUES (?, ?, ",
+                "strftime('%Y-%m-%dT%H:%M:%S', ?, 'unixepoch') || printf('.%06d+00:00', ?))"
+            ),
+            rusqlite::params![
+                m.version,
+                m.name,
+                now.as_secs().to_string(),
+                now.subsec_micros()
+            ],
+        )?;
         tx.commit()?;
         applied.push(m.version.clone());
     }
@@ -216,7 +316,21 @@ pub fn current_fact_filter_sql(alias: &str) -> Result<String, Error> {
         return Err(Error::InvalidAlias(crate::executor_execute::repr(alias)));
     }
     Ok(format!(
-        "AND NOT EXISTS (\n      SELECT 1 FROM facts terminal\n       WHERE terminal.subject_entity_id = {alias}.subject_entity_id\n         AND terminal.predicate = 'status' AND terminal.status = 'active'\n         AND terminal.polarity = 'asserted' AND (\n           lower(trim(terminal.object_literal)) IN ('archived', 'rejected', 'superseded', 'superseded-design', 'historical', 'historical-snapshot', 'historical-manual-snapshot', 'historical-ledger', 'applied-ledger-v1', 'done')\n           OR lower(trim(terminal.object_literal)) LIKE 'historical%'\n           OR lower(trim(terminal.object_literal)) LIKE 'superseded%'\n         ))"
+        concat!(
+            "AND NOT EXISTS (\n",
+            "      SELECT 1 FROM facts terminal\n",
+            "       WHERE terminal.subject_entity_id = {alias}.subject_entity_id\n",
+            "         AND terminal.predicate = 'status' AND terminal.status = 'active'\n",
+            "         AND terminal.polarity = 'asserted' AND (\n",
+            "           lower(trim(terminal.object_literal)) IN ('archived', 'rejected', ",
+            "'superseded', 'superseded-design', 'historical', 'historical-snapshot', ",
+            "'historical-manual-snapshot', 'historical-ledger', 'applied-ledger-v1', ",
+            "'done')\n",
+            "           OR lower(trim(terminal.object_literal)) LIKE 'historical%'\n",
+            "           OR lower(trim(terminal.object_literal)) LIKE 'superseded%'\n",
+            "         ))",
+        ),
+        alias = alias
     ))
 }
 
@@ -328,9 +442,10 @@ pub fn assert_immutable_snapshot_state(path: &Path, expected: &SnapshotState) ->
         }
     }
     if current != *expected {
-        return Err(Error::Snapshot(
-            "immutable read refused because SQLite database or journal files changed during the snapshot interval",
-        ));
+        return Err(Error::Snapshot(concat!(
+            "immutable read refused because SQLite database or journal files changed ",
+            "during the snapshot interval"
+        )));
     }
     Ok(())
 }
@@ -370,6 +485,7 @@ pub fn connect_read_only(path: &Path) -> Result<Connection, Error> {
         conn,
         vec_available: false,
         vec_reason: "vec loading disabled by immutable reader",
+        vec_error: None,
     })
 }
 
