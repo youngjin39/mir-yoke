@@ -118,6 +118,8 @@ for name, args in [('help', ['--help']), ('missing_profile', []), ('defaults', [
         ['json', 'finalize', 'architecture-initialized', 'skip-capability-activation',
          'allow-incomplete']]:
     CASES['parse.' + name] = lambda tmp, a=args: parse(tmp, a)
+# 'missing_profile' (no arguments) is overwritten by the missing --profile value case.
+CASES['parse.no_args'] = lambda tmp: parse(tmp, [])
 for mode in ['default', 'valid', 'not_directory', 'unwritable', 'unset', 'wrong',
              'missing_runtime', 'missing_dirs', 'different', 'payload_device', 'stat_error']:
     CASES['storage.' + mode] = lambda tmp, m=mode: storage(tmp, m)

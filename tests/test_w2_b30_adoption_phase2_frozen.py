@@ -151,6 +151,8 @@ for name, queries in [('none', None), ('empty', []), ('type', 'query'), ('object
         ('sanitize_' + str(i), [{**QUERY, 'query': q}]) for i, q in enumerate(
             ['"alpha beta"', 'alpha OR beta', '---', '\u03b1', 'alpha"beta', 'alpha:beta'])]:
     CASES[f'memory.{name}'] = lambda tmp, q=queries: memory(tmp, 'valid', q)
+# The 'empty' mode above shares its name with the empty query list; keep both observed.
+CASES['memory.mode_empty'] = lambda tmp: memory(tmp, 'empty', [QUERY])
 PHASE = [('surface.open_gaps', 0), ('surface.coverage', None), ('surface.coverage', {}),
          ('surface.coverage.l1', []), ('surface.coverage.l1.total', 0),
          ('surface.coverage.l1.total', 2), ('surface.coverage.l1.tbd', 1),

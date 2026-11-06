@@ -28,6 +28,7 @@
 "memory.fields": {"value": {"len": 1541, "sha256": "28522c807bb991db62b2099824522c529047b9e38ed0e424409afc0d1a8798ed"}},
 "memory.missing": {"value": [["memory database is missing: .mir/memory.db"], {"queries": [], "status": "fail"}]},
 "memory.mixed": {"value": {"len": 1581, "sha256": "845bfc3956ed6363a003d8ff40ca090bfda0caf34496a74478a777e2b296db26"}},
+"memory.mode_empty": {"value": {"len": 1693, "sha256": "67ed8417134a82285a6dabfa87c04a93e68d88bf6bc24867b1536188f1fc45a8"}},
 "memory.none": {"value": {"len": 1393, "sha256": "bb888fd0eabd75a1af0ff2537bbf65c0bbdf8ea76a2371ff109fda9605af8c3d"}},
 "memory.object": {"value": {"len": 1519, "sha256": "b3ba3d21cc9e40ac83cb66519ac21ce1215db0a2f43c5d8bb8db59a9732e27bb"}},
 "memory.path": {"value": {"len": 1542, "sha256": "0575441c51b30158f20a49e13d959493132f29dbd061e98335ff911ec9df34ff"}},
