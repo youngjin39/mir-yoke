@@ -32,6 +32,7 @@ pub struct NodeData {
     pub style: Option<char>,
     pub line: usize,
     pub column: usize,
+    pub end_line: usize,
 }
 /// Arena indices preserve shared and cyclic aliases without reference-count cycles.
 #[derive(Debug)]
@@ -864,6 +865,7 @@ impl Composer {
             kind,
             tag,
             style,
+            end_line: mark.line,
             line: mark.line,
             column: mark.column,
         });
@@ -1044,6 +1046,7 @@ impl Composer {
             }
             _ => {}
         }
+        self.arena[id].end_line = self.tokens[self.pos - 1].end.line;
         Ok(id)
     }
     fn pair(&mut self, depth: usize, flow: bool, mark: Mark) -> Result<(usize, usize)> {

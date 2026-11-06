@@ -2,5 +2,6 @@
 pub mod distill;
 pub mod external_store;
 pub mod predicates;
+pub mod relation_facts;
 pub mod sanitize;
 pub mod store;

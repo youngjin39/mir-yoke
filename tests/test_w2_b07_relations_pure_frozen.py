@@ -29,6 +29,16 @@ def batch(function, inputs):
                         for value in inputs]
 
 
+MULTILINE_EDGES = [
+    'memory_relations:\n - subject: A\n   predicate: depends_on\n   object: B\n'
+    ' # trailing comment\n\nstatus: active',
+    'memory_relations:\n - [A,\n    depends_on,\n    B]  # tail\n - [B, depends_on, C]',
+    'memory_relations:\n -\n   - A\n   - depends_on\n   - B\n# c\n',
+    'memory_relations:\n - {subject: A,\n    predicate: depends_on, object: B}\n'
+    '\n # gap\nstatus: active',
+]
+
+
 def doc(body):
     return '---\n' + body + '\n---\nbody\n'
 
@@ -154,6 +164,8 @@ CASES = {
         f' - [A{i}, depends_on, B]' for i in range(n))) for n in [0, 64, 65]]),
     'parse_quote': batch(parse, [doc('memory_relations:\n - [A, depends_on, B] #' + 'x' * n)
                                 for n in [4072, 4073, 4074, 4096]]),
+    # Multi-line flow and block edges pin the quoted span (start to end mark lines).
+    'parse_multiline_quote': batch(parse, [doc(body) for body in MULTILINE_EDGES]),
     'parse_size': batch(parse, [doc('#' + 'x' * (n - 2))
                                for n in [1048575, 1048576, 1048577]]),
     'root_validation': root_validation,
