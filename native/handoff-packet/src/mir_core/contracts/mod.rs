@@ -1,14 +1,21 @@
-//! Frozen contract validation; deliberately limited to the five-model slice.
+//! Frozen contract validation with ordered, kind-driven field specifications.
 pub mod agent_profile;
+pub mod compiled_job;
 pub mod conductor_mode;
 pub mod discord_event;
+pub mod dispatch_brief;
+pub mod gate;
 pub mod provider_result;
 pub mod route_decision;
+pub mod task_spec;
 use serde_json::{Value, json};
 pub type ValidationError = Value;
 #[derive(Clone, Copy)]
 enum Kind {
     String,
+    Min(&'static Kind, usize),
+    Pattern(&'static str),
+    Model(&'static str, fn() -> Vec<Field>),
     Int,
     Float,
     Bool,
@@ -29,6 +36,50 @@ struct Validated {
 fn coerce(value: &mut Value, kind: Kind, loc: Vec<Value>, errors: &mut Vec<Value>) -> Option<f64> {
     let mut parsed = None;
     let failure = match kind {
+        Kind::Min(inner, min) => {
+            let before = errors.len();
+            let parsed = coerce(value, *inner, loc.clone(), errors);
+            if errors.len() == before {
+                if let Some(text) = value.as_str()
+                    && text.chars().count() < min
+                {
+                    errors.push(json!({"loc":loc,"msg":format!("String should have at least {min} character"),"type":"string_too_short"}));
+                } else if let Some(items) = value.as_array()
+                    && items.len() < min
+                {
+                    errors.push(json!({"loc":loc,"msg":format!("Tuple should have at least {min} item after validation, not {}", items.len()),"type":"too_short"}));
+                }
+            }
+            return parsed;
+        }
+        Kind::Pattern(pattern) => {
+            coerce(value, Kind::String, loc.clone(), errors);
+            if let Some(text) = value.as_str()
+                && regex::Regex::new(pattern).is_ok_and(|r| !r.is_match(text))
+            {
+                errors.push(json!({"loc":loc,"msg":format!("String should match pattern '{pattern}'"),"type":"string_pattern_mismatch"}));
+            }
+            None
+        }
+        Kind::Model(name, fields) => {
+            if !value.is_object() {
+                errors.push(json!({"loc":loc,"msg":format!("Input should be a valid dictionary or instance of {name}"),"type":"model_type"}));
+            } else {
+                match validate(value, &fields()) {
+                    Ok(valid) => *value = valid.dump,
+                    Err(nested) => {
+                        for error in nested[1].as_array().into_iter().flatten() {
+                            let mut error = error.clone();
+                            let mut path = loc.clone();
+                            path.extend(error["loc"].as_array().into_iter().flatten().cloned());
+                            error["loc"] = json!(path);
+                            errors.push(error);
+                        }
+                    }
+                }
+            }
+            None
+        }
         Kind::String if !value.is_string() => {
             Some(("string_type", "Input should be a valid string"))
         }
@@ -197,22 +248,37 @@ fn validate(data: &Value, fields: &[Field]) -> Result<Validated, ValidationError
         Err(json!(["ValidationError", errors]))
     }
 }
+fn render_fields(data: &Value, fields: &[Field]) -> String {
+    let fields: Vec<_> = fields
+        .iter()
+        .map(|(name, kind, ..)| {
+            let value = if let Kind::Model(_, fields) = kind {
+                render_fields(&data[name], &fields())
+            } else {
+                crate::mir_core::canonical::canonical_json(&data[name], Some(&[]))
+            };
+            format!("{}:{value}", json!(name))
+        })
+        .collect();
+    format!("{{{}}}", fields.join(","))
+}
 macro_rules! contract {
     (@fields; $($spec:expr),* $(,)?) => { vec![$($spec),*] };
-    ($name:ident; $($spec:expr),+ $(,)?) => {
+    ($name:ident; $($spec:expr),+ $(,)? $(; after $after:path)?) => {
         #[derive(Clone, Debug, PartialEq)]
         pub struct $name(super::Validated);
         impl $name {
-            fn fields() -> Vec<super::Field> { vec![$($spec),+] }
+            pub(super) fn fields() -> Vec<super::Field> { vec![$($spec),+] }
             pub fn from_dict(data: &serde_json::Value) -> Result<Self, super::ValidationError> {
-                super::validate(data, &Self::fields()).map(Self)
+                let value = super::validate(data, &Self::fields())?;
+                $($after(&value.dump).map_err(|msg| serde_json::json!(["ValidationError", [{"loc":[],"msg":format!("Value error, {msg}"),"type":"value_error"}]]))?;)?
+                Ok(Self(value))
             }
             pub fn to_dict(&self) -> serde_json::Value {
                 self.0.dump.clone()
             }
             pub fn to_json(&self) -> std::string::String {
-                let fields: Vec<_> = Self::fields().iter().map(|f| format!("{}:{}", serde_json::json!(f.0), crate::mir_core::canonical::canonical_json(&self.0.dump[f.0], Some(&[])))).collect();
-                format!("{{{}}}", fields.join(","))
+                super::render_fields(&self.0.dump, &Self::fields())
             }
         }
         impl serde::Serialize for $name {

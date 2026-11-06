@@ -167,6 +167,29 @@ CASES["ProviderResult.coerce.wall_seconds_inf"] = lambda tmp: repr(
     ProviderResult(**{**MINIMAL[ProviderResult], "wall_seconds": "inf"}).wall_seconds)
 _coerce(ProviderResult, "argv_snapshot", [[1], "ab", None])
 _coerce(ProviderResult, "stdout_tail", [None, 5])
+_coerce(TaskSpec, "intent", [None, 5])
+_coerce(TaskSpec, "scope", [["a", 1], None, [""]])
+_coerce(TaskSpec, "budget", [{"a": 1.5}, {"a": "1_0"}, [], None, {"a": True}])
+_coerce(TaskSpec, "parent_task_id", [None, "3", 3.0, True])
+_coerce(TaskSpec, "extensions", [[], None])
+_coerce(TaskSpec, "target_files", [[1], {"a": 1}])
+_coerce(TaskSpec, "stack", [5])
+_coerce(CompiledJob, "spec", [{}, "x", None, {**SPEC, "role_binding": "bad"}])
+_coerce(CompiledJob, "route", [{**ROUTE, "mode": "bad"}, None])
+_coerce(CompiledJob, "guides_plan", [{"a": "x"}, {"a": [1]}, {"a": None}])
+_coerce(CompiledJob, "resolved_files", [{"a": 1}, []])
+_coerce(DispatchBrief, "version", [1.0, True, "x", None])
+_coerce(DispatchBrief, "source_refs", [{}, "x", None, {**REFS, "extra": 1}])
+_coerce(DispatchBrief, "task_id", [None])
+_coerce(DispatchBrief, "owned_scope", [[""], ["a", 1], "ab"])
+_coerce(DispatchBrief, "phase_id", [5, None])
+_coerce(PathFingerprint, "inode", [1.0, True, "1_0", None])
+_coerce(PathFingerprint, "sha256", [5, None])
+_coerce(ValidationResult, "ok", [1, 0, 2, "on", "t", 1.0])
+_coerce(ValidationResult, "reason", [None])
+# "resume_state_ref" ["wrong"] above is overwritten by the [""] loop; keep the mismatch witnessed.
+_coerce(DispatchBrief, "resume_state_ref", ["wrong"])
+CASES["DispatchBrief.coerce.task_id_quote"] = _model(DispatchBrief, {**BRIEF, "task_id": "it's"})
 CASES["TaskSpec.json_unicode"] = _model(TaskSpec, {**SPEC, "intent": "\u00e9\n"}, "json")
 CASES["DispatchBrief.validator_precedence"] = _model(
     DispatchBrief, {**BRIEF, "version": 2, "resume_state_ref": "wrong"})
@@ -217,3 +240,15 @@ def test_every_case_has_a_frozen_record():
 @pytest.mark.parametrize("name", sorted(CASES))
 def test_reference_matches_frozen_record(name, tmp_path):
     assert observe(CASES[name], tmp_path) == RECORDS[name]
+
+
+INPUTS = FIXTURE.parent / "b01-inputs.json"
+
+
+def test_native_input_fixture_matches_cases():
+    """The native replay reads case inputs from b01-inputs.json; keep it equal to CASES."""
+    inputs = json.loads(INPUTS.read_text(encoding="ascii"))
+    for name, data in inputs.items():
+        cells = dict(zip(CASES[name].__code__.co_freevars,
+                         (cell.cell_contents for cell in CASES[name].__closure__), strict=True))
+        assert json.loads(json.dumps(cells["data"])) == data, name
