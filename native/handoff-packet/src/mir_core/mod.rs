@@ -8,3 +8,4 @@ pub mod memory;
 pub mod structured_error;
 pub(crate) mod tomllib;
 pub mod tool_contract;
+pub mod yaml;

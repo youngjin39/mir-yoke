@@ -184,6 +184,9 @@ _add("syntax", [
     "", " \n  # only a comment\n", "\t", "---\n...", "...", "key:\tvalue",
     "---\nkey: value\n...\n# final", "[" * 2000 + "0" + "]" * 2000,
 ])
+# Nesting: PyYAML's RecursionError threshold (~490 levels) depends on the caller's stack;
+# 450 levels succeed from any shallow caller and 600 always fail.
+_add("depth", ["[" * 450 + "0" + "]" * 450, "- " * 450 + "x", "[" * 600 + "0" + "]" * 600])
 _add("bytes", [
     "\u03ba: \uac12\n".encode("utf-8"), b"\xef\xbb\xbf" + "\u03ba: \uac12\n".encode("utf-8"),
     b"\xff\xfe" + "\u03ba: \uac12\n".encode("utf-16-le"),
@@ -211,6 +214,17 @@ def _tree(node, seen):
     return result
 
 
+def _json_depth(value):
+    deepest, stack = 0, [(value, 1)]
+    while stack:
+        item, depth = stack.pop()
+        if isinstance(item, (dict, list)):
+            deepest = max(deepest, depth)
+            children = item.values() if isinstance(item, dict) else item
+            stack.extend((child, depth + 1) for child in children)
+    return deepest
+
+
 def observe(case, tmp: Path):
     try:
         tree = _tree(yaml.compose(case), {})
@@ -220,9 +234,10 @@ def observe(case, tmp: Path):
         if isinstance(exc, RecursionError) and re.search(r"0x[0-9a-fA-F]+|/", message):
             error = [type(exc).__name__]
         return {"error": error}
-    # A tree over 64 KiB (the 10,001-row graph) is frozen as the digest of its compact JSON.
+    # A tree over 64 KiB (the 10,001-row graph) or nested past 100 JSON levels (default JSON
+    # readers stop at 128) is frozen as the digest of its compact JSON.
     text = json.dumps(tree, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
-    if len(text) > 65536:
+    if len(text) > 65536 or _json_depth(tree) > 100:
         return {"value": {"compact_tree": {
             "len": len(text), "sha256": hashlib.sha256(text.encode("ascii")).hexdigest()}}}
     return {"value": tree}
