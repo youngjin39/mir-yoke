@@ -44,6 +44,10 @@ no = false
 '''
 
 
+FLOAT_PROFILE = ('[preserve]\nnan = nan\npinf = inf\nninf = -inf\nbig = 1e100\ntenth = 0.1\n'
+                 'nested = {x = nan, y = [-inf, 2.5]}\n')
+
+
 def _git(tmp, *args):
     env = {k: v for k, v in os.environ.items() if not k.startswith('GIT_')}
     env.update(GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull,
@@ -150,6 +154,15 @@ CASES = {
                                      [(['ab'], 'code', 'ab'), (['fig'], 'configuration', 'x'),
                                       ([], 'code', 'src'), (['src'], 'code', 'SRC/a')]],
     'helpers.states': _states, 'profile.unsafe': _unsafe,
+    # TOML insertion order reaches the header lines, including inside a rendered table.
+    'profile.key_order': _profile('[preserve]\nzeta = ["z"]\nalpha = ["a"]\nzero_float = 0.0\n'
+                                  'flag = true\nmid = 1.5\n[boundaries]\nzz = "first"\n'
+                                  'secrets = ["s"]\naa = "x"\nlive_runtime = ["r"]\n'
+                                  'nested = {b = 1, a = 2}\n[gates]\nzz = true\naa = true\n'),
+    # Python str() of non-finite and large/small floats; header lines only, because the context
+    # would carry NaN/Infinity (and TOML dates reach it as date objects, which JSON cannot hold).
+    'profile.float_text': lambda tmp: (_setup(tmp, FLOAT_PROFILE), _profile_context_lines(
+        p.build_profile_task_context(tmp, query='')))[1],
     'helpers.git_outside': lambda tmp: [p._git_output(tmp, ['rev-parse', 'HEAD']),
                                        p._git_paths(tmp, ['ls-files', '-z']),
                                        p._changed_paths(tmp, 'bad'), p._freshness(tmp, '', [])],
