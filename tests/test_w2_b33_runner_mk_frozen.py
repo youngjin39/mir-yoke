@@ -9,6 +9,7 @@ import importlib.util
 import io
 import json
 import os
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -100,6 +101,13 @@ def run(tmp, kind, mode):
                 if kind == "select":
                     return [runner.select_distribution(), runner.find_checker()]
                 os.environ["MIR_ONTOLOGY_CHECKER"] = str(path)
+                if mode == "bogus":
+                    stack.enter_context(mock.patch.object(sys, "argv",
+                                                          ["mir_ontology_runner.py"]))
+                    try:
+                        return runner.main(mode.split())
+                    except SystemExit as exc:  # argparse rejects the command
+                        return {"exit": exc.code}
                 return runner.main(mode.split())
             if kind == "active":
                 path = checker(".codex", "1.0.0")
@@ -115,6 +123,13 @@ def run(tmp, kind, mode):
                                           "timeout_sec": 1}}
                 if mode == "invalid":
                     body["memory_keeper"]["timeout_sec"] = True
+                # Zero timeout, an unknown binding key and a blank argument are all rejected.
+                if mode == "zero":
+                    body["memory_keeper"]["timeout_sec"] = 0
+                if mode == "extra":
+                    body["memory_keeper"]["extra"] = "x"
+                if mode == "blank":
+                    body["memory_keeper"]["command"] = ["fake", " "]
                 if mode != "missing":
                     write(config, "{" if mode == "malformed" else json.dumps(body))
                 return [mk.config_path(), mk.load_config(tmp if mode == "inside" else tmp / "repo")]
@@ -129,6 +144,8 @@ def run(tmp, kind, mode):
                     reply["result"] = {"isError": True}
                 lines = b"" if mode == "eof" else (json.dumps(init) + "\n" +
                         ("{" if mode == "malformed" else json.dumps(reply)) + "\n").encode()
+                if mode == "oversized":
+                    lines = b"x" * (mk.MAX_MESSAGE + 1)
                 child = SimpleNamespace(stdin=io.BytesIO(), stdout=io.BytesIO(lines), pid=123,
                                         wait=lambda **kw: 0)
                 if kind == "exchange":
@@ -150,7 +167,7 @@ def run(tmp, kind, mode):
                 pack = {"nodes": [{"namespace": "ns:core"}, {"namespace": "private"}, 1],
                         "citations": [{"namespace": "ns:skills"}]}
                 return [mk.fence_namespaces(pack, None if mode == "default" else ["private"]), pack]
-            if kind == "main":
+            if kind in ("main", "mainargs"):
                 stack.enter_context(mock.patch.object(mk, "load_config",
                     side_effect=mk.Unavailable("missing") if mode.startswith("missing") else None,
                     return_value=(["fake"], str(tmp), 1)))
@@ -158,12 +175,25 @@ def run(tmp, kind, mode):
                     calls.append(list(args))
                     return {"nodes": [{"namespace": "private"}]} if "filtered" in mode else {}
                 stack.enter_context(mock.patch.object(mk, "call", side_effect=call))
+                if kind == "mainargs":
+                    # argparse names the program from argv[0]; pin the script's own name.
+                    stack.enter_context(mock.patch.object(sys, "argv", ["mk_query.py"]))
+                    try:
+                        return mk.main(["--repo", str(tmp / "repo"), *MAIN_ARGS[mode]])
+                    except SystemExit as exc:  # argparse rejects before any call
+                        return {"exit": exc.code}
                 return mk.main(["--repo", str(tmp / "repo"),
                                 *(["--soft"] if "--soft" in mode else []), "query", "x"])
         value = attempt(action)
     return json.loads(json.dumps([value, out.getvalue(), err.getvalue(), calls],
                                  default=str).replace(str(tmp), "<tmp>"))
 
+# Query length, blank-after-strip, --k range and int() grammar boundaries.
+MAIN_ARGS = {"ctrl": ["query", "\x1c"], "long": ["query", "x" * 8193],
+             "max": ["query", "x" * 8192, "--k=1_0"], "k0": ["query", "x", "--k", "0"],
+             "k100": ["query", "x", "--k", "100"], "k101": ["query", "x", "--k", "101"],
+             "kquote": ["query", "x", "--k", "a'b"], "badcmd": ["bogus"],
+             "badverdict": ["feedback", "r", "bogus"]}
 CASES = {}
 for kind, modes in {
     "version": ["0.0.0", "1.2.3-alpha.2", "1.2.3-alpha.10", "1.2.3+build",
@@ -175,11 +205,13 @@ for kind, modes in {
     "select": ["missing", "cache", "override", "invalid_override"],
     "active": ["same", "disagree", "missing"],
     "runner": ["--which", "mapping --handoff input", "mk query x --soft",
-               "mk feedback r used --soft"],
-    "config": ["default", "explicit", "missing", "inside", "secret", "malformed", "invalid"],
-    "exchange": ["ok", "text", "error", "tool_error", "malformed", "eof"],
+               "mk feedback r used --soft", "bogus"],
+    "config": ["default", "explicit", "missing", "inside", "secret", "malformed", "invalid",
+               "zero", "extra", "blank"],
+    "exchange": ["ok", "text", "error", "tool_error", "malformed", "eof", "oversized"],
     "call": ["ok", "timeout", "error"], "fence": ["default", "explicit"],
     "main": ["", "--soft", "missing", "missing --soft", "filtered", "filtered --soft"],
+    "mainargs": list(MAIN_ARGS),
 }.items():
     for mode in modes:
         CASES[f"{kind}.{mode or 'default'}"] = lambda tmp, k=kind, m=mode: run(tmp, k, m)
