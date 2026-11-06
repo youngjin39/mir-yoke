@@ -569,7 +569,7 @@ fn parse<'a>(argv: &[&'a str]) -> Result<Query<'a>, Output> {
 pub fn main(argv: &[&str], explicit_db: &Path) -> Result<Output, Error> {
     if matches!(
         argv.first(),
-        Some(&"insert" | &"ingest-md" | &"render" | &"gc" | &"doctor")
+        Some(&"insert" | &"ingest-md" | &"render" | &"gc" | &"doctor" | &"reconcile-missing")
     ) {
         return main_with_clock(
             argv,
@@ -635,7 +635,7 @@ pub fn main_with_clock(
     root: &Path,
     clock: impl Fn() -> std::time::SystemTime,
 ) -> Result<Output, Error> {
-    if matches!(argv.first(), Some(&"gc" | &"doctor")) {
+    if matches!(argv.first(), Some(&"gc" | &"doctor" | &"reconcile-missing")) {
         return check_main(argv, explicit_db, root, clock);
     }
     if argv.first() == Some(&"render") {
@@ -845,6 +845,7 @@ impl std::error::Error for GcFailure {
 }
 #[derive(Clone, Copy)]
 enum CheckAction {
+    DryRun,
     Help,
     Apply,
     Json,
@@ -897,6 +898,32 @@ const DOCTOR_OPTIONS: &[OptionSpec<CheckAction>] = &[
         help: "emit machine-readable evidence",
     },
 ];
+const RECONCILE_OPTIONS: &[OptionSpec<CheckAction>] = &[
+    OptionSpec {
+        action: CheckAction::Help,
+        name: "--help",
+        metavar: None,
+        help: "show this help message and exit",
+    },
+    OptionSpec {
+        action: CheckAction::Root,
+        name: "--project-root",
+        metavar: Some("PROJECT_ROOT"),
+        help: "project root for relative path resolution (default:\n                        cwd)",
+    },
+    OptionSpec {
+        action: CheckAction::DryRun,
+        name: "--dry-run",
+        metavar: None,
+        help: "report count without writing any rows",
+    },
+    OptionSpec {
+        action: CheckAction::Db,
+        name: "--db",
+        metavar: Some("DB"),
+        help: "",
+    },
+];
 fn check_main(
     argv: &[&str],
     db: &Path,
@@ -904,11 +931,22 @@ fn check_main(
     clock: impl Fn() -> std::time::SystemTime,
 ) -> Result<Output, Error> {
     let gc = argv.first() == Some(&"gc");
+    let reconcile = argv.first() == Some(&"reconcile-missing");
+    let mut dry_run = false;
     let (specs, usage, action) = if gc {
         (
             GC_OPTIONS,
             "usage: mir memory gc [-h] [--apply] [--json] [--db DB]\n",
             "gc",
+        )
+    } else if reconcile {
+        (
+            RECONCILE_OPTIONS,
+            concat!(
+                "usage: mir memory reconcile-missing [-h] [--project-root PROJECT_ROOT]\n",
+                "                                    [--dry-run] [--db DB]\n"
+            ),
+            "reconcile-missing",
         )
     } else {
         (
@@ -1003,6 +1041,7 @@ fn check_main(
                 }
                 return Ok((0, text.into_bytes(), vec![]));
             }
+            CheckAction::DryRun => dry_run = true,
             CheckAction::Apply => apply = true,
             CheckAction::Json => as_json = true,
             CheckAction::Db => db = Path::new(value),
@@ -1015,7 +1054,7 @@ fn check_main(
             true,
         ));
     }
-    if !gc {
+    if !gc && !reconcile {
         // Python Path(...).resolve(strict=False) against the working directory.
         let root =
             std::path::absolute(cwd.join(project.unwrap_or(""))).map_err(|e| Error(Box::new(e)))?;
@@ -1038,6 +1077,23 @@ fn check_main(
         ));
     }
     let conn = store::connect(db, None).map_err(|e| Error(Box::new(e)))?;
+    if reconcile {
+        let count = distill::reconcile_missing_source(
+            &conn.conn,
+            project.map(Path::new),
+            cwd,
+            dry_run,
+            clock,
+        )
+        .map_err(|e| Error(Box::new(e)))?;
+        let prefix = if dry_run {
+            "dry_run: would_expire"
+        } else {
+            "expired"
+        };
+        // The frozen CLI disables the optional vector loader's logger.
+        return Ok((0, format!("{prefix}={count}\n").into_bytes(), vec![]));
+    }
     let result = crate::mir_core::audit_log::AuditLog::with_clock(&conn.conn, clock)
         .gc_scan(!apply)
         .map_err(|e| Error(Box::new(GcFailure(e))))?;

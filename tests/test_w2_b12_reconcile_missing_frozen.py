@@ -100,6 +100,11 @@ def _scenario(kind, cli=False):
                                       encoding='ascii')
                     ingested.append(asdict(d.ingest_markdown_file(
                         source, conn=conn, project_root=tmp, whitelist_globs=('**',))))
+                if kind == 'legacy_metadata':
+                    # Older content rows carry no relation schema: expiry writes no audit row.
+                    conn.execute("UPDATE content_items SET metadata_json = "
+                                 "json_remove(metadata_json, '$.relation_schema') WHERE id = 1")
+                    conn.commit()
                 if kind == 'ignored':
                     (tmp / '.gitignore').write_text(path.relative_to(tmp).as_posix() + '\n')
                 elif kind not in ('never_present', 'never_missing'):
@@ -109,7 +114,8 @@ def _scenario(kind, cli=False):
                     git('rm', str(path.relative_to(tmp)))
                 elif kind == 'renamed':
                     git('mv', str(path.relative_to(tmp)), 'docs/decisions/adr-renamed.md')
-                elif kind in ('deleted_tracked', 'never_missing', 'nested', 'outer_tx'):
+                elif kind in ('deleted_tracked', 'never_missing', 'nested', 'outer_tx',
+                              'legacy_metadata'):
                     path.unlink()
                 steps = [{'ingest': ingested, 'state': _state(conn, tmp),
                           'tracked': git('ls-files', '--', str(path.relative_to(tmp))),
@@ -145,7 +151,7 @@ def _scenario(kind, cli=False):
 
 CASES = {f'reconcile.{kind}': _scenario(kind) for kind in (
     'present_tracked', 'deleted_tracked', 'deleted_untracked', 'never_present',
-    'never_missing', 'renamed', 'ignored', 'nested', 'outer_tx')}
+    'never_missing', 'renamed', 'ignored', 'nested', 'outer_tx', 'legacy_metadata')}
 CASES.update({f'cli.{kind}': _scenario(kind, cli=True)
               for kind in ('deleted_tracked', 'never_present', 'nested')})
 CASES['git_tracks.availability'] = lambda tmp: hasattr(d, '_git_tracks')

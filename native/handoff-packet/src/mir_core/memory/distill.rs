@@ -928,6 +928,101 @@ pub struct Lesson {
     pub slug: String,
     pub text: String,
 }
+/// Expire missing markdown sources, preserving the frozen reference's transaction ownership.
+/// Git tracking is deliberately irrelevant: the Python reference has no `_git_tracks` helper.
+pub fn reconcile_missing_source(
+    conn: &Connection,
+    project_root: Option<&Path>,
+    cwd: &Path,
+    dry_run: bool,
+    clock: impl Fn() -> SystemTime,
+) -> WriteResult<usize> {
+    let root = cwd.join(project_root.unwrap_or(cwd));
+    let today = now_iso(clock())?;
+    let sources = conn
+        .prepare("SELECT id,metadata_json FROM content_items WHERE source='self_ingest_md'")?
+        .query_map([], |r| {
+            Ok((r.get::<_, i64>(0)?, r.get::<_, Option<String>>(1)?))
+        })?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    let mut missing = Vec::new();
+    for (id, raw) in sources {
+        let Ok(meta) = serde_json::from_str::<Value>(raw.as_deref().unwrap_or("{}")) else {
+            continue;
+        };
+        let Some(path) = meta
+            .get("path")
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
+        else {
+            continue;
+        };
+        if !root.join(path).exists() {
+            missing.push(id);
+        }
+    }
+    if missing.is_empty() {
+        return Ok(0);
+    }
+    let placeholders = vec!["?"; missing.len()].join(",");
+    let sql = format!(
+        "SELECT f.id,ci.metadata_json FROM facts f
+         JOIN content_items ci ON ci.id=f.created_from
+         WHERE f.status='active' AND f.created_from IN ({placeholders})"
+    );
+    let facts = conn
+        .prepare(&sql)?
+        .query_map(rusqlite::params_from_iter(missing), |r| {
+            Ok((r.get::<_, i64>(0)?, r.get::<_, Option<String>>(1)?))
+        })?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    if facts.is_empty() || dry_run {
+        return Ok(facts.len());
+    }
+    let outer = !conn.is_autocommit();
+    conn.execute_batch(if outer {
+        "SAVEPOINT reconcile_missing_relations"
+    } else {
+        "BEGIN IMMEDIATE"
+    })?;
+    let run = || -> WriteResult<usize> {
+        for (id, raw) in &facts {
+            conn.execute(
+                "UPDATE facts SET status = 'expired', valid_to = ? WHERE id = ?",
+                params![today, id],
+            )?;
+            let meta: Value = serde_json::from_str(raw.as_deref().unwrap_or("{}"))
+                .map_err(|_| WriteError::Injected("invalid source metadata"))?;
+            if meta.get("relation_schema").and_then(Value::as_str)
+                == Some(relations::RELATION_SCHEMA)
+            {
+                AuditLog::with_clock(conn, &clock).audit_append(
+                    "memory_relation.expired",
+                    &serde_json::json!({"fact_id":id,
+                        "source_path":meta.get("path").cloned().unwrap_or(Value::from(""))}),
+                    false,
+                )?;
+            }
+        }
+        conn.execute_batch(if outer {
+            "RELEASE SAVEPOINT reconcile_missing_relations"
+        } else {
+            "COMMIT"
+        })?;
+        Ok(facts.len())
+    };
+    let result = run();
+    if result.is_err() {
+        conn.execute_batch(if outer {
+            "ROLLBACK TO SAVEPOINT reconcile_missing_relations;
+             RELEASE SAVEPOINT reconcile_missing_relations"
+        } else {
+            "ROLLBACK"
+        })?;
+    }
+    result
+}
+
 /// Lessons retain insertion order, including active facts from earlier ingests.
 pub fn recall_lessons(conn: &Connection) -> rusqlite::Result<Vec<Lesson>> {
     conn.prepare(
