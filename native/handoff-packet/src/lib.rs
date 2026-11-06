@@ -701,3 +701,6 @@ pub(crate) mod executor_packet_preflight;
 
 #[forbid(unsafe_code)]
 mod executor_brief_execution;
+
+#[forbid(unsafe_code)]
+pub mod mir_front;

@@ -67,16 +67,24 @@ pub(crate) fn value_path(value: &Value, cwd: &Path) -> PathBuf {
     }
 }
 pub(crate) fn repr(s: &str) -> String {
+    repr_codepoints(&s.chars().map(u32::from).collect::<Vec<_>>())
+}
+// Code points allow POSIX argv's surrogateescape values without lossy UTF-8.
+pub(crate) fn repr_codepoints(s: &[u32]) -> String {
     let nonprintable = NONPRINTABLE
         .get_or_init(|| regex::Regex::new(r"[\p{C}\p{Z}]"))
         .as_ref();
-    let quote = if s.contains('\'') && !s.contains('"') {
+    let quote = if s.contains(&u32::from('\'')) && !s.contains(&u32::from('"')) {
         '"'
     } else {
         '\''
     };
     let mut out = quote.to_string();
-    for c in s.chars() {
+    for &n in s {
+        let Some(c) = char::from_u32(n) else {
+            out.push_str(&format!("\\u{n:04x}"));
+            continue;
+        };
         match c {
             '\\' => out.push_str("\\\\"),
             '\n' => out.push_str("\\n"),
