@@ -114,18 +114,32 @@ pub fn run() -> u8 {
         .filter(|p| tdd_ledger::implementation(p))
         .map(|p| (*p).to_owned())
         .collect();
+    let mut tdd_commands = String::new();
     if !implementation.is_empty() {
         let (code, commands, stderr) = tdd_ledger::precommit(project, implementation);
         eprint!("{stderr}");
         if code != 0 {
             return 2;
         }
-        for (index, command) in commands.lines().filter(|c| !c.is_empty()).enumerate() {
-            if !step(project, &format!("tdd[{}]", index + 1), command) {
-                return 2;
-            }
-        }
+        tdd_commands = commands;
     }
+    // The reference takes a second staged snapshot after TDD validation. Preserve
+    // both the observable Git call and the possibility that staged paths changed.
+    let staged = git(
+        project,
+        &["diff", "--cached", "--name-only", "--diff-filter=ACMR"],
+    )
+    .unwrap_or_default();
+    let Ok(staged) = String::from_utf8(staged) else {
+        eprintln!("[PreCommitVerification BLOCK] Staged paths are not UTF-8");
+        return 2;
+    };
+    let mut paths: Vec<_> = staged
+        .lines()
+        .filter(|p| !p.trim().is_empty() && code(p, deferred_tools))
+        .collect();
+    paths.sort_unstable();
+    paths.dedup();
     let (lint, typecheck, test, build) = if project.join("package.json").is_file() {
         (
             "npm run lint --if-present".into(),
@@ -145,7 +159,11 @@ pub fn run() -> u8 {
             .filter(|p| p.starts_with("tests/"))
             .collect();
         (
-            format!("uv run ruff check {joined}"),
+            if joined.is_empty() {
+                "uv run ruff check src tests".into()
+            } else {
+                format!("uv run ruff check {joined}")
+            },
             if python.is_empty() {
                 "echo skip-typecheck-no-python-changes".into()
             } else {
@@ -170,6 +188,11 @@ pub fn run() -> u8 {
     let typecheck = override_command("MIR_PRE_COMMIT_TYPECHECK", typecheck);
     let test = override_command("MIR_PRE_COMMIT_TEST", test);
     let build = override_command("MIR_PRE_COMMIT_BUILD", build);
+    for (index, command) in tdd_commands.lines().filter(|c| !c.is_empty()).enumerate() {
+        if !step(project, &format!("tdd[{}]", index + 1), command) {
+            return 2;
+        }
+    }
     if !step(project, "lint", &lint) || !step(project, "typecheck", &typecheck) {
         return 2;
     }

@@ -3137,19 +3137,31 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/pre_commit_verification.rs",
-      "sha256": "5706a38b731085c854059aff50f1cfecf053a91abaf2e8da74bdb95d08282c0a"
+      "sha256": "79b6543374f5cc273ff718c289c1a44490a7e53c1cf7a740714f30d453891ef0"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/pre_tool_use.rs",
+      "sha256": "0aab01191f9387169c69ab20bebace37ff3c388d395f37f81fd1e664d9aecec3"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/project_hooks.rs",
-      "sha256": "77d9a174b8e6b1933166733e0844eafe3dbfb05a0ea743ab84a57c5ff6d39e66"
+      "sha256": "4c2e66d14413f376d14b6480712019a7d569a79c419ccf9a5b7ef80c3ef28bfa"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/prompt_submit.rs",
       "sha256": "0415c1f6cedbdb9c2158473c578914e704d176e2c9e9a333a7526c9818a580ca"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/python_decimal.rs",
+      "sha256": "3a1b36b9b6437655dc60c003bc72f55faff0d134eb9ca9836b484bdf783569a9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3718,6 +3730,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w1/pre-tool-use.json",
+      "sha256": "bcb57641b954421ba799a60a4aec58a0b37d62cf8386991fb822cc13a56f1502"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/prompt-submit.json",
       "sha256": "da87c7588e8bf549611394e9f25ff6a63fc6dbb71a9630f01f31cec3348df18a"
     },
@@ -3755,7 +3773,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/project_hooks.rs",
-      "sha256": "aab497e9a5bf4c0a206e9c0240bfcbce9340d68f0f898a2f30caf9bef2d0933e"
+      "sha256": "4c5c2593aaba33eb97ebba3670e2935c21e3ef2b92f42347b27c6a9068130b2e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6508,6 +6526,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tests/test_pre_tool_use_native.py",
+      "sha256": "05fd9e514bdcae9fbe92b2f6ab561eda6c54d01a8545314a222a6d36b69f52cd"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tests/test_private_file.py",
       "sha256": "525c71aa11868543169dd0123ced16a7b8c19971db7aa77bb0a9c29139846b5c"
     },
@@ -6726,6 +6750,12 @@
       "disposition": "remove",
       "path": "tests/w1_golden.py",
       "sha256": "22aab39906c1831070b69cc91c0caf7d951d3b5bb037c4b92940499dcc8fd419"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/w1_pretool_golden.py",
+      "sha256": "1cad14cd6aa2b0d7b69801580f4785ad06ecc2cd5b087cd7aba0b25abb8a1bfc"
     },
     {
       "classification": "template-maintainer-tool",

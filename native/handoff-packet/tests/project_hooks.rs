@@ -38,7 +38,7 @@ fn capabilities() {
     run(
         &["capabilities"],
         0,
-        b"mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\n",
+        b"mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\nmir-project-hooks-pre-tool-use-v1\n",
         b"",
     );
 }

@@ -4,7 +4,9 @@ mod checkpoint;
 mod compact_snapshot;
 mod post_edit_check;
 mod pre_commit_verification;
+mod pre_tool_use;
 mod prompt_submit;
+mod python_decimal;
 mod stop_audit;
 mod tdd_ledger;
 
@@ -22,7 +24,7 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
     if args.len() == 1 && args[0] == "capabilities" {
         return (
             0,
-            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\n",
+            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\nmir-project-hooks-pre-tool-use-v1\n",
             "",
         );
     }
@@ -31,6 +33,9 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
 
 fn main() -> ExitCode {
     let args: Vec<_> = env::args_os().skip(1).collect();
+    if args.len() == 1 && args[0] == "pre-tool-use" {
+        return ExitCode::from(pre_tool_use::run());
+    }
     if args.len() == 1 && args[0] == "pre-commit-verification" {
         return ExitCode::from(pre_commit_verification::run());
     }
@@ -185,7 +190,7 @@ mod tests {
             response(&["capabilities".into()]),
             (
                 0,
-                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\n",
+                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\nmir-project-hooks-pre-tool-use-v1\n",
                 ""
             )
         );
