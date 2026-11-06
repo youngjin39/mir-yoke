@@ -101,7 +101,10 @@ fn load(root: &Path, account: &Path, env: &BTreeMap<String, String>) -> Option<P
 }
 
 fn python_json(value: &Value) -> Option<String> {
-    let text = serde_json::to_string(value).ok()?;
+    Some(ascii_json_text(&serde_json::to_string(value).ok()?))
+}
+
+pub(crate) fn ascii_json_text(text: &str) -> String {
     let mut output = String::new();
     for ch in text.chars() {
         if ch >= '\u{7f}' {
@@ -112,7 +115,7 @@ fn python_json(value: &Value) -> Option<String> {
             output.push(ch);
         }
     }
-    Some(output)
+    output
 }
 
 /// `account` is passwd home on Unix and Python's account profile on Windows.

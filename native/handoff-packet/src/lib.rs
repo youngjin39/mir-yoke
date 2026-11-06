@@ -203,7 +203,7 @@ fn pattern(source: &str, insensitive: bool, ascii: bool) -> Result<Rc<Pattern>> 
                 class = false;
             }
             if insensitive && !class && matches!(ch, 'i' | 'I') {
-                out.push_str("[iİı]");
+                out.push_str("[i\u{130}\u{131}]");
             } else {
                 out.push(ch);
             }
@@ -218,7 +218,7 @@ fn pattern(source: &str, insensitive: bool, ascii: bool) -> Result<Rc<Pattern>> 
                     (Some('A'), Some('-'), 'Z') | (Some('a'), Some('-'), 'z')
                 )
             {
-                out.push_str("İıſK");
+                out.push_str("\u{130}\u{131}\u{17f}\u{212a}");
             }
         }
         i += 1;
@@ -380,9 +380,9 @@ pub fn recipient(prompt: &str) -> Result<bool> {
     let folded: String = plain
         .chars()
         .map(|c| match c {
-            'İ' | 'ı' => 'i',
-            'ſ' => 's',
-            'K' => 'k',
+            '\u{130}' | '\u{131}' => 'i',
+            '\u{17f}' => 's',
+            '\u{212a}' => 'k',
             c => c.to_ascii_lowercase(),
         })
         .collect();
@@ -702,5 +702,6 @@ pub(crate) mod executor_packet_preflight;
 #[forbid(unsafe_code)]
 mod executor_brief_execution;
 
+pub mod mir_core;
 #[forbid(unsafe_code)]
 pub mod mir_front;

@@ -5,6 +5,7 @@
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
 
+use handoff_packet::mir_core::canonical::python_float;
 use regex::Regex;
 use rusqlite::{Connection, OpenFlags, Row, types::ValueRef};
 use std::collections::BTreeSet;
@@ -497,56 +498,6 @@ fn blocked_reason(job: &Job) -> Result<Option<&str>> {
     }
 }
 
-// Match Python's shortest float spelling, including exponent thresholds and .0.
-fn python_float(value: f64) -> Result<String> {
-    let encoded = serde_json::to_string(&value).map_err(|_| ())?;
-    let sign = if encoded.starts_with('-') { "-" } else { "" };
-    let magnitude = encoded.trim_start_matches('-');
-    let (mantissa, exponent) = match magnitude.split_once(['e', 'E']) {
-        Some((m, e)) => (m, e.parse::<i32>().map_err(|_| ())?),
-        None => (magnitude, 0),
-    };
-    let decimal = mantissa.find('.').unwrap_or(mantissa.len()) as i32;
-    let all: String = mantissa.chars().filter(|c| *c != '.').collect();
-    let Some(first) = all.find(|c| c != '0') else {
-        return Ok(format!("{sign}0.0"));
-    };
-    let exponent = exponent + decimal - first as i32 - 1;
-    let digits = all[first..].trim_end_matches('0');
-    if !(-4..16).contains(&exponent) {
-        let fraction = if digits.len() > 1 {
-            format!(".{}", &digits[1..])
-        } else {
-            String::new()
-        };
-        return Ok(format!(
-            "{sign}{}{fraction}e{}{:02}",
-            &digits[..1],
-            if exponent < 0 { '-' } else { '+' },
-            exponent.abs()
-        ));
-    }
-    if exponent < 0 {
-        return Ok(format!(
-            "{sign}0.{}{}",
-            "0".repeat((-exponent - 1) as usize),
-            digits
-        ));
-    }
-    let decimal = (exponent + 1) as usize;
-    if decimal >= digits.len() {
-        return Ok(format!(
-            "{sign}{digits}{}.0",
-            "0".repeat(decimal - digits.len())
-        ));
-    }
-    Ok(format!(
-        "{sign}{}.{}",
-        &digits[..decimal],
-        &digits[decimal..]
-    ))
-}
-
 fn output(command: &Command, jobs: &[Job], py: &PythonText) -> Result<(String, String, i32)> {
     if let Command::Cancel(id) | Command::Status(id) | Command::Result(id) = command {
         py.admit(id)?;
@@ -601,7 +552,7 @@ fn output(command: &Command, jobs: &[Job], py: &PythonText) -> Result<(String, S
             } else {
                 let duration = job
                     .duration
-                    .map(python_float)
+                    .map(|v| python_float(v).map_err(|_| ()))
                     .transpose()?
                     .unwrap_or_else(|| "None".to_owned());
                 let exit = job
@@ -811,15 +762,15 @@ mod tests {
         let py = PythonText::new().unwrap();
         assert_eq!(py.repr("can't"), "\"can't\"");
         assert_eq!(
-            py.repr("'\"\\\n\t\r\0\u{1b}\u{a0}\u{200b}\u{e000}\u{d55c}\u{ae00}😀"),
-            "'\\'\"\\\\\\n\\t\\r\\x00\\x1b\\xa0\\u200b\\ue000\u{d55c}\u{ae00}😀'"
+            py.repr("'\"\\\n\t\r\0\u{1b}\u{a0}\u{200b}\u{e000}\u{d55c}\u{ae00}\u{1f600}"),
+            "'\\'\"\\\\\\n\\t\\r\\x00\\x1b\\xa0\\u200b\\ue000\u{d55c}\u{ae00}\u{1f600}'"
         );
     }
 
     #[test]
     fn python_unicode_version_uncertainty_requests_fallback() {
         let py = PythonText::new().unwrap();
-        assert_eq!(py.admit("\u{d55c}\u{ae00}😀\u{0378}"), Ok(()));
+        assert_eq!(py.admit("\u{d55c}\u{ae00}\u{1f600}\u{0378}"), Ok(()));
         assert_eq!(py.admit("\u{1fae9}"), Err(()));
     }
 

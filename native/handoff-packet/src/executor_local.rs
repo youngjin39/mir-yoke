@@ -601,7 +601,7 @@ fn compare_integer_float(integer: &str, number: f64) -> Option<Ordering> {
     })
 }
 /// Syntax-only scan supplies CPython JSON diagnostics before serde builds values.
-struct JsonSyntax {
+pub(crate) struct JsonSyntax {
     chars: Vec<char>,
     index: usize,
     depth: usize,
@@ -609,7 +609,7 @@ struct JsonSyntax {
     verifier_order: Vec<String>,
 }
 impl JsonSyntax {
-    fn validate(text: &str) -> Result<Vec<String>, Error> {
+    pub(crate) fn validate(text: &str) -> Result<Vec<String>, Error> {
         let mut parser = Self {
             chars: text.chars().collect(),
             index: 0,
