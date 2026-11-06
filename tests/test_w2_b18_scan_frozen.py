@@ -189,6 +189,47 @@ def _sync(mode):
     return run
 
 
+def _sync_relative(tmp):
+    """Configured roots resolve against the project root before registration."""
+    with _db(tmp) as (connection, _):
+        archives = [NS(slug=n, root=r, mode="indexed", glob_include=(), glob_exclude=(),
+                       historical_glob=(), chunk_size=8, chunk_overlap=0)
+                    for n, r in (("one", "sub/../one"), ("two", "./two/"))]
+        _write(tmp / "one", "a.md")
+        _write(tmp / "two", "b.md")
+        cfg = NS(memory=NS(external_archives=archives, embedding=NS(enabled=False)))
+        ns = context._parse(["sync", "--db", "synthetic.db", "--project-root", "."])
+        output = io.StringIO()
+        with mock.patch.object(context, "_build_embed_fn", return_value=None), \
+                contextlib.redirect_stdout(output):
+            exits = [context._do_sync(ns, connection, cfg, tmp) for _ in range(2)]
+        return {"exits": exits, "stdout": output.getvalue(), "state": _state(connection, tmp)}
+
+
+def _guard(mode):
+    """Archive lookup and file-read guards; records carry no vector rows."""
+    def run(tmp):
+        with _db(tmp) as (connection, db):
+            root = tmp / "archive"
+            _write(root, "a.md")
+            _write(tmp, "outside.md")
+            (root / "bad.md").write_bytes(b"ab\xffcd")
+            if mode == "symlink":
+                (root / "inner.md").symlink_to(root / "a.md")
+                (root / "outer.md").symlink_to(tmp / "outside.md")
+                (root / "dir").symlink_to(tmp, target_is_directory=True)
+                names = ("inner.md", "outer.md", "dir/outside.md")
+            else:
+                names = ("a.md", "../outside.md", "sub/../a.md", "bad.md", "absent.md")
+            archive = db.register(slug="sample", root_path=str(root), mode="indexed",
+                                  owner="synthetic", chunk_size=8, chunk_overlap=0)
+            row = db._fetch_archive(archive)
+            return {"fetch": observe(lambda _: db._fetch_archive(999), tmp),
+                    "read": [observe(lambda _, n=n: list(db._read_file(row, n)), tmp)
+                             for n in names]}
+    return run
+
+
 CASES = {f"register.{m}": _register(m) for m in (
     "empty_slug", "odd_slug", "mode", "empty_root", "missing_root", "file_root", "size",
     "overlap", "negative", "duplicate")}
@@ -197,6 +238,8 @@ CASES.update({f"scan.{m}": _scan(m) for m in (
     "history", "exclude", "failure", "frontmatter")})
 CASES.update({"index.direct": _index, **{f"sync.{m}": _sync(m) for m in
                                       ("empty", "multiple", "failure")}})
+CASES.update({f"guard.{m}": _guard(m) for m in ("read", "symlink")})
+CASES["sync.relative"] = _sync_relative
 RECORDS = json.loads(FIXTURE.read_text(encoding="ascii")) if FIXTURE.exists() else {}
 
 

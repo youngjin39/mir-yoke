@@ -143,6 +143,85 @@ const VEC_NOTICE: &str = concat!(
 );
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub type Output = (i32, Vec<u8>, Vec<u8>);
+/// Library-only sync. Configuration is supplied by the owner, without discovery.
+pub fn do_sync(
+    db: &external_store::ExternalStore<'_>,
+    cfg: &Value,
+    project_root: &Path,
+    home: &Path,
+) -> std::result::Result<(i32, String), external_store::HelperError> {
+    use crate::mir_core::config::loader::resolve_path;
+    let os_error =
+        |e: crate::mir_core::config::loader::ConfigLoadError| external_store::HelperError {
+            kind: "OSError",
+            message: e.to_string(),
+        };
+    // resolve_archive_root: expanduser, join to the resolved project root, resolve(strict=False).
+    let project_root = resolve_path(project_root, ".", home).map_err(os_error)?;
+    for archive in cfg["memory"]["external_archives"]
+        .as_array()
+        .into_iter()
+        .flatten()
+    {
+        // Like _do_sync, consume the already-resolved config without revalidating it.
+        let mut a = external_store::Registration {
+            slug: archive["slug"].as_str().unwrap_or("").into(),
+            root_path: archive["root"].as_str().unwrap_or("").into(),
+            mode: archive["mode"].as_str().unwrap_or("indexed").into(),
+            owner: "family:your-harness".into(),
+            glob_include: string_list(&archive["glob_include"]),
+            glob_exclude: string_list(&archive["glob_exclude"]),
+            historical_glob: string_list(&archive["historical_glob"]),
+            chunk_size: archive["chunk_size"].as_i64().unwrap_or(800),
+            chunk_overlap: archive["chunk_overlap"].as_i64().unwrap_or(100),
+        };
+        let root = resolve_path(&project_root, &a.root_path, home).map_err(os_error)?;
+        a.root_path = root
+            .to_str()
+            .ok_or_else(|| external_store::HelperError {
+                kind: "ValueError",
+                message: "archive path is not UTF-8".into(),
+            })?
+            .into();
+        if a.glob_include.is_empty() {
+            a.glob_include.push("**/*.md".into());
+        }
+        db.register(&a)?;
+    }
+    let rows = db
+        .connection
+        .conn
+        .prepare("SELECT id,slug FROM external_archives ORDER BY id")?
+        .query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    if rows.is_empty() {
+        return Ok((0, "no archives configured\n".into()));
+    }
+    let (mut failed, mut output) = (false, String::new());
+    for (id, slug) in rows {
+        let result = match db.scan(id, None) {
+            Err(e) if e.kind == "ExternalStoreError" => {
+                failed = true;
+                output.push_str(&format!("{slug}: vector indexing refused: {}\n", e.message));
+                continue;
+            }
+            other => other?,
+        };
+        for (rel, reason) in &result.failed {
+            output.push_str(&format!("  [failed] {rel}: {reason}\n"));
+        }
+        output.push_str(&format!(
+            "{slug}: inserted={} reindexed={} unchanged={} deleted={}",
+            result.inserted, result.reindexed, result.unchanged, result.deleted
+        ));
+        if !result.failed.is_empty() {
+            failed = true;
+            output.push_str(&format!(" failed={}", result.failed.len()));
+        }
+        output.push('\n');
+    }
+    Ok((i32::from(failed), output))
+}
 /// Inject the factory result; even Present cannot invoke vectors in this FTS slice.
 #[derive(Clone, Copy)]
 pub enum EmbeddingState {

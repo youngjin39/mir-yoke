@@ -1,4 +1,5 @@
-//! Library-only archive helpers; Python remains the live reference.
+//! Library-only archive helpers and FTS indexer; Python remains the live reference.
+#![forbid(unsafe_code)]
 use super::distill::_parse_frontmatter;
 use crate::{captures, digest::sha256, executor_development_packet::render};
 use serde::Serialize;
@@ -59,6 +60,494 @@ fn regex_error(error: impl std::fmt::Display) -> HelperError {
     }
 }
 type Result<T> = std::result::Result<T, HelperError>;
+impl From<rusqlite::Error> for HelperError {
+    fn from(e: rusqlite::Error) -> Self {
+        let kind = if matches!(&e, rusqlite::Error::SqliteFailure(code, _)
+            if code.code == rusqlite::ErrorCode::ConstraintViolation)
+        {
+            "IntegrityError"
+        } else {
+            "OperationalError"
+        };
+        Self {
+            kind,
+            message: e.to_string(),
+        }
+    }
+}
+#[derive(Clone, Debug)]
+pub struct Registration {
+    pub slug: String,
+    pub root_path: String,
+    pub mode: String,
+    pub owner: String,
+    pub glob_include: Vec<String>,
+    pub glob_exclude: Vec<String>,
+    pub historical_glob: Vec<String>,
+    pub chunk_size: i64,
+    pub chunk_overlap: i64,
+}
+#[derive(Debug)]
+pub struct ArchiveRow {
+    pub id: i64,
+    pub registration: Registration,
+}
+#[derive(Debug, Default)]
+pub struct ScanResult {
+    pub inserted: usize,
+    pub deleted: usize,
+    pub reindexed: usize,
+    pub unchanged: usize,
+    pub failed: Vec<(String, String)>,
+}
+impl Serialize for ScanResult {
+    fn serialize<S: serde::Serializer>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error> {
+        serde_json::json!({"inserted":self.inserted,"deleted":self.deleted,
+            "reindexed":self.reindexed,"unchanged":self.unchanged,"failed":self.failed})
+        .serialize(serializer)
+    }
+}
+pub type EmbedFn<'a> = dyn FnMut(&[String]) -> Result<Vec<Vec<f32>>> + 'a;
+pub struct ExternalStore<'a> {
+    pub connection: &'a super::store::Connection,
+    clock: &'a dyn Fn() -> String,
+}
+fn store_error(message: impl Into<String>) -> HelperError {
+    HelperError {
+        kind: "ExternalStoreError",
+        message: message.into(),
+    }
+}
+impl<'a> ExternalStore<'a> {
+    pub fn new(
+        connection: &'a super::store::Connection,
+        clock: &'a dyn Fn() -> String,
+    ) -> Result<Self> {
+        if connection.vec_available {
+            return Err(store_error("sqlite-vec support deferred to B17"));
+        }
+        Ok(Self { connection, clock })
+    }
+    pub fn register(&self, a: &Registration) -> Result<i64> {
+        use rusqlite::{OptionalExtension, params};
+        if !["indexed", "immutable"].contains(&a.mode.as_str()) {
+            return Err(HelperError {
+                kind: "ValueError",
+                message: format!("invalid mode {}", crate::executor_execute::repr(&a.mode)),
+            });
+        }
+        let c = &self.connection.conn;
+        let joined = |v: &[String]| (!v.is_empty()).then(|| v.join(","));
+        let (inc, exc, hist) = (
+            joined(&a.glob_include),
+            joined(&a.glob_exclude),
+            joined(&a.historical_glob),
+        );
+        let prior = c.query_row(
+            "SELECT root_path,glob_include,glob_exclude,historical_glob,chunk_size,chunk_overlap
+             FROM external_archives WHERE slug=?", [&a.slug], |r| Ok((
+                r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?,
+                r.get::<_, Option<String>>(2)?, r.get::<_, Option<String>>(3)?,
+                r.get::<_, i64>(4)?, r.get::<_, i64>(5)?))).optional()?;
+        let tx = c.unchecked_transaction()?;
+        let id: i64 = tx.query_row(
+            "INSERT INTO external_archives
+             (slug,root_path,mode,glob_include,glob_exclude,historical_glob,
+              chunk_size,chunk_overlap,owner,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)
+             ON CONFLICT(slug) DO UPDATE SET root_path=excluded.root_path,mode=excluded.mode,
+             glob_include=excluded.glob_include,glob_exclude=excluded.glob_exclude,
+             historical_glob=excluded.historical_glob,chunk_size=excluded.chunk_size,
+             chunk_overlap=excluded.chunk_overlap,owner=excluded.owner RETURNING id",
+            params![
+                a.slug,
+                a.root_path,
+                a.mode,
+                inc,
+                exc,
+                hist,
+                a.chunk_size,
+                a.chunk_overlap,
+                a.owner,
+                (self.clock)()
+            ],
+            |r| r.get(0),
+        )?;
+        if let Some(p) = prior {
+            let content_changed = (p.0, p.1, p.2, p.4, p.5)
+                != (a.root_path.clone(), inc, exc, a.chunk_size, a.chunk_overlap);
+            if content_changed {
+                tx.execute(
+                    "INSERT OR REPLACE INTO external_store_meta(key,value) VALUES (?,'1')",
+                    [format!("{ARCHIVE_CONTENT_REINDEX_PREFIX}{id}")],
+                )?;
+            }
+            if content_changed || p.3 != hist {
+                tx.execute(
+                    "DELETE FROM external_store_meta WHERE key=?",
+                    [format!("{ARCHIVE_METADATA_VERSION_PREFIX}{id}")],
+                )?;
+            }
+        }
+        tx.commit()?;
+        Ok(id)
+    }
+    pub fn fetch_archive(&self, id: i64) -> Result<ArchiveRow> {
+        use rusqlite::OptionalExtension;
+        self.connection
+            .conn
+            .query_row(
+                "SELECT slug,root_path,mode,glob_include,glob_exclude,historical_glob,
+             chunk_size,chunk_overlap,owner FROM external_archives WHERE id=?",
+                [id],
+                |r| {
+                    Ok(ArchiveRow {
+                        id,
+                        registration: Registration {
+                            slug: r.get(0)?,
+                            root_path: r.get(1)?,
+                            mode: r.get(2)?,
+                            glob_include: compile_globs(r.get::<_, Option<String>>(3)?.as_deref()),
+                            glob_exclude: compile_globs(r.get::<_, Option<String>>(4)?.as_deref()),
+                            historical_glob: compile_globs(
+                                r.get::<_, Option<String>>(5)?.as_deref(),
+                            ),
+                            chunk_size: r.get(6)?,
+                            chunk_overlap: r.get(7)?,
+                            owner: r.get(8)?,
+                        },
+                    })
+                },
+            )
+            .optional()?
+            .ok_or_else(|| store_error(format!("archive_id {id} not found")))
+    }
+    pub fn read_file(&self, archive: &ArchiveRow, rel: &str) -> Result<(String, String, usize)> {
+        let authored = Path::new(&archive.registration.root_path);
+        let root =
+            crate::supply::resolve(&std::env::current_dir().map_err(regex_error)?.join(authored))
+                .map_err(|e| store_error(format!("{e:?}")))?;
+        let path = root.join(rel);
+        if path.is_symlink() {
+            return Err(store_error(format!(
+                "{rel}: symbolic links are not indexed"
+            )));
+        }
+        let resolved = crate::supply::resolve(&path).map_err(|e| store_error(format!("{e:?}")))?;
+        if !resolved.starts_with(&root) {
+            return Err(store_error(format!(
+                "{rel}: resolved path escapes archive root"
+            )));
+        }
+        let display_path = resolved
+            .to_str()
+            .ok_or_else(|| store_error("archive path is not UTF-8"))?
+            .to_owned();
+        let data = std::fs::read(&resolved).map_err(|e| HelperError {
+            kind: if e.kind() == std::io::ErrorKind::NotFound {
+                "FileNotFoundError"
+            } else {
+                "OSError"
+            },
+            message: if e.kind() == std::io::ErrorKind::NotFound {
+                format!(
+                    "[Errno 2] No such file or directory: {}",
+                    crate::executor_execute::repr(&display_path)
+                )
+            } else {
+                e.to_string()
+            },
+        })?;
+        let text = std::str::from_utf8(&data).map_err(|e| {
+            let i = e.valid_up_to();
+            let reason = if e.error_len().is_none() {
+                "unexpected end of data"
+            } else if (0xc2..=0xf4).contains(&data[i]) {
+                "invalid continuation byte"
+            } else {
+                "invalid start byte"
+            };
+            store_error(format!(
+                "{rel}: not utf-8 ('utf-8' codec can't decode byte 0x{:02x} \
+                in position {i}: {reason})",
+                data[i]
+            ))
+        })?;
+        Ok((text.into(), sha256(&data), data.len()))
+    }
+    fn document_metadata(&self, a: &ArchiveRow, rel: &str, text: &str) -> Result<Vec<Value>> {
+        let logical = logical_metadata_path(&a.registration.root_path, rel);
+        let category = derive_doc_category(&logical);
+        let layer = derive_layer(&logical);
+        let (title, fm) = extract_title_and_frontmatter(text);
+        let front: Value = fm
+            .as_deref()
+            .and_then(|v| serde_json::from_str(v).ok())
+            .unwrap_or(Value::Null);
+        let field = |key: &str| front[key].as_str().unwrap_or("").trim().to_lowercase();
+        let historical = category == Some("archive")
+            || HISTORICAL_STATUSES.contains(&field("status").as_str())
+            || field("source") == "mirrored-summary"
+            || matches_regex_any(
+                &logical,
+                &compile_pattern_set(&a.registration.historical_glob)?,
+            )?;
+        Ok(vec![
+            serde_json::json!("your-harness"),
+            serde_json::json!(category),
+            serde_json::json!(layer),
+            serde_json::json!(if historical { "expired" } else { "active" }),
+            serde_json::json!(title),
+            serde_json::json!(fm),
+        ])
+    }
+    fn metadata_params(values: &[Value]) -> Vec<Option<&str>> {
+        values.iter().map(Value::as_str).collect()
+    }
+    pub fn index_file(&self, a: &ArchiveRow, rel: &str) -> Result<i64> {
+        use rusqlite::params;
+        let (text, hash, len) = self.read_file(a, rel)?;
+        let chunks = chunk_text(
+            &text,
+            a.registration.chunk_size,
+            a.registration.chunk_overlap,
+        )?;
+        let tx = self.connection.conn.unchecked_transaction()?;
+        let values = self.document_metadata(a, rel, &text)?;
+        let m = Self::metadata_params(&values);
+        tx.execute(
+            "INSERT INTO external_documents
+            (archive_id,relative_path,file_hash,byte_len,vec_indexed_at,source_slug,
+             doc_category,layer,status,title,frontmatter_json) VALUES (?,?,?,?,NULL,?,?,?,?,?,?)",
+            params![
+                a.id, rel, hash, len as i64, m[0], m[1], m[2], m[3], m[4], m[5]
+            ],
+        )?;
+        let id = tx.last_insert_rowid();
+        self.insert_chunks(id, &chunks)?;
+        tx.commit()?;
+        Ok(id)
+    }
+    fn insert_chunks(&self, doc: i64, chunks: &[Chunk]) -> Result<()> {
+        use rusqlite::params;
+        let c = &self.connection.conn;
+        for ch in chunks {
+            c.execute(
+                "INSERT INTO external_chunks
+                (document_id,chunk_index,byte_start,byte_end,text_hash) VALUES (?,?,?,?,?)",
+                params![
+                    doc,
+                    ch.chunk_index as i64,
+                    ch.byte_start as i64,
+                    ch.byte_end as i64,
+                    ch.text_hash
+                ],
+            )?;
+            c.execute(
+                "INSERT INTO external_chunks_fts(rowid,content) VALUES (?,?)",
+                params![c.last_insert_rowid(), ch.text],
+            )?;
+        }
+        Ok(())
+    }
+    fn delete_chunk_rowid(&self, id: i64) -> Result<()> {
+        self.connection
+            .conn
+            .execute("DELETE FROM external_chunks_fts WHERE rowid=?", [id])?;
+        Ok(())
+    }
+    fn delete_document_chunks(&self, doc: i64) -> Result<()> {
+        let c = &self.connection.conn;
+        let ids = c
+            .prepare("SELECT id FROM external_chunks WHERE document_id=?")?
+            .query_map([doc], |r| r.get::<_, i64>(0))?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        for id in ids {
+            self.delete_chunk_rowid(id)?;
+        }
+        Ok(())
+    }
+    pub fn cascade_delete_document(&self, archive: i64, rel: &str) -> Result<()> {
+        use rusqlite::{OptionalExtension, params};
+        let tx = self.connection.conn.unchecked_transaction()?;
+        let doc = tx
+            .query_row(
+                "SELECT id FROM external_documents WHERE archive_id=? AND relative_path=?",
+                params![archive, rel],
+                |r| r.get::<_, i64>(0),
+            )
+            .optional()?;
+        if let Some(doc) = doc {
+            self.delete_document_chunks(doc)?;
+            tx.execute("DELETE FROM external_documents WHERE id=?", [doc])?;
+        }
+        tx.commit()?;
+        Ok(())
+    }
+    pub fn reindex_if_changed(
+        &self,
+        a: &ArchiveRow,
+        rel: &str,
+        forced: bool,
+        force_content: bool,
+    ) -> Result<bool> {
+        use rusqlite::{OptionalExtension, params};
+        let (text, hash, len) = self.read_file(a, rel)?;
+        let row = self.connection.conn.query_row(
+            "SELECT id,file_hash FROM external_documents WHERE archive_id=? AND relative_path=?",
+            params![a.id,rel],|r| Ok((r.get::<_,i64>(0)?,r.get::<_,String>(1)?))).optional()?;
+        let Some((doc, old_hash)) = row else {
+            self.index_file(a, rel)?;
+            return Ok(true);
+        };
+        if old_hash == hash && !force_content && !forced {
+            return Ok(false);
+        }
+        let values = self.document_metadata(a, rel, &text)?;
+        let m = Self::metadata_params(&values);
+        let metadata_only = old_hash == hash && !force_content;
+        let chunks = if metadata_only {
+            vec![]
+        } else {
+            chunk_text(
+                &text,
+                a.registration.chunk_size,
+                a.registration.chunk_overlap,
+            )?
+        };
+        let tx = self.connection.conn.unchecked_transaction()?;
+        if metadata_only {
+            tx.execute(
+                "UPDATE external_documents SET source_slug=?,doc_category=?,layer=?,
+                status=?,title=?,frontmatter_json=? WHERE id=?",
+                params![m[0], m[1], m[2], m[3], m[4], m[5], doc],
+            )?;
+        } else {
+            self.delete_document_chunks(doc)?;
+            tx.execute("DELETE FROM external_chunks WHERE document_id=?", [doc])?;
+            tx.execute(
+                "UPDATE external_documents SET file_hash=?,byte_len=?,vec_indexed_at=NULL,
+                source_slug=?,doc_category=?,layer=?,status=?,title=?,frontmatter_json=?
+                WHERE id=?",
+                params![hash, len as i64, m[0], m[1], m[2], m[3], m[4], m[5], doc],
+            )?;
+            self.insert_chunks(doc, &chunks)?;
+        }
+        tx.commit()?;
+        Ok(true)
+    }
+    pub fn vector_coverage(&self, archive: i64) -> Result<(i64, i64)> {
+        Ok((
+            0,
+            self.connection.conn.query_row(
+                "SELECT COUNT(*) FROM external_chunks c
+            JOIN external_documents d ON d.id=c.document_id WHERE d.archive_id=?",
+                [archive],
+                |r| r.get(0),
+            )?,
+        ))
+    }
+    pub fn scan(&self, id: i64, _embed_fn: Option<&mut EmbedFn<'_>>) -> Result<ScanResult> {
+        use std::collections::BTreeSet;
+        let archive = self.fetch_archive(id)?;
+        let a = &archive.registration;
+        let fs: BTreeSet<_> =
+            walk_archive(Path::new(&a.root_path), &a.glob_include, &a.glob_exclude)?
+                .into_iter()
+                .collect();
+        let c = &self.connection.conn;
+        let stored: BTreeSet<String> = c
+            .prepare("SELECT relative_path FROM external_documents WHERE archive_id=?")?
+            .query_map([id], |r| r.get(0))?
+            .collect::<std::result::Result<_, _>>()?;
+        let meta = format!("{ARCHIVE_METADATA_VERSION_PREFIX}{id}");
+        let content = format!("{ARCHIVE_CONTENT_REINDEX_PREFIX}{id}");
+        let version = self.meta("schema_metadata_version")?;
+        let forced = !stored.is_empty()
+            && self.meta(&meta)?.is_none_or(|v| {
+                int_ver(&Value::String(v))
+                    < int_ver(&Value::String(CURRENT_METADATA_VERSION.into()))
+            });
+        let force_content = self.meta(&content)?.is_some();
+        let mut result = ScanResult::default();
+        for rel in stored.difference(&fs) {
+            match self.cascade_delete_document(id, rel) {
+                Ok(()) => result.deleted += 1,
+                Err(e) => result.failed.push((rel.clone(), format!("delete: {e}"))),
+            }
+        }
+        for rel in fs.difference(&stored) {
+            match self.index_file(&archive, rel) {
+                Ok(_) => result.inserted += 1,
+                Err(e) => result.failed.push((rel.clone(), format!("insert: {e}"))),
+            }
+        }
+        for rel in fs.intersection(&stored) {
+            match self.reindex_if_changed(&archive, rel, forced, force_content) {
+                Ok(true) => result.reindexed += 1,
+                Ok(false) => result.unchanged += 1,
+                Err(e) => result.failed.push((rel.clone(), format!("reindex: {e}"))),
+            }
+        }
+        let tx = c.unchecked_transaction()?;
+        if result.failed.is_empty() {
+            tx.execute(
+                "INSERT OR REPLACE INTO external_store_meta(key,value) VALUES (?,?)",
+                [&meta, CURRENT_METADATA_VERSION],
+            )?;
+            tx.execute("DELETE FROM external_store_meta WHERE key=?", [&content])?;
+        } else {
+            tx.execute("DELETE FROM external_store_meta WHERE key=?", [&meta])?;
+        }
+        let versions = tx
+            .prepare(
+                "SELECT m.value FROM external_archives a
+            LEFT JOIN external_store_meta m ON m.key=? || CAST(a.id AS TEXT)",
+            )?
+            .query_map([ARCHIVE_METADATA_VERSION_PREFIX], |r| {
+                r.get::<_, Option<String>>(0)
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        let current = int_ver(&Value::String(CURRENT_METADATA_VERSION.into()));
+        let all_current = !versions.is_empty()
+            && versions.iter().all(|v| {
+                v.as_ref()
+                    .is_some_and(|v| int_ver(&Value::String(v.clone())) >= current)
+            });
+        let global = if all_current {
+            CURRENT_METADATA_VERSION.into()
+        } else {
+            int_ver(&Value::String(version.unwrap_or_default()))
+                .min((current - 1).max(0))
+                .to_string()
+        };
+        tx.execute(
+            "INSERT OR REPLACE INTO external_store_meta(key,value)
+            VALUES ('schema_metadata_version',?)",
+            [global],
+        )?;
+        tx.execute(
+            "UPDATE external_archives SET last_scanned_at=? WHERE id=?",
+            rusqlite::params![(self.clock)(), id],
+        )?;
+        tx.commit()?;
+        Ok(result)
+    }
+    fn meta(&self, key: &str) -> Result<Option<String>> {
+        use rusqlite::OptionalExtension;
+        Ok(self
+            .connection
+            .conn
+            .query_row(
+                "SELECT value FROM external_store_meta WHERE key=?",
+                [key],
+                |r| r.get(0),
+            )
+            .optional()?)
+    }
+}
 #[derive(Debug, PartialEq, Eq)]
 pub struct Chunk {
     pub chunk_index: usize,
