@@ -321,5 +321,10 @@
   "timestamp.002": ["text","timestamp.000",15,[["IDI6NTk6NDMuMTAgLTUK",1]]],
   "depth.000": ["text","",0,[["Ww==",450],["MA==",1],["XQ==",450]]],
   "depth.001": ["text","",0,[["LSA=",450],["eA==",1]]],
-  "depth.002": ["text","",0,[["Ww==",600],["MA==",1],["XQ==",600]]]
+  "depth.002": ["text","",0,[["Ww==",600],["MA==",1],["XQ==",600]]],
+  "nonspecific.000": ["text","",0,[["ISB0cnVl",1]]],
+  "nonspecific.001": ["text","",0,[["ISAidHJ1ZSI=",1]]],
+  "nonspecific.002": ["text","",0,[["ISAxMg==",1]]],
+  "nonspecific.003": ["text","",0,[["ISB0ZXh0",1]]],
+  "nonspecific.004": ["text","",0,[["ISBbYV0=",1]]]
 }

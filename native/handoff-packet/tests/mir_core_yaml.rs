@@ -133,7 +133,7 @@ fn frozen_compose_records() {
             failures.push(format!("{name}: got {observed}, expected {expected}"));
         }
     }
-    eprintln!("success/error = {counts:?}; 252 records, no exemptions");
-    assert_eq!(counts, [231, 21]);
+    eprintln!("success/error = {counts:?}; 257 records, no exemptions");
+    assert_eq!(counts, [236, 21]);
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }

@@ -957,7 +957,7 @@ impl Composer {
         let tag = match tag {
             Some(s) if s != "!" => s,
             Some(_) => match kind {
-                Kind::Scalar(_) => format!("{PREFIX}str"),
+                Kind::Scalar(ref text) => resolve(text)?,
                 _ => default_tag,
             },
             None => default_tag,

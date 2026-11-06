@@ -21,4 +21,4 @@ def test_native_input_fixture_matches_cases():
         actual = raw if kind == "bytes" else raw.decode("utf-8", "surrogatepass")
         assert actual == CASES[name], name
     assert set(rows) == set(CASES)
-    assert len(rows) == 252
+    assert len(rows) == 257

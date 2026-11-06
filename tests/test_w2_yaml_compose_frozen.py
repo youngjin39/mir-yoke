@@ -186,6 +186,8 @@ _add("syntax", [
 ])
 # Nesting: PyYAML's RecursionError threshold (~490 levels) depends on the caller's stack;
 # 450 levels succeed from any shallow caller and 600 always fail.
+# The non-specific "!" tag resolves a scalar implicitly, quoted or not.
+_add("nonspecific", ["! true", '! "true"', "! 12", "! text", "! [a]"])
 _add("depth", ["[" * 450 + "0" + "]" * 450, "- " * 450 + "x", "[" * 600 + "0" + "]" * 600])
 _add("bytes", [
     "\u03ba: \uac12\n".encode("utf-8"), b"\xef\xbb\xbf" + "\u03ba: \uac12\n".encode("utf-8"),
