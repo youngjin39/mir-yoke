@@ -94,6 +94,10 @@ def _execute(conn, tmp, kind, mode):
             conn.execute('UPDATE facts SET object_entity_id=subject_entity_id WHERE id=?', (old,))
         if mode[4] == 'inactive':
             conn.execute("UPDATE facts SET status='rejected' WHERE id=?", (old,))
+        if mode[4] == 'second':
+            # The new fact loses to the first row; the scan must stop before the second.
+            extra = d.insert_triple(conn, d.Triple('A', 'use', 'older', source_content_id=1))
+            conn.execute('UPDATE facts SET valid_from=? WHERE id=?', ('a', extra))
         new_obj = 'old' if mode[4] == 'equal' else 'new'
         new = d.insert_triple(conn, d.Triple('A', 'use', new_obj, source_content_id=1,
                                             is_list_member=mode[4] == 'list'))
@@ -182,6 +186,7 @@ CASES = {
         'tie': ('a', 'a', 0.5, 0.5, ''), 'null': (None, '', None, 0.5, ''),
         **{m: ('a', 'b', 0.5, 0.5, m) for m in
            ('equal', 'batch', 'list', 'entity', 'inactive')},
+        'second': ('c', 'b', 0.5, 0.5, 'second'),
     }.items()},
     'audit.success': _scenario('audit'), 'audit.failure_replay': _scenario('audit', 'failure'),
     'links.sequence': _scenario('links'), 'cli.local': _cli(), 'cli.foreign': _cli(True),

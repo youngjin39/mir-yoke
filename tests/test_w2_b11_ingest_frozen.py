@@ -158,6 +158,39 @@ def _execute(conn, tmp, kind, mode):
     return steps
 
 
+def _missing_via_link(tmp):
+    # Path.resolve(strict=False) still resolves the symlinked parent of a missing file.
+    real = tmp / 'real'
+    (real / 'docs/decisions').mkdir(parents=True)
+    (tmp / 'link').symlink_to(real, target_is_directory=True)
+    conn = store.connect(tmp / 'synthetic.db', load_vec=False).conn
+    try:
+        store.apply_migrations(conn)
+        path = tmp / 'link/docs/decisions/adr-gone.md'
+        return asdict(d.ingest_markdown_file(path, conn=conn, project_root=real))
+    finally:
+        conn.close()
+
+
+def _two_roots(tmp):
+    # A declared source dedups per project root; an undeclared one dedups by path only.
+    conn = store.connect(tmp / 'synthetic.db', load_vec=False).conn
+    out = []
+    try:
+        store.apply_migrations(conn)
+        for root, body in [('a', 'memory_relations: [[REQ-1, depends_on, CAP-A]]')] * 2 + [
+                ('b', 'memory_relations: [[REQ-1, depends_on, CAP-A]]'),
+                ('c', 'title: same'), ('d', 'title: same')]:
+            path = tmp / root / 'docs/decisions/adr-main.md'
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(f'---\n{body}\n---\n', encoding='utf-8')
+            result = d.ingest_markdown_file(path, conn=conn, project_root=tmp / root)
+            out.append([root, asdict(result)])
+        return out
+    finally:
+        conn.close()
+
+
 CASES = {
     'schema': _scenario('schema'),
     **{f'paths.{i}': _scenario('paths', p) for i, p in enumerate((
@@ -167,7 +200,8 @@ CASES = {
         '---\n: bad\nignore\nblank:\n---\n',
         '---\nprivate: <PRIVATE>p</PRIVATE><SECRET>s</SECRET><noindex>n</noindex>\n---\n',
         '\ufeff---\ntitle: bom\n---\n',
-        '---\nmemory_relations: [[REQ-1, illegal, CAP-A]]\n---\n'))},
+        '---\nmemory_relations: [[REQ-1, illegal, CAP-A]]\n---\n',
+        '---\ntitle: caf\u00e9 \u2603\n---\n'))},
     'sequence': _scenario('sequence'),
     **{f'winners.{name}': _scenario('winners', args) for name, args in {
         'r1_new': ('2000', 1.0), 'r1_old': ('2002', 0.0),
@@ -176,6 +210,8 @@ CASES = {
     'relations': _scenario('relations'), 'links': _scenario('links'),
     **{f'failure.{phase}': _scenario('failure', phase) for phase in ('content', 'fact')},
     **{f'cli.{mode}': _scenario('cli', mode) for mode in ('normal', 'override', 'invalid')},
+    'paths.missing_via_link': _missing_via_link,
+    'roots.dedup': _two_roots,
 }
 
 
