@@ -27,6 +27,9 @@ fancy-regex = "0.14"
 toml = { version = "=0.8.2", default-features = false, features = ["parse"] }
 rusqlite = { version = "=0.40.2", features = ["bundled"] }
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = ["Win32_Storage_FileSystem"] }
+
 [profile.release]
 lto = true
 codegen-units = 1

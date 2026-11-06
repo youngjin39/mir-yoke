@@ -6,8 +6,18 @@ pub enum Error {
     Sql(rusqlite::Error),
     Io(std::io::Error),
     Nul(std::ffi::NulError),
+    InvalidAlias(String),
+    Snapshot(&'static str),
 }
 impl Error {
+    pub fn python_hierarchy(&self) -> Vec<&'static str> {
+        let mut classes = vec![self.python_class()];
+        if matches!(self, Self::Snapshot(_)) {
+            classes.push("RuntimeError");
+        }
+        classes.extend(["Exception", "BaseException", "object"]);
+        classes
+    }
     pub fn python_class(&self) -> &'static str {
         match self {
             Self::Sql(rusqlite::Error::MultipleStatement) => "ProgrammingError",
@@ -19,15 +29,24 @@ impl Error {
             Self::Sql(_) => "OperationalError",
             Self::Io(_) => "OSError",
             Self::Nul(_) => "ValueError",
+            Self::InvalidAlias(_) => "ValueError",
+            Self::Snapshot(_) => "ReadOnlySnapshotUnavailable",
         }
     }
 }
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Sql(rusqlite::Error::SqliteFailure(e, _))
+                if e.code == rusqlite::ErrorCode::CannotOpen =>
+            {
+                f.write_str("unable to open database file")
+            }
             Self::Sql(e) => e.fmt(f),
             Self::Io(e) => e.fmt(f),
             Self::Nul(_) => f.write_str("embedded null character"),
+            Self::InvalidAlias(alias) => write!(f, "invalid SQL alias: {alias}"),
+            Self::Snapshot(message) => f.write_str(message),
         }
     }
 }
@@ -37,6 +56,7 @@ impl std::error::Error for Error {
             Self::Sql(e) => e,
             Self::Io(e) => e,
             Self::Nul(e) => e,
+            Self::InvalidAlias(_) | Self::Snapshot(_) => return None,
         })
     }
 }
@@ -184,4 +204,213 @@ pub fn schema_version(conn: &Sqlite) -> Result<Option<String>, Error> {
 }
 pub fn latest_schema_version() -> Option<String> {
     migrations().last().map(|m| m.version.clone())
+}
+
+pub fn current_fact_filter_sql(alias: &str) -> Result<String, Error> {
+    if !alias
+        .bytes()
+        .enumerate()
+        .all(|(i, b)| b == b'_' || b.is_ascii_alphabetic() || (i > 0 && b.is_ascii_digit()))
+        || alias.is_empty()
+    {
+        return Err(Error::InvalidAlias(crate::executor_execute::repr(alias)));
+    }
+    Ok(format!(
+        "AND NOT EXISTS (\n      SELECT 1 FROM facts terminal\n       WHERE terminal.subject_entity_id = {alias}.subject_entity_id\n         AND terminal.predicate = 'status' AND terminal.status = 'active'\n         AND terminal.polarity = 'asserted' AND (\n           lower(trim(terminal.object_literal)) IN ('archived', 'rejected', 'superseded', 'superseded-design', 'historical', 'historical-snapshot', 'historical-manual-snapshot', 'historical-ledger', 'applied-ledger-v1', 'done')\n           OR lower(trim(terminal.object_literal)) LIKE 'historical%'\n           OR lower(trim(terminal.object_literal)) LIKE 'superseded%'\n         ))"
+    ))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SnapshotFileState {
+    device: u64,
+    inode: u64,
+    size: u64,
+    mtime_ns: i128,
+    ctime_ns: i128,
+}
+impl SnapshotFileState {
+    pub fn size(&self) -> u64 {
+        self.size
+    }
+    pub fn fields(&self) -> [&'static str; 5] {
+        ["device", "inode", "size", "mtime_ns", "ctime_ns"]
+    }
+}
+#[cfg(unix)]
+pub fn snapshot_file_state(path: &Path) -> Result<Option<SnapshotFileState>, Error> {
+    use std::os::unix::fs::MetadataExt;
+    let stat = match std::fs::metadata(path) {
+        Ok(stat) => stat,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(e.into()),
+    };
+    Ok(Some(SnapshotFileState {
+        device: stat.dev(),
+        inode: stat.ino(),
+        size: stat.len(),
+        mtime_ns: i128::from(stat.mtime()) * 1_000_000_000 + i128::from(stat.mtime_nsec()),
+        ctime_ns: i128::from(stat.ctime()) * 1_000_000_000 + i128::from(stat.ctime_nsec()),
+    }))
+}
+// Python 3.12 stat uses creation time for ctime on Windows.
+#[cfg(windows)]
+#[allow(unsafe_code)] // The Win32 call borrows an owned file handle.
+pub fn snapshot_file_state(path: &Path) -> Result<Option<SnapshotFileState>, Error> {
+    use std::os::windows::{
+        fs::{MetadataExt, OpenOptionsExt},
+        io::AsRawHandle,
+    };
+    use windows_sys::Win32::Storage::FileSystem::{
+        BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS, FILE_SHARE_DELETE, FILE_SHARE_READ,
+        FILE_SHARE_WRITE, GetFileInformationByHandle,
+    };
+    let file = match std::fs::OpenOptions::new()
+        .access_mode(0)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+        .open(path)
+    {
+        Ok(file) => file,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(e.into()),
+    };
+    let stat = file.metadata()?;
+    let mut info = BY_HANDLE_FILE_INFORMATION::default();
+    // SAFETY: file owns a live handle; info is writable for this synchronous call.
+    if unsafe { GetFileInformationByHandle(file.as_raw_handle(), &mut info) } == 0 {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    let ns = |ticks| (i128::from(ticks) - 116_444_736_000_000_000i128) * 100;
+    Ok(Some(SnapshotFileState {
+        device: u64::from(info.dwVolumeSerialNumber),
+        inode: (u64::from(info.nFileIndexHigh) << 32) | u64::from(info.nFileIndexLow),
+        size: stat.file_size(),
+        mtime_ns: ns(stat.last_write_time()),
+        ctime_ns: ns(stat.creation_time()),
+    }))
+}
+pub type SnapshotState = std::collections::BTreeMap<&'static str, Option<SnapshotFileState>>;
+pub fn immutable_snapshot_state(path: &Path) -> Result<SnapshotState, Error> {
+    let mut state = SnapshotState::new();
+    for (key, suffix) in [("database", ""), ("wal", "-wal"), ("journal", "-journal")] {
+        let mut name = path.as_os_str().to_os_string();
+        name.push(suffix);
+        state.insert(key, snapshot_file_state(Path::new(&name))?);
+    }
+    Ok(state)
+}
+pub fn assert_immutable_snapshot_state(path: &Path, expected: &SnapshotState) -> Result<(), Error> {
+    let current = immutable_snapshot_state(path)?;
+    for (key, message) in [
+        (
+            "wal",
+            "immutable read refused because a non-empty SQLite WAL is present",
+        ),
+        (
+            "journal",
+            "immutable read refused because a non-empty SQLite rollback journal is present",
+        ),
+    ] {
+        if current[key].is_some_and(|s| s.size > 0) {
+            return Err(Error::Snapshot(message));
+        }
+    }
+    if current != *expected {
+        return Err(Error::Snapshot(
+            "immutable read refused because SQLite database or journal files changed during the snapshot interval",
+        ));
+    }
+    Ok(())
+}
+fn resolved(path: &Path) -> Result<std::path::PathBuf, Error> {
+    match path.canonicalize() {
+        Ok(path) => Ok(path),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(std::path::absolute(path)?),
+        Err(e) => Err(e.into()),
+    }
+}
+/// Optimistic validation, not a SQLite lock. Final validation also runs on body errors.
+pub fn immutable_snapshot_guard<T>(
+    path: &Path,
+    body: impl FnOnce() -> Result<T, Error>,
+) -> Result<T, Error> {
+    let path = resolved(path)?;
+    let before = immutable_snapshot_state(&path)?;
+    assert_immutable_snapshot_state(&path, &before)?;
+    let result = body();
+    assert_immutable_snapshot_state(&path, &before)?;
+    result
+}
+pub fn connect_read_only(path: &Path) -> Result<Connection, Error> {
+    let path = resolved(path)?;
+    let conn = immutable_snapshot_guard(&path, || {
+        let uri = file_uri(path.as_os_str().as_encoded_bytes(), cfg!(windows));
+        let raw = Sqlite::open_with_flags(
+            format!("{uri}?mode=ro&immutable=1"),
+            OpenFlags::SQLITE_OPEN_READ_ONLY
+                | OpenFlags::SQLITE_OPEN_URI
+                | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        )?;
+        raw.execute_batch("PRAGMA query_only=ON")?;
+        Ok(raw)
+    })?;
+    Ok(Connection {
+        conn,
+        vec_available: false,
+        vec_reason: "vec loading disabled by immutable reader",
+    })
+}
+
+// Resolved native paths; the platform argument makes both URI grammars testable.
+fn file_uri(path: &[u8], windows: bool) -> String {
+    let normalized;
+    let path = if windows {
+        normalized = path
+            .iter()
+            .map(|&b| if b == b'\\' { b'/' } else { b })
+            .collect::<Vec<_>>();
+        normalized
+            .strip_prefix(b"//?/UNC")
+            .unwrap_or_else(|| normalized.strip_prefix(b"//?/").unwrap_or(&normalized))
+    } else {
+        path
+    };
+    let prefix = if windows && path.get(1) == Some(&b':') {
+        "file:///"
+    } else if windows && path.starts_with(b"//") {
+        "file:"
+    } else if windows {
+        "file:/"
+    } else {
+        "file://"
+    };
+    let mut uri = prefix.to_string();
+    for (i, b) in path.iter().enumerate() {
+        if b.is_ascii_alphanumeric() || b"/-._~".contains(b) || (windows && i == 1 && *b == b':') {
+            uri.push(char::from(*b));
+        } else {
+            uri.push_str(&format!("%{b:02X}"));
+        }
+    }
+    uri
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn file_uri_matches_path_as_uri() {
+        for (path, windows, expected) in [
+            ("/tmp/a b/\u{e9}?#", false, "file:///tmp/a%20b/%C3%A9%3F%23"),
+            (r"C:\a b\db", true, "file:///C:/a%20b/db"),
+            (r"\\server\share\a b", true, "file://server/share/a%20b"),
+            (r"\\?\C:\a b\db", true, "file:///C:/a%20b/db"),
+            (
+                r"\\?\UNC\server\share\a b",
+                true,
+                "file://server/share/a%20b",
+            ),
+        ] {
+            assert_eq!(file_uri(path.as_bytes(), windows), expected);
+        }
+    }
 }

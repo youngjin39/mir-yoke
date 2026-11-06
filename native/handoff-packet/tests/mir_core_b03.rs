@@ -34,6 +34,13 @@ fn observed<T: serde::Serialize>(r: Result<T, Error>) -> Value {
     }
 }
 fn replay(name: &str, tmp: &Path) -> Value {
+    if name.starts_with("filter.") {
+        return observed(current_fact_filter_sql(match name {
+            "filter.custom" => "fact_2",
+            "filter.invalid" => "f;DROP",
+            _ => "f",
+        }));
+    }
     if name.starts_with("connect.") {
         let timeout = match name {
             "connect.custom_timeout" => Some(0.125),
@@ -128,7 +135,8 @@ fn frozen_records() {
         replayed += 1;
     }
     for name in store.as_object().unwrap().keys().filter(|n| {
-        n.starts_with("connect.")
+        (n.starts_with("filter.") && !n.ends_with("absent"))
+            || n.starts_with("connect.")
             || n.starts_with("migrations.")
             || [
                 "schema.latest",
@@ -150,20 +158,130 @@ fn frozen_records() {
     for name in exempt {
         assert_eq!(store[name]["error"][0], "AttributeError");
     }
-    // Authorized fallback: all snapshot and filter cases remain OPEN.
-    let deferred = ["filter.default", "filter.custom", "filter.invalid"];
+    let mut snapshot_exempt = 0;
+    for (name, expected) in snapshot.as_object().unwrap() {
+        if name.starts_with("api.") {
+            // Python-only exemption: probes assert an absent dynamic attribute.
+            assert_eq!(expected["error"][0], "AttributeError");
+            snapshot_exempt += 1;
+        } else if cfg!(windows)
+            && ["connect.symlink", "file_state.symlink"].contains(&name.as_str())
+        {
+            // Windows exemption: symlink creation requires privileges unavailable in CI.
+            snapshot_exempt += 1;
+        } else {
+            let tmp = tempfile::tempdir().unwrap();
+            assert_eq!(snapshot_replay(name, tmp.path()), *expected, "{name}");
+            replayed += 1;
+        }
+    }
     assert_eq!(
-        (
-            replayed,
-            exempt.len(),
-            deferred.len() + snapshot.as_object().unwrap().len()
-        ),
-        (17, 3, 30)
+        (replayed, exempt.len() + snapshot_exempt),
+        if cfg!(windows) { (42, 8) } else { (44, 6) }
     );
+    assert_eq!(replayed + exempt.len() + snapshot_exempt, 50);
 }
 #[test]
 fn embedded_directory_parity() {
     let root =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../src/mir/core/engine/memory/migrations");
     assert_eq!(discover(&root).unwrap(), migrations());
+}
+
+#[rustfmt::skip] // Compact oracle projections follow the Python case bodies.
+fn database(tmp: &Path, schema: bool) -> (std::path::PathBuf, Sqlite) {
+    let path = tmp.join("db");
+    let c = Sqlite::open(&path).unwrap();
+    c.execute_batch("CREATE TABLE items(value TEXT); INSERT INTO items VALUES ('base');").unwrap();
+    if schema { c.execute_batch("CREATE TABLE schema_migrations(version TEXT, name TEXT); INSERT INTO schema_migrations VALUES ('999', 'future.sql');").unwrap(); }
+    (path, c)
+}
+#[rustfmt::skip]
+fn logical(c: &Sqlite) -> Value {
+    let objects = rows(c, "SELECT type, name, tbl_name, sql FROM sqlite_master ORDER BY type, name");
+    let versions = if objects.as_array().unwrap().iter().any(|r| r[1] == "schema_migrations") { rows(c, "SELECT version, name FROM schema_migrations ORDER BY version") } else { Value::Null };
+    json!({"objects":objects,"versions":versions,"rows":rows(c,"SELECT * FROM items ORDER BY value"),"pragmas":{"journal_mode":rows(c,"PRAGMA journal_mode")[0][0],"query_only":rows(c,"PRAGMA query_only")[0][0],"user_version":rows(c,"PRAGMA user_version")[0][0]}})
+}
+#[rustfmt::skip]
+fn snapshot_replay(name: &str, tmp: &Path) -> Value {
+    let mode = name.split_once('.').unwrap().1;
+    let path = tmp.join("db");
+    if name == "error.hierarchy" { return json!({"value":Error::Snapshot("test").python_hierarchy()}); }
+    if name.starts_with("file_state.") {
+        if mode != "missing" { std::fs::write(&path, b"abc").unwrap(); }
+        let before = snapshot_file_state(&path).unwrap();
+        #[cfg(unix)]
+        if mode == "symlink" {
+            std::os::unix::fs::symlink(&path, tmp.join("link")).unwrap();
+            return json!({"value":snapshot_file_state(&tmp.join("link")).unwrap() == before});
+        }
+        // Private fields make the Python frozen-dataclass mutation unrepresentable.
+        return json!({"value":before.map(|s| json!({"fields":s.fields(),"size":s.size(),"equal":Some(s)==snapshot_file_state(&path).unwrap(),"frozen":"FrozenInstanceError"}))});
+    }
+    if name == "connect.missing" { return observed(connect_read_only(&tmp.join("missing")).map(|_| ())); }
+    let (path, c) = database(tmp, mode != "no_schema");
+    if name.starts_with("connect.") {
+        if mode == "wal" { c.execute_batch("PRAGMA journal_mode=WAL; INSERT INTO items VALUES ('wal-row');").unwrap(); }
+        if mode == "empty_wal" || mode == "shm" { std::fs::write(tmp.join(if mode == "shm" {"db-shm"} else {"db-wal"}), b"").unwrap(); }
+        #[cfg(not(unix))]
+        let target = path.clone();
+        #[cfg(unix)]
+        let target = if mode == "symlink" { let link = tmp.join("link"); std::os::unix::fs::symlink(&path, &link).unwrap(); link } else { path.clone() };
+        let before = logical(&c);
+        let mut files: Vec<_> = std::fs::read_dir(tmp).unwrap().map(|p| p.unwrap().file_name().into_string().unwrap()).collect(); files.sort();
+        let wal_before = snapshot_file_state(&tmp.join("db-wal")).unwrap();
+        let read = match connect_read_only(&target) {
+            Err(e) => observed::<()>(Err(e)),
+            Ok(w) => {
+                let data = logical(&w.conn);
+                let write = observed(w.conn.execute("INSERT INTO items VALUES ('snapshot-write')", []).map(|_| ()).map_err(Error::from));
+                w.conn.close().unwrap();
+                // Rust close consumes ownership; Python's subsequent query is invalid.
+                json!({"value":{"logical":data,"type":"Connection","vec":[w.vec_available,w.vec_reason],"write":write,"closed_query":{"error":["ProgrammingError","Cannot operate on a closed database."]}}})
+            }
+        };
+        let after = logical(&c);
+        return json!({"value":{"read":read,"source_before":before,"source_after":after,"source_unchanged":before==after,"wal_unchanged":wal_before==snapshot_file_state(&tmp.join("db-wal")).unwrap(),"copy_exists_after_close":std::fs::read_dir(tmp).unwrap().any(|p| !files.contains(&p.unwrap().file_name().into_string().unwrap())),"files_before":files}});
+    }
+    drop(c);
+    if ["wal","journal","empty_wal","shm","wal_removed"].contains(&mode) { std::fs::write(tmp.join(format!("db-{}", if ["empty_wal","wal_removed"].contains(&mode) {"wal"} else {mode})), if ["empty_wal","wal_removed"].contains(&mode) {b"".as_slice()} else {b"x".as_slice()}).unwrap(); }
+    let before = immutable_snapshot_state(&path).unwrap();
+    let change = || -> Result<(), Error> {
+        match mode {
+            "changed" => { use std::io::Write; std::fs::OpenOptions::new().append(true).open(&path)?.write_all(b"x")?; }
+            "deleted" => std::fs::remove_file(&path)?,
+            "wal_removed" => std::fs::remove_file(tmp.join("db-wal"))?,
+            _ => ()
+        } Ok(())
+    };
+    let result = if name.starts_with("assert.") { change().unwrap(); observed(assert_immutable_snapshot_state(&path, &before)) } else { observed(immutable_snapshot_guard(&path, change)) };
+    let after = immutable_snapshot_state(&path).unwrap();
+    let present: serde_json::Map<_,_> = before.iter().map(|(k,v)| ((*k).into(), json!(v.is_some()))).collect();
+    let unchanged: serde_json::Map<_,_> = before.iter().map(|(k,v)| ((*k).into(), json!(Some(v)==after.get(k)))).collect();
+    json!({"value":{"result":result,"keys":before.keys().collect::<Vec<_>>(),"present":present,"unchanged":unchanged}})
+}
+#[cfg(unix)]
+#[test]
+fn symlink_cannot_bypass_wal() {
+    let tmp = tempfile::tempdir().unwrap();
+    let (path, c) = database(tmp.path(), true);
+    drop(c);
+    let link = tmp.path().join("link");
+    std::os::unix::fs::symlink(&path, &link).unwrap();
+    std::fs::write(tmp.path().join("db-wal"), b"x").unwrap();
+    assert_eq!(
+        observed(connect_read_only(&link).map(|_| ())),
+        json!({"error":["ReadOnlySnapshotUnavailable","immutable read refused because a non-empty SQLite WAL is present"]})
+    );
+}
+#[test]
+fn guard_checks_body_errors() {
+    let tmp = tempfile::tempdir().unwrap();
+    let (path, c) = database(tmp.path(), true);
+    drop(c);
+    let result: Result<(), Error> = immutable_snapshot_guard(&path, || {
+        std::fs::remove_file(&path)?;
+        Err(Error::Snapshot("body"))
+    });
+    assert!(result.unwrap_err().to_string().contains("changed during"));
 }
