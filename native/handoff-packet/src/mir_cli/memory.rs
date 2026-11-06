@@ -770,7 +770,7 @@ pub fn main_with_clock(
     if !matches!(consent, "ephemeral" | "persistent") {
         return Ok(fail(format!(
             "argument --consent: invalid choice: {} \
-            (choose from 'ephemeral', 'persistent')",
+            (choose from ephemeral, persistent)",
             crate::executor_execute::repr(consent)
         )));
     }

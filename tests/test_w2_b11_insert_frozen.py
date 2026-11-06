@@ -177,6 +177,21 @@ def _cli(foreign=False):
     return run
 
 
+def _consent(tmp):
+    """argparse rejects an unknown --consent before the database is opened."""
+    results = []
+    for value in ('bogus', "it's"):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            try:
+                code = memory.main(['insert', '--db', str(tmp / 'absent.db'), '--subject', 'A',
+                                    '--predicate', 'uses', '--object', 'o', '--consent', value])
+            except SystemExit as exc:
+                code = exc.code
+        results.append([code, err.getvalue().replace(str(tmp), '<tmp>')])
+    return results
+
+
 CASES = {
     'schema': _scenario('schema'), 'upsert.sequence': _scenario('upsert'),
     **{f'insert.{i}': _scenario('insert', body) for i, body in enumerate(kind_scope)},
@@ -190,6 +205,7 @@ CASES = {
     }.items()},
     'audit.success': _scenario('audit'), 'audit.failure_replay': _scenario('audit', 'failure'),
     'links.sequence': _scenario('links'), 'cli.local': _cli(), 'cli.foreign': _cli(True),
+    'cli.consent_invalid': _consent,
 }
 
 

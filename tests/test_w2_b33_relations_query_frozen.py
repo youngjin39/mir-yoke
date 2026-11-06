@@ -207,6 +207,9 @@ CASES['main'] = lambda tmp: matrix(tmp, [
     ['A', 'implementation'], ['A', 'dependencies', '--depth', '4'],
     ['unknown', 'impact'], ['A', 'bad'], [], ['A', 'impact', '--depth', 'bad']],
     lambda args: cli(tmp, args))
+# argparse quotes an invalid choice with repr(); the choices list stays unquoted.
+CASES['main_purpose_quote'] = lambda tmp: matrix(
+    tmp, [['A', "it's"], ['A', 'a"b'], ['A', 'a\'b"c']], lambda args: cli(tmp, args))
 # A carriage return inside a comment line is still a format error.
 CASES['parse_graph_comment_cr'] = lambda tmp: matrix(
     tmp, [b'edges:\n - [a,r,b]\n# c\rx\n'],

@@ -772,8 +772,9 @@ pub fn main(argv: &[String]) -> Output {
         && !r::PURPOSES.contains(&p.as_str())
     {
         return cli_error(&format!(
-            "argument purpose: invalid choice: '{p}' (choose from \
-implementation, verification, impact, dependencies)"
+            "argument purpose: invalid choice: {} (choose from \
+implementation, verification, impact, dependencies)",
+            crate::executor_development_packet::py_repr(p)
         ));
     }
     let mut missing = Vec::new();

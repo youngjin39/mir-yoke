@@ -251,6 +251,34 @@ fn replay_insert(name: &str, conn: &Connection, root: &Path) -> Value {
                 state(conn, false)
             ]));
         }
+    } else if name == "cli.consent_invalid" {
+        let db = root.join("absent.db");
+        let rows: Vec<Value> = ["bogus", "it's"]
+            .into_iter()
+            .map(|value| {
+                let (code, _, err) = cli::main_with_clock(
+                    &[
+                        "insert",
+                        "--db",
+                        db.to_str().unwrap(),
+                        "--subject",
+                        "A",
+                        "--predicate",
+                        "uses",
+                        "--object",
+                        "o",
+                        "--consent",
+                        value,
+                    ],
+                    &db,
+                    root,
+                    clock,
+                )
+                .unwrap();
+                json!([code, String::from_utf8(err).unwrap()])
+            })
+            .collect();
+        return json!(rows);
     } else if name.starts_with("cli.") {
         let cwd = root.join("cwd");
         std::fs::create_dir_all(&cwd).unwrap();
@@ -528,7 +556,7 @@ fn normalize(value: Value, root: &Path) -> Value {
 fn frozen_records() {
     for (ingest, fixture, total) in [
         (true, include_str!("fixtures/w2/b11-ingest.json"), 28),
-        (false, include_str!("fixtures/w2/b11-insert.json"), 24),
+        (false, include_str!("fixtures/w2/b11-insert.json"), 25),
     ] {
         let oracle: Value = serde_json::from_str(fixture).unwrap();
         assert_eq!(oracle.as_object().unwrap().len(), total);
@@ -549,6 +577,9 @@ fn frozen_records() {
                 .unwrap();
             let value = if ingest {
                 replay_ingest(name, &db.conn, &root)
+            } else if name == "cli.consent_invalid" {
+                // The Python case records argparse stderr verbatim, not compacted.
+                replay_insert(name, &db.conn, &root)
             } else {
                 compact(replay_insert(name, &db.conn, &root))
             };

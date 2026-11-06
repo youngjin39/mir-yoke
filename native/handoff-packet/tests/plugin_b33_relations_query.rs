@@ -229,15 +229,7 @@ fn injected(root: &Path, refusal: &str) -> Value {
     ));
     json!({"result":result,"calls":io.calls.into_inner()})
 }
-fn cli(root: &Path) -> Value {
-    let cases: Vec<Vec<&str>> = vec![
-        vec!["A", "implementation"],
-        vec!["A", "dependencies", "--depth", "4"],
-        vec!["unknown", "impact"],
-        vec!["A", "bad"],
-        vec![],
-        vec!["A", "impact", "--depth", "bad"],
-    ];
+fn cli(root: &Path, cases: &[&[&str]]) -> Value {
     json!(
         cases
             .iter()
@@ -295,7 +287,18 @@ fn replay(name: &str, root: &Path) -> q::Result<Value> {
         "reader_default" => return reader(root, ""),
         #[cfg(unix)]
         "reader_profile" => return reader(root, PROFILE),
-        "main" => cli(root),
+        "main" => cli(
+            root,
+            &[
+                &["A", "implementation"],
+                &["A", "dependencies", "--depth", "4"],
+                &["unknown", "impact"],
+                &["A", "bad"],
+                &[],
+                &["A", "impact", "--depth", "bad"],
+            ],
+        ),
+        "main_purpose_quote" => cli(root, &[&["A", "it's"], &["A", "a\"b"], &["A", "a'b\"c"]]),
         s if s.starts_with("injected_") => injected(root, &s[9..]),
         s if s.starts_with("query_") => {
             return q::query_relations(&json!("A"), &json!(&s[6..]), &q::Options::new(root), None);
@@ -381,11 +384,11 @@ fn frozen_records() {
         eprintln!("REPLAYED {name}");
         replayed += 1;
     }
-    assert_eq!(replayed + exempt, 39);
+    assert_eq!(replayed + exempt, 40);
     #[cfg(unix)]
-    assert_eq!((replayed, exempt), (36, 3));
+    assert_eq!((replayed, exempt), (37, 3));
     #[cfg(windows)]
-    assert_eq!((replayed, exempt), (34, 5));
+    assert_eq!((replayed, exempt), (35, 5));
 }
 // Representable cells of the three whole-record exemptions replay against their frozen cells.
 #[test]
