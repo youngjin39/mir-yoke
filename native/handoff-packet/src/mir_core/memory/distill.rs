@@ -83,6 +83,56 @@ pub fn sanitize_fts_query(query: &str) -> Result<String> {
     })
 }
 pub use sanitize_fts_query as _sanitize_fts_query;
+
+#[derive(Debug)]
+pub enum SearchError {
+    Sanitize(crate::Error),
+    Sql(rusqlite::Error),
+}
+impl std::fmt::Display for SearchError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Sanitize(e) => write!(f, "{e:?}"),
+            Self::Sql(e) => e.fmt(f),
+        }
+    }
+}
+impl std::error::Error for SearchError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Sanitize(_) => None,
+            Self::Sql(e) => Some(e),
+        }
+    }
+}
+/// Frozen query semantics: active status only; terminal subjects remain visible.
+pub fn fts_search(
+    conn: &rusqlite::Connection,
+    query: &str,
+    limit: i64,
+    include_history: bool,
+) -> std::result::Result<Vec<(i64, String, String)>, SearchError> {
+    let safe_query = sanitize_fts_query(query).map_err(SearchError::Sanitize)?;
+    let status_clause = if include_history {
+        ""
+    } else {
+        "AND f.status = 'active'"
+    };
+    let mut statement = conn
+        .prepare(&format!(
+            "SELECT f.id, f.predicate, f.object_literal FROM facts_fts s
+         JOIN facts f ON f.id = s.rowid WHERE facts_fts MATCH ? {status_clause}
+         ORDER BY bm25(facts_fts) LIMIT ?"
+        ))
+        .map_err(SearchError::Sql)?;
+    statement
+        .query_map(rusqlite::params![safe_query, limit], |r| {
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+        })
+        .map_err(SearchError::Sql)?
+        .collect::<std::result::Result<_, _>>()
+        .map_err(SearchError::Sql)
+}
 fn put(out: &mut Frontmatter, key: String, value: Value) {
     if let Some((_, old)) = out.iter_mut().find(|(k, _)| *k == key) {
         *old = value;

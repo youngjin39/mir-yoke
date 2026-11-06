@@ -123,6 +123,13 @@ CASES = {
     **{f"query.{mode}": _query("needle", mode=mode) for mode in (
         "missing", "invalid", "unreadable", "unknown", "future",
         "wal_committed", "wal_uncommitted")},
+    # argparse surface: abbreviations, = values, help, missing and extra positionals.
+    **{f"query.args_{name}": _query(*args) for name, args in (
+        ("abbrev_history", ("needle", "--hist")), ("abbrev_limit", ("needle", "--lim", "1")),
+        ("equals_limit", ("needle", "--limit=1")), ("help", ("-h",)),
+        ("no_keyword", ()), ("extra_positional", ("needle", "other")),
+        ("option_first", ("--limit", "1", "needle")), ("double_dash", ("--", "--needle")),
+        ("limit_missing_value", ("needle", "--limit")))},
 }
 
 

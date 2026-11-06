@@ -705,3 +705,5 @@ mod executor_brief_execution;
 pub mod mir_core;
 #[forbid(unsafe_code)]
 pub mod mir_front;
+
+pub mod mir_cli;
