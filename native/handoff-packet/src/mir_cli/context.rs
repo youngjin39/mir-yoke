@@ -1,4 +1,4 @@
-//! Context header helpers only; no CLI dispatch or live caller.
+//! Library-only FTS context pull and profile headers; no live caller.
 #![forbid(unsafe_code)]
 use crate::mir_core::context::profile_task_context::{
     ProfileTaskContext, ordered_python_str, python_str, string_list,
@@ -126,4 +126,611 @@ pub fn profile_search_scopes(context: &Value) -> Value {
         }
     }
     serde_json::json!((!compact.is_empty()).then_some(compact))
+}
+
+use crate::mir_core::{
+    config::loader,
+    memory::{distill, external_store, store},
+};
+use serde_json::json;
+use std::{collections::BTreeSet, path::Path};
+
+pub const NEAR_DUP_THRESHOLD: f64 = 0.85;
+const SUFFIX: &str = "\u{2026}[truncated]";
+const VEC_NOTICE: &str = concat!(
+    "sqlite-vec unavailable, FTS5-only mode: sqlite-vec package not installed: ",
+    "import of sqlite_vec halted; None in sys.modules\n"
+);
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+pub type Output = (i32, Vec<u8>, Vec<u8>);
+/// Inject the factory result; even Present cannot invoke vectors in this FTS slice.
+#[derive(Clone, Copy)]
+pub enum EmbeddingState {
+    Absent,
+    Present,
+    Failed,
+}
+pub fn shingles(text: &str) -> BTreeSet<String> {
+    let text = text
+        .to_lowercase()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    let chars = text.chars().collect::<Vec<_>>();
+    if chars.len() < 8 {
+        return if text.is_empty() {
+            BTreeSet::new()
+        } else {
+            BTreeSet::from([text])
+        };
+    }
+    chars.windows(8).map(|s| s.iter().collect()).collect()
+}
+pub fn jaccard(a: &BTreeSet<String>, b: &BTreeSet<String>) -> f64 {
+    if a.is_empty() || b.is_empty() {
+        return 0.0;
+    }
+    a.intersection(b).count() as f64 / a.union(b).count() as f64
+}
+fn truncate(text: &str, bytes: usize) -> String {
+    if bytes < SUFFIX.len() {
+        return String::new();
+    }
+    if text.len() <= bytes {
+        return text.into();
+    }
+    let mut end = bytes - SUFFIX.len();
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}{SUFFIX}", &text[..end])
+}
+/// Explicit key order for Python json.dumps byte parity, without a global map change.
+fn object(fields: &[(&str, String)]) -> String {
+    format!(
+        "{{{}}}",
+        fields
+            .iter()
+            .map(|(k, v)| format!("{}: {v}", json!(k)))
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
+}
+fn ordered(v: &Value, keys: &[&str]) -> String {
+    object(
+        &keys
+            .iter()
+            .filter_map(|k| v.get(k).map(|v| (*k, json_text(v))))
+            .collect::<Vec<_>>(),
+    )
+}
+fn json_text(v: &Value) -> String {
+    if let Some(items) = v.as_array() {
+        return format!(
+            "[{}]",
+            items.iter().map(json_text).collect::<Vec<_>>().join(", ")
+        );
+    }
+    let keys: &[&str] = if v.get("repository").is_some() {
+        &[
+            "repository",
+            "task",
+            "safety",
+            "selected_refs",
+            "freshness",
+            "needs_investigation",
+            "warnings",
+        ]
+    } else if v.get("repository_type").is_some() {
+        &[
+            "slug",
+            "repository_type",
+            "purpose",
+            "technology_stack",
+            "profile_verified_at",
+        ]
+    } else if v.get("target_paths").is_some() {
+        &["query", "risk", "target_paths"]
+    } else if v.get("protected_paths").is_some() {
+        &[
+            "protected_paths",
+            "generated_paths",
+            "preserve",
+            "boundaries",
+            "gates",
+        ]
+    } else if v.get("base_commit").is_some() {
+        &[
+            "state",
+            "base_commit",
+            "head",
+            "changed_selected",
+            "changed_selected_count",
+            "reason",
+        ]
+    } else if v.get("kind").is_some() {
+        &["kind", "path"]
+    } else if v.get("source_content_ids").is_some() {
+        &[
+            "id",
+            "status",
+            "subject",
+            "predicate",
+            "object",
+            "source_content_ids",
+        ]
+    } else if v.get("archive_slug").is_some() {
+        &[
+            "archive_slug",
+            "relative_path",
+            "byte_start",
+            "byte_end",
+            "score",
+            "status",
+            "snippet",
+        ]
+    } else {
+        return crate::executor_development_packet::render(v);
+    };
+    ordered(v, keys)
+}
+fn fact_prefix(f: &Value) -> String {
+    let sources = f["source_content_ids"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(Value::to_string)
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "[fact] #{} [{}] {} {} [sources:{}] ",
+        f["id"],
+        f["status"].as_str().unwrap_or(""),
+        f["subject"].as_str().unwrap_or(""),
+        f["predicate"].as_str().unwrap_or(""),
+        if sources.is_empty() {
+            "unknown"
+        } else {
+            &sources
+        }
+    )
+}
+const UNSAFE_PATTERNS: &[&str] = &[
+    concat!(
+        r"(?is)\b(?:ignore|disregard|override)\b.{0,80}",
+        r"\b(?:all|any|previous|prior|earlier|above|system|developer)\b.{0,40}",
+        r"\b(?:instructions?|directions?|rules?|guidance)\b"
+    ),
+    concat!(
+        r"(?is)\b(?:you\s+must|must|immediately|now)\b.{0,60}",
+        r"\b(?:execute|run|invoke|call)\b.{0,40}",
+        r"\b(?:tools?|commands?|shell|bash|terminal)\b"
+    ),
+    r"(?is)\b(?:reveal|print|exfiltrate)\b.{0,80}\b(?:system prompt|credentials?|secrets?)\b",
+    r"(?i)<\s*/?\s*(?:system|assistant|developer|tool)\b",
+    r"\bsk-[A-Za-z0-9_-]{20,}\b",
+    r"\b(?:ghp|gho)_[A-Za-z0-9]{36}\b",
+    r"\bAIza[A-Za-z0-9_-]{35}\b",
+    r"\bxoxb-[0-9A-Za-z-]{20,}\b",
+    r"\bAKIA[A-Z0-9]{16}\b",
+    r"(?i)\baws_secret_access_key\s*=\s*\S+",
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----",
+];
+fn search_fact_rows(
+    c: &rusqlite::Connection,
+    q: &str,
+    k: i64,
+    history: bool,
+) -> Result<(Vec<Value>, Vec<i64>)> {
+    let status = if history {
+        ""
+    } else {
+        "AND f.status = 'active'"
+    };
+    let sql = format!(
+        "SELECT f.id,f.status,COALESCE(s.slug,s.canonical_name,'unknown-subject'),
+         f.predicate,COALESCE(f.object_literal,o.slug,''),COALESCE(
+         (SELECT GROUP_CONCAT(DISTINCT p.content_item_id) FROM provenance p
+         WHERE p.fact_id=f.id AND p.content_item_id IS NOT NULL),CAST(f.created_from AS TEXT),'')
+         FROM facts_fts x JOIN facts f ON f.id=x.rowid
+         LEFT JOIN entities s ON s.id=f.subject_entity_id
+         LEFT JOIN entities o ON o.id=f.object_entity_id WHERE facts_fts MATCH ? {status}
+         ORDER BY bm25(facts_fts), f.id ASC LIMIT ?"
+    );
+    let mut stmt = c.prepare(&sql)?;
+    let rows = stmt.query_map(
+        rusqlite::params![
+            distill::sanitize_fts_query(q).map_err(|e| std::io::Error::other(format!("{e:?}")))?,
+            k
+        ],
+        |r| {
+            let ids: String = r.get(5)?;
+            Ok(
+                json!({"id":r.get::<_,i64>(0)?,"status":r.get::<_,String>(1)?,
+            "subject":r.get::<_,String>(2)?,"predicate":r.get::<_,String>(3)?,
+            "object":r.get::<_,String>(4)?,"source_content_ids":ids.split(',')
+                .filter_map(|s| s.parse::<i64>().ok()).collect::<Vec<_>>()}),
+            )
+        },
+    )?;
+    let patterns = UNSAFE_PATTERNS
+        .iter()
+        .map(|p| regex::Regex::new(p))
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    let (mut safe, mut blocked) = (Vec::new(), Vec::new());
+    for row in rows {
+        let f = row?;
+        let body = format!(
+            "{} {} {}",
+            f["subject"].as_str().unwrap_or(""),
+            f["predicate"].as_str().unwrap_or(""),
+            f["object"].as_str().unwrap_or("")
+        );
+        if patterns.iter().any(|p| p.is_match(&body)) {
+            if let Some(id) = f["id"].as_i64() {
+                blocked.push(id);
+            }
+        } else {
+            safe.push(f);
+        }
+    }
+    Ok((safe, blocked))
+}
+fn human_facts(facts: Vec<Value>) -> Vec<Value> {
+    let (mut out, mut remaining) = (Vec::new(), 2048usize);
+    for mut f in facts {
+        let prefix = fact_prefix(&f);
+        let body = f["object"].as_str().unwrap_or("");
+        let sep = usize::from(!out.is_empty());
+        let size = prefix.len() + body.len() + sep;
+        if size <= remaining {
+            remaining -= size;
+            out.push(f);
+            continue;
+        }
+        let budget = remaining.saturating_sub(prefix.len() + sep);
+        if budget >= SUFFIX.len() {
+            f["object"] = json!(truncate(body, budget));
+            out.push(f);
+        }
+        break;
+    }
+    out
+}
+fn json_facts(facts: &[Value]) -> String {
+    let mut out = Vec::new();
+    for f in facts {
+        let mut next = out.clone();
+        next.push(f.clone());
+        if json_text(&json!(next)).len() <= 2048 {
+            out = next;
+            continue;
+        }
+        let body = f["object"].as_str().unwrap_or("");
+        let (mut low, mut high, mut best) = (0, body.len(), None);
+        while low <= high {
+            let mid = (low + high) / 2;
+            let mut trial = f.clone();
+            trial["object"] = json!(truncate(body, mid));
+            let mut next = out.clone();
+            next.push(trial.clone());
+            if json_text(&json!(next)).len() <= 2048 {
+                best = Some(trial);
+                low = mid + 1;
+            } else if mid == 0 {
+                break;
+            } else {
+                high = mid - 1;
+            }
+        }
+        if let Some(f) = best.filter(|f| f["object"].as_str().unwrap_or("").contains(SUFFIX)) {
+            out.push(f);
+        }
+        break;
+    }
+    json_text(&json!(out))
+}
+
+#[derive(Clone, Copy)]
+enum Action {
+    History,
+    Json,
+    K,
+    Path,
+    Risk,
+    Db,
+    Root,
+}
+struct OptionSpec {
+    name: &'static str,
+    value: bool,
+    action: Action,
+}
+const OPTIONS: &[OptionSpec] = &[
+    OptionSpec {
+        name: "--history",
+        value: false,
+        action: Action::History,
+    },
+    OptionSpec {
+        name: "--json",
+        value: false,
+        action: Action::Json,
+    },
+    OptionSpec {
+        name: "--k",
+        value: true,
+        action: Action::K,
+    },
+    OptionSpec {
+        name: "--path",
+        value: true,
+        action: Action::Path,
+    },
+    OptionSpec {
+        name: "--risk",
+        value: true,
+        action: Action::Risk,
+    },
+    OptionSpec {
+        name: "--db",
+        value: true,
+        action: Action::Db,
+    },
+    OptionSpec {
+        name: "--project-root",
+        value: true,
+        action: Action::Root,
+    },
+];
+/// Library boundary: all relative paths use cwd; no caller or environment discovery.
+/// Retrieval consumes no wall clock; profile freshness uses the existing Git helper.
+pub fn main(argv: &[&str], cwd: &Path, embedding: EmbeddingState) -> Result<Output> {
+    let (mut query, mut history, mut json_output, mut k) = (None, false, false, 8i64);
+    let (mut paths, mut risk, mut db, mut root) = (Vec::new(), "normal", None, None);
+    let fail = |message: &str| {
+        (
+            2,
+            Vec::new(),
+            format!("mir context pull: error: {message}\n").into_bytes(),
+        )
+    };
+    if argv.first() != Some(&"pull") {
+        return Ok(fail("expected pull"));
+    }
+    let mut i = 1;
+    while i < argv.len() {
+        let (name, inline) = argv[i]
+            .split_once('=')
+            .map_or((argv[i], None), |(a, b)| (a, Some(b)));
+        if let Some(opt) = OPTIONS.iter().find(|s| s.name == name) {
+            let value = if opt.value {
+                if let Some(v) = inline {
+                    v
+                } else {
+                    i += 1;
+                    let Some(v) = argv.get(i) else {
+                        return Ok(fail("expected one argument"));
+                    };
+                    v
+                }
+            } else {
+                ""
+            };
+            match opt.action {
+                Action::History => history = true,
+                Action::Json => json_output = true,
+                Action::K => match value.parse() {
+                    Ok(v) => k = v,
+                    Err(_) => return Ok(fail("invalid int value")),
+                },
+                Action::Path => paths.push(value),
+                Action::Risk => risk = value,
+                Action::Db => db = Some(cwd.join(value)),
+                Action::Root => root = Some(cwd.join(value)),
+            }
+        } else if !name.starts_with('-') && query.is_none() {
+            query = Some(argv[i]);
+        } else {
+            return Ok(fail("unrecognized arguments"));
+        }
+        i += 1;
+    }
+    let Some(query) = query else {
+        return Ok(fail("the following arguments are required: query"));
+    };
+    if !["low", "normal", "high"].contains(&risk) {
+        return Ok(fail("invalid choice"));
+    }
+    let db = db.unwrap_or_else(|| cwd.join(".mir/memory.db"));
+    let root = root.unwrap_or_else(|| {
+        let parent = db.parent().unwrap_or(cwd);
+        if db.file_name().is_some_and(|n| n == "memory.db")
+            && parent.file_name().is_some_and(|n| n == ".mir")
+        {
+            parent.parent().unwrap_or(cwd).to_owned()
+        } else {
+            parent.to_owned()
+        }
+    });
+    if !db.is_file() {
+        return Ok((
+            2,
+            format!(
+                "no memory.db at {} \u{2014} run 'mir migrate up' first\n",
+                db.display()
+            )
+            .into_bytes(),
+            Vec::new(),
+        ));
+    }
+    let root = root.canonicalize()?;
+    if let Err(e) = loader::load_config(Some(&root), cwd, cwd) {
+        return Ok((
+            2,
+            format!("invalid memory configuration: {e}\n").into_bytes(),
+            Vec::new(),
+        ));
+    }
+    let c = store::connect(&db, None)?.conn;
+    let profile = crate::mir_core::context::profile_task_context::build_profile_task_context(
+        &root, query, &paths, risk,
+    )?;
+    let scopes = if history {
+        Vec::new()
+    } else {
+        string_list(&profile_search_scopes(&profile.value))
+    };
+    let degraded = matches!(embedding, EmbeddingState::Failed);
+    let mut notices = Vec::<String>::new();
+    if degraded {
+        notices.push("[degraded] embedding unavailable \u{2014} FTS-only results".into());
+    }
+    let (facts, blocked) = search_fact_rows(&c, query, k, history)?;
+    if !blocked.is_empty() {
+        notices.push(format!(
+            "[unsafe-memory] unsafe fact(s) omitted: {}",
+            blocked
+                .iter()
+                .map(i64::to_string)
+                .collect::<Vec<_>>()
+                .join(",")
+        ));
+    }
+    let facts = human_facts(facts);
+    let archives: i64 = c.query_row("SELECT COUNT(*) FROM external_archives", [], |r| r.get(0))?;
+    if archives == 0 {
+        notices.push(
+            concat!(
+                "no archives configured \u{2014} run 'mir context sync' after adding ",
+                "[[memory.external_archives]] to harness_a.toml"
+            )
+            .into(),
+        );
+    }
+    // The reference degrades an archive search failure to an empty archive leg.
+    let hits = if archives == 0 {
+        Vec::new()
+    } else {
+        external_store::search_fts(&c, query, k, &scopes, history).unwrap_or_default()
+    };
+    let (mut chunks, mut seen) = (Vec::new(), Vec::new());
+    for hit in hits {
+        let data = std::fs::read(Path::new(&hit.root).join(&hit.relative_path));
+        let data = match data {
+            Ok(data) if crate::digest::sha256(&data) == hit.file_hash => data,
+            _ => {
+                notices.push("[stale] index entry skipped \u{2014} run 'mir context sync'".into());
+                continue;
+            }
+        };
+        // Python slicing clamps an out-of-range or inverted range to a short or empty slice.
+        let end = hit.byte_end.min(data.len());
+        let snippet = String::from_utf8_lossy(&data[hit.byte_start.min(end)..end]).into_owned();
+        let sh = shingles(&snippet);
+        if seen
+            .iter()
+            .any(|old| jaccard(&sh, old) > NEAR_DUP_THRESHOLD)
+        {
+            continue;
+        }
+        seen.push(sh);
+        chunks.push(
+            json!({"archive_slug":hit.archive_slug,"relative_path":hit.relative_path,
+            "byte_start":hit.byte_start,"byte_end":hit.byte_end,"score":hit.score,
+            "status":hit.status,"snippet":snippet}),
+        );
+        if chunks.len() as i64 >= k {
+            break;
+        }
+    }
+    let mut remaining = 6144isize;
+    let mut bounded = Vec::new();
+    for mut chunk in chunks {
+        if remaining <= 0 {
+            break;
+        }
+        let snippet = chunk["snippet"].as_str().unwrap_or("");
+        let size = indented_len(snippet);
+        if size <= remaining as usize {
+            remaining -= size as isize + 1;
+        } else {
+            let avail = remaining - 2 - SUFFIX.len() as isize;
+            if avail <= 0 {
+                break;
+            }
+            let bytes = snippet.as_bytes();
+            let text = format!(
+                "{}{SUFFIX}",
+                String::from_utf8_lossy(&bytes[..avail as usize])
+            );
+            remaining -= indented_len(&text) as isize + 1;
+            chunk["snippet"] = json!(text);
+        }
+        bounded.push(chunk);
+    }
+    let out = if json_output {
+        object(&[
+            ("degraded", json!(degraded).to_string()),
+            ("notices", json_text(&json!(notices))),
+            ("repository_context", json_text(&profile.value)),
+            ("facts", json_facts(&facts)),
+            ("chunks", json_text(&json!(bounded))),
+        ]) + "\n"
+    } else {
+        let mut lines = profile_context_lines(&profile);
+        if archives != 0 {
+            lines.extend(notices.clone());
+        }
+        for f in &facts {
+            lines.push(format!(
+                "{}{}",
+                fact_prefix(f),
+                f["object"].as_str().unwrap_or("")
+            ));
+        }
+        if archives == 0 {
+            lines.extend(notices);
+        }
+        for chunk in bounded {
+            lines.push(format!(
+                "[chunk] [{}] {}:{}@{}-{} score={:.6}",
+                chunk["status"].as_str().unwrap_or(""),
+                chunk["archive_slug"].as_str().unwrap_or(""),
+                chunk["relative_path"].as_str().unwrap_or(""),
+                chunk["byte_start"],
+                chunk["byte_end"],
+                chunk["score"].as_f64().unwrap_or(0.0)
+            ));
+            for line in splitlines(chunk["snippet"].as_str().unwrap_or("")) {
+                lines.push(format!("  {line}"));
+            }
+        }
+        if lines.is_empty() {
+            String::new()
+        } else {
+            lines.join("\n") + "\n"
+        }
+    };
+    Ok((0, out.into_bytes(), VEC_NOTICE.as_bytes().to_vec()))
+}
+fn splitlines(s: &str) -> Vec<&str> {
+    let mut lines = s
+        .split([
+            '\n', '\r', '\u{b}', '\u{c}', '\u{1c}', '\u{1d}', '\u{1e}', '\u{85}', '\u{2028}',
+            '\u{2029}',
+        ])
+        .collect::<Vec<_>>();
+    if lines.last() == Some(&"") {
+        lines.pop();
+    }
+    lines
+}
+fn indented_len(s: &str) -> usize {
+    let lines = splitlines(s);
+    if lines.is_empty() {
+        2
+    } else {
+        lines.iter().map(|s| s.len() + 2).sum::<usize>() + lines.len() - 1
+    }
 }

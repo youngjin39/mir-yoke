@@ -450,3 +450,90 @@ pub fn doc_created_ordinal(frontmatter: Option<&str>) -> i64 {
         .unwrap_or_else(|| created.to_string());
     ordinal(&text).unwrap_or(0)
 }
+
+/// Metadata-only FTS search leaf of ExternalStore.search, with no vector backend.
+#[derive(Debug)]
+pub struct SearchHit {
+    pub archive_slug: String,
+    pub relative_path: String,
+    pub byte_start: usize,
+    pub byte_end: usize,
+    pub score: f64,
+    pub status: String,
+    pub root: String,
+    pub file_hash: String,
+}
+pub fn search_fts(
+    conn: &rusqlite::Connection,
+    query: &str,
+    k: i64,
+    scopes: &[String],
+    history: bool,
+) -> std::result::Result<Vec<SearchHit>, Box<dyn std::error::Error>> {
+    if k <= 0 {
+        return Ok(Vec::new());
+    }
+    let query = super::distill::sanitize_fts_query(query)
+        .map_err(|e| std::io::Error::other(format!("{e:?}")))?;
+    let mut stmt = conn.prepare(
+        "SELECT c.id, a.slug, a.root_path, d.relative_path, c.byte_start, c.byte_end,
+         d.status, d.file_hash, d.frontmatter_json, s.rank
+         FROM external_chunks_fts s JOIN external_chunks c ON c.id=s.rowid
+         JOIN external_documents d ON d.id=c.document_id
+         JOIN external_archives a ON a.id=d.archive_id
+         WHERE external_chunks_fts MATCH ? ORDER BY s.rank, c.id ASC",
+    )?;
+    let rows = stmt.query_map([query], |r| {
+        Ok((
+            r.get::<_, i64>(0)?,
+            SearchHit {
+                archive_slug: r.get(1)?,
+                root: r.get(2)?,
+                relative_path: r.get(3)?,
+                byte_start: r.get::<_, i64>(4)? as usize,
+                byte_end: r.get::<_, i64>(5)? as usize,
+                status: r.get(6)?,
+                file_hash: r.get(7)?,
+                score: 0.0,
+            },
+            r.get::<_, Option<String>>(8)?,
+            r.get::<_, f64>(9)?,
+        ))
+    })?;
+    let mut candidates = Vec::new();
+    let (mut previous, mut tie) = (None, 0);
+    for row in rows {
+        let (id, mut hit, frontmatter, rank) = row?;
+        let logical = logical_metadata_path(&hit.root, &hit.relative_path);
+        if !history && (hit.status != "active" || is_history_path(&logical)) {
+            continue;
+        }
+        if !scopes.is_empty() {
+            let mut allowed = false;
+            for scope in scopes {
+                allowed |= is_within_path_scope(&logical, scope)?;
+            }
+            if !allowed {
+                continue;
+            }
+        }
+        let position = candidates.len();
+        if previous != Some(rank) {
+            tie = position;
+            previous = Some(rank);
+        }
+        hit.score = 1.0 / (60.0 + tie as f64);
+        candidates.push((id, hit, doc_created_ordinal(frontmatter.as_deref())));
+        if candidates.len() as i64 >= k.saturating_mul(3) {
+            break;
+        }
+    }
+    candidates.sort_by(|a, b| {
+        b.1.score
+            .total_cmp(&a.1.score)
+            .then(b.2.cmp(&a.2))
+            .then(a.0.cmp(&b.0))
+    });
+    candidates.truncate(k as usize);
+    Ok(candidates.into_iter().map(|(_, hit, _)| hit).collect())
+}
