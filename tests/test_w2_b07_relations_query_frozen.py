@@ -96,6 +96,13 @@ def scenario(kind, arg=None):
                                  'polarity,status,scope,project_path,created_from) '
                                  "VALUES (1,'depends_on',2,'asserted','active','project',?,1)",
                                  [(str(tmp),)] * arg)
+            if kind == 'owner_rows':  # duplicate the first implemented_in fact
+                conn.executemany('INSERT INTO facts(subject_entity_id,predicate,object_entity_id,'
+                                 'polarity,status,scope,project_path,created_from) '
+                                 'SELECT subject_entity_id,predicate,object_entity_id,polarity,'
+                                 'status,scope,project_path,created_from FROM facts '
+                                 "WHERE predicate='implemented_in' ORDER BY id LIMIT 1",
+                                 [()] * arg)
             conn.commit()
             if kind == 'anchor':
                 return m._resolve_query_anchor(conn, tmp, (), arg)
@@ -124,6 +131,8 @@ def scenario(kind, arg=None):
         if kind == 'budget':
             with mock.patch.object(m, '_MAX_TOTAL_SOURCE_BYTES', len(text.encode()) + arg):
                 return m.query_memory_relations('A', 'implementation', **kwargs)
+        if kind == 'owner_rows':
+            return m.bundle_memory_relations(['src/a.py'], ['impact', 'dependencies'], **kwargs)
         if kind == 'bundle' or kind == 'owners':
             return m.bundle_memory_relations(*arg[:2], **kwargs, **(arg[2] if len(arg) > 2 else {}))
         if kind == 'query':
@@ -163,6 +172,8 @@ CASES.update({f'bundle.{i}': scenario('bundle', a) for i, a in enumerate([
     (['src/a.py'], ['implementation', 'dependencies'], {'max_bytes': 1024})])})
 CASES['owners.ambiguous'] = scenario('owners', (['src/a.py'], ['impact', 'dependencies']))
 CASES.update({f'rows.{n}': scenario('rows', n) for n in [2046, 2047, 2048]})
+# Two implemented_in facts exist already: 2046 more reach the owner row cap, 2047 exceed it.
+CASES.update({f'owner_rows.{n}': scenario('owner_rows', n) for n in [2046, 2047]})
 CASES.update({f'metadata.{n}': scenario('metadata', n) for n in [65536, 65537]})
 CASES.update({f'budget.{n}': scenario('budget', n) for n in [-1, 0, 1]})
 CASES.update({f'invalid.{i}': scenario('invalid', sql) for i, sql in enumerate([

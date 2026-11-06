@@ -3,7 +3,7 @@ mod digest;
 use handoff_packet::mir_core::{
     audit_log::AuditLog,
     memory::{relation_facts as f, store},
-    yaml,
+    memory_relations as m, relations as r, yaml,
 };
 use rusqlite::{Connection, params, types::ValueRef};
 use serde_json::{Value, json};
@@ -314,7 +314,7 @@ fn pure(name: &str, root: &Path) -> Value {
             json!({"value":{"utc":0.0,"microseconds":
                 now.split('.').nth(1).unwrap().split('+').next().unwrap().len()}})
         }
-        _ => panic!("unclassified pure record {name}"),
+        _ => memory_pure(name),
     }
 }
 fn clock() -> SystemTime {
@@ -438,6 +438,13 @@ fn db(name: &str, root: &Path) -> Value {
             .into();
         return json!({"value":[ids,state(&conn)]});
     }
+    if name == "empty" {
+        let first = reconcile(&conn, root, "a.md", None, "active", &decls());
+        return json!({"value":[first,
+            f::has_owned_active_relation_facts(&conn,root,"a.md").unwrap(),
+            m::relation_rows(&conn,root,&Default::default(),"dependencies",None,None,1).unwrap(),
+            state(&conn)]});
+    }
     let declarations = decls();
     let first = reconcile(&conn, root, "a.md", Some(1), "active", &declarations);
     let other = reconcile(&conn, root, "b.md", Some(2), "active", &declarations[..1]);
@@ -512,7 +519,7 @@ fn db(name: &str, root: &Path) -> Value {
         conn.execute_batch("ROLLBACK").unwrap();
         return json!({"value":[before,failure,calls,partial,state(&conn),!conn.is_autocommit()]});
     }
-    panic!("unclassified db record {name}")
+    memory_db(name, &conn, root)
 }
 fn compact(v: Value) -> Value {
     match v {
@@ -523,76 +530,26 @@ fn compact(v: Value) -> Value {
         _ => v,
     }
 }
-const PURE_DEFERRED: &[&str] = &[
-    "metadata_gate",
-    "entity",
-    "coalesce",
-    "proof_notices",
-    "inactive_sql",
-    "locator_sql",
-    "source_marker",
-    "search_hint",
-    "stamp",
-    "directions",
-];
-const DB_DEFERRED: &[&str] = &[
-    "empty",
-    "provenance",
-    "locator.0",
-    "locator.1",
-    "locator.2",
-    "locator.3",
-    "query.0",
-    "query.1",
-    "query.2",
-    "query.3",
-    "query.4",
-    "query.5",
-    "query.6",
-    "query.7",
-    "query.8",
-    "query.9",
-    "query.10",
-    "query.11",
-    "query.12",
-    "query.13",
-    "query.14",
-    "query.15",
-    "query.16",
-    "query.17",
-    "query.18",
-    "query.19",
-    "query.20",
-    "query.21",
-    "query.22",
-    "query.23",
-    "query.24",
-];
 #[test]
 fn frozen_records() {
-    for (fixture, deferred, expected, is_db) in [
+    for (fixture, expected, is_db) in [
         (
             include_str!("fixtures/w2/b07-relations-pure.json"),
-            PURE_DEFERRED,
-            [21, 10, 0],
+            [29, 0, 2],
             false,
         ),
         (
             include_str!("fixtures/w2/b07-relations-db.json"),
-            DB_DEFERRED,
-            [23, 31, 0],
+            [54, 0, 0],
             true,
         ),
     ] {
         let oracle: Value = serde_json::from_str(fixture).unwrap();
-        assert_eq!(deferred.len(), expected[1]);
-        assert!(deferred.iter().all(|name| oracle.get(*name).is_some()));
         let mut counts = [0, 0, 0];
         for (name, expected) in oracle.as_object().unwrap() {
-            if deferred.contains(&name.as_str()) {
-                // Every named record above is deferred whole: memory_relations: B07-P02.
-                eprintln!("DEFERRED {name}: memory_relations: B07-P02");
-                counts[1] += 1;
+            if ["stamp", "coalesce"].contains(&name.as_str()) {
+                // Python-only mock stat and invalid Edge constructor argument binding.
+                counts[2] += 1;
                 continue;
             }
             let temp = tempfile::tempdir().unwrap();
@@ -653,4 +610,168 @@ fn metadata_resolves_relative_and_missing_parent_paths() {
         metadata["relation_project_path"],
         root.join("other").to_str().unwrap()
     );
+}
+fn memory_pure(name: &str) -> Value {
+    match name {
+        "entity" => batch(
+            [
+                Value::Null,
+                json!(0),
+                json!([]),
+                json!(""),
+                json!(" "),
+                json!("ns:A"),
+                json!("a".repeat(4096)),
+                json!("a".repeat(4097)),
+                json!("\n"),
+                json!("\u{1f}"),
+                json!("\u{7f}"),
+                json!("\u{9f}"),
+                json!("\u{a0}"),
+                json!("\u{2028}"),
+            ],
+            |v| json!({"value":m::entity_value(&v)}),
+        ),
+        "metadata_gate" => {
+            let meta = json!({"relation_schema":f::RELATION_SCHEMA,
+                "relation_project_path":"project",
+                "relation_document_status":"active"});
+            let mut inputs = vec![Value::Null, json!([]), json!({})];
+            for (k, v) in [
+                ("relation_schema", json!("v2")),
+                ("relation_project_path", json!("other")),
+                ("relation_document_status", Value::Null),
+            ] {
+                let mut m = meta.clone();
+                m[k] = v;
+                inputs.push(m);
+            }
+            for status in STATUSES.iter().copied().chain(["\n", "\u{7f}"]) {
+                let mut m = meta.clone();
+                m["relation_document_status"] = json!(status);
+                inputs.push(m);
+            }
+            batch(
+                inputs,
+                |v| json!({"value":m::metadata_gate(Path::new("project"),&v)}),
+            )
+        }
+        "proof_notices" => batch([0, 1, 8], |n| {
+            let mut state = m::SelectionState::default();
+            state.proofs_omitted = n;
+            json!({"value":m::proof_notices(&state)})
+        }),
+        "inactive_sql" => batch(
+            ["f.subject_entity_id", "f.object_entity_id"],
+            |s| json!({"value":m::inactive_endpoint_sql(s)}),
+        ),
+        "locator_sql" => batch(
+            ["subject.slug", "object.slug", ""],
+            |s| json!({"value":m::locator_path_sql(s)}),
+        ),
+        "source_marker" => json!({"value":m::memory_source()}),
+        "search_hint" => json!({"value":m::search_hint(&["B","A","B"].map(str::to_owned),
+            &["impact","dependencies","impact"].map(str::to_owned),"missing")}),
+        "directions" => {
+            let mut value = json!({});
+            for (label, reverse) in [("forward", false), ("reverse", true)] {
+                for p in r::PURPOSES {
+                    let mut predicates: Vec<_> =
+                        "has_req refines realized_by constrains implemented_in \
+                        exposes decided_by governed_by verified_by affects blocks depends_on"
+                            .split_whitespace()
+                            .filter(|v| r::allowed(p, v, reverse))
+                            .collect();
+                    predicates.sort();
+                    value[label][p] = json!(predicates);
+                }
+            }
+            json!({"value":value})
+        }
+        _ => panic!("unclassified pure record {name}"),
+    }
+}
+fn memory_db(name: &str, conn: &Connection, root: &Path) -> Value {
+    if name == "provenance" {
+        conn.execute(
+            "INSERT INTO provenance VALUES (1,1,'other',NULL,'inferred')",
+            [],
+        )
+        .unwrap();
+        return json!({"value":([(1,1,"proof"),(1,2,"proof"),(99,1,"proof"),(1,1,"other"),
+            (1,1,""),(1,1,"Proof")].map(|(f,c,q)|m::provenance_is_current(conn,f,c,q).unwrap()))});
+    }
+    if let Some(n) = name.strip_prefix("locator.") {
+        let n = n.parse().unwrap();
+        let result: Vec<_> = [
+            "src/a.py",
+            "./src//a.py",
+            "src/a.py::a",
+            "src/a.py::z",
+            "src/A.py",
+            "missing",
+            "A",
+        ]
+        .map(|a| m::locator_nodes(conn, root, a, n).unwrap())
+        .into();
+        return json!({"value":[result,rows(conn,"SELECT mir_locator_path('src//a.py::a'), \
+            mir_normalized_locator('./src/a.py::z')")]});
+    }
+    let n = name
+        .strip_prefix("query.")
+        .unwrap()
+        .parse::<usize>()
+        .unwrap();
+    let extra = [
+        "UPDATE content_items SET text_hash=printf('%0128d',1) WHERE id=1",
+        "UPDATE content_items SET metadata_json=printf('%065536d',1) WHERE id=1",
+        "UPDATE entities SET slug=printf('%04096d',1) WHERE slug='B'",
+        "UPDATE facts SET polarity='negated' WHERE created_from=1",
+        "UPDATE facts SET valid_to='ended' WHERE created_from=1",
+        "UPDATE content_items SET text_hash=printf('%0129d',1) WHERE id=1",
+        "UPDATE content_items SET metadata_json=printf('%065537d',1) WHERE id=1",
+        "UPDATE entities SET slug=printf('%04097d',1) WHERE slug='A'",
+    ];
+    if n < OWNED.len() {
+        if let Some(sql) = OWNED[n] {
+            conn.execute(sql, []).unwrap();
+        }
+    } else if n < 19 {
+        conn.execute(extra[n - 11], []).unwrap();
+    } else {
+        let endpoint = if n < 22 { 1 } else { 2 };
+        let status = ["historical-new", "draft", "active"][(n - 19) % 3];
+        conn.execute(
+            "INSERT INTO facts(subject_entity_id,predicate,object_literal,status,polarity)
+            VALUES (?,'status',?,'active','asserted')",
+            params![endpoint, status],
+        )
+        .unwrap();
+    }
+    let set = |v: &[&str]| v.iter().map(|s| s.to_string()).collect();
+    let ids = [1, 5].into_iter().collect();
+    let empty = Default::default();
+    let excluded = [1].into_iter().collect();
+    let mut queries = vec![];
+    for purpose in ["dependencies", "impact", "implementation", "verification"] {
+        for limit in [-1, 0, 1, 2, 5, 6] {
+            for (frontier, ids, exc) in [
+                (set(&["A", "B"]), None, None),
+                (set(&["A"]), Some(&ids), Some(&excluded)),
+                (set(&["A"]), Some(&empty), Some(&excluded)),
+                (set(&[]), None, None),
+            ] {
+                queries.push(json!([
+                    purpose,
+                    limit,
+                    ids,
+                    exc,
+                    m::relation_rows(conn, root, &frontier, purpose, ids, exc, limit).unwrap()
+                ]));
+            }
+        }
+    }
+    json!({"value":{"queries":queries,"eligible":(["A","B","missing"].map(|a|
+        m::eligible_nodes(conn,root,a).unwrap())),"probe":(["A","B","missing"].map(|a|
+        !m::relation_rows(conn,root,&set(&[a]),"dependencies",None,None,1).unwrap().is_empty()))}})
 }

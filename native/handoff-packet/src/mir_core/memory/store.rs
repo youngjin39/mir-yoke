@@ -238,31 +238,34 @@ impl SnapshotFileState {
 }
 #[cfg(unix)]
 pub fn snapshot_file_state(path: &Path) -> Result<Option<SnapshotFileState>, Error> {
-    use std::os::unix::fs::MetadataExt;
     let stat = match std::fs::metadata(path) {
         Ok(stat) => stat,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(e) => return Err(e.into()),
     };
-    Ok(Some(SnapshotFileState {
+    Ok(Some(metadata_state(&stat)))
+}
+#[cfg(unix)]
+fn metadata_state(stat: &std::fs::Metadata) -> SnapshotFileState {
+    use std::os::unix::fs::MetadataExt;
+    SnapshotFileState {
         device: stat.dev(),
         inode: stat.ino(),
         size: stat.len(),
         mtime_ns: i128::from(stat.mtime()) * 1_000_000_000 + i128::from(stat.mtime_nsec()),
         ctime_ns: i128::from(stat.ctime()) * 1_000_000_000 + i128::from(stat.ctime_nsec()),
-    }))
+    }
+}
+#[cfg(unix)]
+pub fn snapshot_handle_state(file: &std::fs::File) -> Result<SnapshotFileState, Error> {
+    Ok(metadata_state(&file.metadata()?))
 }
 // Python 3.12 stat uses creation time for ctime on Windows.
 #[cfg(windows)]
-#[allow(unsafe_code)] // The Win32 call borrows an owned file handle.
 pub fn snapshot_file_state(path: &Path) -> Result<Option<SnapshotFileState>, Error> {
-    use std::os::windows::{
-        fs::{MetadataExt, OpenOptionsExt},
-        io::AsRawHandle,
-    };
+    use std::os::windows::fs::OpenOptionsExt;
     use windows_sys::Win32::Storage::FileSystem::{
-        BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS, FILE_SHARE_DELETE, FILE_SHARE_READ,
-        FILE_SHARE_WRITE, GetFileInformationByHandle,
+        FILE_FLAG_BACKUP_SEMANTICS, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
     };
     let file = match std::fs::OpenOptions::new()
         .access_mode(0)
@@ -274,6 +277,15 @@ pub fn snapshot_file_state(path: &Path) -> Result<Option<SnapshotFileState>, Err
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(e) => return Err(e.into()),
     };
+    snapshot_handle_state(&file).map(Some)
+}
+#[cfg(windows)]
+#[allow(unsafe_code)] // The existing Win32 call borrows an owned file handle.
+pub fn snapshot_handle_state(file: &std::fs::File) -> Result<SnapshotFileState, Error> {
+    use std::os::windows::{fs::MetadataExt, io::AsRawHandle};
+    use windows_sys::Win32::Storage::FileSystem::{
+        BY_HANDLE_FILE_INFORMATION, GetFileInformationByHandle,
+    };
     let stat = file.metadata()?;
     let mut info = BY_HANDLE_FILE_INFORMATION::default();
     // SAFETY: file owns a live handle; info is writable for this synchronous call.
@@ -281,13 +293,13 @@ pub fn snapshot_file_state(path: &Path) -> Result<Option<SnapshotFileState>, Err
         return Err(std::io::Error::last_os_error().into());
     }
     let ns = |ticks| (i128::from(ticks) - 116_444_736_000_000_000i128) * 100;
-    Ok(Some(SnapshotFileState {
+    Ok(SnapshotFileState {
         device: u64::from(info.dwVolumeSerialNumber),
         inode: (u64::from(info.nFileIndexHigh) << 32) | u64::from(info.nFileIndexLow),
         size: stat.file_size(),
         mtime_ns: ns(stat.last_write_time()),
         ctime_ns: ns(stat.creation_time()),
-    }))
+    })
 }
 pub type SnapshotState = std::collections::BTreeMap<&'static str, Option<SnapshotFileState>>;
 pub fn immutable_snapshot_state(path: &Path) -> Result<SnapshotState, Error> {

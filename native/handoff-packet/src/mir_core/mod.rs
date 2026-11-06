@@ -5,6 +5,7 @@ pub mod context;
 pub mod contracts;
 pub mod instance_id;
 pub mod memory;
+pub mod memory_relations;
 pub mod relations;
 pub mod structured_error;
 pub(crate) mod tomllib;

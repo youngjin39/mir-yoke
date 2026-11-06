@@ -342,7 +342,7 @@ pub fn validate_endpoint(
     }
     None
 }
-fn anchor_safe(anchor: &Value) -> Result<&str> {
+pub fn anchor_safe(anchor: &Value) -> Result<&str> {
     let Some(anchor) = anchor
         .as_str()
         .filter(|a| !a.is_empty() && a.chars().count() <= 4096 && !has_control_characters(a))
@@ -376,7 +376,7 @@ fn limit(v: &Value, min: u64, max: u64, message: &str) -> Result<usize> {
         .map(|n| n as usize)
         .ok_or_else(|| RelationError(message.into()))
 }
-fn limits(o: &Options<'_>, purpose: &str) -> Result<(usize, usize)> {
+pub fn limits(o: &Options<'_>, purpose: &str) -> Result<(usize, usize)> {
     let d = if o.depth.is_null() {
         json!(if purpose == "dependencies" { 1 } else { 3 })
     } else {
@@ -392,7 +392,7 @@ fn limits(o: &Options<'_>, purpose: &str) -> Result<(usize, usize)> {
     )?;
     Ok((d, n))
 }
-fn allowed(p: &str, relation: &str, reverse: bool) -> bool {
+pub fn allowed(p: &str, relation: &str, reverse: bool) -> bool {
     let list = match (p, reverse) {
         ("implementation", false) => {
             "has_req refines realized_by constrains implemented_in \
@@ -407,10 +407,10 @@ exposes decided_by governed_by"
     };
     list.split_whitespace().any(|r| r == relation)
 }
-fn file_relation(r: &str) -> bool {
+pub fn file_relation(r: &str) -> bool {
     matches!(r, "implemented_in" | "verified_by")
 }
-fn unique<T: PartialEq>(items: Vec<T>) -> Vec<T> {
+pub fn unique<T: PartialEq>(items: Vec<T>) -> Vec<T> {
     let mut out = Vec::new();
     for item in items {
         if !out.contains(&item) {
@@ -451,14 +451,15 @@ pub fn query_relations(anchor: &Value, purpose: &str, o: &Options<'_>) -> Result
         root: &base,
         ..o.clone()
     };
-    query_loaded(anchor, purpose, &o, loaded)
+    query_loaded(anchor, purpose, &o, loaded, &[])
 }
 type Loaded<'a> = (&'a [Edge], &'a str, &'a str, &'a [String]);
-fn query_loaded(
+pub(crate) fn query_loaded(
     anchor: &Value,
     purpose: &str,
     o: &Options<'_>,
     loaded: Loaded<'_>,
+    extra_nodes: &[String],
 ) -> Result<Value> {
     let (graph, digest, source, protections) = loaded;
     let (depth, max_edges) = limits(o, purpose)?;
@@ -468,6 +469,7 @@ fn query_loaded(
         graph
             .iter()
             .flat_map(|e| [e.source.clone(), e.target.clone()])
+            .chain(extra_nodes.iter().cloned())
             .collect(),
     );
     let file_node = graph
@@ -655,7 +657,7 @@ pub fn bundle_relations(anchors: &Value, purposes: &Value, o: &Options<'_>) -> R
             root: &base,
             ..o.clone()
         };
-        let item = query_loaded(&json!(resolved), p, &o, loaded)?;
+        let item = query_loaded(&json!(resolved), p, &o, loaded, &[])?;
         let edges = item["edges"].as_array().cloned().unwrap_or_default();
         let (available, mut contributed) = (edges.len(), 0);
         for mut edge in edges {
