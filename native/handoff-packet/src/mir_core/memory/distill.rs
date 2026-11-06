@@ -858,3 +858,107 @@ pub fn _frontmatter_to_triples(slug: &str, fm: &Frontmatter) -> Vec<Triple> {
     }
     triples
 }
+
+/// Active ingested documents, ordered by slug; keyword order follows fact IDs.
+#[derive(Debug)]
+pub struct IngestedIndex {
+    pub slug: String,
+    pub title: String,
+    pub keywords: Vec<String>,
+    pub path: String,
+}
+pub fn recall_ingested_index(conn: &Connection) -> rusqlite::Result<Vec<IngestedIndex>> {
+    let mut stmt = conn.prepare(
+        "SELECT DISTINCT e.slug, ci.metadata_json FROM entities e
+         JOIN facts f ON f.subject_entity_id=e.id
+         JOIN content_items ci ON ci.id=f.created_from
+         WHERE ci.source='self_ingest_md' AND f.status='active'",
+    )?;
+    let rows = stmt.query_map([], |r| {
+        Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?))
+    })?;
+    let mut seen = std::collections::HashSet::new();
+    let mut result = Vec::new();
+    for row in rows {
+        let (slug, metadata) = row?;
+        if !seen.insert(slug.clone()) {
+            continue;
+        }
+        let meta: Value = serde_json::from_str(metadata.as_deref().unwrap_or("{}"))
+            .unwrap_or_else(|_| serde_json::json!({}));
+        let path = meta
+            .get("path")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_owned();
+        let title = conn
+            .query_row(
+                "SELECT object_literal FROM facts
+             WHERE subject_entity_id=(SELECT id FROM entities WHERE slug=?)
+             AND predicate='title' AND status='active' LIMIT 1",
+                [&slug],
+                |r| r.get::<_, String>(0),
+            )
+            .optional()?
+            .unwrap_or_default();
+        let mut kws = conn.prepare(
+            "SELECT object_literal FROM facts
+             WHERE subject_entity_id=(SELECT id FROM entities WHERE slug=?)
+             AND predicate='keywords' AND status='active' ORDER BY id",
+        )?;
+        let mut keywords = Vec::new();
+        for kw in kws.query_map([&slug], |r| r.get::<_, String>(0))? {
+            let kw = kw?;
+            if !keywords.contains(&kw) {
+                keywords.push(kw);
+            }
+        }
+        result.push(IngestedIndex {
+            slug,
+            title,
+            keywords,
+            path,
+        });
+    }
+    result.sort_by(|a, b| a.slug.cmp(&b.slug));
+    Ok(result)
+}
+#[derive(Debug)]
+pub struct Lesson {
+    pub slug: String,
+    pub text: String,
+}
+/// Lessons retain insertion order, including active facts from earlier ingests.
+pub fn recall_lessons(conn: &Connection) -> rusqlite::Result<Vec<Lesson>> {
+    conn.prepare(
+        "SELECT e.slug, f.object_literal FROM facts f
+         JOIN entities e ON e.id=f.subject_entity_id
+         WHERE f.predicate='lesson' AND f.status='active' ORDER BY f.id",
+    )?
+    .query_map([], |r| {
+        Ok(Lesson {
+            slug: r.get(0)?,
+            text: r.get(1)?,
+        })
+    })?
+    .collect()
+}
+
+impl serde::Serialize for IngestedIndex {
+    fn serialize<S: serde::Serializer>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error> {
+        serde_json::json!({"slug":self.slug,"title":self.title,
+            "keywords":self.keywords,"path":self.path})
+        .serialize(serializer)
+    }
+}
+impl serde::Serialize for Lesson {
+    fn serialize<S: serde::Serializer>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error> {
+        serde_json::json!({"slug":self.slug,"text":self.text}).serialize(serializer)
+    }
+}

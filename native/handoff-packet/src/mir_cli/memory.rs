@@ -1,12 +1,322 @@
-//! Query branch of cli/memory.py. Explicit DB and UTF-8 argv; no discovery.
+//! Library branches of cli/memory.py. Explicit DB and UTF-8 argv; no discovery.
 use crate::mir_core::memory::{distill, store};
 use std::{fmt, path::Path};
+
+const START: &str = "<!-- mir:generated:start -->";
+const END: &str = "<!-- mir:generated:end -->";
+const RENDER_USAGE: &str = concat!(
+    "usage: mir memory render [-h] [--target {memory-map,lessons,all}]\n",
+    "                         [--output-path OUTPUT_PATH] [--apply] [--db DB]\n"
+);
+#[derive(Debug)]
+struct DirectoryError(std::path::PathBuf);
+impl fmt::Display for DirectoryError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[Errno 21] Is a directory: {}",
+            crate::executor_execute::repr(self.0.to_str().unwrap_or_default())
+        )
+    }
+}
+impl std::error::Error for DirectoryError {}
+
+pub fn render_memory_map_section(conn: &rusqlite::Connection) -> rusqlite::Result<String> {
+    let rows = distill::recall_ingested_index(conn)?;
+    let mut lines = vec![
+        "## Keyword \u{2192} File Index (DB projection)".to_owned(),
+        String::new(),
+        "| Keyword | File | Title |".to_owned(),
+        "|---|---|---|".to_owned(),
+    ];
+    if rows.is_empty() {
+        lines.push("| (no ingested documents) | \u{2014} | \u{2014} |".to_owned());
+    }
+    for row in rows {
+        let kws = if row.keywords.is_empty() {
+            "\u{2014}".to_owned()
+        } else {
+            row.keywords.join(", ")
+        };
+        let path = if row.path.is_empty() {
+            &row.slug
+        } else {
+            &row.path
+        };
+        let title = if row.title.is_empty() {
+            &row.slug
+        } else {
+            &row.title
+        };
+        lines.push(format!("| {kws} | {path} | {title} |"));
+    }
+    Ok(lines.join("\n"))
+}
+pub fn render_lessons_section(conn: &rusqlite::Connection) -> rusqlite::Result<String> {
+    let lessons = distill::recall_lessons(conn)?;
+    let mut lines = vec![
+        "## Active Lessons (DB projection)".to_owned(),
+        String::new(),
+    ];
+    if lessons.is_empty() {
+        lines.push("- None recorded yet.".to_owned());
+    }
+    for lesson in lessons {
+        let text = lesson
+            .text
+            .trim_matches(crate::executor_brief_authority::python_space);
+        lines.push(format!("- **{}**: {text}", lesson.slug));
+    }
+    Ok(lines.join("\n"))
+}
+fn inject_markers(existing: &str, generated: &str) -> String {
+    let block = format!("{START}\n{generated}\n{END}");
+    if let (Some(start), Some(end)) = (existing.find(START), existing.find(END)) {
+        return format!(
+            "{}{block}{}",
+            &existing[..start],
+            &existing[end + END.len()..]
+        );
+    }
+    let mut sep = if !existing.is_empty() && !existing.ends_with("\n\n") {
+        "\n\n".to_owned()
+    } else {
+        "\n".to_owned()
+    };
+    if !existing.ends_with('\n') {
+        sep.insert(0, '\n');
+    }
+    format!("{existing}{sep}{block}\n")
+}
+/// Direct render branch, with no discovery and no process output side effects.
+pub fn render(
+    conn: &rusqlite::Connection,
+    target: &str,
+    apply: bool,
+    output: Option<&Path>,
+) -> Result<Output, Error> {
+    let run = || -> Result<Output, Box<dyn std::error::Error>> {
+        let mut sections = Vec::new();
+        if matches!(target, "memory-map" | "all") {
+            sections.push(render_memory_map_section(conn)?);
+        }
+        if matches!(target, "lessons" | "all") {
+            sections.push(render_lessons_section(conn)?);
+        }
+        let body = sections.join("\n\n");
+        let Some(path) = output.filter(|_| apply) else {
+            return Ok((0, format!("{START}\n{body}\n{END}\n").into_bytes(), vec![]));
+        };
+        let existing = if path.is_file() {
+            // Path.read_text uses universal newlines.
+            std::fs::read_to_string(path)?
+                .replace("\r\n", "\n")
+                .replace('\r', "\n")
+        } else {
+            if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+                std::fs::create_dir_all(parent)?;
+            }
+            String::new()
+        };
+        let updated = inject_markers(&existing, &body);
+        if path.is_dir() {
+            return Err(Box::new(DirectoryError(path.to_owned())));
+        }
+        #[cfg(windows)]
+        let updated = updated.replace('\n', "\r\n");
+        // Path.write_text writes in place: it keeps the mode bits and follows a symlink.
+        std::fs::write(path, updated)?;
+        Ok((
+            0,
+            format!("render applied \u{2192} {}\n", path.display()).into_bytes(),
+            vec![],
+        ))
+    };
+    run().map_err(Error)
+}
+#[derive(Clone, Copy)]
+enum RenderAction {
+    Help,
+    Target,
+    Output,
+    Apply,
+    Db,
+}
+const RENDER_OPTIONS: &[OptionSpec<RenderAction>] = &[
+    OptionSpec {
+        action: RenderAction::Help,
+        name: "--help",
+        metavar: None,
+        help: "show this help message and exit",
+    },
+    OptionSpec {
+        action: RenderAction::Target,
+        name: "--target",
+        metavar: Some("{memory-map,lessons,all}"),
+        help: "which projection to render (default: all)",
+    },
+    OptionSpec {
+        action: RenderAction::Output,
+        name: "--output-path",
+        metavar: Some("OUTPUT_PATH"),
+        help: "target file path for --apply (default: none = stdout\n                        only)",
+    },
+    OptionSpec {
+        action: RenderAction::Apply,
+        name: "--apply",
+        metavar: None,
+        help: concat!(
+            "write projection into the output file (default: dry-\n",
+            "                        run stdout)"
+        ),
+    },
+    OptionSpec {
+        action: RenderAction::Db,
+        name: "--db",
+        metavar: Some("DB"),
+        help: "",
+    },
+];
+fn render_main(argv: &[&str], explicit_db: &Path, root: &Path) -> Result<Output, Error> {
+    let fail = |message: String| {
+        (
+            2,
+            vec![],
+            format!("{RENDER_USAGE}mir memory render: error: {message}\n").into_bytes(),
+        )
+    };
+    let (mut target, mut output, mut db, mut apply) = ("all", None, explicit_db, false);
+    let mut unknown = Vec::new();
+    let mut i = 1;
+    let mut options = true;
+    while let Some(&token) = argv.get(i) {
+        i += 1;
+        if options && token == "--" {
+            options = false;
+            continue;
+        }
+        if !options {
+            unknown.push(token);
+            continue;
+        }
+        let (name, explicit) = token
+            .split_once('=')
+            .map_or((token, None), |(n, v)| (n, Some(v)));
+        let name = if name == "-h" { "--help" } else { name };
+        let exact = RENDER_OPTIONS.iter().find(|o| o.name == name);
+        let matches: Vec<_> = RENDER_OPTIONS
+            .iter()
+            .filter(|o| name.starts_with("--") && o.name.starts_with(name))
+            .collect();
+        let option = match (exact, matches.as_slice()) {
+            (Some(o), _) => o,
+            (None, [o]) => *o,
+            (None, []) => {
+                unknown.push(token);
+                continue;
+            }
+            (None, _) => {
+                return Ok(fail(format!(
+                    "ambiguous option: {name} could match {}",
+                    matches
+                        .iter()
+                        .map(|o| o.name)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )));
+            }
+        };
+        let value = if option.metavar.is_some() {
+            match explicit {
+                Some(v) => v,
+                None => {
+                    let Some(&v) = argv.get(i).filter(|v| !option_like(v)) else {
+                        return Ok(fail(format!("argument {name}: expected one argument")));
+                    };
+                    i += 1;
+                    v
+                }
+            }
+        } else {
+            if let Some(v) = explicit {
+                return Ok(fail(format!(
+                    "argument {name}: ignored explicit argument {}",
+                    crate::executor_execute::repr(v)
+                )));
+            }
+            ""
+        };
+        match option.action {
+            RenderAction::Help => {
+                let mut text = format!("{RENDER_USAGE}\noptions:\n");
+                for o in RENDER_OPTIONS {
+                    let label = if let Some(m) = o.metavar {
+                        format!("{} {m}", o.name)
+                    } else if o.name == "--help" {
+                        "-h, --help".to_owned()
+                    } else {
+                        o.name.to_owned()
+                    };
+                    if label.len() > 20 {
+                        text.push_str(&format!("  {label}\n                        {}\n", o.help));
+                    } else if o.help.is_empty() {
+                        text.push_str(&format!("  {label}\n"));
+                    } else {
+                        text.push_str(&format!("  {label:22}{}\n", o.help));
+                    }
+                }
+                return Ok((0, text.into_bytes(), vec![]));
+            }
+            RenderAction::Target => {
+                if !matches!(value, "all" | "memory-map" | "lessons") {
+                    return Ok(fail(format!(
+                        "argument --target: invalid choice: {} \
+                        (choose from memory-map, lessons, all)",
+                        crate::executor_execute::repr(value)
+                    )));
+                }
+                target = value;
+            }
+            RenderAction::Output => output = Some(Path::new(value)),
+            RenderAction::Apply => apply = true,
+            RenderAction::Db => db = Path::new(value),
+        }
+    }
+    if !unknown.is_empty() {
+        return Ok(diagnostic(
+            &format!("unrecognized arguments: {}", unknown.join(" ")),
+            true,
+        ));
+    }
+    let db = root.join(db);
+    if !db.is_file() {
+        return Ok((
+            2,
+            format!(
+                "no memory.db at {} \u{2014} run `mir migrate up` first\n",
+                db.display()
+            )
+            .into_bytes(),
+            vec![],
+        ));
+    }
+    let conn = store::connect(&db, None).map_err(|e| Error(Box::new(e)))?;
+    let resolved_output = output.map(|p| root.join(p));
+    let mut result = render(&conn.conn, target, apply, resolved_output.as_deref())?;
+    if let Some(label) = output.filter(|_| apply) {
+        result.1 = format!("render applied \u{2192} {}\n", label.display()).into_bytes();
+    }
+    Ok(result)
+}
 
 pub type Output = (i32, Vec<u8>, Vec<u8>);
 #[derive(Debug)]
 pub struct Error(Box<dyn std::error::Error>);
 impl Error {
     pub fn python_class(&self) -> &'static str {
+        if self.0.downcast_ref::<DirectoryError>().is_some() {
+            return "IsADirectoryError";
+        }
         let sql = self.0.downcast_ref::<rusqlite::Error>().or_else(|| {
             match self.0.downcast_ref::<distill::SearchError>() {
                 Some(distill::SearchError::Sql(e)) => Some(e),
@@ -53,8 +363,8 @@ enum Action {
     History,
     Db,
 }
-struct OptionSpec {
-    action: Action,
+struct OptionSpec<A = Action> {
+    action: A,
     name: &'static str,
     metavar: Option<&'static str>,
     help: &'static str,
@@ -244,7 +554,7 @@ fn parse<'a>(argv: &[&'a str]) -> Result<Query<'a>, Output> {
 /// Parsing (including help/errors) precedes DB access; no discovery or live caller.
 /// Optional vector import is unavailable, matching the frozen reference context.
 pub fn main(argv: &[&str], explicit_db: &Path) -> Result<Output, Error> {
-    if matches!(argv.first(), Some(&"insert" | &"ingest-md")) {
+    if matches!(argv.first(), Some(&"insert" | &"ingest-md" | &"render")) {
         return main_with_clock(
             argv,
             explicit_db,
@@ -309,6 +619,9 @@ pub fn main_with_clock(
     root: &Path,
     clock: impl Fn() -> std::time::SystemTime,
 ) -> Result<Output, Error> {
+    if argv.first() == Some(&"render") {
+        return render_main(argv, explicit_db, root);
+    }
     let insert = argv.first() == Some(&"insert");
     let action = if insert { "insert" } else { "ingest-md" };
     let usage = if insert {

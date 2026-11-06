@@ -27,7 +27,8 @@ START, END = '<!-- mir:generated:start -->', '<!-- mir:generated:end -->'
 MANUAL = 'Manual prefix\t \n' + START + '\nstale\n' + END + '\nManual suffix  \n'
 BODIES = (None, '', 'manual', 'manual\n', 'manual\n\n', MANUAL,
           START + '\norphan\n', 'orphan\n' + END,
-          MANUAL + START + '\nsecond\n' + END + '\ntail', END + '\nreverse\n' + START)
+          MANUAL + START + '\nsecond\n' + END + '\ntail', END + '\nreverse\n' + START,
+          'crlf\r\n' + START + '\r\nold\r\n' + END + '\r\ntail\r')
 
 
 def _compact(value):
@@ -82,6 +83,12 @@ def _execute(conn, tmp, kind, mode):
         source = tmp / 'docs/decisions/adr-z.md'
         source.write_text('---\ntitle: updated\nkeywords: [z, c]\nlesson: replaced\n---\nbody2\n')
         ingests.append(asdict(d.ingest_markdown_file(source, conn=conn, project_root=tmp)))
+    if kind == 'helpers_direct':
+        # Direct inserts bypass ingest dedup: recall dedups keywords and render trims lessons.
+        for predicate, value in (('keywords', 'b'), ('lesson', '\t padded \n')):
+            d.insert_triple(conn, d.Triple('adr-a', predicate, value))
+        return {'index': d.recall_ingested_index(conn), 'lessons': d.recall_lessons(conn),
+                'lessons_markdown': memory._render_lessons_section(conn)}
     if kind in ('helpers', 'empty'):
         return {'ingests': ingests, 'index': d.recall_ingested_index(conn),
                 'lessons': d.recall_lessons(conn),
@@ -93,6 +100,22 @@ def _execute(conn, tmp, kind, mode):
                     'SELECT * FROM schema_migrations ORDER BY version')],
                 'objects': [list(r) for r in conn.execute(
                     'SELECT type, name, tbl_name, sql FROM sqlite_master ORDER BY type, name')]}
+    if kind == 'in_place':
+        # write_text keeps the existing file: its mode bits and a symlinked path survive.
+        real = tmp / 'out/real.md'
+        real.parent.mkdir(parents=True)
+        real.write_text(MANUAL, encoding='utf-8')
+        real.chmod(0o640)
+        link = tmp / 'out/link.md'
+        link.symlink_to(real.name)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            result = observe(lambda _: memory.main([
+                'render', '--apply', '--target', 'lessons', '--db', str(tmp / 'synthetic.db'),
+                '--output-path', str(link)]), tmp)
+        return {'result': result, 'stdout': out.getvalue(),
+                'mode': oct(real.stat().st_mode & 0o777), 'link_is_symlink': link.is_symlink(),
+                'real': real.read_text(encoding='utf-8')}
     output = tmp / 'out/nested/projection.md'
     body = BODIES[mode] if kind == 'markers' else MANUAL
     if body is not None:
@@ -145,6 +168,8 @@ CASES = {
     'cli.second_failure': _scenario('second_failure'),
     'cli.invalid_target': _scenario('invalid', ['--target', 'unknown']),
     'cli.unsupported_exclusion': _scenario('invalid', ['--exclude', 'docs/_archive/']),
+    'cli.in_place': _scenario('in_place'),
+    'helpers.direct_facts': _scenario('helpers_direct'),
 }
 
 
