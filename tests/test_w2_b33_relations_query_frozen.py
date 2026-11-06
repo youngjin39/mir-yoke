@@ -207,6 +207,20 @@ CASES['main'] = lambda tmp: matrix(tmp, [
     ['A', 'implementation'], ['A', 'dependencies', '--depth', '4'],
     ['unknown', 'impact'], ['A', 'bad'], [], ['A', 'impact', '--depth', 'bad']],
     lambda args: cli(tmp, args))
+# A carriage return inside a comment line is still a format error.
+CASES['parse_graph_comment_cr'] = lambda tmp: matrix(
+    tmp, [b'edges:\n - [a,r,b]\n# c\rx\n'],
+    lambda raw: [edge.as_dict() for edge in M._parse_graph(raw)])
+
+
+def reader_uppercase(tmp):
+    """Protection matching lower-cases the path first."""
+    setup(tmp)
+    obj = M.LocalReader(tmp)
+    return matrix(tmp, ['SECRETS/a', '.ENV', 'X.PEM', '.AWS/key'], obj.exists)
+
+
+CASES['reader_uppercase'] = reader_uppercase
 RECORDS = json.loads(FIXTURE.read_text(encoding='ascii')) if FIXTURE.exists() else {}
 
 

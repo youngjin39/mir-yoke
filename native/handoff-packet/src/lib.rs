@@ -707,3 +707,6 @@ pub mod mir_core;
 pub mod mir_front;
 
 pub mod mir_cli;
+
+#[forbid(unsafe_code)]
+pub mod plugin_scripts;
