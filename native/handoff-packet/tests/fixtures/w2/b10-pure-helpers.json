@@ -19,6 +19,7 @@
 "canonicalize.imported": {"value": ["import", "import", "import"]},
 "canonicalize.imports": {"value": ["import", "import", "import"]},
 "canonicalize.invalid": {"error": ["AttributeError", "'NoneType' object has no attribute 'lower'"]},
+"canonicalize.python_space": {"value": ["use", "use", "call", "import"]},
 "canonicalize.reference": {"value": ["reference", "reference", "reference"]},
 "canonicalize.referenced": {"value": ["reference", "reference", "reference"]},
 "canonicalize.references": {"value": ["reference", "reference", "reference"]},

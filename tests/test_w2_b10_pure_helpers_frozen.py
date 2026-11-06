@@ -40,6 +40,10 @@ CASES.update({
                                   ["", " \n", "Owns", "depend  on", "depend\ton",
                                    "\u0130", "USES!"]),
     "canonicalize.invalid": lambda tmp: predicates.canonicalize(None),
+    # str.strip() also removes the \x1c-\x1f separators and Unicode spaces.
+    "canonicalize.python_space": _calls(predicates.canonicalize,
+                                        ["\x1cuses\x1f", "\x1d\x1eUSE", "\u00a0calls\u2003",
+                                         "\x85imports"]),
     "sanitize.default": lambda tmp: sanitize(
         "a<private>x\ny</private>b<secret>s</secret><noindex>n</noindex>"),
     "sanitize.scopes": lambda tmp: [sanitize(
