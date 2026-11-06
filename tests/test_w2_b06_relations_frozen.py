@@ -180,6 +180,11 @@ CASES = {
         r._matches_protection(v, "private"), r._endpoint_path(v), r._normalized_locator(v),
         r._has_control_characters(v)] for v in
         [".ENV/x", "secrets/x", ".mir/memory.db-wal", "private/a", "src/./m.py::x", "A\u2029"]],
+    # Exact "secrets", a sibling sharing a literal pattern's prefix, and .env-prefixed parts.
+    "helpers.protection_edges": lambda tmp: [[v, r._protected(tuple(v.split("/")), ("private",)),
+        r._matches_protection(v, "private"), r._endpoint_path(v), r._normalized_locator(v),
+        r._has_control_characters(v)] for v in
+        ["secrets", "private_notes/a", "privatex", "cfg/.env.local", "src/.envrc", "SECRETS"]],
     "helpers.paths": grid([lambda tmp, v=v: str(r._safe_relative_path(v, label="test"))
                            for v in [None, "", ".", "C:\\x", "a\\b", "./src/m.py"]]),
     "helpers.patterns": grid([lambda tmp, v=v: r._profile_pattern(v)
