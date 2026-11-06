@@ -1,3 +1,4 @@
+pub mod audit_log;
 pub mod canonical;
 pub mod contracts;
 pub mod instance_id;

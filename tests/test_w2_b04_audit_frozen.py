@@ -142,6 +142,9 @@ def _facade(mode):
             with mock.patch.object(store, "_now_iso", return_value=NOW):
                 if mode == "event":
                     value = facade.event("custom", {"nested": {"b": 2, "a": 1}})
+                elif mode == "numbers":
+                    # Python float text (1e+16, -0.0) enters the chained hash.
+                    value = facade.event("custom", {"f": 1e16, "g": 0.1, "h": -0.0, "s": 1.5e-7})
                 elif mode == "extra":
                     value = facade.record("p", "t", "denied", "why", detail="\u00e9", n=0)
                 else:
@@ -185,7 +188,7 @@ CASES = {
         "payload", "hash", "prev_hash", "ts", "event") for row in (1, 2, 3)},
     **{f"gc.{dry}_{empty}_{caller}": _gc(dry, empty, caller)
        for dry in (True, False) for empty in (True, False) for caller in (True, False)},
-    **{f"facade.{mode}": _facade(mode) for mode in ("default", "extra", "event")},
+    **{f"facade.{mode}": _facade(mode) for mode in ("default", "extra", "event", "numbers")},
 }
 
 
