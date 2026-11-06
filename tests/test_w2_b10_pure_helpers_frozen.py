@@ -80,6 +80,9 @@ CASES.update({
     "frontmatter.empty": _calls(distill._parse_frontmatter,
                                ["---\n---\n", "---\n\n---\n", "---\n# comment\n \n---\n"]),
     "frontmatter.crlf": lambda tmp: distill._parse_frontmatter("---\r\nx: y\r\n---\r\nbody"),
+    # splitlines() treats CRLF as one break and also splits on VT, NEL and U+2028.
+    "frontmatter.line_breaks": lambda tmp: distill._parse_frontmatter(
+        "---\r\na:\r\n  - x\r\n  - y\r\nb: 1\x85c: 2\x0bd: 3\u2028e: [p, q]\r\n---\r\n"),
     "frontmatter.scalars": lambda tmp: distill._parse_frontmatter(
         "---\ndate: 2026-01-02\nflag: true\nnull: null\nnumber: 3\n"
         "quoted: 'a:b'\ndouble: \"x\"\ncomment: a # kept\n---\n"),

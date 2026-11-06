@@ -32,6 +32,7 @@
 "frontmatter.absent": {"value": [{}, {}, {}, {}, {}, {}]},
 "frontmatter.crlf": {"value": {"x": "y"}},
 "frontmatter.empty": {"value": [{}, {}, {}]},
+"frontmatter.line_breaks": {"value": {"a": ["x", "y"], "b": "1", "c": "2", "d": "3", "e": ["p", "q"]}},
 "frontmatter.lists": {"value": {"a": ["one", "two", "three"], "b": ["x", "y"], "c": [], "d": [], "e": ["", "z"]}},
 "frontmatter.malformed": {"value": {"": "empty-key", "not-list": "[a] trailing", "q": ["a", "b", "c"], "x": "replacement"}},
 "frontmatter.nested": {"value": {"block": "|", "inner": "value", "last": [], "outer": [], "seq": []}},
