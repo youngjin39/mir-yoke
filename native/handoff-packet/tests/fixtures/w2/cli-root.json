@@ -1,0 +1,288 @@
+[
+  {
+    "id": "module:no_args",
+    "entry": "module",
+    "argv": [],
+    "exit": 2,
+    "stdout": "dXNhZ2U6IG1pciA8c3ViY29tbWFuZD4gW2FyZ3NdCnN1YmNvbW1hbmRzOiBib290c3RyYXAsIGJvb3RzdHJhcC1hZG9wdGlvbiwgY2FwYWJpbGl0eSwgY29udGV4dCwgZXhlY3V0b3IsIGxvb3AsIG1lbW9yeSwgbWlncmF0ZSwgcG9saWN5LCBwcm9qZWN0LWhvb2tzLCByZWxhdGlvbnMsIHJ1bi1weXRob24sIHJ1bnRpbWUtbWFuaWZlc3QK",
+    "stderr": ""
+  },
+  {
+    "id": "module:short_help",
+    "entry": "module",
+    "argv": [
+      "LWg="
+    ],
+    "exit": 0,
+    "stdout": "dXNhZ2U6IG1pciA8c3ViY29tbWFuZD4gW2FyZ3NdCnN1YmNvbW1hbmRzOiBib290c3RyYXAsIGJvb3RzdHJhcC1hZG9wdGlvbiwgY2FwYWJpbGl0eSwgY29udGV4dCwgZXhlY3V0b3IsIGxvb3AsIG1lbW9yeSwgbWlncmF0ZSwgcG9saWN5LCBwcm9qZWN0LWhvb2tzLCByZWxhdGlvbnMsIHJ1bi1weXRob24sIHJ1bnRpbWUtbWFuaWZlc3QK",
+    "stderr": ""
+  },
+  {
+    "id": "module:long_help",
+    "entry": "module",
+    "argv": [
+      "LS1oZWxw"
+    ],
+    "exit": 0,
+    "stdout": "dXNhZ2U6IG1pciA8c3ViY29tbWFuZD4gW2FyZ3NdCnN1YmNvbW1hbmRzOiBib290c3RyYXAsIGJvb3RzdHJhcC1hZG9wdGlvbiwgY2FwYWJpbGl0eSwgY29udGV4dCwgZXhlY3V0b3IsIGxvb3AsIG1lbW9yeSwgbWlncmF0ZSwgcG9saWN5LCBwcm9qZWN0LWhvb2tzLCByZWxhdGlvbnMsIHJ1bi1weXRob24sIHJ1bnRpbWUtbWFuaWZlc3QK",
+    "stderr": ""
+  },
+  {
+    "id": "module:help_extra",
+    "entry": "module",
+    "argv": [
+      "LWg=",
+      "ZXh0cmE="
+    ],
+    "exit": 0,
+    "stdout": "dXNhZ2U6IG1pciA8c3ViY29tbWFuZD4gW2FyZ3NdCnN1YmNvbW1hbmRzOiBib290c3RyYXAsIGJvb3RzdHJhcC1hZG9wdGlvbiwgY2FwYWJpbGl0eSwgY29udGV4dCwgZXhlY3V0b3IsIGxvb3AsIG1lbW9yeSwgbWlncmF0ZSwgcG9saWN5LCBwcm9qZWN0LWhvb2tzLCByZWxhdGlvbnMsIHJ1bi1weXRob24sIHJ1bnRpbWUtbWFuaWZlc3QK",
+    "stderr": ""
+  },
+  {
+    "id": "module:unknown_plain",
+    "entry": "module",
+    "argv": [
+      "cGxhaW4="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAncGxhaW4nCg=="
+  },
+  {
+    "id": "module:unknown_single_quote",
+    "entry": "module",
+    "argv": [
+      "aGFzJ3F1b3Rl"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAiaGFzJ3F1b3RlIgo="
+  },
+  {
+    "id": "module:unknown_double_quote",
+    "entry": "module",
+    "argv": [
+      "aGFzInF1b3Rl"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnaGFzInF1b3RlJwo="
+  },
+  {
+    "id": "module:unknown_both",
+    "entry": "module",
+    "argv": [
+      "Ym90aCci"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnYm90aFwnIicK"
+  },
+  {
+    "id": "module:unknown_backslash",
+    "entry": "module",
+    "argv": [
+      "YmFja1xzbGFzaA=="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnYmFja1xcc2xhc2gnCg=="
+  },
+  {
+    "id": "module:unknown_control",
+    "entry": "module",
+    "argv": [
+      "bGluZQpicmVhaw=="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnbGluZVxuYnJlYWsnCg=="
+  },
+  {
+    "id": "module:unknown_ascii_range",
+    "entry": "module",
+    "argv": [
+      "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+fw=="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnXHgwMVx4MDJceDAzXHgwNFx4MDVceDA2XHgwN1x4MDhcdFxuXHgwYlx4MGNcclx4MGVceDBmXHgxMFx4MTFceDEyXHgxM1x4MTRceDE1XHgxNlx4MTdceDE4XHgxOVx4MWFceDFiXHgxY1x4MWRceDFlXHgxZiAhIiMkJSZcJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5ceDdmJwo="
+  },
+  {
+    "id": "module:unknown_non_ascii",
+    "entry": "module",
+    "argv": [
+      "66qF66C57Ja0LfCfmoA="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAn66qF66C57Ja0LfCfmoAnCg=="
+  },
+  {
+    "id": "module:unknown_combining",
+    "entry": "module",
+    "argv": [
+      "ZcyB"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnZcyBJwo="
+  },
+  {
+    "id": "module:unknown_non_utf8",
+    "entry": "module",
+    "argv": [
+      "cmF3Lf8="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAncmF3LVx1ZGNmZicK"
+  },
+  {
+    "id": "console:no_args",
+    "entry": "console",
+    "argv": [],
+    "exit": 2,
+    "stdout": "dXNhZ2U6IG1pciA8c3ViY29tbWFuZD4gW2FyZ3NdCnN1YmNvbW1hbmRzOiBib290c3RyYXAsIGJvb3RzdHJhcC1hZG9wdGlvbiwgY2FwYWJpbGl0eSwgY29udGV4dCwgZXhlY3V0b3IsIGxvb3AsIG1lbW9yeSwgbWlncmF0ZSwgcG9saWN5LCBwcm9qZWN0LWhvb2tzLCByZWxhdGlvbnMsIHJ1bi1weXRob24sIHJ1bnRpbWUtbWFuaWZlc3QK",
+    "stderr": ""
+  },
+  {
+    "id": "console:short_help",
+    "entry": "console",
+    "argv": [
+      "LWg="
+    ],
+    "exit": 0,
+    "stdout": "dXNhZ2U6IG1pciA8c3ViY29tbWFuZD4gW2FyZ3NdCnN1YmNvbW1hbmRzOiBib290c3RyYXAsIGJvb3RzdHJhcC1hZG9wdGlvbiwgY2FwYWJpbGl0eSwgY29udGV4dCwgZXhlY3V0b3IsIGxvb3AsIG1lbW9yeSwgbWlncmF0ZSwgcG9saWN5LCBwcm9qZWN0LWhvb2tzLCByZWxhdGlvbnMsIHJ1bi1weXRob24sIHJ1bnRpbWUtbWFuaWZlc3QK",
+    "stderr": ""
+  },
+  {
+    "id": "console:long_help",
+    "entry": "console",
+    "argv": [
+      "LS1oZWxw"
+    ],
+    "exit": 0,
+    "stdout": "dXNhZ2U6IG1pciA8c3ViY29tbWFuZD4gW2FyZ3NdCnN1YmNvbW1hbmRzOiBib290c3RyYXAsIGJvb3RzdHJhcC1hZG9wdGlvbiwgY2FwYWJpbGl0eSwgY29udGV4dCwgZXhlY3V0b3IsIGxvb3AsIG1lbW9yeSwgbWlncmF0ZSwgcG9saWN5LCBwcm9qZWN0LWhvb2tzLCByZWxhdGlvbnMsIHJ1bi1weXRob24sIHJ1bnRpbWUtbWFuaWZlc3QK",
+    "stderr": ""
+  },
+  {
+    "id": "console:help_extra",
+    "entry": "console",
+    "argv": [
+      "LWg=",
+      "ZXh0cmE="
+    ],
+    "exit": 0,
+    "stdout": "dXNhZ2U6IG1pciA8c3ViY29tbWFuZD4gW2FyZ3NdCnN1YmNvbW1hbmRzOiBib290c3RyYXAsIGJvb3RzdHJhcC1hZG9wdGlvbiwgY2FwYWJpbGl0eSwgY29udGV4dCwgZXhlY3V0b3IsIGxvb3AsIG1lbW9yeSwgbWlncmF0ZSwgcG9saWN5LCBwcm9qZWN0LWhvb2tzLCByZWxhdGlvbnMsIHJ1bi1weXRob24sIHJ1bnRpbWUtbWFuaWZlc3QK",
+    "stderr": ""
+  },
+  {
+    "id": "console:unknown_plain",
+    "entry": "console",
+    "argv": [
+      "cGxhaW4="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAncGxhaW4nCg=="
+  },
+  {
+    "id": "console:unknown_single_quote",
+    "entry": "console",
+    "argv": [
+      "aGFzJ3F1b3Rl"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAiaGFzJ3F1b3RlIgo="
+  },
+  {
+    "id": "console:unknown_double_quote",
+    "entry": "console",
+    "argv": [
+      "aGFzInF1b3Rl"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnaGFzInF1b3RlJwo="
+  },
+  {
+    "id": "console:unknown_both",
+    "entry": "console",
+    "argv": [
+      "Ym90aCci"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnYm90aFwnIicK"
+  },
+  {
+    "id": "console:unknown_backslash",
+    "entry": "console",
+    "argv": [
+      "YmFja1xzbGFzaA=="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnYmFja1xcc2xhc2gnCg=="
+  },
+  {
+    "id": "console:unknown_control",
+    "entry": "console",
+    "argv": [
+      "bGluZQpicmVhaw=="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnbGluZVxuYnJlYWsnCg=="
+  },
+  {
+    "id": "console:unknown_ascii_range",
+    "entry": "console",
+    "argv": [
+      "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+fw=="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnXHgwMVx4MDJceDAzXHgwNFx4MDVceDA2XHgwN1x4MDhcdFxuXHgwYlx4MGNcclx4MGVceDBmXHgxMFx4MTFceDEyXHgxM1x4MTRceDE1XHgxNlx4MTdceDE4XHgxOVx4MWFceDFiXHgxY1x4MWRceDFlXHgxZiAhIiMkJSZcJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5ceDdmJwo="
+  },
+  {
+    "id": "console:unknown_non_ascii",
+    "entry": "console",
+    "argv": [
+      "66qF66C57Ja0LfCfmoA="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAn66qF66C57Ja0LfCfmoAnCg=="
+  },
+  {
+    "id": "console:unknown_combining",
+    "entry": "console",
+    "argv": [
+      "ZcyB"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAnZcyBJwo="
+  },
+  {
+    "id": "console:unknown_non_utf8",
+    "entry": "console",
+    "argv": [
+      "cmF3Lf8="
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "dW5rbm93biBzdWJjb21tYW5kOiAncmF3LVx1ZGNmZicK"
+  },
+  {
+    "id": "import_laziness",
+    "entry": "import",
+    "argv": [],
+    "exit": 0,
+    "stdout": "bWlyCm1pci5jbGkK",
+    "stderr": ""
+  }
+]
