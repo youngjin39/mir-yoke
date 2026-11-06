@@ -334,22 +334,6 @@ fn matching(scopes: &[String], target: &str) -> Result<Vec<String>> {
     }
     Ok(out)
 }
-fn tomllib_error(error: &toml::de::Error, text: &str) -> String {
-    if error.message().contains("expected `.`, `]`") {
-        let offset = error.span().map_or(text.len(), |s| s.start);
-        let location = if offset >= text.len() {
-            "end of document".into()
-        } else {
-            let prefix = &text[..offset];
-            let line = prefix.bytes().filter(|b| *b == b'\n').count() + 1;
-            let column = prefix.rsplit('\n').next().unwrap_or("").chars().count() + 1;
-            format!("line {line}, column {column}")
-        };
-        format!("Expected ']' at the end of a table declaration (at {location})")
-    } else {
-        "unmapped TOML parse error".into()
-    }
-}
 pub fn build_profile_task_context(
     project_root: &Path,
     query: &str,
@@ -378,7 +362,7 @@ pub fn build_profile_task_context(
     };
     let profile = match toml::from_str::<TomlValue>(&text) {
         Ok(p) => p,
-        Err(e) => return Ok(invalid(tomllib_error(&e, &text))),
+        Err(e) => return Ok(invalid(crate::mir_core::tomllib::tomllib_error(&e, &text))),
     };
     let ordered_section = |key: &str| {
         profile

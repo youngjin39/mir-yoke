@@ -11,11 +11,13 @@ pub mod task_spec;
 use serde_json::{Value, json};
 pub type ValidationError = Value;
 #[derive(Clone, Copy)]
-enum Kind {
+pub(crate) enum Kind {
     String,
     Min(&'static Kind, usize),
     Pattern(&'static str),
     Model(&'static str, fn() -> Vec<Field>),
+    CheckedModel(&'static str, fn(&Value) -> Result<Value, ValidationError>),
+    Exclusive(&'static Kind, f64, f64),
     Int,
     Float,
     Bool,
@@ -26,16 +28,48 @@ enum Kind {
     AnyDict,
 }
 // Name, kind, default, numeric bounds, maximum string length (in class order).
-type Bounds = Option<(f64, f64)>;
-type Field = (&'static str, Kind, Option<Value>, Bounds, Option<usize>);
+pub(crate) type Bounds = Option<(f64, f64)>;
+pub(crate) type Field = (&'static str, Kind, Option<Value>, Bounds, Option<usize>);
 #[derive(Clone, Debug, PartialEq)]
-struct Validated {
-    dump: Value,
+pub(crate) struct Validated {
+    pub(crate) dump: Value,
     floats: std::collections::BTreeMap<String, f64>,
 }
 fn coerce(value: &mut Value, kind: Kind, loc: Vec<Value>, errors: &mut Vec<Value>) -> Option<f64> {
     let mut parsed = None;
     let failure = match kind {
+        Kind::Exclusive(inner, min, max) => {
+            let parsed = coerce(value, *inner, loc.clone(), errors);
+            if let Some(n) = parsed {
+                for (failed, direction, bound) in
+                    [(n <= min, "greater", min), (n >= max, "less", max)]
+                {
+                    if failed {
+                        errors.push(json!({"loc":loc,"msg":format!("Input should be {direction} than {bound}"),"type":format!("{direction}_than")}));
+                    }
+                }
+            }
+            return parsed;
+        }
+        Kind::CheckedModel(name, check) => {
+            if !value.is_object() {
+                errors.push(json!({"loc":loc,"msg":format!("Input should be a valid dictionary or instance of {name}"),"type":"model_type"}));
+            } else {
+                match check(value) {
+                    Ok(valid) => *value = valid,
+                    Err(nested) => {
+                        for error in nested[1].as_array().into_iter().flatten() {
+                            let mut error = error.clone();
+                            let mut path = loc.clone();
+                            path.extend(error["loc"].as_array().into_iter().flatten().cloned());
+                            error["loc"] = json!(path);
+                            errors.push(error);
+                        }
+                    }
+                }
+            }
+            None
+        }
         Kind::Min(inner, min) => {
             let before = errors.len();
             let parsed = coerce(value, *inner, loc.clone(), errors);
@@ -124,7 +158,7 @@ fn coerce(value: &mut Value, kind: Kind, loc: Vec<Value>, errors: &mut Vec<Value
         }
         Kind::Literal(choices) if !choices.iter().any(|s| value.as_str() == Some(s)) => {
             let quoted: Vec<_> = choices.iter().map(|s| format!("'{s}'")).collect();
-            errors.push(json!({"loc":loc,"msg":format!("Input should be {} or {}", quoted[..quoted.len()-1].join(", "), quoted[quoted.len()-1]),"type":"literal_error"}));
+            errors.push(json!({"loc":loc,"msg":format!("Input should be {}", if quoted.len() == 1 { quoted[0].clone() } else { format!("{} or {}", quoted[..quoted.len()-1].join(", "), quoted[quoted.len()-1]) }),"type":"literal_error"}));
             None
         }
         Kind::Nullable(inner) if !value.is_null() => return coerce(value, *inner, loc, errors),
@@ -201,7 +235,7 @@ fn number(value: &Value, float: bool) -> Result<f64, Failure> {
     }
     Ok(n)
 }
-fn validate(data: &Value, fields: &[Field]) -> Result<Validated, ValidationError> {
+pub(crate) fn validate(data: &Value, fields: &[Field]) -> Result<Validated, ValidationError> {
     let mut output = Validated {
         dump: json!({}),
         floats: Default::default(),
@@ -248,7 +282,7 @@ fn validate(data: &Value, fields: &[Field]) -> Result<Validated, ValidationError
         Err(json!(["ValidationError", errors]))
     }
 }
-fn render_fields(data: &Value, fields: &[Field]) -> String {
+pub(crate) fn render_fields(data: &Value, fields: &[Field]) -> String {
     let fields: Vec<_> = fields
         .iter()
         .map(|(name, kind, ..)| {
@@ -266,11 +300,11 @@ macro_rules! contract {
     (@fields; $($spec:expr),* $(,)?) => { vec![$($spec),*] };
     ($name:ident; $($spec:expr),+ $(,)? $(; after $after:path)?) => {
         #[derive(Clone, Debug, PartialEq)]
-        pub struct $name(super::Validated);
+        pub struct $name($crate::mir_core::contracts::Validated);
         impl $name {
-            pub(super) fn fields() -> Vec<super::Field> { vec![$($spec),+] }
-            pub fn from_dict(data: &serde_json::Value) -> Result<Self, super::ValidationError> {
-                let value = super::validate(data, &Self::fields())?;
+            pub(super) fn fields() -> Vec<$crate::mir_core::contracts::Field> { vec![$($spec),+] }
+            pub fn from_dict(data: &serde_json::Value) -> Result<Self, $crate::mir_core::contracts::ValidationError> {
+                let value = $crate::mir_core::contracts::validate(data, &Self::fields())?;
                 $($after(&value.dump).map_err(|msg| serde_json::json!(["ValidationError", [{"loc":[],"msg":format!("Value error, {msg}"),"type":"value_error"}]]))?;)?
                 Ok(Self(value))
             }
@@ -278,7 +312,7 @@ macro_rules! contract {
                 self.0.dump.clone()
             }
             pub fn to_json(&self) -> std::string::String {
-                super::render_fields(&self.0.dump, &Self::fields())
+                $crate::mir_core::contracts::render_fields(&self.0.dump, &Self::fields())
             }
         }
         impl serde::Serialize for $name {

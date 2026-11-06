@@ -153,6 +153,24 @@ for mode in ("create-default", "create-denied", "create-allowed"):
     CASES[f"provider.{mode}"] = _registry(ProviderRegistry, mode)
 
 
+def _archive_root(authored):
+    """Distinct project, home and cwd: a relative archive root resolves against the project."""
+    def run(tmp):
+        for name in ("project", "home", "cwd"):
+            (tmp / name).mkdir()
+        archive = L.ExternalArchiveConfig.model_validate({"slug": "a", "root": authored})
+        with mock.patch.dict(os.environ, {"HOME": str(tmp / "home")}), \
+                mock.patch.object(Path, "home", return_value=tmp / "home"), \
+                mock.patch.object(Path, "cwd", return_value=tmp / "cwd"):
+            return str(L.resolve_archive_root(tmp / "project", archive)).replace(str(tmp), "<tmp>")
+    return run
+
+
+for _name, _authored in (("relative", "notes"), ("home", "~/notes"), ("parent", "../shared"),
+                         ("dot", "./a/./b")):
+    CASES[f"archive_root.{_name}"] = _archive_root(_authored)
+
+
 def observe(case, tmp):
     try:
         return {"value": case(tmp)}

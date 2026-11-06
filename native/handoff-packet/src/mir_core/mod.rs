@@ -1,8 +1,10 @@
 pub mod audit_log;
 pub mod canonical;
+pub mod config;
 pub mod context;
 pub mod contracts;
 pub mod instance_id;
 pub mod memory;
 pub mod structured_error;
+pub(crate) mod tomllib;
 pub mod tool_contract;

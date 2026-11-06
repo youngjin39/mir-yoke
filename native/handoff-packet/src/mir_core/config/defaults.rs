@@ -1,0 +1,107 @@
+//! Default values mirrored from the frozen Python source.
+use serde_json::{Value, json};
+pub const DEFAULT_DENIED_PATHS: &[&str] = &[
+    "core/**",
+    ".claude/hooks/**",
+    ".mir/**",
+    "harness_*.toml",
+    "guides.toml",
+    "pyproject.toml",
+    "core/registry/**",
+];
+pub const DEFAULT_DENIED_ENV_PREFIXES: &[&str] = &[
+    "AWS_",
+    "GOOGLE_",
+    "GCP_",
+    "AZURE_",
+    "OPENAI_",
+    "ANTHROPIC_",
+    "GEMINI_",
+    "COHERE_",
+    "HUGGINGFACE_",
+    "SLACK_",
+    "DISCORD_",
+    "TELEGRAM_",
+    "NPM_",
+    "NODE_AUTH_",
+    "PYPI_",
+    "CARGO_",
+    "GITHUB_",
+    "GITLAB_",
+    "BITBUCKET_",
+    "SSH_",
+    "GPG_",
+    "AGE_",
+    "MIR_SIGNING",
+    "MIR_USER_PUBKEY",
+];
+pub const DEFAULT_DENIED_ENV_KEYS: &[&str] = &[
+    "BASH_ENV",
+    "DYLD_FORCE_FLAT_NAMESPACE",
+    "DYLD_INSERT_LIBRARIES",
+    "ENV",
+    "HISTFILE",
+    "HISTFILESIZE",
+    "HOME",
+    "LD_PRELOAD",
+    "PATH",
+    "PYTHONPATH",
+    "PYTHONSTARTUP",
+];
+pub const SENSITIVE_KEYS: &[&[&str]] = &[
+    &["audit", "anchor"],
+    &["audit", "signer_mode"],
+    &["conductor", "model"],
+    &["harness_b", "hooks"],
+    &["mcp", "allowlist"],
+    &["memory", "embedding"],
+    &["mir", "signing_key_path"],
+    &["providers", "allowlist"],
+    &["roles"],
+];
+pub const DEFAULT_EMBEDDING_BASE_URL: &str = "http://127.0.0.1:8001/v1";
+pub const DEFAULT_EMBEDDING_MODEL: &str = "bge-m3-mlx-fp16";
+pub const DEFAULT_EMBEDDING_DIM: i64 = 1024;
+pub const DEFAULT_EMBEDDING_TIMEOUT_SEC: i64 = 10;
+pub const DEFAULT_EMBEDDING_NORM_TOLERANCE: f64 = 0.001;
+pub const DEFAULT_EMBEDDING_API_KEY_ENV: &str = "OMLX_API_KEY";
+pub const DEFAULT_CLAUDE_MEMORY_PLUGIN_MODE: &str = "disabled";
+pub const DEFAULT_CLAUDE_MEMORY_RECALL_POLICY: &str = "progressive";
+pub const DEFAULT_CODEX_FALLBACK: &str = "claude_n_session";
+pub const DEFAULT_BREAKER_CONSECUTIVE_THRESHOLD: i64 = 3;
+pub const DEFAULT_BREAKER_WINDOW_SIZE: i64 = 20;
+pub const DEFAULT_BREAKER_WINDOW_FAILURE_RATE: f64 = 0.5;
+pub const DEFAULT_BREAKER_RECOVERY_TIMEOUT: i64 = 30;
+pub const DEFAULT_BREAKER_HALF_OPEN_REQUIRED_SUCCESSES: i64 = 3;
+pub const DEFAULT_HOOK3_SHELL_MODE: &str = "enforce";
+pub const DEFAULT_HOOK3_AST_MODE: &str = "advisory";
+pub const DEFAULT_META_TRANSITION_STALE_SEC: i64 = 600;
+pub const DEFAULT_NUKE_META_APPLYING_WAIT_SEC: i64 = 60;
+pub const DEFAULT_WORKER_PATH: &str = "/usr/bin:/bin:/opt/homebrew/bin";
+pub fn all_defaults() -> Value {
+    json!({
+        "DEFAULT_DENIED_PATHS": DEFAULT_DENIED_PATHS,
+        "DEFAULT_DENIED_ENV_PREFIXES": DEFAULT_DENIED_ENV_PREFIXES,
+        "DEFAULT_DENIED_ENV_KEYS": DEFAULT_DENIED_ENV_KEYS,
+        "SENSITIVE_KEYS": SENSITIVE_KEYS,
+        "DEFAULT_EMBEDDING_BASE_URL": DEFAULT_EMBEDDING_BASE_URL,
+        "DEFAULT_EMBEDDING_MODEL": DEFAULT_EMBEDDING_MODEL,
+        "DEFAULT_EMBEDDING_DIM": DEFAULT_EMBEDDING_DIM,
+        "DEFAULT_EMBEDDING_TIMEOUT_SEC": DEFAULT_EMBEDDING_TIMEOUT_SEC,
+        "DEFAULT_EMBEDDING_NORM_TOLERANCE": DEFAULT_EMBEDDING_NORM_TOLERANCE,
+        "DEFAULT_EMBEDDING_API_KEY_ENV": DEFAULT_EMBEDDING_API_KEY_ENV,
+        "DEFAULT_CLAUDE_MEMORY_PLUGIN_MODE": DEFAULT_CLAUDE_MEMORY_PLUGIN_MODE,
+        "DEFAULT_CLAUDE_MEMORY_RECALL_POLICY": DEFAULT_CLAUDE_MEMORY_RECALL_POLICY,
+        "DEFAULT_CODEX_FALLBACK": DEFAULT_CODEX_FALLBACK,
+        "DEFAULT_BREAKER_CONSECUTIVE_THRESHOLD": DEFAULT_BREAKER_CONSECUTIVE_THRESHOLD,
+        "DEFAULT_BREAKER_WINDOW_SIZE": DEFAULT_BREAKER_WINDOW_SIZE,
+        "DEFAULT_BREAKER_WINDOW_FAILURE_RATE": DEFAULT_BREAKER_WINDOW_FAILURE_RATE,
+        "DEFAULT_BREAKER_RECOVERY_TIMEOUT": DEFAULT_BREAKER_RECOVERY_TIMEOUT,
+        "DEFAULT_BREAKER_HALF_OPEN_REQUIRED_SUCCESSES": DEFAULT_BREAKER_HALF_OPEN_REQUIRED_SUCCESSES,
+        "DEFAULT_HOOK3_SHELL_MODE": DEFAULT_HOOK3_SHELL_MODE,
+        "DEFAULT_HOOK3_AST_MODE": DEFAULT_HOOK3_AST_MODE,
+        "DEFAULT_META_TRANSITION_STALE_SEC": DEFAULT_META_TRANSITION_STALE_SEC,
+        "DEFAULT_NUKE_META_APPLYING_WAIT_SEC": DEFAULT_NUKE_META_APPLYING_WAIT_SEC,
+        "DEFAULT_WORKER_PATH": DEFAULT_WORKER_PATH,
+    })
+}
