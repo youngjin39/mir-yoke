@@ -1,0 +1,14 @@
+{
+"main.empty": {"value": {"exit": 2, "native_argv": [], "stderr": "usage: mir policy resolve --category CATEGORY [--repo-root PATH] [--format json|text]\n", "stdout": ""}},
+"main.help_extra": {"value": {"exit": 2, "native_argv": [], "stderr": "usage: mir policy resolve --category CATEGORY [--repo-root PATH] [--format json|text]\n", "stdout": ""}},
+"main.help_long": {"value": {"exit": 0, "native_argv": [], "stderr": "", "stdout": "usage: mir policy resolve --category CATEGORY [--repo-root PATH] [--format json|text]\n"}},
+"main.help_short": {"value": {"exit": 0, "native_argv": [], "stderr": "", "stdout": "usage: mir policy resolve --category CATEGORY [--repo-root PATH] [--format json|text]\n"}},
+"main.resolve_bare": {"value": {"exit": 0, "native_argv": [["policy-resolve"]], "stderr": "", "stdout": ""}},
+"main.resolve_help_forwarded": {"value": {"exit": 7, "native_argv": [["policy-resolve", "--help"]], "stderr": "", "stdout": ""}},
+"main.resolve_not_first": {"value": {"exit": 2, "native_argv": [], "stderr": "usage: mir policy resolve --category CATEGORY [--repo-root PATH] [--format json|text]\n", "stdout": ""}},
+"main.resolve_seven": {"value": {"exit": 7, "native_argv": [["policy-resolve", "--category", "unit", "--repo-root", "relative-repo", "--format", "json"]], "stderr": "", "stdout": ""}},
+"main.resolve_unavailable": {"value": {"exit": 2, "native_argv": [["policy-resolve", "--category", "unit"]], "stderr": "[mir policy] pinned native policy resolver unavailable or incompatible; no routing result\n", "stdout": ""}},
+"main.resolve_zero": {"value": {"exit": 0, "native_argv": [["policy-resolve", "--category", "unit"]], "stderr": "", "stdout": ""}},
+"main.short_help_extra": {"value": {"exit": 2, "native_argv": [], "stderr": "usage: mir policy resolve --category CATEGORY [--repo-root PATH] [--format json|text]\n", "stdout": ""}},
+"main.unknown": {"value": {"exit": 2, "native_argv": [], "stderr": "usage: mir policy resolve --category CATEGORY [--repo-root PATH] [--format json|text]\n", "stdout": ""}}
+}
