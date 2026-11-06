@@ -133,6 +133,13 @@ fn invoke(
     }
 }
 fn replay(name: &str, conn: &Connection, root: &Path) -> Value {
+    if name == "cli.relative_missing_db" {
+        // The message keeps the --db spelling; the file is looked up from the working directory.
+        let argv = ["render", "--db", "absent.db"];
+        let (code, out, _) =
+            cli::main_with_clock(&argv, &root.join("synthetic.db"), root, clock).unwrap();
+        return json!({"exit":code,"stdout":String::from_utf8(out).unwrap()});
+    }
     let empty = name.starts_with("empty") || name == "helpers.empty";
     let ingests = if empty { vec![] } else { populate(conn, root) };
     if name == "helpers.direct_facts" {
@@ -301,7 +308,7 @@ fn replay(name: &str, conn: &Connection, root: &Path) -> Value {
 #[test]
 fn frozen_records() {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/w2/b15-render.json")).unwrap();
-    assert_eq!(oracle.as_object().unwrap().len(), 52);
+    assert_eq!(oracle.as_object().unwrap().len(), 53);
     let (mut replayed, mut exempt) = (0, 0);
     for (name, expected) in oracle.as_object().unwrap() {
         if cfg!(windows) && name == "cli.in_place" {
@@ -324,6 +331,6 @@ fn frozen_records() {
         replayed += 1;
         println!("render:{name}: replayed");
     }
-    assert_eq!(replayed + exempt, 52);
-    println!("replayed={replayed} exempt={exempt} total=52");
+    assert_eq!(replayed + exempt, 53);
+    println!("replayed={replayed} exempt={exempt} total=53");
 }

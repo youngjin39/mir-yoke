@@ -465,6 +465,10 @@ pub(crate) fn io_failure(error: std::io::Error, path: &Path) -> PolicyFailure {
         std::io::ErrorKind::NotADirectory => "NotADirectoryError",
         _ => "OSError",
     };
+    failure(kind, python_os_error_message(&error, path))
+}
+/// Python OSError text: `[Errno N] text: 'path'` when an errno is known.
+pub(crate) fn python_os_error_message(error: &std::io::Error, path: &Path) -> String {
     let message = error.to_string();
     // Python reports C runtime errno text; on Windows Rust carries the Win32 code and text instead.
     let errno = match (cfg!(windows), error.kind()) {
@@ -479,14 +483,13 @@ pub(crate) fn io_failure(error: std::io::Error, path: &Path) -> PolicyFailure {
             )
         }),
     };
-    let message = match errno {
+    match errno {
         Some((number, text)) => format!(
             "[Errno {number}] {text}: {}",
             crate::executor_execute::repr(&path.display().to_string())
         ),
         None => message.clone(),
-    };
-    failure(kind, message)
+    }
 }
 fn issue(
     location: Vec<String>,

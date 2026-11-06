@@ -71,9 +71,11 @@ def _case(action, mode, as_json=True, apply=False):
         (tmp / "docs").mkdir()
         (tmp / "harness_a.toml").write_text(
             '[memory]\nenabled=true\nrequired=true\nbackend="sqlite_fts5"\n'
-            'db_path=".mir/db"\nvector_mode="' + ("optional" if mode == "vector" else "off") +
+            'db_path=".mir/db"\nvector_mode="' +
+            ("optional" if mode == "vector" else "off") +
             '"\n[memory.embedding]\nenabled=false\nrequired=false\n'
-            '[[memory.external_archives]]\nslug="docs"\nroot="docs"\n', encoding="ascii")
+            '[[memory.external_archives]]\nslug="docs"\nroot="' +
+            ("d\\u00f6cs" if mode == "unicode_root" else "docs") + '"\n', encoding="ascii")
         keeper = None
         with contextlib.ExitStack() as stack:
             stack.enter_context(mock.patch.object(store, "_now_iso", return_value=NOW))
@@ -85,6 +87,9 @@ def _case(action, mode, as_json=True, apply=False):
             stack.enter_context(mock.patch.object(memory.uuid, "uuid4",
                                                   return_value=mock.Mock(hex="0" * 32)))
             stack.enter_context(mock.patch("sys.argv", ["mir"]))
+            if mode.startswith("relative"):
+                # Relative --project-root and --db resolve against the working directory.
+                stack.enter_context(contextlib.chdir(tmp))
             if mode == "empty":
                 db.touch()
             elif mode == "non_sqlite":
@@ -109,6 +114,28 @@ def _case(action, mode, as_json=True, apply=False):
                     conn.execute("DROP TABLE facts_fts")
                 elif mode == "fts_broken":
                     conn.execute("DROP TRIGGER facts_fts_ai")
+                elif mode in ("ready", "ready_short", "relative_link", "stale"):
+                    # A synced archive seeded directly; ready_short has no 6-character token,
+                    # stale drifted and was never scanned, and an unconfigured archive is ignored.
+                    text = "a bc def\n" if mode == "ready_short" else "alpha betagamma\n"
+                    (tmp / "docs" / "note.md").write_text(text, encoding="ascii")
+                    stale = mode == "stale"
+                    conn.execute("INSERT INTO external_archives(id, slug, root_path, mode, owner, "
+                                 "created_at, last_scanned_at) VALUES (1, 'docs', ?, 'indexed', "
+                                 "'family:docs', ?, ?)",
+                                 (str(tmp / ("elsewhere" if stale else "docs")), NOW,
+                                  None if stale else NOW))
+                    conn.execute("INSERT INTO external_archives(id, slug, root_path, mode, owner, "
+                                 "created_at) VALUES (2, 'other', ?, 'indexed', 'family:other', ?)",
+                                 (str(tmp / "other"), NOW))
+                    conn.execute("INSERT INTO external_store_meta VALUES "
+                                 "('schema_metadata_version:archive:1', '5')")
+                    conn.execute("INSERT INTO external_documents(id, archive_id, relative_path, "
+                                 "file_hash) VALUES (1, 1, 'note.md', 'h')")
+                    conn.execute("INSERT INTO external_chunks VALUES (1, 1, 0, 0, ?, 'h')",
+                                 (len(text),))
+                    conn.execute("INSERT INTO external_chunks_fts(rowid, content) VALUES (1, ?)",
+                                 (text,))
                 conn.commit()
                 if mode == "wal":
                     conn.execute("PRAGMA journal_mode=WAL")
@@ -123,7 +150,16 @@ def _case(action, mode, as_json=True, apply=False):
             try:
                 before = _state(db)
                 argv = [action]
-                if action == "gc" or mode == "db_option":
+                if mode == "relative_db":
+                    argv += ["--db", ".mir/db"]
+                elif mode == "relative_root":
+                    argv += ["--project-root", "nowhere"]
+                elif mode == "relative_missing":
+                    argv += ["--db", "absent.db"]
+                elif mode == "relative_link":
+                    (tmp / "alias").symlink_to(tmp, target_is_directory=True)
+                    argv += ["--project-root", "alias"]
+                elif action == "gc" or mode == "db_option":
                     argv += ["--db", str(db)]
                 else:
                     argv += ["--project-root", str(tmp)]
@@ -134,7 +170,8 @@ def _case(action, mode, as_json=True, apply=False):
                 result = {"before": before, "command": _invoke(argv, tmp), "after": _state(db)}
                 if keeper is not None:
                     result["nonempty_wal"] = Path(f"{db}-wal").stat().st_size > 0
-                return result
+                # Seeded archive rows hold the scratch path; records never keep host paths.
+                return json.loads(json.dumps(result).replace(str(tmp), "<tmp>"))
             finally:
                 if db.exists():
                     db.chmod(0o600)
@@ -151,6 +188,12 @@ CASES = {
        for mode in ("db_option", "missing", "empty", "non_sqlite", "migrated",
                     "missing_migration", "future", "fts_missing", "fts_broken",
                     "vector", "wal", "readonly") for fmt in (False, True)},
+    "gc.relative_db": _case("gc", "relative_db"),
+    "gc.relative_missing": _case("gc", "relative_missing"),
+    "doctor.ready.False": _case("doctor", "ready", False),
+    **{f"doctor.{mode}.True": _case("doctor", mode)
+       for mode in ("unicode_root", "relative_root", "ready", "ready_short", "relative_link",
+                    "stale")},
 }
 
 

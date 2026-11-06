@@ -157,6 +157,14 @@ def _execute(conn, tmp, kind, mode):
             'file': output.read_bytes().decode('utf-8') if output.is_file() else None}
 
 
+def _relative_missing_db(tmp):
+    # The message keeps the --db spelling; the file is looked up from the working directory.
+    out = io.StringIO()
+    with contextlib.chdir(tmp), contextlib.redirect_stdout(out):
+        code = memory.main(['render', '--db', 'absent.db'])
+    return {'exit': code, 'stdout': out.getvalue()}
+
+
 CASES = {
     'helpers.populated': _scenario('helpers'), 'helpers.empty': _scenario('empty'),
     **{f'markers.{i}': _scenario('markers', i) for i in range(len(BODIES))},
@@ -170,6 +178,7 @@ CASES = {
     'cli.unsupported_exclusion': _scenario('invalid', ['--exclude', 'docs/_archive/']),
     'cli.in_place': _scenario('in_place'),
     'helpers.direct_facts': _scenario('helpers_direct'),
+    'cli.relative_missing_db': _relative_missing_db,
 }
 
 

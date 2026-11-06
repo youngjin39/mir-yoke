@@ -288,13 +288,15 @@ fn render_main(argv: &[&str], explicit_db: &Path, root: &Path) -> Result<Output,
             true,
         ));
     }
+    // The message keeps the spelling given; the file opens relative to the working directory.
+    let shown = db;
     let db = root.join(db);
     if !db.is_file() {
         return Ok((
             2,
             format!(
                 "no memory.db at {} \u{2014} run `mir migrate up` first\n",
-                db.display()
+                shown.display()
             )
             .into_bytes(),
             vec![],
@@ -313,7 +315,18 @@ pub type Output = (i32, Vec<u8>, Vec<u8>);
 #[derive(Debug)]
 pub struct Error(Box<dyn std::error::Error>);
 impl Error {
+    /// Captured diagnostics emitted before a branch raised a reference exception.
+    pub fn stderr(&self) -> &str {
+        if self.0.downcast_ref::<GcFailure>().is_some() {
+            GC_DOCTOR_WARNING
+        } else {
+            ""
+        }
+    }
     pub fn python_class(&self) -> &'static str {
+        if let Some(e) = self.0.downcast_ref::<GcFailure>() {
+            return e.0.python_class();
+        }
         if self.0.downcast_ref::<DirectoryError>().is_some() {
             return "IsADirectoryError";
         }
@@ -554,7 +567,10 @@ fn parse<'a>(argv: &[&'a str]) -> Result<Query<'a>, Output> {
 /// Parsing (including help/errors) precedes DB access; no discovery or live caller.
 /// Optional vector import is unavailable, matching the frozen reference context.
 pub fn main(argv: &[&str], explicit_db: &Path) -> Result<Output, Error> {
-    if matches!(argv.first(), Some(&"insert" | &"ingest-md" | &"render")) {
+    if matches!(
+        argv.first(),
+        Some(&"insert" | &"ingest-md" | &"render" | &"gc" | &"doctor")
+    ) {
         return main_with_clock(
             argv,
             explicit_db,
@@ -619,6 +635,9 @@ pub fn main_with_clock(
     root: &Path,
     clock: impl Fn() -> std::time::SystemTime,
 ) -> Result<Output, Error> {
+    if matches!(argv.first(), Some(&"gc" | &"doctor")) {
+        return check_main(argv, explicit_db, root, clock);
+    }
     if argv.first() == Some(&"render") {
         return render_main(argv, explicit_db, root);
     }
@@ -807,4 +826,548 @@ pub fn main_with_clock(
         Ok((0, text.into_bytes(), vec![]))
     };
     run().map_err(Error)
+}
+
+// The vector loader is deliberately unavailable in this isolated library slice.
+use crate::executor_policy_query::ascii_json_text;
+const GC_DOCTOR_WARNING: &str = "sqlite-vec unavailable, FTS5-only mode: fixture unavailable\n";
+#[derive(Debug)]
+struct GcFailure(store::Error);
+impl fmt::Display for GcFailure {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+impl std::error::Error for GcFailure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.0)
+    }
+}
+#[derive(Clone, Copy)]
+enum CheckAction {
+    Help,
+    Apply,
+    Json,
+    Db,
+    Root,
+}
+const GC_OPTIONS: &[OptionSpec<CheckAction>] = &[
+    OptionSpec {
+        action: CheckAction::Help,
+        name: "--help",
+        metavar: None,
+        help: "show this help message and exit",
+    },
+    OptionSpec {
+        action: CheckAction::Apply,
+        name: "--apply",
+        metavar: None,
+        help: "apply expiry updates (default: dry-run)",
+    },
+    OptionSpec {
+        action: CheckAction::Json,
+        name: "--json",
+        metavar: None,
+        help: "emit machine-readable counts",
+    },
+    OptionSpec {
+        action: CheckAction::Db,
+        name: "--db",
+        metavar: Some("DB"),
+        help: "",
+    },
+];
+const DOCTOR_OPTIONS: &[OptionSpec<CheckAction>] = &[
+    OptionSpec {
+        action: CheckAction::Help,
+        name: "--help",
+        metavar: None,
+        help: "show this help message and exit",
+    },
+    OptionSpec {
+        action: CheckAction::Root,
+        name: "--project-root",
+        metavar: Some("PROJECT_ROOT"),
+        help: "repository root containing harness_a.toml (default:\n                        cwd)",
+    },
+    OptionSpec {
+        action: CheckAction::Json,
+        name: "--json",
+        metavar: None,
+        help: "emit machine-readable evidence",
+    },
+];
+fn check_main(
+    argv: &[&str],
+    db: &Path,
+    root: &Path,
+    clock: impl Fn() -> std::time::SystemTime,
+) -> Result<Output, Error> {
+    let gc = argv.first() == Some(&"gc");
+    let (specs, usage, action) = if gc {
+        (
+            GC_OPTIONS,
+            "usage: mir memory gc [-h] [--apply] [--json] [--db DB]\n",
+            "gc",
+        )
+    } else {
+        (
+            DOCTOR_OPTIONS,
+            "usage: mir memory doctor [-h] [--project-root PROJECT_ROOT] [--json]\n",
+            "doctor",
+        )
+    };
+    let fail = |s| {
+        (
+            2,
+            vec![],
+            format!("{usage}mir memory {action}: error: {s}\n").into_bytes(),
+        )
+    };
+    let cwd = root;
+    let (mut db, mut project, mut apply, mut as_json) = (db, None, false, false);
+    let (mut i, mut options) = (1, true);
+    let mut unknown = Vec::new();
+    while let Some(&token) = argv.get(i) {
+        i += 1;
+        if options && token == "--" {
+            options = false;
+            continue;
+        }
+        let (name, explicit) = token
+            .split_once('=')
+            .map_or((token, None), |(k, v)| (k, Some(v)));
+        let name = if name == "-h" { "--help" } else { name };
+        let exact = specs.iter().find(|s| options && s.name == name);
+        let matches: Vec<_> = specs
+            .iter()
+            .filter(|s| options && name.starts_with("--") && s.name.starts_with(name))
+            .collect();
+        let spec = match (exact, matches.as_slice()) {
+            (Some(s), _) => s,
+            (None, [s]) => *s,
+            (None, []) => {
+                unknown.push(token);
+                continue;
+            }
+            _ => {
+                return Ok(fail(format!(
+                    "ambiguous option: {name} could match {}",
+                    matches
+                        .iter()
+                        .map(|s| s.name)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )));
+            }
+        };
+        let value = if spec.metavar.is_some() {
+            match explicit {
+                Some(v) => v,
+                None => {
+                    let Some(&v) = argv.get(i).filter(|v| !option_like(v)) else {
+                        return Ok(fail(format!("argument {name}: expected one argument")));
+                    };
+                    i += 1;
+                    v
+                }
+            }
+        } else {
+            if let Some(v) = explicit {
+                let label = if name == "--help" { "-h/--help" } else { name };
+                return Ok(fail(format!(
+                    "argument {label}: ignored explicit argument {}",
+                    crate::executor_execute::repr(v)
+                )));
+            }
+            ""
+        };
+        match spec.action {
+            CheckAction::Help => {
+                let mut text = format!("{usage}\noptions:\n");
+                for s in specs {
+                    let label = match s.metavar {
+                        Some(v) => format!("{} {v}", s.name),
+                        None if s.name == "--help" => "-h, --help".into(),
+                        None => s.name.into(),
+                    };
+                    if s.help.is_empty() {
+                        text.push_str(&format!("  {label}\n"));
+                    } else if gc {
+                        text.push_str(&format!("  {label:12}{}\n", s.help));
+                    } else if label.len() > 22 {
+                        text.push_str(&format!("  {label}\n                        {}\n", s.help));
+                    } else {
+                        text.push_str(&format!("  {label:22}{}\n", s.help));
+                    }
+                }
+                return Ok((0, text.into_bytes(), vec![]));
+            }
+            CheckAction::Apply => apply = true,
+            CheckAction::Json => as_json = true,
+            CheckAction::Db => db = Path::new(value),
+            CheckAction::Root => project = Some(value),
+        }
+    }
+    if !unknown.is_empty() {
+        return Ok(diagnostic(
+            &format!("unrecognized arguments: {}", unknown.join(" ")),
+            true,
+        ));
+    }
+    if !gc {
+        // Python Path(...).resolve(strict=False) against the working directory.
+        let root =
+            std::path::absolute(cwd.join(project.unwrap_or(""))).map_err(|e| Error(Box::new(e)))?;
+        let root = crate::supply::resolve(&root)
+            .map_err(|e| Error(Box::new(std::io::Error::other(format!("{e:?}")))))?;
+        return doctor_main(&root, as_json, clock);
+    }
+    // The message keeps the spelling given; the file opens relative to the working directory.
+    let shown = db;
+    let db = &cwd.join(db);
+    if !db.is_file() {
+        return Ok((
+            2,
+            format!(
+                "no memory.db at {} \u{2014} run `mir migrate up` first\n",
+                shown.display()
+            )
+            .into_bytes(),
+            vec![],
+        ));
+    }
+    let conn = store::connect(db, None).map_err(|e| Error(Box::new(e)))?;
+    let result = crate::mir_core::audit_log::AuditLog::with_clock(&conn.conn, clock)
+        .gc_scan(!apply)
+        .map_err(|e| Error(Box::new(GcFailure(e))))?;
+    let text = if as_json {
+        let mut payload = result.clone();
+        payload["applied"] = serde_json::json!(apply);
+        format!("{}\n", ascii_json_text(&payload.to_string()))
+    } else {
+        format!(
+            "{}{} kept_active={}\n",
+            if apply {
+                "expired="
+            } else {
+                "dry_run: would_expire="
+            },
+            result["expired"],
+            result["kept_active"]
+        )
+    };
+    Ok((0, text.into_bytes(), GC_DOCTOR_WARNING.as_bytes().to_vec()))
+}
+fn doctor_main(
+    root: &Path,
+    as_json: bool,
+    clock: impl Fn() -> std::time::SystemTime,
+) -> Result<Output, Error> {
+    use crate::mir_core::config::loader;
+    use serde_json::json;
+    let mut report = json!({"status":"not_ready","errors":[],"memory":{
+        "required":true,"backend":"unknown","db_path":".mir/memory.db",
+        "integrity":"not_checked","schema_version":null,
+        "latest_schema_version":store::latest_schema_version(),"fts5":"not_checked",
+        "round_trip":"not_checked","archives_configured":0,"archives_registered":0,
+        "archives_synced":0},"vector":{"mode":"off","sqlite_vec":"not_checked",
+        "embedding":"disabled","status":"off"}});
+    let mut errors = Vec::<String>::new();
+    let mut code = 1;
+    let mut stderr = String::new();
+    let mut run = || -> Result<(), Box<dyn std::error::Error>> {
+        if !root.is_dir() {
+            code = 2;
+            errors.push(format!(
+                "project root is not a directory: {}",
+                root.display()
+            ));
+            return Ok(());
+        }
+        if !root.join("harness_a.toml").is_file() {
+            code = 2;
+            errors.push("active harness_a.toml is missing".into());
+            return Ok(());
+        }
+        // Home is injected as root; no host-specific discovery in this port slice.
+        let cfg = match loader::load_config(Some(root), root, root) {
+            Ok(c) => c,
+            Err(e) => {
+                code = 2;
+                errors.push(e.to_string());
+                return Ok(());
+            }
+        };
+        let config = cfg.to_dict();
+        let memory = &config["memory"];
+        let archives = memory["external_archives"]
+            .as_array()
+            .ok_or_else(|| std::io::Error::other("invalid archive configuration"))?;
+        report["memory"]["required"] = memory["required"].clone();
+        report["memory"]["backend"] = memory["backend"].clone();
+        report["memory"]["archives_configured"] = json!(archives.len());
+        report["vector"]["mode"] = memory["vector_mode"].clone();
+        if memory["enabled"] != true || memory["required"] != true {
+            errors.push("portable baseline requires memory enabled=true and required=true".into());
+        }
+        if archives.is_empty() {
+            errors.push("at least one external archive must be configured".into());
+        }
+        for archive in archives {
+            let path = loader::resolve_path(root, archive["root"].as_str().unwrap_or(""), root)?;
+            if !path.is_dir() {
+                errors.push(format!(
+                    "configured archive root is missing: {} ({})",
+                    crate::executor_execute::repr(archive["slug"].as_str().unwrap_or("")),
+                    path.display()
+                ));
+            }
+        }
+        let db = loader::resolve_memory_db(root, &cfg, root)?;
+        report["memory"]["db_path"] = json!(
+            db.strip_prefix(root)
+                .unwrap_or(&db)
+                .to_str()
+                .ok_or_else(|| std::io::Error::other("non-UTF-8 DB path"))?
+                .replace('\\', "/")
+        );
+        if !db.is_file() {
+            errors.push(format!("memory database is missing: {}", db.display()));
+            return Ok(());
+        }
+        let connection = store::connect(&db, None)?;
+        stderr.push_str(GC_DOCTOR_WARNING);
+        let conn = &connection.conn;
+        report["vector"]["sqlite_vec"] = json!("unavailable");
+        let integrity: Vec<String> = conn
+            .prepare("PRAGMA integrity_check")?
+            .query_map([], |r| r.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        report["memory"]["integrity"] = json!(integrity.join(", "));
+        if integrity != ["ok"] {
+            errors.push(format!(
+                "SQLite integrity_check failed: {}",
+                integrity.join(", ")
+            ));
+        }
+        let version = store::schema_version(conn)?;
+        let latest = store::latest_schema_version();
+        report["memory"]["schema_version"] = json!(version);
+        if version != latest {
+            let repr = |v: &Option<String>| {
+                v.as_deref()
+                    .map_or("None".into(), crate::executor_execute::repr)
+            };
+            errors.push(format!(
+                "schema version {} is not latest {}",
+                repr(&version),
+                repr(&latest)
+            ));
+        }
+        let objects: Vec<String> = conn
+            .prepare("SELECT name FROM sqlite_master WHERE type IN ('table','view')")?
+            .query_map([], |r| r.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        let missing: Vec<_> = [
+            "entities",
+            "external_archives",
+            "external_chunks",
+            "external_chunks_fts",
+            "external_documents",
+            "external_store_meta",
+            "facts",
+            "facts_fts",
+            "schema_migrations",
+        ]
+        .into_iter()
+        .filter(|s| !objects.iter().any(|o| o == s))
+        .collect();
+        if missing.is_empty() {
+            report["memory"]["fts5"] = json!("ok");
+            let probe = || -> Result<(), Box<dyn std::error::Error>> {
+                conn.execute_batch("BEGIN")?;
+                let triple = distill::Triple::new(
+                    "mir-memory-doctor",
+                    "doctor_probe",
+                    "mirdoctor00000000000000000000000000000000",
+                );
+                distill::insert_triple(conn, &triple, "ephemeral", &clock)?;
+                if distill::fts_search(conn, &triple.object_literal, 1, false)?.is_empty() {
+                    return Err(
+                        std::io::Error::other("inserted fact was not returned by FTS5").into(),
+                    );
+                }
+                Ok(())
+            };
+            let result = probe();
+            conn.execute_batch("ROLLBACK")?;
+            match result {
+                Ok(()) => report["memory"]["round_trip"] = json!("ok"),
+                Err(e) => {
+                    report["memory"]["round_trip"] = json!("failed");
+                    errors.push(format!("rollback-only FTS5 probe failed: {e}"));
+                }
+            }
+        } else {
+            errors.push(format!(
+                "required memory tables are missing: {}",
+                missing.join(", ")
+            ));
+        }
+        let registered: Vec<(i64, String, String, Option<String>)> = conn
+            .prepare("SELECT id,slug,root_path,last_scanned_at FROM external_archives")?
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?
+            .collect::<rusqlite::Result<_>>()?;
+        report["memory"]["archives_registered"] = json!(registered.len());
+        if registered.is_empty() {
+            errors.push("no external archives are registered".into());
+        }
+        let mut synced = 0;
+        for archive in archives {
+            let slug = archive["slug"].as_str().unwrap_or("");
+            let quoted = crate::executor_execute::repr(slug);
+            let Some(row) = registered.iter().find(|r| r.1 == slug) else {
+                errors.push(format!("configured archive is not registered: {quoted}"));
+                continue;
+            };
+            let expected =
+                loader::resolve_path(root, archive["root"].as_str().unwrap_or(""), root)?;
+            let actual = loader::resolve_path(root, &row.2, root)?;
+            if actual != expected {
+                errors.push(format!(
+                    "archive root drift for {quoted}: {} != {}",
+                    actual.display(),
+                    expected.display()
+                ));
+            }
+            let current: bool = conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM external_store_meta
+                WHERE key=? AND value=?)",
+                rusqlite::params![
+                    format!("schema_metadata_version:archive:{}", row.0),
+                    crate::mir_core::memory::external_store::CURRENT_METADATA_VERSION
+                ],
+                |r| r.get(0),
+            )?;
+            if row.3.is_none() || !current {
+                errors.push(format!(
+                    "archive has no successful current sync evidence: {quoted}"
+                ));
+            } else {
+                synced += 1;
+            }
+        }
+        report["memory"]["archives_synced"] = json!(synced);
+        let documents: i64 =
+            conn.query_row("SELECT COUNT(*) FROM external_documents", [], |r| r.get(0))?;
+        let chunks: i64 =
+            conn.query_row("SELECT COUNT(*) FROM external_chunks", [], |r| r.get(0))?;
+        report["memory"]["documents_indexed"] = json!(documents);
+        report["memory"]["chunks_indexed"] = json!(chunks);
+        report["memory"]["archive_fts_probe"] = json!("not_checked");
+        if documents < 1 || chunks < 1 {
+            errors.push("archive sync produced no searchable documents/chunks".into());
+        } else {
+            let probe = || -> Result<(), Box<dyn std::error::Error>> {
+                let mut samples = conn.prepare(
+                    "SELECT a.root_path,d.relative_path,
+                    c.byte_start,c.byte_end FROM external_chunks c
+                    JOIN external_documents d ON d.id=c.document_id
+                    JOIN external_archives a ON a.id=d.archive_id ORDER BY c.id",
+                )?;
+                let mut rows = samples.query([])?;
+                let token_pattern = regex::Regex::new(r"[A-Za-z0-9_\u00C0-\uFFFF]+")?;
+                let mut token = None;
+                while let Some(row) = rows.next()? {
+                    let path: String = row.get(0)?;
+                    let relative: String = row.get(1)?;
+                    let start = usize::try_from(row.get::<_, i64>(2)?)?;
+                    let end = usize::try_from(row.get::<_, i64>(3)?)?;
+                    let file = Path::new(&path).join(relative);
+                    let bytes = std::fs::read(&file).map_err(|e| {
+                        std::io::Error::other(
+                            crate::executor_brief_profile::python_os_error_message(&e, &file),
+                        )
+                    })?;
+                    let snippet =
+                        std::str::from_utf8(&bytes[start.min(bytes.len())..end.min(bytes.len())])?;
+                    if let Some(found) = token_pattern
+                        .find_iter(snippet)
+                        .find(|m| m.as_str().chars().count() >= 6)
+                    {
+                        token = Some(found.as_str().to_owned());
+                        break;
+                    }
+                }
+                let token = token.ok_or_else(|| {
+                    std::io::Error::other("indexed archive contains no stable probe token")
+                })?;
+                let query = distill::sanitize_fts_query(&token)
+                    .map_err(|e| std::io::Error::other(format!("{e:?}")))?;
+                let found: bool = conn.query_row(
+                    "SELECT EXISTS(SELECT c.id
+                    FROM external_chunks_fts f JOIN external_chunks c ON c.id=f.rowid
+                    WHERE external_chunks_fts MATCH ? LIMIT 1)",
+                    [query],
+                    |r| r.get(0),
+                )?;
+                if !found {
+                    return Err(std::io::Error::other(
+                        "indexed archive token was not returned by FTS5",
+                    )
+                    .into());
+                }
+                Ok(())
+            };
+            match probe() {
+                Ok(()) => report["memory"]["archive_fts_probe"] = json!("ok"),
+                Err(e) => {
+                    report["memory"]["archive_fts_probe"] = json!("failed");
+                    errors.push(format!("archive FTS5 probe failed: {e}"));
+                }
+            }
+        }
+        if memory["vector_mode"] != "off" {
+            report["vector"]["status"] = json!("unavailable");
+        }
+        Ok(())
+    };
+    if let Err(e) = run() {
+        errors.push(format!("memory doctor operational failure: {e}"));
+    }
+    if errors.is_empty() {
+        code = 0;
+        report["status"] = json!("ready");
+    }
+    report["errors"] = json!(errors);
+    let text = if as_json {
+        // json.dumps(sort_keys=True) with the default ensure_ascii=True.
+        format!("{}\n", ascii_json_text(&report.to_string()))
+    } else {
+        let mut text = format!(
+            "memory doctor: {}\n",
+            report["status"].as_str().unwrap_or("")
+        );
+        for error in &errors {
+            text.push_str(&format!("  [not-ready] {error}\n"));
+        }
+        if errors.is_empty() {
+            for (label, value) in [
+                ("db", &report["memory"]["db_path"]),
+                ("schema", &report["memory"]["schema_version"]),
+                ("archives", &report["memory"]["archives_registered"]),
+                ("vector", &report["vector"]["status"]),
+            ] {
+                text.push_str(&format!(
+                    "  {label}: {}\n",
+                    value
+                        .as_str()
+                        .map_or_else(|| value.to_string(), str::to_owned)
+                ));
+            }
+        }
+        text
+    };
+    Ok((code, text.into_bytes(), stderr.into_bytes()))
 }
