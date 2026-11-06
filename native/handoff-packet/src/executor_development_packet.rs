@@ -338,7 +338,7 @@ pub fn render(value: &Value) -> String {
         value => value.to_string(),
     }
 }
-fn py_repr(text: &str) -> String {
+pub(crate) fn py_repr(text: &str) -> String {
     let quote = if text.contains('\'') && !text.contains('"') {
         '"'
     } else {

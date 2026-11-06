@@ -267,6 +267,13 @@ CASES['main_errors'] = lambda tmp: matrix(tmp,
      ' ' * 32769 + '{}']], lambda v: cli(tmp, [v[0], *(['alpha'] if v[0] == 'lookup' else
      ['--paths', 'a.py', '--strict'] if v[0] == 'impact' else []), '--repo', str(tmp)],
      payload=v[1]))
+# --limit goes through Python int(): whitespace, underscores, Unicode digits, any size.
+CASES['main_limit'] = lambda tmp: matrix(tmp, ['abc', '1_0', ' 2 ', '\x1c3', '\u0663',
+    '-99999999999999999999999', '99999999999999999999', "a'b", '+1', '1__0', '-0'],
+    lambda v: cli(tmp, ['lookup', 'alpha', '--limit', v, '--repo', str(tmp)]))
+# lookup case-folds the query and the entry text before comparing words.
+CASES['lookup_casefold'] = lambda tmp: matrix(tmp, ['ALPHA', 'aLpHa_x'],
+    lambda q: cli(tmp, ['lookup', q, '--json', '--repo', str(tmp)]))
 RECORDS = json.loads(FIXTURE.read_text(encoding='ascii')) if FIXTURE.exists() else {}
 def test_every_case_has_a_frozen_record():
     assert sorted(RECORDS) == sorted(CASES)

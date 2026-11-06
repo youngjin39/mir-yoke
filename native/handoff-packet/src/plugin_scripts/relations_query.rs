@@ -652,7 +652,7 @@ fn cli_error(message: &str) -> Output {
 // Shared CPython decimal digit table; no change to the existing binary module.
 #[path = "../python_decimal.rs"]
 mod python_decimal;
-fn cli_integer(text: &str) -> Option<i64> {
+pub(crate) fn cli_integer(text: &str) -> Option<i64> {
     let text = text.trim();
     let digits = text.strip_prefix(['+', '-']).unwrap_or(text);
     let mut normalized = String::new();
@@ -676,8 +676,12 @@ fn cli_integer(text: &str) -> Option<i64> {
     if text.starts_with('-') {
         normalized.insert(0, '-');
     }
-    // Arbitrarily large Python integers parse successfully but fail the query limits.
-    Some(normalized.parse().unwrap_or(i64::MAX))
+    // Arbitrarily large Python integers parse successfully and saturate with their sign.
+    Some(normalized.parse().unwrap_or(if text.starts_with('-') {
+        i64::MIN
+    } else {
+        i64::MAX
+    }))
 }
 const HELP: &str = concat!(
     "\nPassive stdlib-only reader for the documented three-string YAML edge subset.\n",
