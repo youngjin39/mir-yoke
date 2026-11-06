@@ -142,6 +142,31 @@ for field in ("owned_scope", "verification_commands", "stop_conditions"):
     _variants(DispatchBrief, field, [[]])
 for field in ("task_spec", "phase"):
     _variants(DispatchBriefSourceRefs, field, [""])
+
+def _coerce(model, field, values):
+    for index, value in enumerate(values):
+        CASES[f"{model.__name__}.coerce.{field}.{index}"] = _model(
+            model, {**MINIMAL[model], field: value})
+
+
+_coerce(AgentProfile, "tools", [5, "tool", [1], None, ["a", "b"]])
+_coerce(AgentProfile, "provenance", [{"a": 1}, [], None, {"a": None}])
+_coerce(AgentProfile, "context_budget_tokens",
+        [1500.0, 1500.5, True, " 1500 ", None, "1_000", "1e3"])
+_coerce(AgentProfile, "temperature", [True, None, "bad", " 1 ", "inf", 1])
+_coerce(AgentProfile, "name", [None, ["x"], 1.5, True])
+_coerce(RouteDecision, "signals", [{"f": 1}, {"f": 0}, {"f": 2}, {"f": "yes"}, {"f": "on"},
+                                   {"f": None}, {"f": 1.0}, []])
+_coerce(RouteDecision, "reviewer_provider", [5, None])
+_coerce(DiscordEvent, "attachments", [[1], ["x"], [{}], {"path": "a"}, None, "ab"])
+_coerce(DiscordEvent, "reply_to", [5, None])
+_coerce(ProviderResult, "exit_code", [1.0, 1.5, True, " 2 ", None])
+_coerce(ProviderResult, "tokens_used", [{"a": "x"}, {"a": 1.5}, {"a": True}, []])
+_coerce(ProviderResult, "wall_seconds", [True, " 1.5 "])
+CASES["ProviderResult.coerce.wall_seconds_inf"] = lambda tmp: repr(
+    ProviderResult(**{**MINIMAL[ProviderResult], "wall_seconds": "inf"}).wall_seconds)
+_coerce(ProviderResult, "argv_snapshot", [[1], "ab", None])
+_coerce(ProviderResult, "stdout_tail", [None, 5])
 CASES["TaskSpec.json_unicode"] = _model(TaskSpec, {**SPEC, "intent": "\u00e9\n"}, "json")
 CASES["DispatchBrief.validator_precedence"] = _model(
     DispatchBrief, {**BRIEF, "version": 2, "resume_state_ref": "wrong"})

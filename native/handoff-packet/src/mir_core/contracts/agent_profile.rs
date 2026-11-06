@@ -1,36 +1,37 @@
 //! Private serde storage preserves frozen instances and unvalidated model_copy.
-use super::{ValidationError, validate};
+use super::{Kind as K, ValidationError, validate};
 use serde_json::{Value, json};
 #[derive(Clone, Debug, PartialEq)]
 pub struct AgentProfile(Value);
 impl AgentProfile {
-    const ORDER: [&'static str; 14] = [
-        "name",
-        "slug",
-        "model",
-        "description",
-        "role_binding",
-        "system_prompt",
-        "tools",
-        "forbidden_tools",
-        "context_budget_tokens",
-        "temperature",
-        "max_output_tokens",
-        "stop_sequences",
-        "allowed_files",
-        "provenance",
-    ];
+    fn fields() -> Vec<super::Field> {
+        super::contract!(@fields;
+            ("name", K::String, None, None, None),
+            ("slug", K::String, None, None, None),
+            ("model", K::Literal(&["opus", "sonnet", "haiku"]), None, None, None),
+            ("description", K::String, None, None, None),
+            ("role_binding", K::Literal(&["conductor", "executor", "reviewer", "planner", "tester"]), Some(json!("executor")), None, None),
+            ("system_prompt", K::String, None, None, None),
+            ("tools", K::Tuple(&K::String), Some(json!([])), None, None),
+            ("forbidden_tools", K::Tuple(&K::String), Some(json!([])), None, None),
+            ("context_budget_tokens", K::Int, None, Some((1000.0, 200000.0)), None),
+            ("temperature", K::Float, Some(json!(0.2)), Some((0.0, 2.0)), None),
+            ("max_output_tokens", K::Int, Some(json!(4096)), Some((256.0, 16000.0)), None),
+            ("stop_sequences", K::Tuple(&K::String), Some(json!([])), None, None),
+            ("allowed_files", K::Tuple(&K::String), Some(json!([])), None, None),
+            ("provenance", K::Dict(&K::String), Some(json!({})), None, None),
+        )
+    }
     pub fn from_dict(data: &Value) -> Result<Self, ValidationError> {
-        let defaults = json!({"role_binding":"executor","tools":[],"forbidden_tools":[],"temperature":0.2,"max_output_tokens":4096,"stop_sequences":[],"allowed_files":[],"provenance":{}});
-        validate(data, &defaults, &Self::ORDER).map(Self)
+        validate(data, &Self::fields()).map(|value| Self(value.dump))
     }
     pub fn to_dict(&self) -> Value {
         self.0.clone()
     }
     pub fn to_json(&self) -> String {
-        let fields: Vec<_> = Self::ORDER
+        let fields: Vec<_> = Self::fields()
             .iter()
-            .map(|k| {
+            .map(|(k, ..)| {
                 format!(
                     "{}:{}",
                     json!(k),
@@ -45,7 +46,7 @@ impl AgentProfile {
         let mut copy = self.clone();
         if let Some(fields) = overrides.as_object() {
             for (key, value) in fields {
-                if Self::ORDER.contains(&key.as_str()) {
+                if Self::fields().iter().any(|f| f.0 == key) {
                     copy.0[key] = if key == "temperature" {
                         value
                             .as_f64()
