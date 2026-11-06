@@ -2,5 +2,6 @@
 #![forbid(unsafe_code)]
 pub mod context;
 pub mod memory;
+pub mod migrate;
 pub mod policy;
 pub mod relations;
