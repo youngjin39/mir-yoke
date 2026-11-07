@@ -710,3 +710,6 @@ pub mod mir_cli;
 
 #[forbid(unsafe_code)]
 pub mod plugin_scripts;
+
+#[forbid(unsafe_code)]
+pub mod tools;

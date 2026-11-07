@@ -11,3 +11,6 @@ pub mod structured_error;
 pub(crate) mod tomllib;
 pub mod tool_contract;
 pub mod yaml;
+
+pub mod conductor;
+pub mod engine;
