@@ -311,6 +311,100 @@ fn walk(mode: &str) -> Value {
         json!({"value": files})
     }
 }
+
+fn parity(cell: &Value) -> Value {
+    let text = cell["text"].as_str().unwrap_or("");
+    let output = match cell["op"].as_str().unwrap() {
+        "title" => json!(es::extract_title_and_frontmatter(text)),
+        "chunk" => json!(
+            es::chunk_text(
+                text,
+                cell["size"].as_i64().unwrap(),
+                cell["overlap"].as_i64().unwrap()
+            )
+            .unwrap()
+        ),
+        "created" => json!(es::doc_created_ordinal(Some(
+            &json!({"created": text}).to_string()
+        ))),
+        "paths" => json!([
+            es::is_history_path(text),
+            es::derive_doc_category(text),
+            es::derive_layer(text)
+        ]),
+        "strip" => json!([
+            es::compile_globs(Some(text)),
+            es::is_within_path_scope("docs/a.md", cell["scope"].as_str().unwrap()).unwrap()
+        ]),
+        "status" => {
+            use handoff_packet::mir_core::memory::store;
+            let tmp = tempfile::tempdir().unwrap();
+            let connection = store::connect(
+                &tmp.path().join("synthetic.db"),
+                store::ConnectOptions {
+                    timeout: None,
+                    vec_loading: store::VecLoading::Disabled,
+                },
+            )
+            .unwrap();
+            store::apply_migrations(&connection.conn).unwrap();
+            let clock = || "2026-01-02T00:00:00+00:00".into();
+            let external = es::ExternalStore::new(&connection, &clock).unwrap();
+            let registration = es::Registration {
+                slug: "sample".into(),
+                root_path: tmp.path().to_str().unwrap().into(),
+                mode: "indexed".into(),
+                owner: "synthetic".into(),
+                glob_include: vec![],
+                glob_exclude: vec![],
+                historical_glob: vec![],
+                chunk_size: 800,
+                chunk_overlap: 100,
+            };
+            std::fs::create_dir(tmp.path().join("docs")).unwrap();
+            std::fs::write(tmp.path().join("docs/a.md"), text).unwrap();
+            let id = external.register(&registration).unwrap();
+            let archive = external.fetch_archive(id).unwrap();
+            external.index_file(&archive, "docs/a.md").unwrap();
+            json!(
+                connection
+                    .conn
+                    .query_row("SELECT status FROM external_documents", [], |r| r
+                        .get::<_, String>(0))
+                    .unwrap()
+            )
+        }
+        "fnmatch" | "regex" => {
+            let pattern = cell["pattern"].as_str().unwrap().to_owned();
+            let patterns = vec![pattern];
+            let compiled = if cell["op"] == "regex" {
+                es::compile_pattern_set(&patterns).unwrap()
+            } else {
+                vec![]
+            };
+            let matches: Vec<_> = cell["paths"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|p| {
+                    if cell["op"] == "regex" {
+                        es::matches_regex_any(p.as_str().unwrap(), &compiled).unwrap()
+                    } else {
+                        es::matches_any(p.as_str().unwrap(), &patterns).unwrap()
+                    }
+                })
+                .collect();
+            if cell["op"] == "regex" {
+                json!([compiled[0], matches])
+            } else {
+                json!(matches)
+            }
+        }
+        op => panic!("unknown parity operation {op}"),
+    };
+    json!({"value": {"input": cell, "output": output}})
+}
+
 #[test]
 fn frozen_archive_helpers() {
     let records: Value =
@@ -330,14 +424,44 @@ fn frozen_archive_helpers() {
             println!("{name}: exempt ({reason})");
             exempt += 1;
         } else {
-            assert_eq!(replay(name), *expected, "{name}");
+            let actual = if name.starts_with("parity.") {
+                parity(&expected["value"]["input"])
+            } else {
+                replay(name)
+            };
+            assert_eq!(actual, *expected, "{name}");
             println!("{name}: replayed");
             replayed += 1;
         }
     }
-    assert_eq!(replayed + exempt, 57);
+    assert_eq!(replayed + exempt, 118);
     assert_eq!(
         (replayed, exempt),
-        if cfg!(windows) { (52, 5) } else { (56, 1) }
+        if cfg!(windows) { (113, 5) } else { (117, 1) }
     );
+}
+
+#[test]
+fn parity_witnesses() {
+    let records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b18-archive-helpers.json")).unwrap();
+    let mut failures = Vec::new();
+    for (name, expected) in records.as_object().unwrap() {
+        if !name.starts_with("parity.") {
+            continue;
+        }
+        let result = std::panic::catch_unwind(|| parity(&expected["value"]["input"]));
+        let actual = match result {
+            Ok(value) => value,
+            Err(_) => json!({"panic": true}),
+        };
+        println!(
+            "PROBE {}",
+            json!({"name": name, "actual": actual, "matches": actual == *expected})
+        );
+        if actual != *expected {
+            failures.push(name);
+        }
+    }
+    assert!(failures.is_empty(), "divergent witnesses: {failures:?}");
 }

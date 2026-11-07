@@ -146,6 +146,78 @@ CASES["created.shapes"] = lambda tmp: [es._doc_created_ordinal(v) for v in (
         None, "", 0, 20260606, False, [], {}, "2026-06-06", "2026-06-06T12:00:00",
         "2026-06-06 12:00:00+09:00", "2026-06-06Z", "20260606", "2026-W23-6",
         "2026-6-6", "2024-02-29", "2025-02-29", "0001-01-01", "9999-12-31", "invalid")])]
+
+
+# Added parity witnesses carry their input cells so Rust replays the Python oracle.
+def _parity(cell):
+    def run(tmp):
+        op = cell["op"]
+        if op == "title":
+            result = es._extract_title_and_frontmatter(cell["text"])
+        elif op == "chunk":
+            result = [asdict(c) for c in es._chunk_text(
+                cell["text"], size=cell["size"], overlap=cell["overlap"])]
+        elif op == "created":
+            result = es._doc_created_ordinal(json.dumps({"created": cell["text"]}))
+        elif op == "paths":
+            result = [es._is_history_path(cell["text"]),
+                      es._derive_doc_category(cell["text"]), es._derive_layer(cell["text"])]
+        elif op == "strip":
+            result = [es._compile_globs(cell["text"]),
+                      es._is_within_path_scope("docs/a.md", cell["scope"])]
+        elif op == "status":
+            from types import SimpleNamespace
+            archive = SimpleNamespace(root_path="repo", historical_glob=())
+            result = es.ExternalStore._document_metadata(
+                None, archive, "docs/a.md", cell["text"])[3]
+        elif op == "fnmatch":
+            result = [es._matches_any(p, (cell["pattern"],)) for p in cell["paths"]]
+        elif op == "regex":
+            compiled = es._glob_to_regex(cell["pattern"])
+            result = [compiled.pattern,
+                      [es._matches_regex_any(p, (compiled,)) for p in cell["paths"]]]
+        else:
+            raise AssertionError(op)
+        return {"input": cell, "output": result}
+    return run
+
+
+_PARITY_CELLS = {}
+for _i, _text in enumerate(("#\u001ftitle", "#\u001c\u001dname\n", "#\u0085x",
+                           "# title\u001f", "---\ntitle: '  '\n---\n# Fallback")):
+    _PARITY_CELLS[f"heading_{_i}"] = {"op": "title", "text": _text}
+for _i, _text in enumerate(("ab.\u001fcdefghij", "ab\u3002 cdefghij")):
+    _PARITY_CELLS[f"sentence_{_i}"] = {"op": "chunk", "text": _text,
+                                      "size": 8, "overlap": 2}
+for _i, _text in enumerate(("tasks/handoffs\n", "tasks/plan-archive\n",
+                           "tasks/handoffs\n\n", "tasks/handoffs-extra\n")):
+    _PARITY_CELLS[f"dollar_{_i}"] = {"op": "paths", "text": _text}
+_PARITY_CELLS["strip"] = {"op": "strip", "text": "\u001c*.md\u001f,\u001e,\u001ddocs/**\u001f",
+                           "scope": "\u001cdocs\u001f"}
+for _i, _field in enumerate(("status: '\u001farchived\u001c'",
+                            "source: '\u001dmirrored-summary\u001e'",
+                            "status: '\u001factive\u001c'")):
+    _PARITY_CELLS[f"status_{_i}"] = {"op": "status", "text": f"---\n{_field}\n---\n# Title"}
+for _i, _text in enumerate(("2024W09", "2024-W09", "2024W094", "2024-W094", "2024W09-4",
+                           "2024-W53", "2020-W53", "2024-+1-01", "+024-01-01",
+                           "2024-01-+1", "2024W+94", "2024-W0-1", "20240229",
+                           "2024-W09-4", "\u0662024-01-01")):
+    _PARITY_CELLS[f"date_{_i}"] = {"op": "created", "text": _text}
+_CLASS_PATHS = ("a.md", "b.md", "x.md", "d.md", "&.md", "~.md", "^.md", "].md", "[.md",
+                "-.md", "|.md", "\\.md", "/.md", ":.md", ".md", "a", "x", "-", "\n")
+for _i, _pattern in enumerate(("[a&&b].md", "[a~~a].md", "[^x].md", "[]x].md", "[!]x].md",
+                              "[!z-a].md", "[xz-a].md", "[z-a].md", "[a-].md", "[-a].md",
+                              "[a--b].md", "[--/].md", "[a-c-e].md", "[[x].md", "[a|b].md",
+                              r"[\].md", r"[\-a].md", "[[:alpha:]].md", "[!a-].md", "[!x]",
+                              "[!-a].md", "[a-c--e].md", "[!--a].md")):
+    _PARITY_CELLS[f"fnmatch_{_i}"] = {"op": "fnmatch", "pattern": _pattern,
+                                     "paths": _CLASS_PATHS}
+for _i, _pattern in enumerate(("[a&&b].md", "[a~~a].md", "[[x].md", "[a*].md", "[]x].md",
+                              "[^x].md", "[!x].md", "**/*.md")):
+    _PARITY_CELLS[f"regex_{_i}"] = {"op": "regex", "pattern": _pattern,
+                                   "paths": (*_CLASS_PATHS, "a.md\n", "a.md\n\n")}
+CASES.update({f"parity.{name}": _parity(cell) for name, cell in _PARITY_CELLS.items()})
+
 RECORDS = json.loads(FIXTURE.read_text(encoding="ascii")) if FIXTURE.exists() else {}
 
 

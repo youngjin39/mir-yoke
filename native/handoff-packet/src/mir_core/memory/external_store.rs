@@ -59,6 +59,10 @@ fn regex_error(error: impl std::fmt::Display) -> HelperError {
         message: error.to_string(),
     }
 }
+// Python str.strip includes the four ASCII information separators.
+fn python_strip(text: &str) -> &str {
+    text.trim_matches(|c: char| c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c))
+}
 type Result<T> = std::result::Result<T, HelperError>;
 impl From<rusqlite::Error> for HelperError {
     fn from(e: rusqlite::Error) -> Self {
@@ -313,7 +317,7 @@ impl<'a> ExternalStore<'a> {
             .as_deref()
             .and_then(|v| serde_json::from_str(v).ok())
             .unwrap_or(Value::Null);
-        let field = |key: &str| front[key].as_str().unwrap_or("").trim().to_lowercase();
+        let field = |key: &str| python_strip(front[key].as_str().unwrap_or("")).to_lowercase();
         let historical = category == Some("archive")
             || HISTORICAL_STATUSES.contains(&field("status").as_str())
             || field("source") == "mirrored-summary"
@@ -868,7 +872,7 @@ pub fn chunk_text(raw: &str, size: i64, overlap: i64) -> Result<Vec<Chunk>> {
 pub fn compile_globs(spec: Option<&str>) -> Vec<String> {
     spec.unwrap_or_default()
         .split(',')
-        .map(str::trim)
+        .map(python_strip)
         .filter(|s| !s.is_empty())
         .map(str::to_owned)
         .collect()
@@ -915,10 +919,11 @@ pub fn is_history_path(rel: &str) -> bool {
     rel.contains("/_archive/")
         || rel.starts_with("docs/_archive/")
         || rel.starts_with("_archive/")
-        || captures(TASK_HISTORY_RE, rel, false).is_ok_and(|m| !m.is_empty())
+        || captures(&TASK_HISTORY_RE.replace('$', r"(?:\n)?\z"), rel, false)
+            .is_ok_and(|m| !m.is_empty())
 }
 pub fn is_within_path_scope(rel: &str, scope: &str) -> Result<bool> {
-    let normalized = scope.trim().replace('\\', "/");
+    let normalized = python_strip(scope).replace('\\', "/");
     let mut normalized = normalized.as_str();
     while let Some(rest) = normalized.strip_prefix("./") {
         normalized = rest;
@@ -986,7 +991,7 @@ pub fn glob_to_regex(pattern: &str) -> Result<String> {
     }
     out.push('$');
     // Compile now, like re.compile; retain Python's diagnostic for an unclosed class.
-    if let Err(error) = captures(&out, "", false) {
+    if let Err(error) = captures(&archive_regex(&out), "", false) {
         if let Some(i) = out.find('[').filter(|i| !out[*i..].contains(']')) {
             return Err(regex_error(format!(
                 "unterminated character set at position {i}"
@@ -996,12 +1001,53 @@ pub fn glob_to_regex(pattern: &str) -> Result<String> {
     }
     Ok(out)
 }
+// Python reads `[`, `&&` and `~~` inside a class as literals; Rust nests or combines sets.
+fn python_regex_to_rust(re: &str) -> String {
+    let chars: Vec<_> = re.chars().collect();
+    let (mut out, mut i, mut class) = (String::new(), 0, false);
+    while i < chars.len() {
+        let c = chars[i];
+        i += 1;
+        if c == '\\' {
+            out.push(c);
+            out.extend(chars.get(i));
+            i += 1;
+        } else if !class && c == '[' {
+            class = true;
+            out.push(c);
+            if chars.get(i) == Some(&'^') {
+                out.push('^');
+                i += 1;
+            }
+            if chars.get(i) == Some(&']') {
+                out.push_str("\\]");
+                i += 1;
+            }
+        } else if class && c == ']' {
+            class = false;
+            out.push(c);
+        } else {
+            if matches!(c, '[' | '&' | '~') && class {
+                out.push('\\');
+            }
+            out.push(c);
+        }
+    }
+    out
+}
+
+// Preserve Python pattern text in records, adapting only the compiled matcher.
+fn archive_regex(pattern: &str) -> String {
+    let body = python_regex_to_rust(pattern.strip_suffix('$').unwrap_or(pattern));
+    format!("{body}(?:\n)?\\z")
+}
+
 pub fn compile_pattern_set(patterns: &[String]) -> Result<Vec<String>> {
     patterns.iter().map(|p| glob_to_regex(p)).collect()
 }
 pub fn matches_regex_any(rel: &str, compiled: &[String]) -> Result<bool> {
     for p in compiled {
-        if captures(p, rel, false)
+        if captures(&archive_regex(p), rel, false)
             .map_err(|e| regex_error(format!("{e:?}")))?
             .iter()
             .any(|m| m.start == 0)
@@ -1124,7 +1170,7 @@ pub fn extract_title_and_frontmatter(text: &str) -> (Option<String>, Option<Stri
         .iter()
         .find(|(k, _)| k == "title")
         .and_then(|(_, v)| v.as_str())
-        .map(str::trim)
+        .map(python_strip)
         .filter(|s| !s.is_empty())
         .map(str::to_owned)
         .or_else(|| {
@@ -1134,7 +1180,7 @@ pub fn extract_title_and_frontmatter(text: &str) -> (Option<String>, Option<Stri
                 .groups
                 .get(1)?
                 .as_deref()
-                .map(str::trim)
+                .map(python_strip)
                 .filter(|s| !s.is_empty())
                 .map(str::to_owned)
         });
@@ -1143,10 +1189,17 @@ pub fn extract_title_and_frontmatter(text: &str) -> (Option<String>, Option<Stri
 pub fn doc_created_ordinal(frontmatter: Option<&str>) -> i64 {
     fn ordinal(s: &str) -> Option<i64> {
         let s: String = s.chars().take(10).collect();
-        if !s.is_ascii() || s.len() < 8 {
+        if !s.is_ascii() {
             return None;
         }
-        let year: i64 = s.get(..4)?.parse().ok()?;
+        let b = s.as_bytes();
+        let digits = |part: &[u8]| -> Option<i64> {
+            if part.is_empty() || !part.iter().all(u8::is_ascii_digit) {
+                return None;
+            }
+            std::str::from_utf8(part).ok()?.parse().ok()
+        };
+        let year = digits(b.get(..4)?)?;
         if !(1..=9999).contains(&year) {
             return None;
         }
@@ -1155,13 +1208,18 @@ pub fn doc_created_ordinal(frontmatter: Option<&str>) -> i64 {
             365 * n + n / 4 - n / 100 + n / 400
         };
         let leap = |y: i64| y % 4 == 0 && (y % 100 != 0 || y % 400 == 0);
-        if s.get(4..6) == Some("-W") || s.get(4..5) == Some("W") {
-            let compact = s.replace('-', "");
-            if compact.len() != 8 {
-                return None;
-            }
-            let week: i64 = compact.get(5..7)?.parse().ok()?;
-            let day: i64 = compact.get(7..8)?.parse().ok()?;
+        let rest = &s[4..];
+        let week_form = rest
+            .strip_prefix("-W")
+            .map(|r| (true, r))
+            .or_else(|| rest.strip_prefix('W').map(|r| (false, r)));
+        if let Some((dashed, r)) = week_form {
+            let week = digits(r.as_bytes().get(..2)?)?;
+            let day = match (dashed, r.as_bytes().get(2..)?) {
+                (_, []) => 1,
+                (true, [b'-', d]) | (false, [d]) => digits(&[*d])?,
+                _ => return None,
+            };
             let jan4 = before(year) + 4;
             let max = if (before(year) % 7 == 3) || (before(year) % 7 == 2 && leap(year)) {
                 53
@@ -1173,21 +1231,19 @@ pub fn doc_created_ordinal(frontmatter: Option<&str>) -> i64 {
             }
             return Some(jan4 - (jan4 - 1) % 7 + (week - 1) * 7 + day - 1);
         }
-        let compact = if s.len() == 10 && &s[4..5] == "-" && &s[7..8] == "-" {
-            s.replace('-', "")
-        } else if s.len() == 8 {
-            s
+        let (month, day) = if b.len() == 10 && b[4] == b'-' && b[7] == b'-' {
+            (digits(&b[5..7])?, digits(&b[8..10])?)
+        } else if b.len() == 8 {
+            (digits(&b[4..6])?, digits(&b[6..8])?)
         } else {
             return None;
         };
-        let month: usize = compact.get(4..6)?.parse().ok()?;
-        let day: i64 = compact.get(6..8)?.parse().ok()?;
         let mut months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
         months[1] += i64::from(leap(year));
-        if !(1..=12).contains(&month) || !(1..=months[month - 1]).contains(&day) {
+        if !(1..=12).contains(&month) || !(1..=months[month as usize - 1]).contains(&day) {
             return None;
         }
-        Some(before(year) + months[..month - 1].iter().sum::<i64>() + day)
+        Some(before(year) + months[..month as usize - 1].iter().sum::<i64>() + day)
     }
     let Some(fm) = frontmatter.and_then(|s| serde_json::from_str::<Value>(s).ok()) else {
         return 0;
