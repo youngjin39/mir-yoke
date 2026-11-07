@@ -463,7 +463,7 @@ pub(super) fn is_python_space(c: char) -> bool {
     c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
 }
 /// Python `str.splitlines()`: every Unicode line boundary, with "\r\n" as one.
-fn python_splitlines(body: &str) -> Vec<&str> {
+pub(super) fn python_splitlines(body: &str) -> Vec<&str> {
     let mut lines = Vec::new();
     let mut start = 0;
     let mut chars = body.char_indices().peekable();

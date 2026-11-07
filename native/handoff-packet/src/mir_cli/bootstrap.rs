@@ -1,4 +1,20 @@
 //! Library-only bootstrap identity, argument and storage policy.
+#[path = "bootstrap_authored.rs"]
+mod authored;
+#[path = "bootstrap_authored_text.rs"]
+mod authored_text;
+#[path = "bootstrap_release.rs"]
+mod release;
+pub use authored::{
+    CommandOutput, CommandRequest, ensure_authored_files, validate_existing_profile,
+};
+pub use authored_text::{
+    PROFILE_CHOICES, memory_config_text, product_contract_text, repo_profile_text,
+};
+pub use release::{
+    is_raw_provider_checkout, is_safe_existing_project_file, normalise_git_url,
+    release_payload_digests, rewrite_release_matched, source_control_ownership,
+};
 #[path = "bootstrap_content.rs"]
 mod content;
 use super::bootstrap_adoption::is_python_space;
@@ -43,6 +59,28 @@ pub trait Host {
     fn is_dir(&mut self, path: &Path) -> bool;
     fn writable(&mut self, path: &Path) -> bool;
     fn device(&mut self, path: &Path) -> Result<u64, Error>;
+    /// Later caller slices supply subprocess execution; library tests reject unscripted calls.
+    fn run(&mut self, _request: &CommandRequest) -> Result<CommandOutput, Error> {
+        Err(Error::new("AssertionError", "unexpected"))
+    }
+    /// Optional jsonschema dependency stays at the host boundary in this library-only slice.
+    fn validate_boundary_schema(&mut self, _value: &Value, _schema: &Value) -> Result<(), Error> {
+        Err(Error::new(
+            "NotImplementedError",
+            "bootstrap boundary schema validator is not connected",
+        ))
+    }
+    /// Catalog/capability compilation belongs to the later bootstrap surface slice.
+    fn compile_adopter_agent_catalog(
+        &mut self,
+        _root: &Path,
+        _profile: &str,
+    ) -> Result<Vec<String>, Error> {
+        Err(Error::new(
+            "NotImplementedError",
+            "bootstrap catalog host is not connected",
+        ))
+    }
 }
 pub const EXTERNAL_STORAGE_PATHS: [(&str, &str); 3] = [
     ("UV_CACHE_DIR", "uv/cache"),

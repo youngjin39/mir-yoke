@@ -69,6 +69,7 @@
 "safe.missing": {"value": false},
 "safe.nested": {"value": false},
 "urls": {"value": ["example.invalid/provider", "example.invalid/a", "example.invalid/a", "example.invalid/a", "host:123/a", "host:bad/a", "[invalid", "", "nonsense", "c//repo", "host/a"]},
+"urls_edge": {"value": ["a/b@host:x/y", "dir/sub:x", "host/a", "host/a", "host:+1/a", "a/b@host/c"]},
 "validate.capabilities": {"error": ["ValueError", "existing .mir/repo-profile.toml must explicitly set [gates].requires_memory_store=true and requires_global_capabilities=true; bootstrap will not overwrite authored policy"]},
 "validate.execution_type": {"error": ["ValueError", "existing .mir/repo-profile.toml profile does not match --profile 'code_app'"]},
 "validate.gates_type": {"error": ["AttributeError", "'int' object has no attribute 'get'"]},

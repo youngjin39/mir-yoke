@@ -211,6 +211,8 @@ CASES['urls'] = lambda tmp: [M._normalise_git_url(v) for v in [PROVIDER, 'SSH://
     'git@example.invalid:a.git/', 'https://EXAMPLE.invalid:443/a.git', 'ssh://host:123/a.git',
     'https://host:bad/a.git', 'https://[invalid', '', ' nonsense ', 'C:\\repo.git',
     'https://user:pass@host/A.git/?q=x']]
+CASES['urls_edge'] = lambda tmp: [M._normalise_git_url(v) for v in ['a/b@host:x/y', 'dir/sub:x',
+    ' \x1chost:a.git\x1f', 'https://ho\tst/a.git', 'https://host:+1/a.git', 'ssh://a/b@host/c.git']]
 RECORDS = json.loads(FIXTURE.read_text()) if FIXTURE.exists() else {}
 
 
