@@ -142,6 +142,43 @@ def _run(mode):
     return run
 
 
+def _embed_sync(mode):
+    """Plain sync: embedding factory failure policy and the optional FTS-only retry."""
+    def run(tmp):
+        connection = store.connect(tmp / "synthetic.db")
+        store.apply_migrations(connection.conn)
+        try:
+            if not connection.vec_available:
+                raise RuntimeError(connection.vec_reason)
+            db = es.ExternalStore(connection)
+            root = tmp / "archive"
+            root.mkdir()
+            archive = db.register(slug="sample", root_path=str(root), mode="indexed",
+                                  owner="synthetic", chunk_size=8, chunk_overlap=0)
+            (root / "a.md").write_text("alpha001alpha002", encoding="ascii")
+            calls = []
+            def encode(texts):
+                calls.append(texts)
+                raise RuntimeError("synthetic encode failure")
+            vector_mode = "required" if mode in ("vector_required", "required_encode") \
+                else "optional"
+            cfg = NS(memory=NS(embedding=NS(enabled=True, required=mode == "required",
+                                            fingerprint="model-a"), vector_mode=vector_mode))
+            def backend(_):
+                if mode in ("required", "vector_required", "degraded"):
+                    raise RuntimeError("synthetic backend unavailable")
+                return encode
+            output = io.StringIO()
+            with mock.patch.object(context, "_build_embed_fn", side_effect=backend), \
+                    contextlib.redirect_stdout(output):
+                code = context._do_sync(context._parse(["sync"]), connection, cfg, tmp)
+            return {"exit": code, "stdout": output.getvalue().replace(str(tmp), "<tmp>"),
+                    "batches": calls, "after": _state(db, archive)}
+        finally:
+            connection.conn.close()
+    return run
+
+
 def _schema(mode):
     def run(tmp):
         with mock.patch.object(store, "_load_sqlite_vec", return_value=(False, "unavailable")) \
@@ -171,6 +208,8 @@ CASES = {f"backfill.{mode}": _run(mode) for mode in (
     "adopt", "mismatch", "legacy", "blank", "no_backend", "missing", "cli",
     "cli_disabled", "cli_missing", "cli_no_backend", "cli_backend_failure", "cli_changed")}
 CASES.update({f"table.{mode}": _schema(mode) for mode in ("available", "missing")})
+CASES.update({f"sync.{mode}": _embed_sync(mode) for mode in (
+    "required", "vector_required", "degraded", "optional_retry", "required_encode")})
 RECORDS = json.loads(FIXTURE.read_text(encoding="ascii")) if FIXTURE.exists() else {}
 
 

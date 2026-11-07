@@ -2,22 +2,11 @@ use handoff_packet::mir_cli::context::do_sync;
 use handoff_packet::mir_core::memory::{external_store as es, store};
 use serde_json::{Value, json};
 use std::path::Path;
+#[path = "support/external_replay.rs"]
+mod support;
+use support::{clean_paths, connect, rows, schema};
 
 const CLOCK: &str = "2026-01-02T00:00:00+00:00";
-const DEFERRED: [&str; 12] = [
-    "index.direct",
-    "scan.content",
-    "scan.deleted",
-    "scan.exclude",
-    "scan.failure",
-    "scan.frontmatter",
-    "scan.history",
-    "scan.immutable",
-    "scan.metadata",
-    "scan.modified",
-    "scan.renamed",
-    "scan.unchanged",
-];
 fn clock() -> String {
     CLOCK.into()
 }
@@ -87,8 +76,10 @@ fn state(c: &store::Connection, tmp: &Path) -> Value {
                 .get::<_, i64>(0))
             .unwrap()
     );
-    // No extension is loaded. All replayed records have no vector writes.
-    out["vectors"] = json!([]);
+    out["vectors"] = rows(
+        &c.conn,
+        "SELECT rowid,length(embedding) FROM external_chunks_vec ORDER BY rowid",
+    );
     out
 }
 fn registration(root: &Path) -> es::Registration {
@@ -105,7 +96,7 @@ fn registration(root: &Path) -> es::Registration {
     }
 }
 fn replay(name: &str, tmp: &Path) -> Value {
-    let c = store::connect(&tmp.join("synthetic.db"), None).unwrap();
+    let c = connect(&tmp.join("synthetic.db"));
     store::apply_migrations(&c.conn).unwrap();
     let db = es::ExternalStore::new(&c, &clock).unwrap();
     if let Some(mode) = name.strip_prefix("register.") {
@@ -167,10 +158,128 @@ fn replay(name: &str, tmp: &Path) -> Value {
             .iter()
             .map(|n| observed(db.read_file(&row, n)))
             .collect();
-        let text = json!({"value":{"fetch":observed(db.fetch_archive(999).map(|_| Value::Null)),"read":reads}})
-            .to_string()
-            .replace(tmp.to_str().unwrap(), "<tmp>");
-        return serde_json::from_str(&text).unwrap();
+        let mut result = json!({"value":{
+            "fetch":observed(db.fetch_archive(999).map(|_| Value::Null)),"read":reads}});
+        clean_paths(&mut result, tmp);
+        return result;
+    }
+    if let Some(mode) = name.strip_prefix("scan.") {
+        let root = tmp.join("archive");
+        for name in [
+            "a.md",
+            "b.md",
+            "docs/decisions/c.md",
+            "tasks/handoffs/h.md",
+            ".ai-harness/rules/r.md",
+            "docs/old.md",
+            "skip.md",
+            "note.txt",
+        ] {
+            write(&root, name, b"# Title\n\nabcdefghij");
+        }
+        write(&root, "empty.md", b"");
+        write(&root, "docs/status.md", b"---\nstatus: archived\n---\nbody");
+        if mode == "frontmatter" {
+            write(
+                &root,
+                "docs/mirror.md",
+                b"---\nsource: Mirrored-Summary\n---\nbody",
+            );
+            write(&root, "docs/dep.md", b"---\nstatus: Deprecated\n---\nbody");
+            write(
+                &root,
+                "docs/live.md",
+                b"---\nstatus: accepted\nsource: manual\n---\nbody",
+            );
+        }
+        let mut a = registration(&root);
+        if mode == "immutable" {
+            a.mode = mode.into();
+        }
+        a.glob_include = vec!["**/*.md".into()];
+        a.glob_exclude = vec!["skip.md".into()];
+        a.historical_glob = vec!["docs/old.md".into()];
+        let id = db.register(&a).unwrap();
+        let batches = std::cell::RefCell::new(Vec::<Vec<String>>::new());
+        let mut encode = |texts: &[String]| {
+            batches.borrow_mut().push(texts.to_vec());
+            if mode == "failure" && batches.borrow().len() == 2 {
+                return Err(es::HelperError {
+                    kind: "RuntimeError",
+                    message: "synthetic mid-scan failure".into(),
+                });
+            }
+            Ok(texts
+                .iter()
+                .map(|_| {
+                    let mut v = vec![0.; es::DEFAULT_EMBED_DIM];
+                    v[0] = 1.;
+                    v
+                })
+                .collect())
+        };
+        let first = db
+            .scan_with_vectors(id, Some(&mut encode), Some("fake"), Some(2))
+            .unwrap();
+        let mut result =
+            json!({"first":first, "state":state(&c,tmp),"calls":batches.borrow().clone()});
+        let persisted = connect(&tmp.join("synthetic.db"));
+        result["committed"] = state(&persisted, tmp);
+        drop(persisted);
+        batches.borrow_mut().clear();
+        match mode {
+            "modified" | "immutable" => write(&root, "a.md", b"changed"),
+            "deleted" => std::fs::remove_file(root.join("a.md")).unwrap(),
+            "renamed" => std::fs::rename(root.join("a.md"), root.join("renamed.md")).unwrap(),
+            "metadata" => {
+                c.conn
+                    .execute(
+                        "DELETE FROM external_store_meta WHERE key != \
+                    'external_embedding_fingerprint'",
+                        [],
+                    )
+                    .unwrap();
+                c.conn
+                    .execute("UPDATE external_documents SET title='stale'", [])
+                    .unwrap();
+            }
+            "content" | "history" | "exclude" => {
+                match mode {
+                    "content" => a.chunk_size = 4,
+                    "history" => a.historical_glob.clear(),
+                    "exclude" => a.glob_exclude.push("a.md".into()),
+                    _ => unreachable!(),
+                }
+                db.register(&a).unwrap();
+                result["sentinel"] = state(&c, tmp);
+            }
+            _ => (),
+        }
+        result["replay"] = json!(
+            db.scan_with_vectors(id, Some(&mut encode), Some("fake"), Some(2))
+                .unwrap()
+        );
+        result["after"] = state(&c, tmp);
+        result["replay_calls"] = json!(batches.borrow().clone());
+        return json!({"value":result});
+    }
+    if name == "index.direct" {
+        let root = tmp.join("archive");
+        write(&root, "a.md", "\u{e9}\u{4e2d}\n\n# Tail".as_bytes());
+        let mut a = registration(&root);
+        a.chunk_size = 4;
+        a.chunk_overlap = 1;
+        let id = db.register(&a).unwrap();
+        let archive = db.fetch_archive(id).unwrap();
+        let mut result = json!({"id":db.index_file(&archive,"a.md").unwrap(),
+            "duplicate":observed(db.index_file(&archive,"a.md")),
+            "missing":observed(db.index_file(&archive,"absent.md")),
+            "state":state(&c,tmp)});
+        for (k, v) in schema(&c.conn).as_object().unwrap() {
+            result[k] = v.clone();
+        }
+        clean_paths(&mut result, tmp);
+        return json!({"value":result});
     }
     if name == "sync.relative" {
         write(tmp, "one/a.md", b"abcdefghij");
@@ -224,189 +333,17 @@ fn replay(name: &str, tmp: &Path) -> Value {
 #[test]
 fn frozen_records() {
     let records: Value = serde_json::from_str(include_str!("fixtures/w2/b18-scan.json")).unwrap();
-    let (mut replayed, mut deferred, mut exempt) = (0, 0, 0);
+    let (mut replayed, mut exempt) = (0, 0);
     for (name, expected) in records.as_object().unwrap() {
         if cfg!(windows) && name == "guard.symlink" {
             // Unprivileged Windows processes cannot create the reference's symbolic links.
             exempt += 1;
             continue;
         }
-        if DEFERRED.contains(&name.as_str()) {
-            // B17: scan records write vec0; index.direct observes vec0 sqlite_master schema.
-            deferred += 1;
-            continue;
-        }
         let tmp = tempfile::tempdir().unwrap();
         assert_eq!(&replay(name, tmp.path()), expected, "{name}");
         replayed += 1;
     }
-    let expected = if cfg!(windows) {
-        (15, 12, 1)
-    } else {
-        (16, 12, 0)
-    };
-    assert_eq!((replayed, deferred, exempt), expected);
-}
-
-// Supplemental FTS projections of vector-bearing records. These do not count as
-// full replays: the original records remain deferred, unmodified, to B17.
-fn fts_projection(mut state: Value) -> Value {
-    state["vectors"] = json!([]);
-    for doc in state["external_documents"].as_array_mut().unwrap() {
-        doc[7] = Value::Null;
-    }
-    state["external_store_meta"]
-        .as_array_mut()
-        .unwrap()
-        .retain(|r| r[0] != es::EMBEDDING_FINGERPRINT_KEY);
-    state
-}
-#[test]
-fn supplemental_scan_fts_projections() {
-    let records: Value = serde_json::from_str(include_str!("fixtures/w2/b18-scan.json")).unwrap();
-    for mode in [
-        "unchanged",
-        "modified",
-        "deleted",
-        "renamed",
-        "immutable",
-        "metadata",
-        "content",
-        "history",
-        "exclude",
-        "frontmatter",
-    ] {
-        let tmp = tempfile::tempdir().unwrap();
-        let c = store::connect(&tmp.path().join("synthetic.db"), None).unwrap();
-        store::apply_migrations(&c.conn).unwrap();
-        let db = es::ExternalStore::new(&c, &clock).unwrap();
-        let root = tmp.path().join("archive");
-        for name in [
-            "a.md",
-            "b.md",
-            "docs/decisions/c.md",
-            "tasks/handoffs/h.md",
-            ".ai-harness/rules/r.md",
-            "docs/old.md",
-            "skip.md",
-            "note.txt",
-        ] {
-            write(&root, name, b"# Title\n\nabcdefghij");
-        }
-        write(&root, "empty.md", b"");
-        write(&root, "docs/status.md", b"---\nstatus: archived\n---\nbody");
-        if mode == "frontmatter" {
-            write(
-                &root,
-                "docs/mirror.md",
-                b"---\nsource: Mirrored-Summary\n---\nbody",
-            );
-            write(&root, "docs/dep.md", b"---\nstatus: Deprecated\n---\nbody");
-            write(
-                &root,
-                "docs/live.md",
-                b"---\nstatus: accepted\nsource: manual\n---\nbody",
-            );
-        }
-        let mut a = registration(&root);
-        if mode == "immutable" {
-            a.mode = mode.into();
-        }
-        a.glob_include = vec!["**/*.md".into()];
-        a.glob_exclude = vec!["skip.md".into()];
-        a.historical_glob = vec!["docs/old.md".into()];
-        let id = db.register(&a).unwrap();
-        let expected = &records[format!("scan.{mode}")]["value"];
-        let mut encode = |_: &[String]| -> Result<Vec<Vec<f32>>, es::HelperError> {
-            panic!("FTS fallback must not invoke the injected embedding function")
-        };
-        assert_eq!(
-            json!(db.scan(id, Some(&mut encode)).unwrap()),
-            expected["first"],
-            "{mode}"
-        );
-        assert_eq!(
-            state(&c, tmp.path()),
-            fts_projection(expected["state"].clone()),
-            "{mode}"
-        );
-        let persisted = store::connect(&tmp.path().join("synthetic.db"), None).unwrap();
-        assert_eq!(state(&persisted, tmp.path()), state(&c, tmp.path()));
-        match mode {
-            "modified" | "immutable" => write(&root, "a.md", b"changed"),
-            "deleted" => std::fs::remove_file(root.join("a.md")).unwrap(),
-            "renamed" => std::fs::rename(root.join("a.md"), root.join("renamed.md")).unwrap(),
-            "metadata" => {
-                c.conn
-                    .execute("DELETE FROM external_store_meta", [])
-                    .unwrap();
-                c.conn
-                    .execute("UPDATE external_documents SET title='stale'", [])
-                    .unwrap();
-            }
-            "content" | "history" | "exclude" => {
-                match mode {
-                    "content" => a.chunk_size = 4,
-                    "history" => a.historical_glob.clear(),
-                    "exclude" => a.glob_exclude.push("a.md".into()),
-                    _ => unreachable!(),
-                }
-                db.register(&a).unwrap();
-                assert_eq!(
-                    state(&c, tmp.path()),
-                    fts_projection(expected["sentinel"].clone()),
-                    "{mode}"
-                );
-            }
-            _ => (),
-        }
-        assert_eq!(
-            json!(db.scan(id, None).unwrap()),
-            expected["replay"],
-            "{mode}"
-        );
-        assert_eq!(
-            state(&c, tmp.path()),
-            fts_projection(expected["after"].clone()),
-            "{mode}"
-        );
-    }
-}
-#[test]
-fn supplemental_direct_index_fts_projection() {
-    let records: Value = serde_json::from_str(include_str!("fixtures/w2/b18-scan.json")).unwrap();
-    let expected = &records["index.direct"]["value"];
-    let tmp = tempfile::tempdir().unwrap();
-    let c = store::connect(&tmp.path().join("synthetic.db"), None).unwrap();
-    store::apply_migrations(&c.conn).unwrap();
-    let db = es::ExternalStore::new(&c, &clock).unwrap();
-    let root = tmp.path().join("archive");
-    write(&root, "a.md", "\u{e9}\u{4e2d}\n\n# Tail".as_bytes());
-    let mut a = registration(&root);
-    a.chunk_size = 4;
-    a.chunk_overlap = 1;
-    let id = db.register(&a).unwrap();
-    let archive = db.fetch_archive(id).unwrap();
-    assert_eq!(
-        json!(db.index_file(&archive, "a.md").unwrap()),
-        expected["id"]
-    );
-    assert_eq!(
-        observed(db.index_file(&archive, "a.md")),
-        expected["duplicate"]
-    );
-    let missing = observed(db.index_file(&archive, "absent.md"));
-    let message = missing["error"][1]
-        .as_str()
-        .unwrap()
-        .replace(tmp.path().to_str().unwrap(), "<tmp>")
-        .replace('\\', "/");
-    assert_eq!(
-        json!({"error":[missing["error"][0],message]}),
-        expected["missing"]
-    );
-    assert_eq!(
-        state(&c, tmp.path()),
-        fts_projection(expected["state"].clone())
-    );
+    let expected = if cfg!(windows) { (27, 1) } else { (28, 0) };
+    assert_eq!((replayed, exempt), expected);
 }

@@ -150,6 +150,20 @@ pub fn do_sync(
     project_root: &Path,
     home: &Path,
 ) -> std::result::Result<(i32, String), external_store::HelperError> {
+    do_sync_with_embedding(db, cfg, project_root, home, false, || Ok(None))
+}
+/// Inject the embedding factory without connecting a live backend or caller.
+pub fn do_sync_with_embedding<'e>(
+    db: &external_store::ExternalStore<'_>,
+    cfg: &Value,
+    project_root: &Path,
+    home: &Path,
+    reindex_missing_vectors: bool,
+    build_embed_fn: impl FnOnce() -> std::result::Result<
+        Option<&'e mut external_store::EmbedFn<'e>>,
+        external_store::HelperError,
+    >,
+) -> std::result::Result<(i32, String), external_store::HelperError> {
     use crate::mir_core::config::loader::resolve_path;
     let os_error =
         |e: crate::mir_core::config::loader::ConfigLoadError| external_store::HelperError {
@@ -198,8 +212,77 @@ pub fn do_sync(
         return Ok((0, "no archives configured\n".into()));
     }
     let (mut failed, mut output) = (false, String::new());
+    if reindex_missing_vectors {
+        if cfg["memory"]["embedding"]["enabled"] != true {
+            return Ok((
+                2,
+                "missing-vector reindex requires memory.embedding.enabled=true\n".into(),
+            ));
+        }
+        if !db.connection.vec_available {
+            return Ok((2, "missing-vector reindex requires sqlite-vec\n".into()));
+        }
+    }
+    let mut embed_fn = match build_embed_fn() {
+        Ok(backend) => backend,
+        Err(e) if reindex_missing_vectors => {
+            return Ok((
+                1,
+                format!("missing-vector reindex embedding backend unavailable: {e}\n"),
+            ));
+        }
+        Err(e) => {
+            if cfg["memory"]["embedding"]["required"] == true
+                || cfg["memory"]["vector_mode"] == "required"
+            {
+                return Ok((1, format!("required embedding backend unavailable: {e}\n")));
+            }
+            output.push_str(&format!(
+                "[degraded] embedding unavailable \u{2014} FTS-only sync: {e}\n"
+            ));
+            None
+        }
+    };
+    let fingerprint = cfg["memory"]["embedding"]["fingerprint"].as_str();
+    if reindex_missing_vectors {
+        let Some(encode) = embed_fn else {
+            return Ok((
+                2,
+                "missing-vector reindex requires an embedding backend\n".into(),
+            ));
+        };
+        for (id, slug) in rows {
+            let result =
+                match db.reindex_missing_vectors(id, Some(encode), fingerprint.unwrap_or("")) {
+                    Err(e) if e.kind == "ExternalStoreError" => {
+                        failed = true;
+                        output.push_str(&format!("{slug}: vector reindex refused: {e}\n"));
+                        continue;
+                    }
+                    other => other?,
+                };
+            output.push_str(&format!(
+                "{slug}: vector_coverage={}/{} reindexed={} unchanged={}\n",
+                result.indexed, result.eligible, result.reindexed, result.unchanged
+            ));
+            if !result.failed.is_empty() {
+                failed = true;
+            }
+            for (rel, reason) in result.failed {
+                output.push_str(&format!("  [failed] {rel}: {reason}\n"));
+            }
+        }
+        return Ok((i32::from(failed), output));
+    }
     for (id, slug) in rows {
-        let result = match db.scan(id, None) {
+        let mut result = match db.scan_with_vectors(
+            id,
+            embed_fn
+                .as_mut()
+                .map(|f| &mut **f as &mut external_store::EmbedFn<'_>),
+            fingerprint,
+            None,
+        ) {
             Err(e) if e.kind == "ExternalStoreError" => {
                 failed = true;
                 output.push_str(&format!("{slug}: vector indexing refused: {}\n", e.message));
@@ -207,6 +290,15 @@ pub fn do_sync(
             }
             other => other?,
         };
+        if !result.failed.is_empty()
+            && embed_fn.is_some()
+            && cfg["memory"]["vector_mode"] == "optional"
+        {
+            output.push_str(&format!(
+                "[degraded] {slug}: vector indexing failed \u{2014} retrying FTS-only\n"
+            ));
+            result = db.scan(id, None)?;
+        }
         for (rel, reason) in &result.failed {
             output.push_str(&format!("  [failed] {rel}: {reason}\n"));
         }

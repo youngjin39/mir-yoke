@@ -1,4 +1,4 @@
-//! Library-only archive helpers and FTS indexer; Python remains the live reference.
+//! Library-only archive helpers and vector/FTS indexer; Python remains the live reference.
 #![forbid(unsafe_code)]
 use super::distill::_parse_frontmatter;
 use crate::{captures, digest::sha256, executor_development_packet::render};
@@ -110,7 +110,34 @@ impl Serialize for ScanResult {
         .serialize(serializer)
     }
 }
-pub type EmbedFn<'a> = dyn FnMut(&[String]) -> Result<Vec<Vec<f32>>> + 'a;
+pub type EmbedFn<'a> = dyn FnMut(&[String]) -> Result<Vec<Vec<f64>>> + 'a;
+#[derive(Debug, Default)]
+pub struct VectorReindexResult {
+    pub indexed: i64,
+    pub eligible: i64,
+    pub reindexed: usize,
+    pub unchanged: usize,
+    pub failed: Vec<(String, String)>,
+}
+impl Serialize for VectorReindexResult {
+    fn serialize<S: serde::Serializer>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error> {
+        serde_json::json!({"indexed":self.indexed,"eligible":self.eligible,
+            "reindexed":self.reindexed,"unchanged":self.unchanged,"failed":self.failed})
+        .serialize(serializer)
+    }
+}
+pub fn ensure_external_vec_table(conn: &rusqlite::Connection, dim: usize) -> Result<()> {
+    super::vector_index::ensure_vec_table(conn, dim, "external_chunks_vec").map_err(vector_error)
+}
+fn vector_error(e: super::vector_index::Error) -> HelperError {
+    HelperError {
+        kind: e.python_class(),
+        message: e.to_string(),
+    }
+}
 pub struct ExternalStore<'a> {
     pub connection: &'a super::store::Connection,
     clock: &'a dyn Fn() -> String,
@@ -127,7 +154,7 @@ impl<'a> ExternalStore<'a> {
         clock: &'a dyn Fn() -> String,
     ) -> Result<Self> {
         if connection.vec_available {
-            return Err(store_error("sqlite-vec support deferred to B17"));
+            ensure_external_vec_table(&connection.conn, DEFAULT_EMBED_DIM)?;
         }
         Ok(Self { connection, clock })
     }
@@ -307,6 +334,15 @@ impl<'a> ExternalStore<'a> {
         values.iter().map(Value::as_str).collect()
     }
     pub fn index_file(&self, a: &ArchiveRow, rel: &str) -> Result<i64> {
+        self.index_file_with_vectors(a, rel, None, None)
+    }
+    pub fn index_file_with_vectors(
+        &self,
+        a: &ArchiveRow,
+        rel: &str,
+        embed_fn: Option<&mut EmbedFn<'_>>,
+        batch_size: Option<usize>,
+    ) -> Result<i64> {
         use rusqlite::params;
         let (text, hash, len) = self.read_file(a, rel)?;
         let chunks = chunk_text(
@@ -320,20 +356,56 @@ impl<'a> ExternalStore<'a> {
         tx.execute(
             "INSERT INTO external_documents
             (archive_id,relative_path,file_hash,byte_len,vec_indexed_at,source_slug,
-             doc_category,layer,status,title,frontmatter_json) VALUES (?,?,?,?,NULL,?,?,?,?,?,?)",
+             doc_category,layer,status,title,frontmatter_json) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             params![
-                a.id, rel, hash, len as i64, m[0], m[1], m[2], m[3], m[4], m[5]
+                a.id,
+                rel,
+                hash,
+                len as i64,
+                (embed_fn.is_some() && self.connection.vec_available).then(|| (self.clock)()),
+                m[0],
+                m[1],
+                m[2],
+                m[3],
+                m[4],
+                m[5]
             ],
         )?;
         let id = tx.last_insert_rowid();
-        self.insert_chunks(id, &chunks)?;
+        self.insert_chunks(id, &chunks, embed_fn, batch_size)?;
         tx.commit()?;
         Ok(id)
     }
-    fn insert_chunks(&self, doc: i64, chunks: &[Chunk]) -> Result<()> {
+    fn insert_chunks(
+        &self,
+        doc: i64,
+        chunks: &[Chunk],
+        embed_fn: Option<&mut EmbedFn<'_>>,
+        batch_size: Option<usize>,
+    ) -> Result<()> {
         use rusqlite::params;
         let c = &self.connection.conn;
-        for ch in chunks {
+        if chunks.is_empty() {
+            return Ok(());
+        }
+        let embeddings = if let Some(encode) = embed_fn.filter(|_| self.connection.vec_available) {
+            let texts: Vec<_> = chunks.iter().map(|ch| ch.text.clone()).collect();
+            let mut embeddings = Vec::new();
+            for batch in texts.chunks(batch_size.filter(|n| *n > 0).unwrap_or(texts.len())) {
+                embeddings.extend(encode(batch)?);
+            }
+            if embeddings.len() != chunks.len() {
+                return Err(store_error(format!(
+                    "embed_fn returned {} vectors for {} chunks",
+                    embeddings.len(),
+                    chunks.len()
+                )));
+            }
+            Some(embeddings)
+        } else {
+            None
+        };
+        for (i, ch) in chunks.iter().enumerate() {
             c.execute(
                 "INSERT INTO external_chunks
                 (document_id,chunk_index,byte_start,byte_end,text_hash) VALUES (?,?,?,?,?)",
@@ -345,10 +417,20 @@ impl<'a> ExternalStore<'a> {
                     ch.text_hash
                 ],
             )?;
+            let id = c.last_insert_rowid();
             c.execute(
                 "INSERT INTO external_chunks_fts(rowid,content) VALUES (?,?)",
-                params![c.last_insert_rowid(), ch.text],
+                params![id, ch.text],
             )?;
+            if let Some(embeddings) = &embeddings {
+                let vector = &embeddings[i];
+                super::vector_index::validate_embedding(vector, DEFAULT_EMBED_DIM)
+                    .map_err(vector_error)?;
+                c.execute(
+                    "INSERT INTO external_chunks_vec(rowid,embedding) VALUES (?,?)",
+                    params![id, super::vector_index::pack_vector(vector)],
+                )?;
+            }
         }
         Ok(())
     }
@@ -356,6 +438,11 @@ impl<'a> ExternalStore<'a> {
         self.connection
             .conn
             .execute("DELETE FROM external_chunks_fts WHERE rowid=?", [id])?;
+        if self.connection.vec_available {
+            self.connection
+                .conn
+                .execute("DELETE FROM external_chunks_vec WHERE rowid=?", [id])?;
+        }
         Ok(())
     }
     fn delete_document_chunks(&self, doc: i64) -> Result<()> {
@@ -393,13 +480,24 @@ impl<'a> ExternalStore<'a> {
         forced: bool,
         force_content: bool,
     ) -> Result<bool> {
+        self.reindex_with_vectors(a, rel, forced, force_content, None, None)
+    }
+    fn reindex_with_vectors(
+        &self,
+        a: &ArchiveRow,
+        rel: &str,
+        forced: bool,
+        force_content: bool,
+        embed_fn: Option<&mut EmbedFn<'_>>,
+        batch_size: Option<usize>,
+    ) -> Result<bool> {
         use rusqlite::{OptionalExtension, params};
         let (text, hash, len) = self.read_file(a, rel)?;
         let row = self.connection.conn.query_row(
             "SELECT id,file_hash FROM external_documents WHERE archive_id=? AND relative_path=?",
             params![a.id,rel],|r| Ok((r.get::<_,i64>(0)?,r.get::<_,String>(1)?))).optional()?;
         let Some((doc, old_hash)) = row else {
-            self.index_file(a, rel)?;
+            self.index_file_with_vectors(a, rel, embed_fn, None)?;
             return Ok(true);
         };
         if old_hash == hash && !force_content && !forced {
@@ -428,30 +526,182 @@ impl<'a> ExternalStore<'a> {
             self.delete_document_chunks(doc)?;
             tx.execute("DELETE FROM external_chunks WHERE document_id=?", [doc])?;
             tx.execute(
-                "UPDATE external_documents SET file_hash=?,byte_len=?,vec_indexed_at=NULL,
+                "UPDATE external_documents SET file_hash=?,byte_len=?,vec_indexed_at=?,
                 source_slug=?,doc_category=?,layer=?,status=?,title=?,frontmatter_json=?
                 WHERE id=?",
-                params![hash, len as i64, m[0], m[1], m[2], m[3], m[4], m[5], doc],
+                params![
+                    hash,
+                    len as i64,
+                    (embed_fn.is_some() && self.connection.vec_available).then(|| (self.clock)()),
+                    m[0],
+                    m[1],
+                    m[2],
+                    m[3],
+                    m[4],
+                    m[5],
+                    doc
+                ],
             )?;
-            self.insert_chunks(doc, &chunks)?;
+            self.insert_chunks(doc, &chunks, embed_fn, batch_size)?;
         }
         tx.commit()?;
         Ok(true)
     }
     pub fn vector_coverage(&self, archive: i64) -> Result<(i64, i64)> {
-        Ok((
-            0,
-            self.connection.conn.query_row(
-                "SELECT COUNT(*) FROM external_chunks c
+        let eligible = self.connection.conn.query_row(
+            "SELECT COUNT(*) FROM external_chunks c
             JOIN external_documents d ON d.id=c.document_id WHERE d.archive_id=?",
+            [archive],
+            |r| r.get(0),
+        )?;
+        let indexed = if self.connection.vec_available {
+            self.connection.conn.query_row(
+                "SELECT COUNT(*) FROM external_chunks_vec v
+                JOIN external_chunks c ON c.id=v.rowid
+                JOIN external_documents d ON d.id=c.document_id WHERE d.archive_id=?",
                 [archive],
                 |r| r.get(0),
-            )?,
-        ))
+            )?
+        } else {
+            0
+        };
+        Ok((indexed, eligible))
     }
-    pub fn scan(&self, id: i64, _embed_fn: Option<&mut EmbedFn<'_>>) -> Result<ScanResult> {
+    pub fn ensure_encoder_fingerprint(&self, fingerprint: Option<&str>) -> Result<()> {
+        let requested = fingerprint.unwrap_or("").trim();
+        if requested.is_empty() {
+            return Err(store_error(
+                "vector indexing requires an encoder fingerprint",
+            ));
+        }
+        let stored = self.meta(EMBEDDING_FINGERPRINT_KEY)?;
+        let count: i64 = self.connection.conn.query_row(
+            "SELECT COUNT(*) FROM external_chunks_vec",
+            [],
+            |r| r.get(0),
+        )?;
+        if stored.as_deref() == Some(requested) {
+            return Ok(());
+        }
+        if count > 0 {
+            self.validate_encoder_fingerprint(Some(requested))?;
+        }
+        self.connection.conn.execute(
+            "INSERT OR REPLACE INTO external_store_meta(key,value) VALUES (?,?)",
+            [EMBEDDING_FINGERPRINT_KEY, requested],
+        )?;
+        Ok(())
+    }
+    pub fn validate_encoder_fingerprint(&self, fingerprint: Option<&str>) -> Result<()> {
+        let count: i64 = self.connection.conn.query_row(
+            "SELECT COUNT(*) FROM external_chunks_vec",
+            [],
+            |r| r.get(0),
+        )?;
+        if count == 0 {
+            return Ok(());
+        }
+        let requested = fingerprint.unwrap_or("").trim();
+        if requested.is_empty() {
+            return Err(store_error(
+                "vector retrieval requires an encoder fingerprint",
+            ));
+        }
+        let stored = self.meta(EMBEDDING_FINGERPRINT_KEY)?;
+        if stored.is_none() {
+            return Err(store_error(
+                "existing vectors have no recorded encoder fingerprint; \
+                build a fresh or versioned index",
+            ));
+        }
+        if stored.as_deref() != Some(requested) {
+            return Err(store_error(
+                "encoder fingerprint differs from the active vector index; \
+                build a fresh or versioned index",
+            ));
+        }
+        Ok(())
+    }
+    pub fn replace_document_vectors(
+        &self,
+        archive: &ArchiveRow,
+        doc: i64,
+        rel: &str,
+        expected_hash: &str,
+        embed_fn: &mut EmbedFn<'_>,
+    ) -> Result<()> {
+        let (text, hash, _) = self.read_file(archive, rel)?;
+        if hash != expected_hash {
+            return Err(store_error(
+                "source changed; run 'mir context sync' before vector backfill",
+            ));
+        }
+        let chunks = chunk_text(
+            &text,
+            archive.registration.chunk_size,
+            archive.registration.chunk_overlap,
+        )?;
+        let tx = self.connection.conn.unchecked_transaction()?;
+        self.delete_document_chunks(doc)?;
+        tx.execute("DELETE FROM external_chunks WHERE document_id=?", [doc])?;
+        self.insert_chunks(doc, &chunks, Some(embed_fn), None)?;
+        tx.execute(
+            "UPDATE external_documents SET vec_indexed_at=? WHERE id=?",
+            rusqlite::params![(self.clock)(), doc],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+    pub fn reindex_missing_vectors(
+        &self,
+        archive_id: i64,
+        embed_fn: Option<&mut EmbedFn<'_>>,
+        fingerprint: &str,
+    ) -> Result<VectorReindexResult> {
+        let encode = embed_fn
+            .ok_or_else(|| store_error("missing-vector reindex requires an embedding function"))?;
+        if !self.connection.vec_available {
+            return Err(store_error("missing-vector reindex requires sqlite-vec"));
+        }
+        let archive = self.fetch_archive(archive_id)?;
+        self.ensure_encoder_fingerprint(Some(fingerprint))?;
+        let rows = self.connection.conn.prepare(
+            "SELECT d.id,d.relative_path,d.file_hash,d.vec_indexed_at,COUNT(c.id),COUNT(v.rowid)
+             FROM external_documents d LEFT JOIN external_chunks c ON c.document_id=d.id
+             LEFT JOIN external_chunks_vec v ON v.rowid=c.id WHERE d.archive_id=?
+             GROUP BY d.id ORDER BY d.relative_path")?.query_map([archive_id], |r| Ok((
+                r.get::<_,i64>(0)?,r.get::<_,String>(1)?,r.get::<_,String>(2)?,
+                r.get::<_,Option<String>>(3)?,r.get::<_,i64>(4)?,r.get::<_,i64>(5)?)))?
+            .collect::<std::result::Result<Vec<_>,_>>()?;
+        let mut result = VectorReindexResult::default();
+        for (doc, rel, hash, stamp, chunks, vectors) in rows {
+            if chunks == 0 || (chunks == vectors && stamp.is_some()) {
+                result.unchanged += 1;
+                continue;
+            }
+            match self.replace_document_vectors(&archive, doc, &rel, &hash, encode) {
+                Ok(()) => result.reindexed += 1,
+                Err(e) => result.failed.push((rel, e.message)),
+            }
+        }
+        (result.indexed, result.eligible) = self.vector_coverage(archive_id)?;
+        Ok(result)
+    }
+    pub fn scan(&self, id: i64, embed_fn: Option<&mut EmbedFn<'_>>) -> Result<ScanResult> {
+        self.scan_with_vectors(id, embed_fn, None, None)
+    }
+    pub fn scan_with_vectors(
+        &self,
+        id: i64,
+        mut embed_fn: Option<&mut EmbedFn<'_>>,
+        fingerprint: Option<&str>,
+        batch_size: Option<usize>,
+    ) -> Result<ScanResult> {
         use std::collections::BTreeSet;
         let archive = self.fetch_archive(id)?;
+        if embed_fn.is_some() && self.connection.vec_available {
+            self.ensure_encoder_fingerprint(fingerprint)?;
+        }
         let a = &archive.registration;
         let fs: BTreeSet<_> =
             walk_archive(Path::new(&a.root_path), &a.glob_include, &a.glob_exclude)?
@@ -479,13 +729,25 @@ impl<'a> ExternalStore<'a> {
             }
         }
         for rel in fs.difference(&stored) {
-            match self.index_file(&archive, rel) {
+            match self.index_file_with_vectors(
+                &archive,
+                rel,
+                embed_fn.as_mut().map(|f| &mut **f as &mut EmbedFn<'_>),
+                batch_size,
+            ) {
                 Ok(_) => result.inserted += 1,
                 Err(e) => result.failed.push((rel.clone(), format!("insert: {e}"))),
             }
         }
         for rel in fs.intersection(&stored) {
-            match self.reindex_if_changed(&archive, rel, forced, force_content) {
+            match self.reindex_with_vectors(
+                &archive,
+                rel,
+                forced,
+                force_content,
+                embed_fn.as_mut().map(|f| &mut **f as &mut EmbedFn<'_>),
+                batch_size,
+            ) {
                 Ok(true) => result.reindexed += 1,
                 Ok(false) => result.unchanged += 1,
                 Err(e) => result.failed.push((rel.clone(), format!("reindex: {e}"))),
