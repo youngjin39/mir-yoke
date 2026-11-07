@@ -1,8 +1,14 @@
 //! Library-only mirror of bootstrap_adoption.py's validator slices.
 //! Unknown manifest fields are retained where the Python reference retains them.
+#[path = "bootstrap_adoption_main.rs"]
+mod entry;
 #[path = "bootstrap_adoption_phase2.rs"]
 mod phase2;
 use crate::executor_execute::{list_repr, repr};
+pub use entry::{
+    JqOutput, JqRequest, ValidationKind, ValidationOutput, ValidationRequest, atomic_write_json,
+    emit, evidence_digest, evidence_digests, main,
+};
 pub use phase2::{
     COUNT_KEYS, LAYER_KEYS, MemoryConnection, REVIEW_KEYS, SqliteRequest, open_memory,
     scan_content_candidates, validate_content_onboarding, validate_memory, validate_phase2,
@@ -79,6 +85,7 @@ impl std::error::Error for AdoptionError {}
 
 #[derive(Debug)]
 pub enum Error {
+    SystemExit(i32),
     Adoption(AdoptionError),
     Unicode(String),
     Json(String),
@@ -90,6 +97,7 @@ pub enum Error {
 impl Error {
     pub fn class(&self) -> &'static str {
         match self {
+            Self::SystemExit(_) => "SystemExit",
             Self::Adoption(_) => "AdoptionError",
             Self::Unicode(_) => "UnicodeDecodeError",
             Self::Json(_) => "JSONDecodeError",
@@ -100,6 +108,7 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::SystemExit(code) => code.fmt(f),
             Self::Adoption(e) => e.fmt(f),
             Self::Unicode(s) | Self::Json(s) | Self::Io { message: s, .. } => f.write_str(s),
         }
@@ -181,6 +190,59 @@ pub struct GitRequest {
     pub optional_locks: &'static str,
 }
 pub trait Host {
+    fn cwd(&mut self) -> io::Result<PathBuf> {
+        std::env::current_dir()
+    }
+    fn env(&mut self, name: &str) -> Option<String> {
+        std::env::var(name).ok()
+    }
+    fn argv(&mut self) -> Vec<String> {
+        std::env::args().collect()
+    }
+    fn stdout(&mut self, text: &str) -> io::Result<()> {
+        use io::Write;
+        io::stdout().lock().write_all(text.as_bytes())
+    }
+    fn stderr(&mut self, text: &str) -> io::Result<()> {
+        use io::Write;
+        io::stderr().lock().write_all(text.as_bytes())
+    }
+    fn jq(&mut self, request: &JqRequest) -> io::Result<JqOutput> {
+        let output = Command::new(&request.argv[0])
+            .args(&request.argv[1..])
+            .output()?;
+        Ok(JqOutput {
+            returncode: output.status.code().unwrap_or(-1),
+            stdout: output.stdout,
+        })
+    }
+    /// os.replace semantics on Unix and Windows, including overwriting an existing file.
+    fn replace(&mut self, source: &Path, destination: &Path) -> io::Result<()> {
+        tempfile::TempPath::try_from_path(source)?
+            .persist(destination)
+            .map_err(|e| e.error)
+    }
+    /// Optional observation seam; None runs the real P02/P03 validator.
+    fn validation(
+        &mut self,
+        _request: &ValidationRequest<'_>,
+    ) -> Option<Result<ValidationOutput, Error>> {
+        None
+    }
+    fn digest(&mut self, _relative: &str, _path: &Path) -> Option<Result<String, Error>> {
+        None
+    }
+    fn digests(&mut self, _root: &Path, _surfaces: &Value) -> Option<Result<Vec<Value>, Error>> {
+        None
+    }
+    fn install_evaluator(
+        &mut self,
+        root: &Path,
+        source: &Path,
+        local: Option<&Path>,
+    ) -> Option<Value> {
+        entry::install_evaluator(root, source, local, self)
+    }
     fn scan_content_candidates(&mut self, root: &Path) -> Result<Vec<Value>, String> {
         scan_content_candidates(root)
     }
