@@ -77,7 +77,8 @@ pub fn open_memory(request: &SqliteRequest) -> Result<Box<dyn MemoryConnection>,
         .map_err(sqlite_message)
 }
 
-const TEXT_EXTENSIONS: &[&str] = &["md", "txt", "rst", "json", "yaml", "yml", "toml", "csv"];
+pub(crate) const TEXT_EXTENSIONS: &[&str] =
+    &["md", "txt", "rst", "json", "yaml", "yml", "toml", "csv"];
 const OTHER_EXTENSIONS: &[&str] = &[
     "doc", "docx", "htm", "html", "odt", "pages", "pdf", "ppt", "pptx", "rtf", "xls", "xlsx",
 ];
@@ -110,21 +111,25 @@ const SCAN_EXCLUDES: &[&str] = &[
     "template_protected_paths.yaml",
     "uv.lock",
 ];
-fn sorted_children(path: &Path) -> Result<Vec<PathBuf>, String> {
+fn sorted_children_typed(path: &Path) -> Result<Vec<PathBuf>, Error> {
     let mut children = fs::read_dir(path)
-        .map_err(|e| io_error(path, e).to_string())?
+        .map_err(|e| io_error(path, e))?
         .map(|entry| entry.map(|e| e.path()))
         .collect::<io::Result<Vec<_>>>()
-        .map_err(|e| io_error(path, e).to_string())?;
+        .map_err(|e| io_error(path, e))?;
     children.sort();
     Ok(children)
 }
-fn discover_content(root: &Path, path: &Path, files: &mut Vec<PathBuf>) -> Result<(), String> {
+pub(crate) fn discover_content_typed(
+    root: &Path,
+    path: &Path,
+    files: &mut Vec<PathBuf>,
+) -> Result<(), Error> {
     if path.is_symlink() {
-        return Err(format!(
+        return Err(adoption(format!(
             "content archive contains a symlink: {}",
             wire(path.strip_prefix(root).unwrap_or(path))
-        ));
+        )));
     }
     if path.is_file() {
         let ext = path
@@ -136,26 +141,29 @@ fn discover_content(root: &Path, path: &Path, files: &mut Vec<PathBuf>) -> Resul
             files.push(path.into());
         }
     } else if path.is_dir() {
-        for child in sorted_children(path)? {
-            discover_content(root, &child, files)?;
+        for child in sorted_children_typed(path)? {
+            discover_content_typed(root, &child, files)?;
         }
     }
     Ok(())
 }
 pub fn scan_content_candidates(root: &Path) -> Result<Vec<Value>, String> {
+    scan_content_candidates_typed(root).map_err(|error| error.to_string())
+}
+pub(crate) fn scan_content_candidates_typed(root: &Path) -> Result<Vec<Value>, Error> {
     let mut candidates = Vec::new();
-    for child in sorted_children(root)? {
+    for child in sorted_children_typed(root)? {
         let name = child.file_name().and_then(|s| s.to_str()).unwrap_or("");
         if name.starts_with('.') || SCAN_EXCLUDES.contains(&name) {
             continue;
         }
         if child.is_symlink() {
-            return Err(format!(
+            return Err(adoption(format!(
                 "content archive path must not be a symlink: {name}"
-            ));
+            )));
         }
         let mut files = Vec::new();
-        discover_content(root, &child, &mut files)?;
+        discover_content_typed(root, &child, &mut files)?;
         if files.is_empty() {
             continue;
         }

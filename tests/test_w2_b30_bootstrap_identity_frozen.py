@@ -149,6 +149,15 @@ for action, values in {
 for i, body in enumerate(['small alpha searchable', 'TODO placeholder unknown', '123456',
                           '\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9', 'tiny']):
     CASES[f'query.{i}'] = lambda tmp, b=body: M._acceptance_query(b, 'notes')
+for i, body in enumerate(['de\u017fcribe searchable', 'DESCR\u0130BE descr\u0131be searchable',
+                          '\u00e9\u00e9\u00e9 tiny searchable', 'abc\u0301def searchable']):
+    CASES[f'query_edge.{i}'] = lambda tmp, b=body: M._acceptance_query(b, 'notes')
+for i, values in enumerate([[' a\x1c', '\x1fb,\x1c']]):
+    CASES[f'stack_edge.{i}'] = lambda tmp, v=values: M._normalise_stack(v)
+for i, pair in enumerate([('descr\u0130be it', ['descr\u0131be']),
+        ('todoist planning', ['mytodo', 'todo_list', 'de\u017fcribe']),
+        ('Curate records', ['replace-me', 'replace me', 'replaceme'])]):
+    CASES[f'identity_edge.{i}'] = lambda tmp, p=pair: M._validate_project_identity(*p)
 CASES['definition.text'] = lambda tmp: M._project_definition_text('Curate records', ['a', 'b'])
 MANIFEST = dict(schema_version=1, profile='content_workspace', archives=[{}], scan={})
 for i, value in enumerate(['missing', '{', '[]', '{}', b'\xff'] + [json.dumps(v) for v in

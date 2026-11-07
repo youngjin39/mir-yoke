@@ -3,7 +3,7 @@
 #[path = "bootstrap_adoption_main.rs"]
 mod entry;
 #[path = "bootstrap_adoption_phase2.rs"]
-mod phase2;
+pub(super) mod phase2;
 use crate::executor_execute::{list_repr, repr};
 pub use entry::{
     JqOutput, JqRequest, ValidationKind, ValidationOutput, ValidationRequest, atomic_write_json,
@@ -130,7 +130,7 @@ impl From<AdoptionError> for Error {
 fn adoption(message: impl Into<String>) -> Error {
     AdoptionError(message.into()).into()
 }
-fn wire(path: &Path) -> String {
+pub(super) fn wire(path: &Path) -> String {
     // Python Path.as_posix() also preserves literal backslashes on Unix.
     #[cfg(windows)]
     {
@@ -144,7 +144,7 @@ fn wire(path: &Path) -> String {
         path.display().to_string()
     }
 }
-fn io_error(path: &Path, e: io::Error) -> Error {
+pub(super) fn io_error(path: &Path, e: io::Error) -> Error {
     let (class, errno, message) = match e.kind() {
         io::ErrorKind::NotFound => ("FileNotFoundError", 2, "No such file or directory"),
         io::ErrorKind::PermissionDenied => ("PermissionError", 13, "Permission denied"),
@@ -162,7 +162,7 @@ fn io_error(path: &Path, e: io::Error) -> Error {
         message: format!("[Errno {errno}] {message}: {}", repr(&wire(path))),
     }
 }
-fn decode(bytes: Vec<u8>) -> Result<String, Error> {
+pub(super) fn decode(bytes: Vec<u8>) -> Result<String, Error> {
     String::from_utf8(bytes).map_err(|e| {
         let start = e.utf8_error().valid_up_to();
         let len = e
@@ -273,7 +273,7 @@ fn read(path: &Path, host: &mut dyn Host) -> Result<Vec<u8>, Error> {
 fn read_text(path: &Path, host: &mut dyn Host) -> Result<String, Error> {
     decode(read(path, host)?).map(|s| s.replace("\r\n", "\n").replace('\r', "\n"))
 }
-fn json_text(text: &str) -> Result<Value, Error> {
+pub(super) fn json_text(text: &str) -> Result<Value, Error> {
     crate::executor_local::LocalConfig::default()
         .parse_argument(text)
         .map_err(|e| Error::Json(e.to_string()))
@@ -459,7 +459,7 @@ static RAW_PYTHON: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
 fn python_space(pattern: &str) -> String {
     pattern.replace(r"\s", r"[\s\x1c-\x1f]")
 }
-fn is_python_space(c: char) -> bool {
+pub(super) fn is_python_space(c: char) -> bool {
     c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
 }
 /// Python `str.splitlines()`: every Unicode line boundary, with "\r\n" as one.

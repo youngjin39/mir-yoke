@@ -12,6 +12,8 @@ pub mod changes;
 
 pub mod adoption_native;
 #[forbid(unsafe_code)]
+pub mod bootstrap;
+#[forbid(unsafe_code)]
 pub mod bootstrap_adoption;
 pub mod capability;
 pub mod project_hooks;
