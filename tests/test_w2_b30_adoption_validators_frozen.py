@@ -154,6 +154,21 @@ CASES.update(parse=parse, paths=paths,
 for key, body in [('missing', None), ('invalid', '{'), ('array', '[]'), ('null', 'null'),
                   ('valid', '{"x":1}'), ('unicode', b'"\xff"')]:
     CASES[f'load.{key}'] = lambda tmp, b=body: load(tmp, b)
+# Witness: json.loads(bytes) detects UTF-8 BOM/UTF-16/UTF-32 (lone surrogates are Python-only).
+for key, body in [('bom', b'\xef\xbb\xbf{"x":1}'), ('utf16', '{"x":1}'.encode('utf-16')),
+                  ('utf16le', '{"x":1}'.encode('utf-16-le')), ('utf32', '{"x":1}'.encode('utf-32')),
+                  ('start_c0', b'"\xc0"'),
+                  ('truncated', b'"\xe2\x82'), ('span', b'"\xe2\x82('),
+                  ('bom_only', b'\xef\xbb\xbf'), ('bom_invalid', b'\xef\xbb\xbf"\xff"'),
+                  ('utf16be', '{"x":1}'.encode('utf-16-be')),
+                  ('utf16_pair', '{"x":"\U0001F600"}'.encode('utf-16')),
+                  ('utf16_truncated', '{"x":1}'.encode('utf-16') + b'A'),
+                  ('utf32_truncated', '{"x":1}'.encode('utf-32') + b'A\x00'),
+                  ('utf32_range', b'\x00\x00\x00\x00\xff\xff\x11\x00'),
+                  ('utf32be', b'\x00\x00\x00{\x00\x00\x00}'),
+                  ('utf32le', b'{\x00\x00\x00}\x00\x00\x00'),
+                  ('utf32_edge', b'\x00\x00\x00{\x00\x11\x00\x00')]:
+    CASES[f'load.{key}'] = lambda tmp, b=body: load(tmp, b)
 for key, changes in [('valid', {}), ('bad', dict(slug='BAD', overlay_archetype='',
         repository_type='other', purpose='TODO', technology_stack=[])),
         ('mismatch', dict(slug='other', overlay_archetype='infra_runtime',
@@ -221,6 +236,18 @@ def profile_maps(tmp):
     return result
 
 CASES['profile.maps'] = profile_maps
+# Witness: Python splitlines() and str.strip() boundaries, beyond newline and ASCII space.
+CASES['text.unicode_space'] = lambda tmp: matrix(tmp, ['\x1f', '\x1c ready \x1d', '\u3000TODO'],
+    lambda v: M._non_placeholder_text(v, label='text'))
+CASES['placeholders.line_boundaries'] = lambda tmp: [M._contains_unresolved_placeholder(v) for v in
+    ['tbd:\x0c0', 'tbd: 0\x0bTODO', 'ready\u2029unknown', 'tbd: 0\x85', 'todo\r\n']]
+CASES['raw_python.line_boundaries'] = lambda tmp: [M._has_raw_python(s) for s in
+    ['a\x0bpython x', 'a\x85python x', 'a\u2028python3', 'a\x1cpython', '\x1f#;python3 x',
+     '# x\x0cpython x', 'a\r\npython x']]
+CASES['placeholders.unit_separator'] = lambda tmp: [M._contains_unresolved_placeholder(v) for v in
+    ['tbd:\x1f0', 'todo =\x1e0']]
+CASES['raw_python.unit_separator'] = lambda tmp: [M._has_raw_python(s) for s in
+    ['a;\x1fpython x', 'python\x1f']]
 RECORDS = json.loads(FIXTURE.read_text()) if FIXTURE.exists() else {}
 def test_every_case_has_a_frozen_record():
     assert sorted(RECORDS) == sorted(CASES)
