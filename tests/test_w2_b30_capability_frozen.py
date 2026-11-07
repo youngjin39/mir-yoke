@@ -228,6 +228,21 @@ CASES.update({f'capability.{cmd}': capability_case(cmd) for cmd in
 CASES['changes.snapshot_and_diff'] = change_case
 
 
+
+def excluded_case(tmp):
+    """Every excluded name is skipped at any depth, as a directory or a file; near names stay."""
+    for name in ('.git/a', '.pytest_cache/b', '.venv/c', '__pycache__/d.pyc',
+                 'pkg/__pycache__/m.pyc', 'pkg/.venv/e', 'docs/.git', '.venvx/keep',
+                 'pkg/__pycache__x/n', 'pkg/keep.py'):
+        path = tmp / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(name)
+    return sorted(changes.snapshot_project(tmp))
+
+
+CASES['changes.excluded'] = excluded_case
+
+
 def receipt_failure(tmp):
     target = tmp / 'project-hooks.json'
     with mock.patch.object(Path, 'replace', side_effect=OSError('synthetic replace failure')):

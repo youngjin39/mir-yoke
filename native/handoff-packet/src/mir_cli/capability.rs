@@ -1,0 +1,363 @@
+//! Library-only capability CLI. Provider execution is explicitly caller supplied.
+#![forbid(unsafe_code)]
+use super::{changes, memory::Output};
+use crate::executor_execute::repr;
+use serde_json::{Map, Value, json};
+use std::path::Path;
+
+const COMMANDS: &[&str] = &["status", "check", "sync", "update", "finalize", "attest"];
+const TOP: &str = "usage: mir capability [-h] {status,check,sync,update,finalize,attest} ...\n";
+
+/// The CLI owns parsing and evidence; the caller owns provider authority and state.
+pub trait Manager {
+    fn initialize(
+        &mut self,
+        project_root: &Path,
+        config_path: Option<&Path>,
+        capability_home: Option<&Path>,
+    ) -> Result<(), String>;
+    fn call(
+        &mut self,
+        method: &str,
+        args: Vec<Value>,
+        kwargs: Map<String, Value>,
+    ) -> Result<Value, String>;
+}
+
+fn usage(command: &str) -> String {
+    if command.is_empty() {
+        return TOP.into();
+    }
+    let pad = " ".repeat(23 + command.len());
+    let tail = match command {
+        "status" => "[--profile PROFILE]".into(),
+        "check" => "[--profile PROFILE] [--mcp | --no-mcp]".into(),
+        "sync" | "update" => "[--profile PROFILE] [--mcp | --no-mcp] [--apply]".into(),
+        "finalize" => "[--apply] [--after-restart]".into(),
+        _ => format!(
+            "--runtime {{claude-code,codex-cli-desktop}}\n\
+{pad}[--observed-skill OBSERVED_SKILL]\n\
+{pad}[--observed-hook OBSERVED_HOOK] [--apply]\n\
+{pad}[--mcp-evidence MCP_EVIDENCE]"
+        ),
+    };
+    format!(
+        "usage: mir capability {command} [-h] [--project-root PROJECT_ROOT]\n\
+{pad}[--config CONFIG]\n\
+{pad}[--capability-home CAPABILITY_HOME] [--json]\n{pad}{tail}\n"
+    )
+}
+fn diag(command: &str, message: &str) -> Output {
+    let suffix = if command.is_empty() {
+        String::new()
+    } else {
+        format!(" {command}")
+    };
+    (
+        2,
+        vec![],
+        format!(
+            "{}mir capability{suffix}: error: {message}\n",
+            usage(command)
+        )
+        .into_bytes(),
+    )
+}
+fn help(command: &str) -> Output {
+    let mut out = usage(command);
+    if command.is_empty() {
+        out.push_str(concat!(
+            "\npositional arguments:\n  {status,check,sync,update,finalize,attest}\n",
+            "\noptions:\n  -h, --help            show this help message and exit\n"
+        ));
+    } else {
+        out.push_str(concat!(
+            "\noptions:\n  -h, --help            show this help message and exit\n",
+            "  --project-root PROJECT_ROOT\n  --config CONFIG\n",
+            "  --capability-home CAPABILITY_HOME\n  --json\n"
+        ));
+        if ["status", "check", "sync", "update"].contains(&command) {
+            out.push_str("  --profile PROFILE\n");
+        }
+        if ["check", "sync", "update"].contains(&command) {
+            out.push_str(concat!(
+                "  --mcp, --no-mcp       explicitly select mir-mcp (or remove it with --no-\n",
+                "                        mcp); otherwise retain the lock\n"
+            ));
+        }
+        if ["sync", "update"].contains(&command) {
+            out.push_str(concat!(
+                "  --apply               materialize the pinned provider and update its exact-\n",
+                "                        SHA lock\n"
+            ));
+        }
+        if command == "finalize" {
+            out.push_str(concat!(
+                "  --apply\n",
+                "  --after-restart       confirm that operator observations came from restarted\n",
+                "                        runtime sessions\n"
+            ));
+        }
+        if command == "attest" {
+            out.push_str(concat!(
+                "  --runtime {claude-code,codex-cli-desktop}\n",
+                "  --observed-skill OBSERVED_SKILL\n",
+                "                        operator-observed namespaced skill from the current\n",
+                "                        runtime catalog\n  --observed-hook OBSERVED_HOOK\n",
+                "                        operator-observed namespaced hook from the current\n",
+                "                        runtime session\n  --apply\n",
+                "  --mcp-evidence MCP_EVIDENCE\n",
+                "                        JSON object of operator-observed MCP evidence keyed by\n",
+                "                        package name\n"
+            ));
+        }
+    }
+    (0, out.into_bytes(), vec![])
+}
+fn option_like(value: &str) -> bool {
+    value.len() > 1 && value.starts_with('-') && value[1..].parse::<f64>().is_err()
+}
+fn ascii_json(value: &Value, pretty: bool) -> Result<String, String> {
+    let encoded = if pretty {
+        serde_json::to_string_pretty(value)
+    } else {
+        serde_json::to_string(value)
+    }
+    .map_err(|error| error.to_string())?;
+    let mut out = String::new();
+    for ch in encoded.chars() {
+        if ch.is_ascii() {
+            out.push(ch);
+        } else {
+            let mut units = [0; 2];
+            for unit in ch.encode_utf16(&mut units) {
+                out.push_str(&format!("\\u{unit:04x}"));
+            }
+        }
+    }
+    out.push('\n');
+    Ok(out)
+}
+/// Dispatch without discovering or creating a provider.
+pub fn main(argv: &[&str], manager: &mut impl Manager) -> Output {
+    let Some(&command) = argv.first() else {
+        return diag("", "the following arguments are required: command");
+    };
+    if matches!(command, "-h" | "--help") {
+        return help("");
+    }
+    if !COMMANDS.contains(&command) {
+        return diag(
+            "",
+            &format!(
+                "argument command: invalid choice: {} (choose from {})",
+                repr(command),
+                COMMANDS.join(", ")
+            ),
+        );
+    }
+    let mut options = vec![
+        ("--help", false),
+        ("--project-root", true),
+        ("--config", true),
+        ("--capability-home", true),
+        ("--json", false),
+    ];
+    if ["status", "check", "sync", "update"].contains(&command) {
+        options.push(("--profile", true));
+    }
+    if ["check", "sync", "update"].contains(&command) {
+        options.extend([("--mcp", false), ("--no-mcp", false)]);
+    }
+    if ["sync", "update", "finalize", "attest"].contains(&command) {
+        options.push(("--apply", false));
+    }
+    if command == "finalize" {
+        options.push(("--after-restart", false));
+    }
+    if command == "attest" {
+        options.extend([
+            ("--runtime", true),
+            ("--observed-skill", true),
+            ("--observed-hook", true),
+            ("--mcp-evidence", true),
+        ]);
+    }
+    let mut values = Map::new();
+    let (mut skills, mut hooks, mut unknown) = (vec![], vec![], vec![]);
+    let (mut i, mut parse_options) = (1, true);
+    while let Some(&token) = argv.get(i) {
+        i += 1;
+        if token == "--" && parse_options {
+            parse_options = false;
+            continue;
+        }
+        if !parse_options || !option_like(token) {
+            unknown.push(token);
+            continue;
+        }
+        let (name, explicit) = token
+            .split_once('=')
+            .map_or((token, None), |(n, v)| (n, Some(v)));
+        let name = if name == "-h" { "--help" } else { name };
+        let exact = options.iter().find(|o| o.0 == name);
+        let matching: Vec<_> = options
+            .iter()
+            .filter(|o| name.starts_with("--") && o.0.starts_with(name))
+            .collect();
+        let option = match (exact, matching.as_slice()) {
+            (Some(o), _) => o,
+            (None, [o]) => *o,
+            (None, []) => {
+                unknown.push(token);
+                continue;
+            }
+            _ => {
+                return diag(
+                    command,
+                    &format!(
+                        "ambiguous option: {name} could match {}",
+                        matching.iter().map(|o| o.0).collect::<Vec<_>>().join(", ")
+                    ),
+                );
+            }
+        };
+        let value = if option.1 {
+            if let Some(v) = explicit {
+                v
+            } else {
+                let Some(&v) = argv.get(i).filter(|v| !option_like(v)) else {
+                    return diag(
+                        command,
+                        &format!("argument {}: expected one argument", option.0),
+                    );
+                };
+                i += 1;
+                v
+            }
+        } else {
+            if let Some(v) = explicit {
+                return diag(
+                    command,
+                    &format!(
+                        "argument {}: ignored explicit argument {}",
+                        option.0,
+                        repr(v)
+                    ),
+                );
+            }
+            ""
+        };
+        match option.0 {
+            "--help" => return help(command),
+            "--runtime" if !["claude-code", "codex-cli-desktop"].contains(&value) => {
+                return diag(
+                    command,
+                    &format!(
+                        concat!(
+                            "argument --runtime: invalid choice: {} ",
+                            "(choose from claude-code, codex-cli-desktop)"
+                        ),
+                        repr(value)
+                    ),
+                );
+            }
+            "--observed-skill" => skills.push(json!(value)),
+            "--observed-hook" => hooks.push(json!(value)),
+            "--mcp" => {
+                values.insert("mcp".into(), json!(true));
+            }
+            "--no-mcp" => {
+                values.insert("mcp".into(), json!(false));
+            }
+            key => {
+                values.insert(
+                    key.into(),
+                    if option.1 { json!(value) } else { json!(true) },
+                );
+            }
+        }
+    }
+    if command == "attest" && !values.contains_key("--runtime") {
+        return diag(command, "the following arguments are required: --runtime");
+    }
+    if !unknown.is_empty() {
+        return diag(
+            "",
+            &format!("unrecognized arguments: {}", unknown.join(" ")),
+        );
+    }
+    let mut run = || -> Result<Value, String> {
+        let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
+        let home = std::env::var_os("HOME")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| cwd.clone());
+        let root = crate::mir_core::config::loader::resolve_path(
+            &cwd,
+            values
+                .get("--project-root")
+                .and_then(Value::as_str)
+                .unwrap_or("."),
+            &home,
+        )
+        .map_err(|e| e.to_string())?;
+        manager.initialize(
+            &root,
+            values
+                .get("--config")
+                .and_then(Value::as_str)
+                .map(Path::new),
+            values
+                .get("--capability-home")
+                .and_then(Value::as_str)
+                .map(Path::new),
+        )?;
+        let before = if command == "status" {
+            None
+        } else {
+            Some(changes::snapshot_project(&root).map_err(|e| e.to_string())?)
+        };
+        let mut kwargs = Map::new();
+        let args = match command {
+            "status" | "check" | "sync" | "update" => {
+                if let Some(v) = values.get("mcp") {
+                    kwargs.insert("mcp".into(), v.clone());
+                }
+                vec![values.get("--profile").cloned().unwrap_or(Value::Null)]
+            }
+            "finalize" => {
+                kwargs.insert(
+                    "after_restart".into(),
+                    json!(values.contains_key("--after-restart")),
+                );
+                vec![]
+            }
+            _ => {
+                if let Some(path) = values.get("--mcp-evidence").and_then(Value::as_str) {
+                    let evidence = crate::mir_core::capabilities::mcp::closed_json(Path::new(path))
+                        .ok_or("cannot read MCP evidence JSON object")?;
+                    kwargs.insert("observed_mcp".into(), evidence);
+                }
+                vec![values["--runtime"].clone(), json!(skills), json!(hooks)]
+            }
+        };
+        if ["sync", "update", "finalize", "attest"].contains(&command) {
+            kwargs.insert("apply".into(), json!(values.contains_key("--apply")));
+        }
+        let mut result = manager.call(command, args, kwargs)?;
+        if let Some(before) = before {
+            result["changed_paths"] = json!(changes::changed_paths(
+                &before,
+                &changes::snapshot_project(&root).map_err(|e| e.to_string())?
+            ));
+        } else {
+            result["change_evidence"] =
+                json!({"status":"not-applicable","reason":"read-only-operation"});
+        }
+        Ok(result)
+    };
+    match run().and_then(|v| ascii_json(&v, !values.contains_key("--json"))) {
+        Ok(out) => (0, out.into_bytes(), vec![]),
+        Err(e) => (1, vec![], format!("ERROR: {e}\n").into_bytes()),
+    }
+}

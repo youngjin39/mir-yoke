@@ -14,3 +14,5 @@ pub mod yaml;
 
 pub mod conductor;
 pub mod engine;
+
+pub mod capabilities;

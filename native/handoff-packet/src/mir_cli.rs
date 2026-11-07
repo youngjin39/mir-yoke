@@ -7,3 +7,9 @@ pub mod policy;
 pub mod relations;
 
 pub mod r#loop;
+
+pub mod changes;
+
+pub mod adoption_native;
+pub mod capability;
+pub mod project_hooks;
