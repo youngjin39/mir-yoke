@@ -1120,6 +1120,51 @@ fn doctor_main(
     as_json: bool,
     clock: impl Fn() -> std::time::SystemTime,
 ) -> Result<Output, Error> {
+    let mut stderr = String::new();
+    let (code, report) = run_doctor(root, None, root, clock, |path| {
+        let connection = store::connect(path, None)?;
+        stderr.push_str(GC_DOCTOR_WARNING);
+        Ok(connection)
+    })?;
+    let errors = report["errors"].as_array().into_iter().flatten();
+    let text = if as_json {
+        format!("{}\n", ascii_json_text(&report.to_string()))
+    } else {
+        let mut text = format!(
+            "memory doctor: {}\n",
+            report["status"].as_str().unwrap_or("")
+        );
+        for error in errors {
+            text.push_str(&format!("  [not-ready] {}\n", error.as_str().unwrap_or("")));
+        }
+        if report["status"] == "ready" {
+            for (label, value) in [
+                ("db", &report["memory"]["db_path"]),
+                ("schema", &report["memory"]["schema_version"]),
+                ("archives", &report["memory"]["archives_registered"]),
+                ("vector", &report["vector"]["status"]),
+            ] {
+                text.push_str(&format!(
+                    "  {label}: {}\n",
+                    value
+                        .as_str()
+                        .map_or_else(|| value.to_string(), str::to_owned)
+                ));
+            }
+        }
+        text
+    };
+    Ok((code, text.into_bytes(), stderr.into_bytes()))
+}
+
+/// Library doctor boundary; reports the configured DB while inspecting a staged copy.
+pub fn run_doctor(
+    root: &Path,
+    db_override: Option<&Path>,
+    home: &Path,
+    clock: impl Fn() -> std::time::SystemTime,
+    mut connect: impl FnMut(&Path) -> Result<store::Connection, store::Error>,
+) -> Result<(i32, serde_json::Value), Error> {
     use crate::mir_core::config::loader;
     use serde_json::json;
     let mut report = json!({"status":"not_ready","errors":[],"memory":{
@@ -1131,7 +1176,6 @@ fn doctor_main(
         "embedding":"disabled","status":"off"}});
     let mut errors = Vec::<String>::new();
     let mut code = 1;
-    let mut stderr = String::new();
     let mut run = || -> Result<(), Box<dyn std::error::Error>> {
         if !root.is_dir() {
             code = 2;
@@ -1146,8 +1190,7 @@ fn doctor_main(
             errors.push("active harness_a.toml is missing".into());
             return Ok(());
         }
-        // Home is injected as root; no host-specific discovery in this port slice.
-        let cfg = match loader::load_config(Some(root), root, root) {
+        let cfg = match loader::load_config(Some(root), home, root) {
             Ok(c) => c,
             Err(e) => {
                 code = 2;
@@ -1171,7 +1214,7 @@ fn doctor_main(
             errors.push("at least one external archive must be configured".into());
         }
         for archive in archives {
-            let path = loader::resolve_path(root, archive["root"].as_str().unwrap_or(""), root)?;
+            let path = loader::resolve_path(root, archive["root"].as_str().unwrap_or(""), home)?;
             if !path.is_dir() {
                 errors.push(format!(
                     "configured archive root is missing: {} ({})",
@@ -1180,22 +1223,27 @@ fn doctor_main(
                 ));
             }
         }
-        let db = loader::resolve_memory_db(root, &cfg, root)?;
+        let configured_db = loader::resolve_memory_db(root, &cfg, home)?;
         report["memory"]["db_path"] = json!(
-            db.strip_prefix(root)
-                .unwrap_or(&db)
+            configured_db
+                .strip_prefix(root)
+                .unwrap_or(&configured_db)
                 .to_str()
                 .ok_or_else(|| std::io::Error::other("non-UTF-8 DB path"))?
                 .replace('\\', "/")
         );
+        let db = db_override.unwrap_or(&configured_db);
         if !db.is_file() {
             errors.push(format!("memory database is missing: {}", db.display()));
             return Ok(());
         }
-        let connection = store::connect(&db, None)?;
-        stderr.push_str(GC_DOCTOR_WARNING);
+        let connection = connect(db)?;
         let conn = &connection.conn;
-        report["vector"]["sqlite_vec"] = json!("unavailable");
+        report["vector"]["sqlite_vec"] = json!(if connection.vec_available {
+            "available"
+        } else {
+            "unavailable"
+        });
         let integrity: Vec<String> = conn
             .prepare("PRAGMA integrity_check")?
             .query_map([], |r| r.get(0))?
@@ -1288,8 +1336,8 @@ fn doctor_main(
                 continue;
             };
             let expected =
-                loader::resolve_path(root, archive["root"].as_str().unwrap_or(""), root)?;
-            let actual = loader::resolve_path(root, &row.2, root)?;
+                loader::resolve_path(root, archive["root"].as_str().unwrap_or(""), home)?;
+            let actual = loader::resolve_path(root, &row.2, home)?;
             if actual != expected {
                 errors.push(format!(
                     "archive root drift for {quoted}: {} != {}",
@@ -1397,33 +1445,5 @@ fn doctor_main(
         report["status"] = json!("ready");
     }
     report["errors"] = json!(errors);
-    let text = if as_json {
-        // json.dumps(sort_keys=True) with the default ensure_ascii=True.
-        format!("{}\n", ascii_json_text(&report.to_string()))
-    } else {
-        let mut text = format!(
-            "memory doctor: {}\n",
-            report["status"].as_str().unwrap_or("")
-        );
-        for error in &errors {
-            text.push_str(&format!("  [not-ready] {error}\n"));
-        }
-        if errors.is_empty() {
-            for (label, value) in [
-                ("db", &report["memory"]["db_path"]),
-                ("schema", &report["memory"]["schema_version"]),
-                ("archives", &report["memory"]["archives_registered"]),
-                ("vector", &report["vector"]["status"]),
-            ] {
-                text.push_str(&format!(
-                    "  {label}: {}\n",
-                    value
-                        .as_str()
-                        .map_or_else(|| value.to_string(), str::to_owned)
-                ));
-            }
-        }
-        text
-    };
-    Ok((code, text.into_bytes(), stderr.into_bytes()))
+    Ok((code, report))
 }

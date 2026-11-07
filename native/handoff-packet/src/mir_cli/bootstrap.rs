@@ -1,8 +1,13 @@
 //! Library-only bootstrap identity, argument and storage policy.
 #[path = "bootstrap_authored.rs"]
 mod authored;
+#[path = "bootstrap_main_host.rs"]
+mod main_host;
+#[path = "bootstrap_main.rs"]
+mod main_port;
 #[path = "bootstrap_memory.rs"]
 mod memory;
+pub use main_port::{MainOutput, main};
 #[path = "bootstrap_surfaces.rs"]
 mod surfaces;
 pub use memory::{build_projection_updates, stage_memory_db, validate_content_memory_acceptance};
@@ -70,7 +75,7 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 /// All process environment and storage observations are supplied by the caller.
-pub trait Host {
+pub trait Host: Sized {
     fn env(&mut self, name: &str) -> Option<String>;
     /// shutil.which remains an injected observation; no executable is launched.
     fn which(&mut self, _name: &str) -> Option<PathBuf> {
@@ -131,6 +136,238 @@ pub trait Host {
         path: &Path,
     ) -> Result<crate::mir_core::memory::store::Connection, Error> {
         memory::connect(path)
+    }
+    fn cwd(&mut self) -> Result<PathBuf, Error> {
+        self.resolve(Path::new("."))
+    }
+    fn platform_system(&mut self) -> String {
+        if cfg!(windows) {
+            "Windows"
+        } else if cfg!(target_os = "macos") {
+            "Darwin"
+        } else {
+            "Linux"
+        }
+        .into()
+    }
+    fn platform_release(&mut self) -> String {
+        String::new()
+    }
+    fn python_version(&mut self) -> String {
+        String::new()
+    }
+    fn in_virtualenv(&mut self) -> bool {
+        // A Rust caller supplies Python prefix attestation by overriding this boundary.
+        self.env("VIRTUAL_ENV")
+            .is_some_and(|value| !value.is_empty())
+    }
+    fn python_argv0(&mut self) -> PathBuf {
+        PathBuf::from("mir")
+    }
+    fn now_iso(&mut self) -> Result<String, Error> {
+        crate::mir_core::audit_log::now_iso(std::time::SystemTime::now())
+            .map_err(|error| Error::new("ValueError", error.to_string()))
+    }
+    fn source_control_ownership(&mut self, root: &Path) -> Result<(Vec<String>, Value), Error> {
+        let result = source_control_ownership(root, self)?;
+        Ok((main_port::strings(&result[0]), result[1].clone()))
+    }
+    fn storage_preflight(
+        &mut self,
+        root: &Path,
+        requested: Option<&Path>,
+    ) -> Result<(Vec<String>, Value), Error> {
+        storage_preflight(root, requested, self)
+    }
+    fn validate_project_identity(
+        &mut self,
+        purpose: Option<&str>,
+        stack: &[String],
+    ) -> Vec<String> {
+        validate_project_identity(purpose, stack)
+    }
+    fn validate_surfaces(&mut self, root: &Path) -> Result<(Vec<String>, Value), Error> {
+        validate_surfaces(root, self)
+    }
+    fn load_capability_sources(&mut self, root: &Path, profile: &str) -> Result<Value, Error> {
+        load_capability_sources(root, profile)
+    }
+    fn load_profile(&mut self, root: &Path) -> Result<Value, Error> {
+        main_host::load_profile(root)
+    }
+    fn load_boundary(&mut self, root: &Path) -> Result<Value, Error> {
+        main_host::load_boundary(root, self)
+    }
+    fn is_provider_owner(&mut self, profile: &Value, boundary: &Value) -> Result<bool, Error> {
+        main_host::is_provider_owner(profile, boundary)
+    }
+    fn validate_existing_profile(&mut self, path: &Path, profile: &str) -> Result<Value, Error> {
+        validate_existing_profile(path, profile)
+    }
+    fn is_raw_provider_checkout(&mut self, root: &Path) -> Result<bool, Error> {
+        is_raw_provider_checkout(root, self)
+    }
+    fn load_config(&mut self, root: &Path) -> Result<Value, Error> {
+        let home = self.expanduser(Path::new("~"))?;
+        main_host::load_config(root, &home)
+    }
+    fn resolve_memory_db(&mut self, root: &Path, cfg: &Value) -> Result<PathBuf, Error> {
+        let home = self.expanduser(Path::new("~"))?;
+        main_host::resolve_memory_db(root, cfg, &home)
+    }
+    // Preserve the Python authored-files boundary's independently observable arguments.
+    #[allow(clippy::too_many_arguments)]
+    fn ensure_authored_files(
+        &mut self,
+        root: &Path,
+        slug: &str,
+        profile: &str,
+        purpose: &str,
+        stack: &[String],
+        onboarding: Option<&Value>,
+        definition: Option<&str>,
+        replace: bool,
+    ) -> Result<(), Error> {
+        ensure_authored_files(
+            root, slug, profile, purpose, stack, onboarding, definition, replace, self,
+        )
+    }
+    fn stage_memory_db(&mut self, path: &Path) -> Result<PathBuf, Error> {
+        stage_memory_db(path)
+    }
+    fn apply_migrations(&mut self, connection: &rusqlite::Connection) -> Result<(), Error> {
+        crate::mir_core::memory::store::apply_migrations(connection)
+            .map(|_| ())
+            .map_err(memory::store_error)
+    }
+    fn context_main(&mut self, argv: &[String]) -> Result<(i32, String), Error> {
+        let home = self.expanduser(Path::new("~"))?;
+        main_host::context_main(
+            Path::new(&argv[4]),
+            Path::new(&argv[2]),
+            &home,
+            &self.now_iso()?,
+        )
+    }
+    fn run_doctor(&mut self, root: &Path, db: &Path) -> Result<(i32, Value), Error> {
+        let home = self.expanduser(Path::new("~"))?;
+        main_host::run_doctor(root, db, &home)
+    }
+    fn build_projection_updates(
+        &mut self,
+        root: &Path,
+        db: &Path,
+    ) -> Result<std::collections::BTreeMap<PathBuf, String>, Error> {
+        build_projection_updates(root, db, self)
+    }
+    fn validate_content_memory_acceptance(
+        &mut self,
+        root: &Path,
+        db: &Path,
+        slug: &str,
+        onboarding: &Value,
+    ) -> Result<(Vec<String>, Value), Error> {
+        validate_content_memory_acceptance(root, db, slug, onboarding, self)
+    }
+    fn build_content_onboarding(
+        &mut self,
+        root: &Path,
+        purpose: &str,
+        stack: &[String],
+        archives: &[String],
+    ) -> Result<(Value, String), Error> {
+        build_content_onboarding(root, purpose, stack, archives)
+    }
+    fn validate_architecture_evidence(
+        &mut self,
+        root: &Path,
+    ) -> Result<(Vec<String>, Value), Error> {
+        validate_architecture_evidence(root)
+    }
+    fn activate_capabilities(
+        &mut self,
+        root: &Path,
+        profile: &str,
+    ) -> Result<(String, Value), Error> {
+        activate_capabilities(root, profile, self)
+    }
+    fn finalize_capabilities(
+        &mut self,
+        root: &Path,
+        prior: Option<&Value>,
+    ) -> Result<(String, Value), Error> {
+        finalize_capabilities(root, prior, self)
+    }
+    fn apply_adopter_slim(
+        &mut self,
+        root: &Path,
+        cli: &Path,
+        defer_commit: bool,
+    ) -> Result<Value, Error> {
+        main_host::apply_adopter_slim(root, cli, defer_commit, self)
+    }
+    fn rollback_adopter_slim(&mut self, root: &Path, report: &Value) -> Result<(), Error> {
+        main_host::rollback_adopter_slim(root, report, self)
+    }
+    fn commit_adopter_slim(&mut self, root: &Path, report: &Value) -> Result<(), Error> {
+        main_host::commit_adopter_slim(root, report, self)
+    }
+    fn slim_process_alive(&mut self, _pid: i64) -> Result<bool, Error> {
+        Err(Error::new(
+            "NotImplementedError",
+            "slim process liveness host is not connected",
+        ))
+    }
+    /// Executes with Python's clean environment, including removal of tool-environment keys.
+    fn slim_run_clean(&mut self, _request: &CommandRequest) -> Result<CommandOutput, Error> {
+        Err(Error::new(
+            "NotImplementedError",
+            "slim clean subprocess host is not connected",
+        ))
+    }
+    fn slim_pid(&mut self) -> u32 {
+        std::process::id()
+    }
+    fn slim_transaction_id(&mut self) -> String {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        let entropy = format!(
+            "{:?}-{}-{}",
+            std::time::SystemTime::now(),
+            self.slim_pid(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        );
+        // The journal requires UUID's 32-hex shape; hosts may supply a UUID source.
+        crate::digest::sha256(entropy.as_bytes())[..32].to_owned()
+    }
+    fn install_runtime_verifier(
+        &mut self,
+        root: &Path,
+        source_root: &Path,
+    ) -> Result<Option<Value>, Error> {
+        let system = self.platform_system();
+        let target =
+            crate::mir_core::capabilities::native::host_target(&system, std::env::consts::ARCH);
+        let artifacts = self.env("MIR_CAPABILITY_NATIVE_ARTIFACTS");
+        let home = self.expanduser(Path::new("~"))?;
+        let options = crate::mir_cli::adoption_native::InstallOptions {
+            target: target.as_deref(),
+            native_artifacts: artifacts.as_deref(),
+            source_root: Some(source_root),
+            home: Some(&home),
+            ..Default::default()
+        };
+        Ok(crate::mir_cli::adoption_native::install_runtime_verifier(
+            root,
+            &options,
+            &mut crate::mir_cli::adoption_native::LocalHost,
+        ))
+    }
+    fn atomic_write_text(&mut self, path: &Path, body: &str) -> Result<(), Error> {
+        atomic_write_text(path, body, self)
+    }
+    fn atomic_write_json(&mut self, path: &Path, value: &Value) -> Result<(), Error> {
+        atomic_write_json(path, value, self)
     }
 }
 pub const EXTERNAL_STORAGE_PATHS: [(&str, &str); 3] = [

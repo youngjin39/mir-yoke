@@ -158,6 +158,15 @@ def main(tmp, mode, json_mode, scenario=None):
             scripts['apply_adopter_slim'] = {'status': 'applied'}
         if scenario == 'rollback_failure':
             scripts['rollback_adopter_slim'] = M.SlimError('rollback refused')
+        if scenario == 'dup_errors':
+            scripts['_storage_preflight'] = (['shared refused'], {})
+            scripts['_validate_surfaces'] = (['shared refused'], {})
+        if scenario == 'reason_missing':
+            scripts['_activate_capabilities'] = ('failed', {})
+        if scenario == 'archive_identity':
+            args += ['--archive', 'notes=docs']
+        if scenario == 'optional_vector':
+            cfg.memory.vector_mode = 'optional'
     def scripted(name, value):
         def call(*a, **kw):
             helpers.append(name)
@@ -185,7 +194,7 @@ def main(tmp, mode, json_mode, scenario=None):
         s.enter_context(mock.patch.object(M.store, '_now_iso', return_value='fixed'))
         if scenario == 'no_venv':
             s.enter_context(mock.patch.object(M.sys, 'prefix', M.sys.base_prefix))
-        if scenario == 'vector_required':
+        if scenario in ('vector_required', 'optional_vector'):
             migrate = M.store.apply_migrations
             def seed(db):
                 migrate(db)
@@ -203,7 +212,8 @@ def main(tmp, mode, json_mode, scenario=None):
                 s.enter_context(mock.patch.object(M, name, side_effect=scripted(name, value)))
             s.enter_context(mock.patch.object(M.context_cli, 'main', return_value=
                                              3 if mode == 'sync' else 0,
-                                             side_effect=sync if scenario == 'vector_required'
+                                             side_effect=sync if scenario in ('vector_required',
+                                                                      'optional_vector')
                                              else None))
             s.enter_context(mock.patch.object(M.memory_cli, 'run_doctor', return_value=
                                              (1, {'errors': ['doctor refused']})
@@ -271,13 +281,16 @@ for scenario, mode in {
     'profile_purpose': 'finalize_ready', 'profile_stack': 'finalize_ready',
     'harness_invalid': 'ready', 'vector_required': 'ready', 'cli_file': 'ready',
     'cli_missing': 'ready', 'cli_manifest': 'ready', 'slim_applied': 'finalize_ready',
-    'rollback_failure': 'receipt',
+    'rollback_failure': 'receipt', 'dup_errors': 'ready', 'reason_missing': 'activation',
+    'archive_identity': 'identity', 'optional_vector': 'ready',
 }.items():
     label = dict(help='platform.system', prior='_finalize_capabilities',
                  content='_build_content_onboarding', no='sys.prefix',
                  profile='_validate_existing_profile', harness='load_config',
                  vector='store.apply_migrations', cli='install_runtime_verifier',
-                 slim='apply_adopter_slim', rollback='rollback_adopter_slim')[
+                 slim='apply_adopter_slim', rollback='rollback_adopter_slim',
+                 dup='errors', reason='_activate_capabilities', optional='load_config',
+                 archive='--archive')[
                      scenario.split('_')[0]]
     CASES[f'main.{label}.{scenario}.json'] = (
         lambda tmp, m=mode, c=scenario: main(tmp, m, True, c))
