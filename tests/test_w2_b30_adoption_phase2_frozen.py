@@ -108,6 +108,12 @@ def phase(tmp, target, value):
                     row.update(filled=0, derived=1)
     elif target.startswith('file.'):
         pass
+    elif target.startswith('drop.'):
+        keys = target.split('.')[1:]
+        obj = objects
+        for key in keys[:-1]:
+            obj = obj[key]
+        del obj[keys[-1]]
     else:
         keys = target.split('.')
         obj = objects
@@ -181,6 +187,11 @@ PHASE += [(f'surface.ai_ready.{k}', v) for k in ['ready', 'incomplete', 'blocked
 PHASE += [('review.reviews.memory.evidence_paths', v) for v in [None, 'proof', [1]]]
 for i, (target, value) in enumerate(PHASE):
     CASES[f'phase2.{i:02d}.{target}'] = lambda tmp, t=target, v=value: phase(tmp, t, v)
+# Witness: a removed count, readiness or review key (get() yields None, not a default).
+for target in ['surface.coverage.l1.na', 'meta.coverage.l2.tbd', 'surface.ai_ready.blocked',
+               'meta.ai_ready.incomplete', 'review.reviews.memory.verification',
+               'surface.full_review.memory']:
+    CASES[f'phase2_drop.{target}'] = lambda tmp, t=target: phase(tmp, 'drop.' + t, None)
 RECORDS = json.loads(FIXTURE.read_text()) if FIXTURE.exists() else {}
 def test_every_case_has_a_frozen_record():
     assert sorted(RECORDS) == sorted(CASES)

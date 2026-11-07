@@ -105,5 +105,11 @@
 "phase2.56.surface.ai_ready.blocked": {"value": {"len": 1278, "sha256": "a997356e702c28edb5812175ccbda4c2033eaa2000095b3b49543db9bcd00133"}},
 "phase2.57.review.reviews.memory.evidence_paths": {"value": {"len": 1212, "sha256": "f3b9dca6eeee4149c937e46d8dd93661a41ea39bb7c62a5f3ec905cc0e77e453"}},
 "phase2.58.review.reviews.memory.evidence_paths": {"value": {"len": 1212, "sha256": "f3b9dca6eeee4149c937e46d8dd93661a41ea39bb7c62a5f3ec905cc0e77e453"}},
-"phase2.59.review.reviews.memory.evidence_paths": {"value": {"len": 1232, "sha256": "321397fc123235a1952a4ccfcde7c8ef4d5d6588ddb59b02bc039bd0fa7faa77"}}
+"phase2.59.review.reviews.memory.evidence_paths": {"value": {"len": 1232, "sha256": "321397fc123235a1952a4ccfcde7c8ef4d5d6588ddb59b02bc039bd0fa7faa77"}},
+"phase2_drop.meta.ai_ready.incomplete": {"value": {"len": 1216, "sha256": "8c86a18ac682945cdd55bc84bafe4dfae3333bb613c945df4b56ae4308ce839f"}},
+"phase2_drop.meta.coverage.l2.tbd": {"value": {"len": 1219, "sha256": "b353a3b488964578881bd8d5515a9bc355c6756cf7b1fed2b12a976b4e9a6baa"}},
+"phase2_drop.review.reviews.memory.verification": {"value": {"len": 1240, "sha256": "d885d82d228502e6444b50728390e548766c99873b4df66507ca0a353c662a96"}},
+"phase2_drop.surface.ai_ready.blocked": {"value": {"len": 1263, "sha256": "6d8a3745a3b461651e2549485527678726a7fb6f4544e66c484eed4d2e478bfe"}},
+"phase2_drop.surface.coverage.l1.na": {"value": {"len": 1274, "sha256": "8e5d8665319a8c24fd7783547d20cb705ef8bd81b6d8e24828c06a869d184bd6"}},
+"phase2_drop.surface.full_review.memory": {"value": {"len": 1264, "sha256": "658479e0b10157c7abc31ecadf1107dec74dad4ac8a130b615e0a75951148c71"}}
 }

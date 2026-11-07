@@ -1,6 +1,12 @@
-//! Library-only mirror of bootstrap_adoption.py's first validator slice.
+//! Library-only mirror of bootstrap_adoption.py's validator slices.
 //! Unknown manifest fields are retained where the Python reference retains them.
+#[path = "bootstrap_adoption_phase2.rs"]
+mod phase2;
 use crate::executor_execute::{list_repr, repr};
+pub use phase2::{
+    COUNT_KEYS, LAYER_KEYS, MemoryConnection, REVIEW_KEYS, SqliteRequest, open_memory,
+    scan_content_candidates, validate_content_onboarding, validate_memory, validate_phase2,
+};
 use regex::Regex;
 use serde_json::{Map, Value, json};
 use std::{
@@ -175,6 +181,15 @@ pub struct GitRequest {
     pub optional_locks: &'static str,
 }
 pub trait Host {
+    fn scan_content_candidates(&mut self, root: &Path) -> Result<Vec<Value>, String> {
+        scan_content_candidates(root)
+    }
+    fn sqlite_open(
+        &mut self,
+        request: &SqliteRequest,
+    ) -> Result<Box<dyn MemoryConnection>, String> {
+        open_memory(request)
+    }
     fn read(&mut self, path: &Path) -> io::Result<Vec<u8>> {
         fs::read(path)
     }
