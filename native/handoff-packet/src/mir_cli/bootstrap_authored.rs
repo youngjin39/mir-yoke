@@ -307,7 +307,7 @@ pub fn ensure_authored_files(
     }
     Ok(())
 }
-fn reset_provider_contract_state(
+pub fn reset_provider_contract_state(
     root: &Path,
     slug: &str,
     profile: &str,
@@ -347,15 +347,7 @@ fn reset_provider_contract_state(
         ),
     ];
     let mut changed = release::rewrite_release_matched(root, &updates)?;
-    let relative = "config/repo-agent-management.json";
-    let path = root.join(relative);
-    let digests = release::release_payload_digests(root)?;
-    if let Some(digest) = digests.get(relative).filter(|s| !s.is_empty())
-        && release::is_safe_existing_project_file(root, &path)
-        && crate::digest::sha256(&fs::read(&path).map_err(|e| io_error(&path, e))?) == *digest
-    {
-        changed.extend(host.compile_adopter_agent_catalog(root, profile)?);
-    }
+    changed.extend(host.compile_adopter_agent_catalog(root, profile)?);
     let generator = root.join("scripts/generate_codex_derivatives.sh");
     if changed.is_empty() || !generator.is_file() {
         return Ok(());
@@ -378,7 +370,7 @@ fn reset_provider_contract_state(
     }
     Ok(())
 }
-fn reset_provider_task_state(root: &Path, purpose: &str) -> Result<(), Error> {
+pub fn reset_provider_task_state(root: &Path, purpose: &str) -> Result<(), Error> {
     // This JSON uses Python's insertion order (not the sorted receipt writer).
     let purpose = json!(purpose).to_string();
     let intent = format!(

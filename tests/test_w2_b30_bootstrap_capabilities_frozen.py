@@ -146,6 +146,10 @@ def lock(tmp, mode):
         data[mode if mode in ('plugins', 'source') else 'source'] = (
             {} if mode in ('plugins', 'source') else {'commit': 'A' * 40 if mode == 'uppercase'
                                                      else 'short'})
+    if mode == 'long_commit':
+        data['source'] = {'commit': 'a' * 41}
+    if mode == 'agents_list':
+        data['agents'] = ['worker', 'main']
     if mode.startswith('native'):
         data['native_artifacts'] = {} if mode == 'native_valid' else []
         if mode == 'native_config':
@@ -201,6 +205,8 @@ for operation, modes in [('lock', ['valid', 'missing', 'invalid', 'object', 'com
                                        'output', 'silent', 'import', 'no_receipt', 'prior_ready'])]:
     for mode in modes:
         CASES[f'{operation}.{mode}'] = lambda tmp, o=operation, m=mode: capability_case(tmp, o, m)
+for mode in ('long_commit', 'agents_list'):
+    CASES[f'lock.{mode}'] = lambda tmp, m=mode: capability_case(tmp, 'lock', m)
 RECORDS = json.loads(FIXTURE.read_text()) if FIXTURE.exists() else {}
 
 

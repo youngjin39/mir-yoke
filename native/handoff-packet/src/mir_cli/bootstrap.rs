@@ -6,10 +6,19 @@ mod authored_text;
 #[path = "bootstrap_release.rs"]
 mod release;
 pub use authored::{
-    CommandOutput, CommandRequest, ensure_authored_files, validate_existing_profile,
+    CommandOutput, CommandRequest, ensure_authored_files, reset_provider_contract_state,
+    reset_provider_task_state, validate_existing_profile,
 };
+#[path = "bootstrap_capabilities.rs"]
+mod capabilities;
+#[path = "bootstrap_capability_config.rs"]
+mod capability_config;
 pub use authored_text::{
     PROFILE_CHOICES, memory_config_text, product_contract_text, repo_profile_text,
+};
+pub use capabilities::{
+    CATALOG_TEMPLATE_BY_PROFILE, CapabilityOutput, activate_capabilities, capability_lock_evidence,
+    compile_adopter_agent_catalog, finalize_capabilities, load_capability_sources,
 };
 pub use release::{
     is_raw_provider_checkout, is_safe_existing_project_file, normalise_git_url,
@@ -70,16 +79,32 @@ pub trait Host {
             "bootstrap boundary schema validator is not connected",
         ))
     }
-    /// Catalog/capability compilation belongs to the later bootstrap surface slice.
+    /// The real compiler is the default; callers can still inject this boundary.
     fn compile_adopter_agent_catalog(
         &mut self,
-        _root: &Path,
-        _profile: &str,
+        root: &Path,
+        profile: &str,
     ) -> Result<Vec<String>, Error> {
+        compile_adopter_agent_catalog(root, profile)
+    }
+    /// Models the Python import separately from execution failures.
+    fn capability_import(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    /// Caller-supplied provider execution; CapabilityOutput::run uses the B30-P01 CLI.
+    fn capability_main(&mut self, _argv: &[String]) -> Result<CapabilityOutput, Error> {
         Err(Error::new(
             "NotImplementedError",
-            "bootstrap catalog host is not connected",
+            "bootstrap capability CLI host is not connected",
         ))
+    }
+    fn validate_artifacts(&mut self, records: &Value, plugins: &Value) -> Result<(), Error> {
+        crate::mir_core::capabilities::native::validate_artifacts(records, plugins, false)
+            .map_err(authored::value_error)
+    }
+    /// Injectable config validation defaults to the Rust loader's plugins projection.
+    fn capability_config_plugins(&mut self, path: &Path) -> Result<Value, Error> {
+        capabilities::capability_config_plugins(path)
     }
 }
 pub const EXTERNAL_STORAGE_PATHS: [(&str, &str); 3] = [
