@@ -1,6 +1,15 @@
 //! Library-only bootstrap identity, argument and storage policy.
 #[path = "bootstrap_authored.rs"]
 mod authored;
+#[path = "bootstrap_memory.rs"]
+mod memory;
+#[path = "bootstrap_surfaces.rs"]
+mod surfaces;
+pub use memory::{build_projection_updates, stage_memory_db, validate_content_memory_acceptance};
+pub use surfaces::{
+    ARCHITECTURE_OUTPUTS, ARCHITECTURE_SEQUENCE, validate_architecture_evidence,
+    validate_json_file, validate_surfaces,
+};
 #[path = "bootstrap_authored_text.rs"]
 mod authored_text;
 #[path = "bootstrap_release.rs"]
@@ -63,6 +72,16 @@ impl std::error::Error for Error {}
 /// All process environment and storage observations are supplied by the caller.
 pub trait Host {
     fn env(&mut self, name: &str) -> Option<String>;
+    /// shutil.which remains an injected observation; no executable is launched.
+    fn which(&mut self, _name: &str) -> Option<PathBuf> {
+        None
+    }
+    /// os.replace, including Windows replacement of an existing destination.
+    fn replace(&mut self, source: &Path, destination: &Path) -> Result<(), Error> {
+        tempfile::TempPath::try_from_path(source)
+            .and_then(|p| p.persist(destination).map_err(|e| e.error))
+            .map_err(|e| authored::io_error(destination, e))
+    }
     fn resolve(&mut self, path: &Path) -> Result<PathBuf, Error>;
     fn expanduser(&mut self, path: &Path) -> Result<PathBuf, Error>;
     fn is_dir(&mut self, path: &Path) -> bool;
@@ -105,6 +124,13 @@ pub trait Host {
     /// Injectable config validation defaults to the Rust loader's plugins projection.
     fn capability_config_plugins(&mut self, path: &Path) -> Result<Value, Error> {
         capabilities::capability_config_plugins(path)
+    }
+    /// Per-connection vec loading is injectable without changing process-global state.
+    fn bootstrap_memory_connect(
+        &mut self,
+        path: &Path,
+    ) -> Result<crate::mir_core::memory::store::Connection, Error> {
+        memory::connect(path)
     }
 }
 pub const EXTERNAL_STORAGE_PATHS: [(&str, &str); 3] = [
@@ -532,4 +558,37 @@ pub fn storage_preflight(
         }
     }
     Ok((errors, report))
+}
+
+/// Reuse the authored writer with an injectable os.replace boundary.
+pub fn atomic_write_text(path: &Path, body: &str, host: &mut impl Host) -> Result<(), Error> {
+    authored::atomic_write_with(path, body, false, |a, b| host.replace(a, b))
+}
+pub fn atomic_write_json(path: &Path, payload: &Value, host: &mut impl Host) -> Result<(), Error> {
+    let body = authored::pretty(payload, true)? + "\n";
+    authored::atomic_write_with(path, &body, true, |a, b| host.replace(a, b))
+}
+/// Return the exact stdout text; caller connection belongs to a later slice.
+pub fn emit(as_json: bool, receipt: &Value) -> Result<String, Error> {
+    if as_json {
+        let sorted: Value = serde_json::from_str(&authored::pretty(receipt, false)?)
+            .map_err(|e| Error::new("ValueError", e.to_string()))?;
+        return Ok(authored::ascii(sorted.to_string()) + "\n");
+    }
+    let status = authored::python_str(&receipt["status"]);
+    let mut out = format!("mir bootstrap: {status}\n");
+    for error in receipt["errors"].as_array().into_iter().flatten() {
+        out.push_str(&format!("  [not-ready] {}\n", authored::python_str(error)));
+    }
+    if status == "restart_required" {
+        out.push_str(concat!(
+            "  selected global plugins are hash-verified for required runtimes\n",
+            "  begin a new session for every required activation runtime\n",
+            "  attest the namespaced skill catalog from each required session\n",
+            "  optional runtime installation and discovery evidence is advisory\n",
+            "  run mir-core:design then mir-core:spec-architect, then finalize\n",
+        ));
+    }
+    out.push_str("  receipt: .mir/bootstrap-receipt.json\n");
+    Ok(out)
 }

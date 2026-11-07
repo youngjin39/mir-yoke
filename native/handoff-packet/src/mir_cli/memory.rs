@@ -69,7 +69,7 @@ pub fn render_lessons_section(conn: &rusqlite::Connection) -> rusqlite::Result<S
     }
     Ok(lines.join("\n"))
 }
-fn inject_markers(existing: &str, generated: &str) -> String {
+pub(crate) fn inject_markers(existing: &str, generated: &str) -> String {
     let block = format!("{START}\n{generated}\n{END}");
     if let (Some(start), Some(end)) = (existing.find(START), existing.find(END)) {
         return format!(

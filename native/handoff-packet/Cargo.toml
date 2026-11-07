@@ -26,7 +26,7 @@ regex = "1"
 sqlite-vec = "=0.1.9"
 fancy-regex = "0.14"
 toml = { version = "=0.8.2", default-features = false, features = ["parse", "preserve_order"] }
-rusqlite = { version = "=0.40.2", features = ["bundled", "trace", "functions"] }
+rusqlite = { version = "=0.40.2", features = ["backup", "bundled", "trace", "functions"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "=0.61.2", features = ["Win32_Storage_FileSystem"] }

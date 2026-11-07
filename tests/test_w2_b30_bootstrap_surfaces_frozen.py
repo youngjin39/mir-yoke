@@ -47,6 +47,8 @@ def architecture(tmp, mode):
                     'nodes: [a]\nedges: []', 'gaps: []'], strict=True))
     if mode.startswith('field:'):
         evidence[mode[6:]] = None
+    if mode == 'review_partial':
+        evidence['full_review']['memory'] = 'fail'
     if mode.startswith('count:'):
         coverage['l3'][mode[6:]] = -1 if mode.endswith('derived') else 1
     coverage.update({'l2': dict(total=0, filled=0, derived=0, na=0, tbd=0)}
@@ -184,9 +186,27 @@ for mode in ['ok', 'missing', 'linked', 'list', 'lock_missing', 'lock_bad',
               ('index.yaml', 'requirements: []'), ('graph.yaml', '['), ('graph.yaml', '[]'),
               ('graph.yaml', '{}')]]:
     CASES['architecture.' + mode] = lambda tmp, m=mode: architecture(tmp, m)
+for mode in ['review_partial'] + ['doc:STATE.md:' + b for b in [
+        'de\u017fcribe', 'descr\u0130be', 'descr\u0131be', '\u0301tbd', 'tbd1', '\u00b2tbd',
+        '\x0b\x0c']]:
+    CASES['architecture.' + mode] = lambda tmp, m=mode: architecture(tmp, m)
 for mode in ['ok', 'hooks', 'settings_list', 'toml', 'mixed', 'runtime'] + [
         'missing:' + p for p in SURFACES] + ['json:' + p for p in SURFACES if p.endswith('.json')]:
     CASES['surfaces.' + mode] = lambda tmp, m=mode: surfaces(tmp, m)
+def stage_pages(tmp):
+    path = tmp / 'db/source.db'
+    path.parent.mkdir()
+    source = sqlite3.connect(path)
+    source.executescript('CREATE TABLE t(x INTEGER, v TEXT); WITH RECURSIVE c(x) AS '
+                         '(SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 400) '
+                         "INSERT INTO t SELECT x, printf('%0300d', x) FROM c; "
+                         'DELETE FROM t WHERE x % 3 > 0 OR x < 200;')
+    source.close()
+    staged = M._stage_memory_db(path)
+    with contextlib.closing(sqlite3.connect(staged)) as db:
+        return [db.execute('PRAGMA ' + k).fetchall() for k in ('page_count', 'freelist_count')] + [
+            db.execute('SELECT count(*), min(rowid), max(rowid), sum(rowid) FROM t').fetchall()]
+CASES['stage.pages'] = stage_pages
 for body in [None, '{', '{"a":1}']:
     CASES['json.' + str(body)] = lambda tmp, b=body: M._validate_json_file(
         tmp / 'value' if b is None else put(tmp, 'value', b))
@@ -199,7 +219,7 @@ for group, call, modes in [('stage', stage, ['missing', 'delete', 'wal']),
         ('projection', projection, ['missing', 'append', 'markers'])]:
     for mode in modes:
         CASES[group + '.' + mode] = lambda tmp, m=mode, f=call: f(tmp, m)
-for status in ('ready', 'restart_required'):
+for status in ('ready', 'restart_required', 'blocked'):
     for as_json in (False, True):
         CASES[f'emit.{status}.{as_json}'] = lambda tmp, s=status, j=as_json: emit(tmp, s, j)
 RECORDS = json.loads(FIXTURE.read_text()) if FIXTURE.exists() else {}

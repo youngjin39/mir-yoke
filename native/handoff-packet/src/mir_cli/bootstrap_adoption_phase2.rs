@@ -542,7 +542,7 @@ fn yaml_value(
     active.remove(&index);
     Ok(value)
 }
-fn load_yaml(text: &str) -> Result<Value, String> {
+pub(crate) fn load_yaml(text: &str) -> Result<Value, String> {
     // The composer's error preserves class but lacks PyYAML's marked diagnostics.
     // Render the unterminated flow sequence diagnostic from its source location.
     let doc = yaml::compose(yaml::Input::Text(text)).map_err(|e| {

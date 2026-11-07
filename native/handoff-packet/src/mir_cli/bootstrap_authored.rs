@@ -105,7 +105,7 @@ pub(super) fn json_spaces(value: &Value) -> String {
         _ => value.to_string(),
     }
 }
-fn ascii(text: String) -> String {
+pub(super) fn ascii(text: String) -> String {
     text.chars()
         .map(|c| {
             if c.is_ascii() {
@@ -144,6 +144,18 @@ pub(super) fn atomic_write_text(path: &Path, body: &str) -> Result<(), Error> {
     atomic_write(path, body, false)
 }
 fn atomic_write(path: &Path, body: &str, sync: bool) -> Result<(), Error> {
+    atomic_write_with(path, body, sync, |source, destination| {
+        tempfile::TempPath::try_from_path(source)
+            .and_then(|p| p.persist(destination).map_err(|e| e.error))
+            .map_err(|e| io_error(destination, e))
+    })
+}
+pub(super) fn atomic_write_with(
+    path: &Path,
+    body: &str,
+    sync: bool,
+    replace: impl FnOnce(&Path, &Path) -> Result<(), Error>,
+) -> Result<(), Error> {
     let parent = path.parent().unwrap_or(Path::new("."));
     fs::create_dir_all(parent).map_err(|e| io_error(parent, e))?;
     let mut temp = tempfile::Builder::new()
@@ -162,7 +174,7 @@ fn atomic_write(path: &Path, body: &str, sync: bool) -> Result<(), Error> {
             .sync_all()
             .map_err(|e| io_error(temp.path(), e))?;
     }
-    temp.persist(path).map_err(|e| io_error(path, e.error))?;
+    replace(temp.path(), path)?;
     #[cfg(unix)]
     if sync {
         fs::File::open(parent)
