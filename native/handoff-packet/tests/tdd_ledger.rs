@@ -23,8 +23,7 @@ fn snapshot(root: &Path) -> Value {
     walk(root, root, &mut out);
     Value::Object(out)
 }
-fn replay(mode: &str) {
-    let fixture: Value = serde_json::from_str(include_str!("fixtures/w1/tdd-ledger.json")).unwrap();
+fn replay_fixture(fixture: &Value, mode: &str) -> usize {
     let mut count = 0;
     for record in fixture["records"]
         .as_array()
@@ -49,15 +48,21 @@ fn replay(mode: &str) {
             use std::os::unix::fs::PermissionsExt;
             let tools = tempfile::tempdir().unwrap();
             let git = tools.path().join("git");
-            fs::write(
+            let body = record["git_body"]
+                .as_str()
+                .map(str::to_owned)
+                .unwrap_or_else(|| {
+                    format!(
+                        "#!/bin/sh\nprintf '%s' '{}'\n",
+                        record["changed"].as_str().unwrap()
+                    )
+                });
+            fs::write(&git, body).unwrap();
+            fs::set_permissions(
                 &git,
-                format!(
-                    "#!/bin/sh\nprintf '%s' '{}'\n",
-                    record["changed"].as_str().unwrap()
-                ),
+                fs::Permissions::from_mode(record["git_mode"].as_u64().unwrap_or(0o755) as u32),
             )
             .unwrap();
-            fs::set_permissions(&git, fs::Permissions::from_mode(0o755)).unwrap();
             cmd.env("PATH", tools.path());
             // Keep fake Git alive for the duration of the child.
             run(&mut cmd, record, mode, &expand, root);
@@ -68,8 +73,12 @@ fn replay(mode: &str) {
         }
         count += 1;
     }
+    count
+}
+fn replay(mode: &str) {
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/w1/tdd-ledger.json")).unwrap();
     assert_eq!(
-        count,
+        replay_fixture(&fixture, mode),
         match mode {
             "prewrite" => 53,
             "precommit" => 27,
@@ -78,7 +87,6 @@ fn replay(mode: &str) {
             _ => panic!("unknown fixture mode"),
         }
     );
-    println!("{mode}: {count} frozen records");
 }
 fn run(cmd: &mut Command, r: &Value, mode: &str, expand: &impl Fn(&str) -> String, root: &Path) {
     if mode == "tdd-guard" {
@@ -149,4 +157,48 @@ fn matrix_merge_unused() {
 #[test]
 fn guard_always_advisory() {
     replay("tdd-guard");
+}
+
+#[test]
+fn compatibility_y2_evidence_strip() {
+    compatibility(|id| id.contains("-reason-") || id.contains("-command-"));
+}
+#[test]
+fn compatibility_y3_exception_paths() {
+    compatibility(|id| {
+        !id.contains("-reason-")
+            && !id.contains("-command-")
+            && !id.contains("-strip-")
+            && !id.contains("-metadata-")
+            && !id.contains("-json-")
+            && !id.contains("-splitlines-")
+    });
+}
+#[test]
+fn compatibility_y4_target_normalization() {
+    compatibility(|id| {
+        id.contains("-target-strip-")
+            || id.contains("-argument-strip-")
+            || id.contains("-splitlines-")
+    });
+}
+#[test]
+fn compatibility_y5_json_admission() {
+    compatibility(|id| id.contains("-metadata-") || id.contains("-json-"));
+}
+fn compatibility(select: impl Fn(&str) -> bool) {
+    let mut fixture: Value =
+        serde_json::from_str(include_str!("fixtures/tdd-compat.json")).unwrap();
+    fixture["records"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|r| select(r["id"].as_str().unwrap()));
+    assert!(!fixture["records"].as_array().unwrap().is_empty());
+    for mode in ["prewrite", "precommit", "precommit-merge"] {
+        #[cfg(not(unix))]
+        if mode == "precommit-merge" {
+            continue;
+        }
+        replay_fixture(&fixture, mode);
+    }
 }

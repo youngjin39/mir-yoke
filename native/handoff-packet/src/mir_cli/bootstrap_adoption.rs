@@ -459,11 +459,11 @@ static RAW_PYTHON: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
 fn python_space(pattern: &str) -> String {
     pattern.replace(r"\s", r"[\s\x1c-\x1f]")
 }
-pub(super) fn is_python_space(c: char) -> bool {
+pub fn is_python_space(c: char) -> bool {
     c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
 }
 /// Python `str.splitlines()`: every Unicode line boundary, with "\r\n" as one.
-pub(super) fn python_splitlines(body: &str) -> Vec<&str> {
+pub fn python_splitlines(body: &str) -> Vec<&str> {
     let mut lines = Vec::new();
     let mut start = 0;
     let mut chars = body.char_indices().peekable();

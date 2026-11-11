@@ -1,6 +1,29 @@
 # Plan
 
-## Active task: B1b native adoption caller and delivery
+## Active task: Round 2 Rust decision parity fixes
+
+Intent authority: owner's 2026-11-11 Round 2 brief (Y1–Y5), reference
+`8c58654`, worktree `dev/rust-completion` at `63efe8c`.
+Outcome: decision equals the reference for handoff JSON admission and TDD
+ledger whitespace, malformed merge entries, target matching and JSON admission.
+Design: reuse existing Python compatibility helpers; freeze reference outcomes
+before fixes, enumerate exception/refusal paths, and audit remaining port traps.
+Acceptance: RED/GREEN regression evidence, affected crate tests, formatting and
+offline locked Clippy. The writer made no commit; Harness Main committed the
+slice locally after its own host check (owner Discord 1570056470370984131), no push.
+
+Verification: the five finding regressions pass on macOS, including 37 handoff
+and 423 TDD reference records (writer and independent Codex reviewer on Rust
+1.98.0; the reviewer repaired 4 stderr byte differences of Unicode `repr` output,
+229 own comparisons). Harness Main in the host with the pinned Rust 1.99.1: both
+fixtures regenerated with the same bytes; the four affected test targets fail 5 of
+30 with the sources at `63efe8c` and pass 30 with the fix; Clippy clean; whole
+crate 375 passed with a scratch TMPDIR (18 fail under the default symlinked
+TMPDIR; not checked at `63efe8c`).
+Open verification: Windows build and run.
+
+## Previous task (preserved): B1b native adoption caller and delivery
+
 
 Intent authority: owner-supplied B1b brief (2026-11-01), building on the B1
 brief and report. This is the single current cursor.

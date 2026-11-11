@@ -36,6 +36,8 @@ pub mod executor_finalize;
 #[forbid(unsafe_code)]
 pub mod executor_hooks;
 #[forbid(unsafe_code)]
+pub mod python_json;
+#[forbid(unsafe_code)]
 pub mod session_start;
 #[forbid(unsafe_code)]
 mod session_upfront;

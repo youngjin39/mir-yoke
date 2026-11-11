@@ -17,12 +17,9 @@ fn run() -> io::Result<i32> {
         .take((LIMIT + 1) as u64 * 4)
         .read_to_end(&mut raw)?;
     // Match sys.stdin.read(LIMIT + 1): oversize prevents event determination.
-    let within_limit = std::str::from_utf8(&raw).is_ok_and(|s| s.chars().count() <= LIMIT);
-    let parsed = if within_limit {
-        serde_json::from_slice::<serde_json::Value>(&raw).ok()
-    } else {
-        None
-    };
+    let parsed = handoff_packet::python_json::parse_stdin(&raw)
+        .map(|event| event.to_serde())
+        .ok();
     if let Some(event) = parsed.as_ref()
         && event.get("hook_event_name").and_then(|v| v.as_str()) == Some("UserPromptSubmit")
     {

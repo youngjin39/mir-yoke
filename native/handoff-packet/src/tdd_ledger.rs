@@ -1,9 +1,13 @@
 //! Yoke's own ledger contract. Unknown composite category names are intentional.
-use serde_json::Value;
+use handoff_packet::mir_cli::bootstrap_adoption::is_python_space;
+use handoff_packet::python_json::{self, Value, python_splitlines, python_strip};
 use std::{
     fs,
+    io::{self, Read},
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Stdio},
+    thread,
+    time::{Duration, Instant},
 };
 const CATEGORIES: &[&str] = &[
     "unit",
@@ -40,14 +44,14 @@ pub fn implementation(path: &str) -> bool {
         .any(|s| path.ends_with(s))
 }
 fn normalize(project: &Path, raw: &str) -> String {
-    let s = raw.trim().replace('\\', "/");
+    let s = python_strip(raw).replace('\\', "/");
     let s = s.strip_prefix("./").unwrap_or(&s);
     s.strip_prefix(&format!("{}/", project.display()).replace('\\', "/"))
         .unwrap_or(s)
         .into()
 }
 fn matches(target: &str, path: &str) -> bool {
-    let t = target.trim();
+    let t = python_strip(target);
     !t.is_empty()
         && if t.ends_with('/') {
             path.starts_with(t)
@@ -65,22 +69,26 @@ fn find<'a>(data: &'a Value, path: &str) -> Option<&'a Value> {
     })
 }
 fn py(value: &Value) -> String {
-    match value {
-        Value::Null => "None".into(),
-        Value::Bool(true) => "True".into(),
-        Value::Bool(false) => "False".into(),
-        Value::String(s) => s.clone(),
-        _ => value.to_string(),
-    }
+    value.py_str()
 }
 fn repr(value: &Value) -> String {
-    if let Some(s) = value.as_str() {
-        format!("'{s}'")
-    } else {
-        py(value)
-    }
+    value.repr()
 }
-fn validate(c: &Value, phase: &str, order: &[String]) -> Result<Vec<String>, String> {
+fn hashable(value: &Value) -> Result<(), String> {
+    if value.is_array() || value.is_object() {
+        return Err(format!(
+            "TypeError: unhashable type: '{}'",
+            value.type_name()
+        ));
+    }
+    Ok(())
+}
+fn nonempty_string(value: &Value) -> bool {
+    value
+        .as_text()
+        .is_some_and(|s| s.as_str().is_none_or(|s| !python_strip(s).is_empty()))
+}
+fn validate(c: &Value, phase: &str) -> Result<Vec<Vec<u32>>, String> {
     let prefix = if phase == "prewrite" {
         "[TddGuard BLOCK]"
     } else {
@@ -89,35 +97,40 @@ fn validate(c: &Value, phase: &str, order: &[String]) -> Result<Vec<String>, Str
     let composite = c.get("targets").is_some();
     if !composite {
         for key in ["target", "bluebrick", "design_ref"] {
-            if c[key].as_str().is_none_or(|s| s.trim().is_empty()) {
+            if !nonempty_string(&c[key]) {
                 return Err(format!("{prefix} Missing '{key}' for target."));
             }
         }
     }
-    let Some(_cats) = c["categories"].as_object() else {
+    let Some(cats) = c["categories"].as_object() else {
         return Err(format!(
             "{prefix} Missing 'categories' object for target {}.",
             py(&c["target"])
         ));
     };
-    let keys: Vec<&str> = if composite {
-        order.iter().map(String::as_str).collect()
+    let entries: Vec<(String, &Value)> = if composite {
+        cats.iter()
+            .map(|(key, value)| (key.py_str(), value))
+            .collect()
     } else {
-        CATEGORIES.to_vec()
+        CATEGORIES
+            .iter()
+            .map(|key| ((*key).into(), &c["categories"][*key]))
+            .collect()
     };
-    let label = c["target"]
-        .as_str()
-        .filter(|s| !s.is_empty())
-        .map(str::to_owned)
+    let label = c
+        .get("target")
+        .filter(|s| s.truthy())
+        .map(py)
         .unwrap_or_else(|| c.get("id").map(py).unwrap_or_else(|| "<unknown>".into()));
     let mut commands = Vec::new();
-    for key in keys {
-        let entry = &c["categories"][key];
+    for (key, entry) in entries {
         if !entry.is_object() {
             return Err(format!(
                 "{prefix} Missing category '{key}' for target {label}."
             ));
         }
+        hashable(&entry["status"])?;
         let status = entry["status"].as_str().unwrap_or("");
         if !["pass", "covered_existing", "not_applicable"].contains(&status)
             && !(phase == "prewrite" && status == "planned")
@@ -131,49 +144,27 @@ fn validate(c: &Value, phase: &str, order: &[String]) -> Result<Vec<String>, Str
                 )
             });
         }
-        if status == "not_applicable"
-            && entry["reason"].as_str().is_none_or(|s| s.trim().is_empty())
-        {
+        if status == "not_applicable" && !nonempty_string(&entry["reason"]) {
             return Err(format!(
                 "{prefix} Category '{key}' marked not_applicable without reason for target {label}."
             ));
         }
         if ["pass", "covered_existing"].contains(&status) {
-            let Some(command) = entry["command"].as_str().filter(|s| !s.trim().is_empty()) else {
+            if !nonempty_string(&entry["command"]) {
                 return Err(format!(
                     "{prefix} Category '{key}' requires a runnable command for target {label}."
                 ));
-            };
-            commands.push(command.trim().into());
+            }
+            if let Some(command) = entry["command"].as_text() {
+                let points = &command.codepoints;
+                let nonspace = |cp: &u32| !char::from_u32(*cp).is_some_and(is_python_space);
+                let start = points.iter().position(nonspace).unwrap_or(points.len());
+                let end = points.iter().rposition(nonspace).map_or(start, |i| i + 1);
+                commands.push(points[start..end].to_vec());
+            }
         }
     }
     Ok(commands)
-}
-fn malformed(raw: &str, error: &serde_json::Error) -> String {
-    // Python JSONDecodeError uses a character offset and Python diagnostic wording.
-    let line = error.line();
-    let col = error.column();
-    let trimmed = raw.trim_end();
-    let (message, col) = if trimmed == "{" {
-        ("Expecting property name enclosed in double quotes", 2)
-    } else if trimmed.ends_with("[}") {
-        ("Expecting value", col)
-    } else if error.to_string().starts_with("key must be a string") {
-        ("Expecting property name enclosed in double quotes", col)
-    } else if error.is_eof() {
-        ("Expecting value", col + 1)
-    } else {
-        ("Expecting value", col)
-    };
-    let pos = raw
-        .lines()
-        .take(line.saturating_sub(1))
-        .map(|l| l.chars().count() + 1)
-        .sum::<usize>()
-        + col.saturating_sub(1);
-    format!(
-        "[TddGuard BLOCK] Malformed tasks/tdd.json: {message}: line {line} column {col} (char {pos})"
-    )
 }
 fn load(project: &Path) -> Result<Ledger, String> {
     let path = project.join("tasks/tdd.json");
@@ -181,52 +172,140 @@ fn load(project: &Path) -> Result<Ledger, String> {
         return Err("[TddGuard BLOCK] Missing tasks/tdd.json. Create the composite TDD ledger before editing code.".into());
     }
     let raw = fs::read_to_string(path).map_err(|e| e.to_string())?;
-    let v: Value = serde_json::from_str(&raw).map_err(|e| malformed(&raw, &e))?;
+    // Path.read_text uses universal newline translation before json.loads.
+    let raw = raw.replace("\r\n", "\n").replace('\r', "\n");
+    let v = python_json::parse(&raw).map_err(|e| {
+        if e.exception == "JSONDecodeError" {
+            format!("[TddGuard BLOCK] Malformed tasks/tdd.json: {e}")
+        } else {
+            format!("{}: {e}", e.exception)
+        }
+    })?;
     if !v.is_object() {
         return Err("[TddGuard BLOCK] tasks/tdd.json must contain a JSON object.".into());
     }
     if !v["changes"].is_array() {
         return Err("[TddGuard BLOCK] tasks/tdd.json must contain a 'changes' array.".into());
     }
-    Ok(Ledger {
-        order: category_order(&raw)?,
-        data: v,
+    Ok(Ledger { data: v })
+}
+fn git_error(error: io::Error) -> String {
+    if error.kind() == io::ErrorKind::PermissionDenied {
+        "PermissionError: [Errno 13] Permission denied: 'git'".into()
+    } else {
+        format!("OSError: {error}")
+    }
+}
+fn git_text(bytes: Vec<u8>) -> Result<String, String> {
+    String::from_utf8(bytes).map_err(|error| {
+        let invalid = error.utf8_error();
+        let start = invalid.valid_up_to();
+        let (length, reason) = match invalid.error_len() {
+            Some(length) => (
+                length,
+                if error.as_bytes()[start] < 0xc2 || error.as_bytes()[start] > 0xf4 {
+                    "invalid start byte"
+                } else {
+                    "invalid continuation byte"
+                },
+            ),
+            None => (error.as_bytes().len() - start, "unexpected end of data"),
+        };
+        let position = if length == 1 {
+            format!("byte 0x{:02x} in position {start}", error.as_bytes()[start])
+        } else {
+            format!("bytes in position {start}-{}", start + length - 1)
+        };
+        format!("UnicodeDecodeError: 'utf-8' codec can't decode {position}: {reason}")
     })
 }
-fn git_changed(project: &Path) -> Vec<String> {
-    let run = |args: &[&str]| {
-        Command::new("git")
-            .args(args)
-            .current_dir(project)
-            .output()
-            .ok()
-            .filter(|o| o.status.success())
-            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+fn git_run(project: &Path, args: &[&str]) -> Result<Option<String>, String> {
+    let mut child = match Command::new("git")
+        .args(args)
+        .current_dir(project)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+    {
+        Ok(child) => child,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(git_error(error)),
     };
+    // Drain both pipes while waiting, like subprocess.run(capture_output=True).
+    let read = |pipe: Option<std::process::ChildStdout>| {
+        thread::spawn(move || {
+            let mut bytes = Vec::new();
+            if let Some(mut pipe) = pipe {
+                pipe.read_to_end(&mut bytes)?;
+            }
+            Ok::<_, io::Error>(bytes)
+        })
+    };
+    let stdout = read(child.stdout.take());
+    let stderr = thread::spawn({
+        let pipe = child.stderr.take();
+        move || {
+            let mut bytes = Vec::new();
+            if let Some(mut pipe) = pipe {
+                pipe.read_to_end(&mut bytes)?;
+            }
+            Ok::<_, io::Error>(bytes)
+        }
+    });
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let status = loop {
+        if let Some(status) = child.try_wait().map_err(git_error)? {
+            break Some(status);
+        }
+        if Instant::now() >= deadline {
+            child.kill().map_err(git_error)?;
+            child.wait().map_err(git_error)?;
+            break None;
+        }
+        thread::sleep(Duration::from_millis(10));
+    };
+    let join = |reader: thread::JoinHandle<io::Result<Vec<u8>>>| {
+        reader
+            .join()
+            .map_err(|_| "RuntimeError: Git output reader failed".to_string())?
+            .map_err(git_error)
+    };
+    let stdout = join(stdout)?;
+    let stderr = join(stderr)?;
+    let Some(status) = status else {
+        // The Python reference catches TimeoutExpired without decoding its output.
+        return Ok(None);
+    };
+    let stdout = git_text(stdout)?;
+    git_text(stderr)?;
+    Ok(status.success().then_some(stdout))
+}
+fn git_changed(project: &Path) -> Result<Vec<String>, String> {
     let lines = |s: String| {
-        s.lines()
-            .filter(|s| !s.trim().is_empty())
+        python_splitlines(&s)
+            .into_iter()
+            .filter(|s| !python_strip(s).is_empty())
             .map(str::to_owned)
             .collect::<Vec<_>>()
     };
-    if let Some(out) = run(&["diff", "--name-only", "@{upstream}..HEAD"]) {
+    if let Some(out) = git_run(project, &["diff", "--name-only", "@{upstream}..HEAD"])? {
         if !lines(out.clone()).is_empty() {
-            return lines(out);
+            return Ok(lines(out));
         }
-        return run(&["diff", "--name-only", "HEAD"])
+        return Ok(git_run(project, &["diff", "--name-only", "HEAD"])?
             .map(lines)
-            .unwrap_or_default();
+            .unwrap_or_default());
     }
     for reference in ["origin/main..HEAD", "main..HEAD"] {
-        if let Some(out) = run(&["diff", "--name-only", reference])
-            && !out.trim().is_empty()
+        if let Some(out) = git_run(project, &["diff", "--name-only", reference])?
+            && !python_strip(&out).is_empty()
         {
-            return lines(out);
+            return Ok(lines(out));
         }
     }
-    run(&["diff", "--name-only", "HEAD"])
+    Ok(git_run(project, &["diff", "--name-only", "HEAD"])?
         .map(lines)
-        .unwrap_or_default()
+        .unwrap_or_default())
 }
 fn meta(p: &str) -> bool {
     [
@@ -243,38 +322,105 @@ fn meta(p: &str) -> bool {
             .iter()
             .any(|s| p.starts_with(s))
 }
+fn attribute(value: &Value, name: &str) -> String {
+    format!(
+        "AttributeError: '{}' object has no attribute '{name}'",
+        value.type_name()
+    )
+}
+fn merge_relevant(change: &Value, changed: &[String]) -> Result<bool, String> {
+    let Some(targets) = change.get("targets") else {
+        return Ok(false);
+    };
+    let mut code_targets = Vec::new();
+    if let Some(targets) = targets.as_array() {
+        for target in targets {
+            // Python checks set membership before calling startswith.
+            hashable(target)?;
+            if target.as_text().is_some_and(|text| text.has_surrogates()) {
+                // A Python string remains string-typed, but cannot match the
+                // strictly decoded Git paths retained by this operation.
+                continue;
+            }
+            let Some(target) = target.as_str() else {
+                return Err(attribute(target, "startswith"));
+            };
+            if !meta(target) {
+                code_targets.push(target.to_owned());
+            }
+        }
+    } else if let Some(targets) = targets.as_object() {
+        code_targets.extend(
+            targets
+                .keys()
+                .filter_map(|t| t.as_str())
+                .filter(|t| !meta(t))
+                .map(str::to_owned),
+        );
+    } else if let Some(targets) = targets.as_text() {
+        code_targets.extend(
+            targets
+                .codepoints
+                .iter()
+                .filter_map(|cp| char::from_u32(*cp))
+                .map(|c| c.to_string())
+                .filter(|t| !meta(t)),
+        );
+    } else {
+        return Err(format!(
+            "TypeError: '{}' object is not iterable",
+            targets.type_name()
+        ));
+    }
+    Ok(code_targets
+        .iter()
+        .any(|t| changed.iter().filter(|p| !meta(p)).any(|p| matches(t, p))))
+}
 fn merge(project: &Path, ledger: &Ledger) -> (u8, String, String) {
     let data = &ledger.data;
-    let changed = git_changed(project);
+    let changed = match git_changed(project) {
+        Ok(changed) => changed,
+        Err(error) => return (1, String::new(), format!("{error}\n")),
+    };
     if changed.is_empty() {
         return (0, String::new(), String::new());
     }
     let mut blockers = Vec::new();
     let mut warnings = Vec::new();
+    let fail = |message: String| (1, String::new(), format!("{message}\n"));
     if let Some(changes) = data["changes"].as_array() {
-        for (index, c) in changes.iter().enumerate() {
+        for c in changes {
+            if !c.is_object() {
+                return fail(attribute(c, "get"));
+            }
             let id = c.get("id").map(py).unwrap_or_else(|| "<unnamed>".into());
-            let relevant = c["targets"].as_array().is_some_and(|ts| {
-                ts.iter()
-                    .filter_map(Value::as_str)
-                    .filter(|t| !meta(t))
-                    .any(|t| changed.iter().filter(|p| !meta(p)).any(|p| matches(t, p)))
-            });
-            let violations: Vec<_> = c["categories"]
-                .as_object()
-                .into_iter()
-                .flat_map(|cats| {
-                    ledger.order[index]
-                        .iter()
-                        .filter_map(|key| cats.get(key).map(|v| (key, v)))
-                })
-                .filter(|(_, v)| {
-                    v.is_object()
-                        && !["pass", "covered_existing", "not_applicable"]
-                            .contains(&v["status"].as_str().unwrap_or(""))
-                })
-                .map(|(k, v)| format!("{k}.status={}", repr(&v["status"])))
-                .collect();
+            let relevant = match merge_relevant(c, &changed) {
+                Ok(value) => value,
+                Err(error) => return fail(error),
+            };
+            let mut violations = Vec::new();
+            if let Some(categories) = c.get("categories") {
+                let Some(cats) = categories.as_object() else {
+                    return fail(attribute(categories, "items"));
+                };
+                for (key, value) in cats.iter() {
+                    if !value.is_object() {
+                        continue;
+                    }
+                    if let Err(error) = hashable(&value["status"]) {
+                        return fail(error);
+                    }
+                    if !["pass", "covered_existing", "not_applicable"]
+                        .contains(&value["status"].as_str().unwrap_or(""))
+                    {
+                        violations.push(format!(
+                            "{}.status={}",
+                            key.py_str(),
+                            repr(&value["status"])
+                        ));
+                    }
+                }
+            }
             if !violations.is_empty() {
                 if relevant {
                     blockers.push(format!("{id}: {}", violations.join(", ")));
@@ -285,7 +431,16 @@ fn merge(project: &Path, ledger: &Ledger) -> (u8, String, String) {
         }
     }
     if let Some(obj) = data.as_object() {
-        for (k, v) in obj {
+        for (key, v) in obj.iter() {
+            let k = key.py_str();
+            if k != "version"
+                && k != "changes"
+                && v.is_object()
+                && !v["status"].is_null()
+                && let Err(error) = hashable(&v["status"])
+            {
+                return fail(error);
+            }
             if k != "version"
                 && k != "changes"
                 && v.is_object()
@@ -341,8 +496,8 @@ pub fn matrix(args: &[String]) -> (u8, String, String) {
             );
         }
         match fs::read_to_string(&args[2]) {
-            Ok(s) => s
-                .lines()
+            Ok(s) => python_splitlines(&s)
+                .into_iter()
                 .map(|p| normalize(&project, p))
                 .filter(|p| implementation(p))
                 .collect(),
@@ -377,14 +532,7 @@ fn validate_paths(data: &Ledger, mode: &str, paths: Vec<String>) -> (u8, String,
                 ),
             );
         };
-        match validate(
-            c,
-            mode,
-            &data.order[data.data["changes"]
-                .as_array()
-                .and_then(|cs| cs.iter().position(|x| std::ptr::eq(x, c)))
-                .unwrap_or(0)],
-        ) {
+        match validate(c, mode) {
             Err(e) => return fail(1, e),
             Ok(cs) => {
                 for c in cs {
@@ -395,15 +543,34 @@ fn validate_paths(data: &Ledger, mode: &str, paths: Vec<String>) -> (u8, String,
             }
         }
     }
-    (
-        0,
-        if mode == "precommit" && !commands.is_empty() {
-            format!("{}\n", commands.join("\n"))
-        } else {
-            String::new()
-        },
-        String::new(),
-    )
+    let mut stdout = String::new();
+    if mode == "precommit" {
+        for command in commands {
+            if let Some(start) = command.iter().position(|cp| char::from_u32(*cp).is_none()) {
+                let end = command
+                    .iter()
+                    .skip(start)
+                    .take_while(|cp| char::from_u32(**cp).is_none())
+                    .count()
+                    + start;
+                let position = if end == start + 1 {
+                    format!("character '\\u{:04x}' in position {start}", command[start])
+                } else {
+                    format!("characters in position {start}-{}", end - 1)
+                };
+                return (
+                    1,
+                    stdout,
+                    format!(
+                        "UnicodeEncodeError: 'utf-8' codec can't encode {position}: surrogates not allowed\n"
+                    ),
+                );
+            }
+            stdout.extend(command.into_iter().filter_map(char::from_u32));
+            stdout.push('\n');
+        }
+    }
+    (0, stdout, String::new())
 }
 pub fn guard(project: &Path, target: &str) -> (u8, String, String) {
     let path = target.strip_prefix("./").unwrap_or(target);
@@ -425,88 +592,4 @@ pub fn guard(project: &Path, target: &str) -> (u8, String, String) {
 
 struct Ledger {
     data: Value,
-    order: Vec<Vec<String>>,
-}
-// Keep Python dictionary order local: preserve_order would alter unrelated
-// canonical serializers throughout the crate.
-enum Ordered {
-    Object(Vec<(String, Ordered)>),
-    Array(Vec<Ordered>),
-    Scalar,
-}
-impl Ordered {
-    fn get(&self, key: &str) -> Option<&Self> {
-        if let Self::Object(entries) = self {
-            entries.iter().find(|(k, _)| k == key).map(|(_, v)| v)
-        } else {
-            None
-        }
-    }
-}
-impl<'de> serde::Deserialize<'de> for Ordered {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        struct Visitor;
-        impl<'de> serde::de::Visitor<'de> for Visitor {
-            type Value = Ordered;
-            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                f.write_str("a JSON value")
-            }
-            fn visit_map<M: serde::de::MapAccess<'de>>(
-                self,
-                mut map: M,
-            ) -> Result<Ordered, M::Error> {
-                let mut entries: Vec<(String, Ordered)> = Vec::new();
-                while let Some((key, value)) = map.next_entry::<String, Ordered>()? {
-                    if let Some(entry) = entries.iter_mut().find(|(k, _)| k == &key) {
-                        entry.1 = value;
-                    } else {
-                        entries.push((key, value));
-                    }
-                }
-                Ok(Ordered::Object(entries))
-            }
-            fn visit_seq<S: serde::de::SeqAccess<'de>>(
-                self,
-                mut seq: S,
-            ) -> Result<Ordered, S::Error> {
-                let mut entries = Vec::new();
-                while let Some(value) = seq.next_element()? {
-                    entries.push(value);
-                }
-                Ok(Ordered::Array(entries))
-            }
-            fn visit_unit<E: serde::de::Error>(self) -> Result<Ordered, E> {
-                Ok(Ordered::Scalar)
-            }
-            fn visit_bool<E: serde::de::Error>(self, _: bool) -> Result<Ordered, E> {
-                Ok(Ordered::Scalar)
-            }
-            fn visit_i64<E: serde::de::Error>(self, _: i64) -> Result<Ordered, E> {
-                Ok(Ordered::Scalar)
-            }
-            fn visit_u64<E: serde::de::Error>(self, _: u64) -> Result<Ordered, E> {
-                Ok(Ordered::Scalar)
-            }
-            fn visit_f64<E: serde::de::Error>(self, _: f64) -> Result<Ordered, E> {
-                Ok(Ordered::Scalar)
-            }
-            fn visit_str<E: serde::de::Error>(self, _: &str) -> Result<Ordered, E> {
-                Ok(Ordered::Scalar)
-            }
-        }
-        d.deserialize_any(Visitor)
-    }
-}
-fn category_order(raw: &str) -> Result<Vec<Vec<String>>, String> {
-    let data: Ordered = serde_json::from_str(raw).map_err(|e| e.to_string())?;
-    let Some(Ordered::Array(changes)) = data.get("changes") else {
-        return Ok(Vec::new());
-    };
-    Ok(changes
-        .iter()
-        .map(|c| match c.get("categories") {
-            Some(Ordered::Object(cats)) => cats.iter().map(|(k, _)| k.clone()).collect(),
-            _ => Vec::new(),
-        })
-        .collect())
 }
