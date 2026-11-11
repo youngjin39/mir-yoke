@@ -5,8 +5,8 @@
 //! before any content is written. A new empty file briefly inherits its parent's
 //! ACL; failures to establish or verify the private ACL fail closed. Windows
 //! requires those system utilities; Unix requires a supported O_NOFOLLOW constant.
-//! Selected roots resolve ancestor aliases once; descendant checks reject existing
-//! symlinks/reparse points. Callers must keep
+//! Selected roots resolve directory aliases once, including terminal links;
+//! descendant checks reject existing symlinks/reparse points. Callers must keep
 //! ancestor directories under their control: std-only checks cannot pin them
 //! against concurrent swaps. This differs from Python artifact reads, which pin
 //! the dispatch directory with a directory fd before opening its entries.
@@ -192,8 +192,9 @@ fn absolute(path: &Path) -> Result<PathBuf> {
     Ok(out)
 }
 // Resolve only the caller-selected boundary, preserving checks on descendants.
-// A missing root is rebuilt beneath its nearest existing ancestor. Do not hide
-// a dangling link (or a reparse point) at the selected root itself.
+// A missing root is rebuilt beneath its nearest existing ancestor. Existing
+// terminal directory aliases resolve here too; other terminal links retain the
+// existing guard refusal.
 fn selected_root(path: &Path) -> Result<PathBuf> {
     let path = absolute(path)?;
     let mut ancestor = path.as_path();
@@ -209,6 +210,11 @@ fn selected_root(path: &Path) -> Result<PathBuf> {
                 #[cfg(not(windows))]
                 let link = meta.file_type().is_symlink();
                 if missing.is_empty() && link {
+                    if let Ok(resolved) = fs::canonicalize(ancestor)
+                        && resolved.is_dir()
+                    {
+                        return Ok(crate::supply::plain(resolved));
+                    }
                     return Err(Error::Invalid(format!(
                         "symlink/reparse point rejected: {}",
                         ancestor.display()

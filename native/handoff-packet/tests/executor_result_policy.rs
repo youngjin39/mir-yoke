@@ -50,20 +50,17 @@ fn artifact_matches_python_order_unicode_newline_null_and_private_mode() {
         ..Default::default()
     };
     policy().after_run(&path, &result).unwrap();
-    assert_eq!(
-        fs::read_to_string(&path).unwrap(),
-        concat!(
-            "{\n  \"exit_code\": 1,\n  \"error_sig\": \"token=[REDACTED]\",\n",
-            "  \"stdout\": \"\u{d55c}\u{ae00}\",\n  \"stderr\": \"password=[REDACTED]\",\n",
-            "  \"lane_unavailable\": false,\n  \"retryable\": true,\n  \"blocked_reason\": null\n}\n"
-        )
-    );
+    let golden: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/executor_tmpdir.json")).unwrap();
+    for case in golden["cases"].as_object().unwrap().values() {
+        assert_eq!(fs::read_to_string(&path).unwrap(), case["artifact"]);
+    }
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         assert_eq!(
             fs::metadata(&path).unwrap().permissions().mode() & 0o777,
-            0o600
+            golden["cases"]["plain"]["mode"].as_u64().unwrap() as u32
         );
     }
     fs::remove_file(path).unwrap();

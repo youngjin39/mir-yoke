@@ -269,8 +269,15 @@ fn automatic_root_is_removed_and_branch_can_be_kept() {
     let wt = create_dispatch_worktree(&repo, "auto", "HEAD", "", None).unwrap();
     let root = wt.path.parent().unwrap().to_owned();
     cleanup_worktree(&wt, false).unwrap();
-    assert!(!root.exists());
-    assert!(!git(&repo, &["branch", "--list", &wt.branch]).is_empty());
+    let golden: Value =
+        serde_json::from_str(include_str!("fixtures/executor_tmpdir.json")).unwrap();
+    for case in golden["cases"].as_object().unwrap().values() {
+        assert_eq!(!root.exists(), case["automatic_removed"]);
+        assert_eq!(
+            !git(&repo, &["branch", "--list", &wt.branch]).is_empty(),
+            case["branch_kept"]
+        );
+    }
 }
 #[test]
 fn malformed_local_config_fails_and_missing_config_preserves_environment() {
@@ -443,5 +450,109 @@ fn links_below_selected_roots_are_refused() {
         fs::read_to_string(outside.join("brief.md")).unwrap(),
         "keep"
     );
+    cleanup_worktree(&wt, true).unwrap();
+}
+
+#[test]
+fn selected_terminal_root_matches_pinned_python() {
+    let fixture = Fixture::new();
+    let repo = fixture.repo("repo", &json!({"code":"initial"}));
+    let real = fixture.0.join("real");
+    fs::create_dir(&real).unwrap();
+    let alias = fixture.0.join("alias");
+    if !directory_link(&fs::canonicalize(&real).unwrap(), &alias) {
+        return;
+    }
+    let expected: Value =
+        serde_json::from_str(include_str!("fixtures/executor_tmpdir.json")).unwrap();
+    let wt = create_dispatch_worktree(&repo, "selected", "HEAD", "", Some(&alias));
+    assert_eq!(
+        wt.is_ok(),
+        expected["cases"]["terminal"]["selected_terminal_accepted"]
+    );
+    cleanup_worktree(&wt.unwrap(), true).unwrap();
+}
+
+#[test]
+fn descendant_refusal_matches_pinned_python_control() {
+    let fixture = Fixture::new();
+    let repo = fixture.repo("repo", &json!({"code":"initial"}));
+    let root = fixture.0.join("trees");
+    let outside = fixture.0.join("outside");
+    fs::create_dir(&root).unwrap();
+    fs::create_dir(&outside).unwrap();
+    fs::write(outside.join("keep"), "keep").unwrap();
+    if !directory_link(
+        &fs::canonicalize(&outside).unwrap(),
+        &root.join("descendant"),
+    ) {
+        return;
+    }
+    let golden: Value =
+        serde_json::from_str(include_str!("fixtures/executor_tmpdir.json")).unwrap();
+    let err = create_dispatch_worktree(&repo, "descendant", "HEAD", "", Some(&root)).unwrap_err();
+    assert!(err.to_string().contains("symlink/reparse point rejected:"));
+    for case in golden["cases"].as_object().unwrap().values() {
+        assert_eq!(case["descendant"]["exception"], "CalledProcessError");
+        assert_eq!(case["descendant"]["code"], 128);
+        assert_eq!(
+            fs::read_to_string(outside.join("keep")).unwrap() == "keep",
+            case["descendant"]["target_preserved"]
+        );
+    }
+}
+
+#[test]
+fn dangling_selected_root_remains_refused() {
+    let fixture = Fixture::new();
+    let repo = fixture.repo("repo", &json!({"code":"initial"}));
+    let alias = fixture.0.join("dangling");
+    if !directory_link(&fixture.0.join("missing"), &alias) {
+        return;
+    }
+    assert!(create_dispatch_worktree(&repo, "dangling", "HEAD", "", Some(&alias)).is_err());
+    assert!(!fixture.0.join("missing").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn invalid_terminal_roots_keep_existing_guard_refusal() {
+    use std::os::unix::fs::symlink;
+    let fixture = Fixture::new();
+    let repo = fixture.repo("repo", &json!({"code":"initial"}));
+    let file = fixture.0.join("file");
+    fs::write(&file, "keep").unwrap();
+    let pair = fixture.0.join("pair");
+    symlink(fixture.0.join("loop-pair"), &pair).unwrap();
+    let wt = create_dispatch_worktree(
+        &repo,
+        "safe",
+        "HEAD",
+        "brief",
+        Some(&fixture.0.join("trees")),
+    )
+    .unwrap();
+    for (name, target) in [
+        ("dangling-absolute", fixture.0.join("missing")),
+        ("dangling-relative", PathBuf::from("missing")),
+        ("loop-self", fixture.0.join("loop-self")),
+        ("loop-pair", pair),
+        ("file-alias", file.clone()),
+    ] {
+        let alias = fixture.0.join(name);
+        symlink(target, &alias).unwrap();
+        let expected = format!("symlink/reparse point rejected: {}", alias.display());
+        for refusal in [
+            create_dispatch_worktree(&repo, "attack", "HEAD", "", Some(&alias)).unwrap_err(),
+            write_private_text(&alias.join("private.md"), "probe", false).unwrap_err(),
+            secure_write(&alias.join("secure.md"), "probe", false).unwrap_err(),
+            persist_dispatch_artifacts(&wt, &repo, Some(&alias)).unwrap_err(),
+        ] {
+            assert_eq!(refusal.kind(), "ValueError", "{name}");
+            assert_eq!(refusal.to_string(), expected, "{name}");
+        }
+    }
+    assert_eq!(fs::read_to_string(file).unwrap(), "keep");
+    assert!(!fixture.0.join("missing").exists());
     cleanup_worktree(&wt, true).unwrap();
 }
