@@ -389,9 +389,12 @@ fn every_frozen_record_replays_exactly() {
     for (name, expected) in records.as_object().unwrap() {
         let tmp = tempfile::Builder::new()
             .prefix("b30-main-")
-            .tempdir()
+            .tempdir_in(std::env::temp_dir().canonicalize().unwrap())
             .unwrap();
-        assert!(tmp.path().starts_with(std::env::temp_dir()));
+        assert!(
+            tmp.path()
+                .starts_with(std::env::temp_dir().canonicalize().unwrap())
+        );
         let root = tmp.path();
         let actual = if let Some(mode) = name.strip_prefix("digest.") {
             digest_case(root, mode)

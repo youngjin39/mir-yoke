@@ -414,7 +414,7 @@ fn replay_all_67_frozen_records() {
         serde_json::from_str(include_str!("fixtures/w2/b33-runner-mk.json")).unwrap();
     assert_eq!(records.len(), 67);
     for (name, expected) in records {
-        let root = tempfile::tempdir_in(std::env::temp_dir()).unwrap();
+        let root = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
         assert_eq!(observe(&name, root.path()), expected, "record {name}");
     }
 }

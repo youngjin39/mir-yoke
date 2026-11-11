@@ -17,7 +17,7 @@ fn protocol(state: &Value, mode: &Value, code: &Value, supported: bool) -> Vec<u
     out
 }
 fn replay(record: &Value, expected: &Value) {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
     let root = dir.path();
     let isolation = frozen::prepare(root);
     frozen::install(&record["setup"], root);

@@ -54,7 +54,10 @@ impl m::MemoryConnection for RecordingConnection {
 impl Host for Observer {
     fn read(&mut self, path: &Path) -> io::Result<Vec<u8>> {
         assert!(path.starts_with(&self.root));
-        assert!(self.root.starts_with(std::env::temp_dir()));
+        assert!(
+            self.root
+                .starts_with(std::env::temp_dir().canonicalize().unwrap())
+        );
         fs::read(path)
     }
     fn git(&mut self, _: &m::GitRequest) -> io::Result<bool> {
@@ -585,9 +588,12 @@ fn every_frozen_record_replays_exactly() {
     for (name, expected) in records.as_object().unwrap() {
         let root = tempfile::Builder::new()
             .prefix("b30-phase2-")
-            .tempdir()
+            .tempdir_in(std::env::temp_dir().canonicalize().unwrap())
             .unwrap();
-        assert!(root.path().starts_with(std::env::temp_dir()));
+        assert!(
+            root.path()
+                .starts_with(std::env::temp_dir().canonicalize().unwrap())
+        );
         let (group, mode) = name.split_once('.').unwrap();
         let result = match group {
             "content" => content(root.path(), mode),

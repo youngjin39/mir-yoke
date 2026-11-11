@@ -340,7 +340,7 @@ fn frozen_records() {
             exempt += 1;
             continue;
         }
-        let tmp = tempfile::tempdir().unwrap();
+        let tmp = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
         assert_eq!(&replay(name, tmp.path()), expected, "{name}");
         replayed += 1;
     }

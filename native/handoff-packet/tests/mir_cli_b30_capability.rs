@@ -80,8 +80,14 @@ fn every_frozen_record_replays_exactly() {
             exempt += 1;
             continue;
         }
-        let root = tempfile::Builder::new().prefix("b30-").tempdir().unwrap();
-        assert!(root.path().starts_with(std::env::temp_dir()));
+        let root = tempfile::Builder::new()
+            .prefix("b30-")
+            .tempdir_in(std::env::temp_dir().canonicalize().unwrap())
+            .unwrap();
+        assert!(
+            root.path()
+                .starts_with(std::env::temp_dir().canonicalize().unwrap())
+        );
         let observed = if name.starts_with("native.") {
             native::replay(name, root.path())
         } else if name.starts_with("hooks.") {

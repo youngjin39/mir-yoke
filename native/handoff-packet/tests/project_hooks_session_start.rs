@@ -14,7 +14,7 @@ fn records() -> Vec<Value> {
 }
 
 fn assert_native(record: &Value) {
-    let root = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
     let mut command = frozen::prepare(root.path());
     frozen::install(&record["setup"], root.path());
     let before = frozen::snapshot(&root.path().join("project"));

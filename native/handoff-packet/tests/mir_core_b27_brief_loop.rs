@@ -489,7 +489,7 @@ fn frozen_brief_loop_records() {
     let (mut replayed, deferred, exempt) = (0, 0, 0);
     let mut failures = Vec::new();
     for (name, expected) in records.as_object().unwrap() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
         let actual = observed(replay(name, temp.path()), temp.path());
         if actual != *expected {
             failures.push(name.clone());

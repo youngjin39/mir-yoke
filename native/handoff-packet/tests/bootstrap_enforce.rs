@@ -39,8 +39,11 @@ fn frozen_bootstrap_enforcement_and_instructions() {
             retired += 1;
             continue;
         }
-        let dir = tempfile::tempdir().unwrap();
-        let root = dir.path();
+        let dir = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
+        // Frozen bare-provider commands require whitespace in the unquoted root.
+        // Keep its truncated path inside this private directory, away from host files.
+        let replay_root = dir.path().join("replay with spaces");
+        let root = replay_root.as_path();
         let isolation = frozen::prepare(root);
         let mut setup = fixture["scenarios"][record["scenario"].as_str().unwrap()]["setup"]
             .as_object()

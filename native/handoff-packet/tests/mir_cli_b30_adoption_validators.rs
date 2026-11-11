@@ -548,9 +548,12 @@ fn every_frozen_record_replays_exactly() {
         }
         let root = tempfile::Builder::new()
             .prefix("b30-validators-")
-            .tempdir()
+            .tempdir_in(std::env::temp_dir().canonicalize().unwrap())
             .unwrap();
-        assert!(root.path().starts_with(std::env::temp_dir()));
+        assert!(
+            root.path()
+                .starts_with(std::env::temp_dir().canonicalize().unwrap())
+        );
         let actual = observe(replay(name, root.path()), root.path());
         assert_eq!(&actual, expected, "record {name}");
         replayed += 1;

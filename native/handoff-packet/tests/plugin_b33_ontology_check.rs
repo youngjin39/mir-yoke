@@ -739,7 +739,7 @@ fn frozen_records() {
     #[cfg(unix)]
     let exempt = 0;
     for (name, expected) in records.as_object().unwrap() {
-        let tmp = tempfile::tempdir_in(std::env::temp_dir()).unwrap();
+        let tmp = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
         let actual = observe(Ok(replay(name, tmp.path())), tmp.path());
         #[cfg(windows)]
         if ["refs", "refs_codes", "paths"].contains(&name.as_str()) {
