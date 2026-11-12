@@ -88,7 +88,7 @@
     "native/handoff-packet/src/executor_admission.rs": "de2d1c0d1299e797b9c8fb96385e0bd0ee6405570f8da20a8d3c6c98e634c5c8",
     "native/handoff-packet/src/executor_dispatch.rs": "4e1f98c502d833da2cc9a9c5c8b173154a6b60eb19f722df8ee0455806d6deb3",
     "native/handoff-packet/src/executor_query.rs": "3422aa03ff3b8aa2262b3c8c3eeaacdd64bf1b27949b1f318356cfe130bb0475",
-    "native/handoff-packet/Cargo.toml": "8f39e525e125029011201ff52199a11c16d106b62d9c2c4648cedbdf69515e9e",
+    "native/handoff-packet/Cargo.toml": "8429c50b2f2f40be770263997131f151bd2dc216754127ec1b47c9d17f2ad2d1",
     "native/handoff-packet/Cargo.lock": "4ba720ecd76493aa91c8cd3774f8de7ebc7e1d6366b9a8dfd39218eb79d6850f"
   },
   "families": {

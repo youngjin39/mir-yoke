@@ -82,6 +82,10 @@ skips POSIX replay and retains the platform-specific suite.
   fast path is byte-identical and all 42 bootstrap-native envelopes replay
   unchanged.
 
+- E02b re-pins the crate manifest after adding only the `adoption-install`
+  `[[bin]]` declaration. The `bootstrap-gate` target, shell sources and every
+  frozen observation remain unchanged; full replay passes.
+
 ## W1-Y9a SessionStart reference extension
 
 `session-start.json` adds 36 isolated shell-reference observations without changing
