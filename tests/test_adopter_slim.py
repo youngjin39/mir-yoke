@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import platform
 import subprocess
 from pathlib import Path
@@ -493,18 +492,16 @@ def test_should_detect_a_payload_file_changed_between_preflight_and_move(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _project(tmp_path)
-    original_replace = os.replace
     changed = False
 
-    def replace_with_concurrent_change(source: Path | str, destination: Path | str) -> None:
+    def replace_with_concurrent_change(_root: Path, source: Path, destination: Path) -> None:
         nonlocal changed
         source_path = Path(source)
         if source_path == tmp_path / "src/mir/provider.py" and not changed:
             _write(tmp_path / "tests/provider_test.py", "# concurrent product edit\n")
             changed = True
-        original_replace(source, destination)
 
-    monkeypatch.setattr("mir.core.adoption.slim.os.replace", replace_with_concurrent_change)
+    monkeypatch.setattr("mir.core.adoption.slim._before_move", replace_with_concurrent_change)
 
     with pytest.raises(SlimError, match="provider path changed before move"):
         apply_adopter_slim(

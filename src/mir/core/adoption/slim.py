@@ -10,13 +10,13 @@ import platform
 import re
 import stat
 import subprocess
-import tempfile
 import uuid
 from collections.abc import Callable
 from pathlib import Path, PurePosixPath
 
 import jsonschema
 
+from . import _filesystem as confined
 from .boundary import (
     BOUNDARY_PATH,
     BoundaryError,
@@ -214,7 +214,7 @@ def _ensure_quarantine_root(root: Path) -> Path:
     if quarantine_root.exists() or quarantine_root.is_symlink():
         return _validated_project_directory(root, quarantine_root, label="slim quarantine root")
     try:
-        os.mkdir(quarantine_root, 0o700)
+        confined.mkdir(root, quarantine_root, 0o700)
     except OSError as exc:
         raise SlimError(f"cannot create slim quarantine root: {exc}") from exc
     return _validated_project_directory(root, quarantine_root, label="slim quarantine root")
@@ -306,29 +306,36 @@ def _prune_empty_parents(path: Path, project_root: Path) -> None:
     current = path.parent
     while current != project_root and _is_within(current, project_root):
         try:
-            current.rmdir()
+            with confined.parent(project_root, current) as (descriptor, name):
+                os.rmdir(name, dir_fd=descriptor)
         except OSError:
             return
         current = current.parent
 
 
 def _atomic_fsync_json(path: Path, payload: dict[str, object]) -> None:
-    descriptor, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    temp_path = Path(temp_name)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(payload, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp_path, path)
-        directory = os.open(path.parent, os.O_RDONLY)
+    root = path.parent.parent
+    with confined.parent(root, path) as (directory, name):
+        descriptor, temp_name = confined.temporary(directory, name, path.parent)
         try:
-            os.fsync(directory)
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, indent=2, sort_keys=True)
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            _before_move(root, path.parent / temp_name, path)
+            # Reopen after the seam to refuse a replaced parent, then rename by fd.
+            confined.replace(root, path.parent / temp_name, path)
+            fsync_directory = os.open(".", os.O_RDONLY | os.O_DIRECTORY, dir_fd=directory)
+            try:
+                os.fsync(fsync_directory)
+            finally:
+                os.close(fsync_directory)
         finally:
-            os.close(directory)
-    finally:
-        temp_path.unlink(missing_ok=True)
+            try:
+                os.unlink(temp_name, dir_fd=directory)
+            except FileNotFoundError:
+                pass
 
 
 def _load_journal(root: Path) -> dict[str, object] | None:
@@ -383,8 +390,12 @@ def _safe_parent_for_restore(root: Path, parent: Path) -> bool:
             if stat.S_ISLNK(mode) or not stat.S_ISDIR(mode):
                 return False
         else:
-            current.mkdir()
+            confined.mkdir(root, current)
     return True
+
+
+def _before_move(root: Path, source: Path, destination: Path) -> None:
+    """Deterministic check/use seam; production does nothing."""
 
 
 def _rollback_journal(root: Path, journal: dict[str, object]) -> list[str]:
@@ -409,13 +420,14 @@ def _rollback_journal(root: Path, journal: dict[str, object]) -> list[str]:
             errors.append(f"{relative}: restore parent is unsafe")
             continue
         try:
-            os.replace(destination, source)
+            _before_move(root, destination, source)
+            confined.replace(root, destination, source)
         except OSError as exc:
             errors.append(f"{relative}: {exc}")
     if not errors:
         _prune_empty_parents(quarantine / "placeholder", root / ".mir")
-        (root / _JOURNAL_PATH).unlink(missing_ok=True)
-        (root / _LOCK_PATH).unlink(missing_ok=True)
+        confined.unlink(root, root / _JOURNAL_PATH)
+        confined.unlink(root, root / _LOCK_PATH)
     return errors
 
 
@@ -436,7 +448,7 @@ def recover_adopter_slim(project_root: Path) -> dict[str, object]:
                 pid = -1
             if _process_alive(pid):
                 raise SlimError("another adopter slim transaction is active")
-            lock_path.unlink(missing_ok=True)
+            confined.unlink(root, lock_path)
         return {"status": "clean"}
     if _process_alive(journal.get("pid")):
         raise SlimError("another adopter slim transaction is active")
@@ -455,8 +467,8 @@ def recover_adopter_slim(project_root: Path) -> dict[str, object]:
         and isinstance(receipt.get("slim"), dict)
         and receipt["slim"].get("transaction_id") == journal["transaction_id"]
     ):
-        (root / _JOURNAL_PATH).unlink(missing_ok=True)
-        lock_path.unlink(missing_ok=True)
+        confined.unlink(root, root / _JOURNAL_PATH)
+        confined.unlink(root, lock_path)
         return {"status": "committed", "transaction_id": journal["transaction_id"]}
     errors = _rollback_journal(root, journal)
     if errors:
@@ -475,8 +487,8 @@ def commit_adopter_slim(project_root: Path, report: dict[str, object]) -> None:
         raise SlimError("slim commit cannot match the durable transaction journal")
     if journal.get("status") != "verified":
         raise SlimError("slim transaction was not verified before commit")
-    (root / _JOURNAL_PATH).unlink()
-    (root / _LOCK_PATH).unlink()
+    confined.unlink(root, root / _JOURNAL_PATH, missing_ok=False)
+    confined.unlink(root, root / _LOCK_PATH, missing_ok=False)
 
 
 def rollback_adopter_slim(project_root: Path, report: dict[str, object]) -> None:
@@ -601,9 +613,15 @@ def apply_adopter_slim(
     quarantine_root = _ensure_quarantine_root(root)
     lock_path = root / _LOCK_PATH
     try:
-        descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        with confined.parent(root, lock_path) as (directory, name):
+            descriptor = os.open(
+                name, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600, dir_fd=directory
+            )
     except FileExistsError as exc:
         raise SlimError("another adopter slim transaction is active") from exc
+    except OSError as exc:
+        exc.filename = str(lock_path)
+        raise
     with os.fdopen(descriptor, "w", encoding="utf-8") as lock_handle:
         lock_handle.write(str(os.getpid()))
         lock_handle.flush()
@@ -639,7 +657,8 @@ def apply_adopter_slim(
                 raise SlimError(
                     "slim quarantine destination parent is unsafe: " + relative.as_posix()
                 )
-            os.replace(source, destination)
+            _before_move(root, source, destination)
+            confined.replace(root, source, destination)
             moved.append((source, destination))
             _prune_empty_parents(source, root)
         remaining = payload_findings(root, boundary=boundary, profile=profile)

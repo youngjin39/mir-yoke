@@ -9,6 +9,8 @@ import stat
 import tempfile
 from pathlib import Path
 
+from . import _filesystem as confined
+
 _TRANSIENT_DIRS = {"__pycache__", ".pytest_cache", ".ruff_cache"}
 _TRANSIENT_SUFFIXES = {".pyc", ".pyo"}
 
@@ -60,6 +62,10 @@ def _runtime_entries(runtime_root: Path, manifest: Path) -> list[dict[str, objec
     return sorted(entries, key=lambda item: str(item["path"]))
 
 
+def _before_move(root: Path, source: Path, destination: Path) -> None:
+    """Deterministic check/use seam; production does nothing."""
+
+
 def create_runtime_manifest(
     runtime_root: Path,
     manifest: Path,
@@ -81,19 +87,38 @@ def create_runtime_manifest(
         "entries": _runtime_entries(root, target),
     }
     body = json.dumps(document, indent=2, sort_keys=True) + "\n"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{target.name}.", dir=target.parent
-    )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            handle.write(body)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, target)
-    finally:
-        temporary.unlink(missing_ok=True)
+    if os.name == "nt":
+        # shortcut: preserve Windows publication until a handle-relative Windows
+        # implementation is authorized; POSIX dir_fd is unavailable there.
+        target.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{target.name}.", dir=target.parent
+        )
+        temporary = Path(temporary_name)
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                handle.write(body)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, target)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return document
+    with confined.parent(root, target) as (directory, name):
+        descriptor, temporary_name = confined.temporary(directory, name, target.parent)
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                handle.write(body)
+                handle.flush()
+                os.fsync(handle.fileno())
+            temporary = target.parent / temporary_name
+            _before_move(root, temporary, target)
+            confined.replace(root, temporary, target)
+        finally:
+            try:
+                os.unlink(temporary_name, dir_fd=directory)
+            except FileNotFoundError:
+                pass
     return document
 
 
