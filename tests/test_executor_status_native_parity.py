@@ -85,6 +85,26 @@ def readable(result):
             if key.endswith("_hex") else value for key, value in result.items()}
 
 
+def filesystem_reference(tmp_path, case, database, support, golden):
+    """Keep filesystem-dependent errno bytes tied to the exact Python pin.
+
+    The frozen macOS record observes errno 92; some execution boundaries return
+    errno 1 for the same chmod. Run the full pinned oracle without translating
+    either diagnostic, so native error classes, bytes and effects remain checked.
+    """
+    oracle = support.get("SUPPORT")
+    archive = support["archive_reference"] if oracle is None else oracle.archive_reference
+    reference = tmp_path / "pinned filesystem reference"
+    assert archive(reference) == golden["archive_sha256"]
+    home = (tmp_path / "pinned filesystem home").resolve()
+    support["seed"](home, case, database)
+    shutil.copytree(reference / "tools", home / "tools")
+    support["install_local_hook"](home, case)
+    return support["capture"](home, case, [
+        sys.executable, "-c", "from tools.mir_executor.cli import main; main()",
+    ])
+
+
 def test_status_reference_provenance():
     assert GOLDEN["reference"] == SUPPORT["PIN"]
     assert GOLDEN["entrypoint"] == "tools.mir_executor.cli.main (direct console call)"
@@ -115,6 +135,8 @@ def test_status_frozen_parity(binary, database, tmp_path, route, case):
         command = [str(binary), "--home-root", str(home)]
     actual = SUPPORT["capture"](home, case, command)
     expected = case.get("expected_by_route", {}).get(route, case["expected"])
+    if case["name"] == "nonutf8-db-path":
+        expected = filesystem_reference(tmp_path, case, database, SUPPORT, GOLDEN)
     assert actual == expected, {
         "case": case["name"], "route": route,
         "actual": readable(actual), "expected": readable(expected),

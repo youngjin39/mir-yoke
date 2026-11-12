@@ -177,9 +177,13 @@ def test_declaration_presence_not_truthiness_is_the_boundary(tmp_path, value):
 
 @pytest.mark.parametrize('content', [b'{"verifiers":', b'\xff', b'[1, 2]'])
 @pytest.mark.parametrize('command', ['list-jobs', 'help'])
-def test_unrelated_legacy_config_stays_lazy(tmp_path, content, command):
-    home = tmp_path / 'home'
-    environment = seed(home)
+def test_unrelated_legacy_config_stays_lazy(binary, tmp_path, content, command):
+    if command == 'list-jobs':
+        home, _, environment = PARITY['pinned_home'](binary, tmp_path)
+        environment['MIR_EXECUTOR_IMPL'] = 'python'
+    else:
+        home = tmp_path / 'home'
+        environment = seed(home)
     config = home / 'config'
     config.mkdir()
     (config / 'mir-executor.local.json').write_bytes(content)

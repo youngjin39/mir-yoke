@@ -30,7 +30,8 @@ schemas/rows) are refused before ownership. Supported dry-run and apply retain
 the frozen Python results and filesystem/ledger effects in
 `native/handoff-packet/tests/fixtures/g6/sweep.json`; dry-run writes nothing.
 
-`status` requires the pinned native executor except for two compatibility declines:
+`status`, `result` and `list-jobs` require the pinned native executor except for
+two compatibility declines:
 stream codecs or error handlers outside its bounded family, and a configured
 legacy `tools/mir_executor/local.py` (unless local JSON explicitly sets
 `python_local_hooks: false`). These use the existing Python implementation.
@@ -38,12 +39,12 @@ The native family is UTF-8 (including BOM), ASCII, Latin-1, CP1252, UTF-16 and
 UTF-32, with strict, ignore, replace, backslashreplace, xmlcharrefreplace,
 surrogateescape and surrogatepass handlers. Codec aliases are canonicalized.
 LocalBridge redirects hook stdout to stderr and has no output frames, so legacy
-hooks require Python to preserve their stdout and ordering. Direct native status
+hooks require Python to preserve their stdout and ordering. Direct native query
 calls with legacy hooks return an owned exit 2 asking for the Python facade;
 they do not launch Git or the Python bridge. Implementation
 selectors, argument syntax and supported non-UTF-8 streams still use native.
 Missing or invalid pins, spawn failure and an older binary's exit 64 produce an
-owned exit 2 diagnostic without forwarding. The Python status implementation stays
+owned exit 2 diagnostic without forwarding. The Python query implementation stays
 available as a reference until its separately authorized retirement.
 
 Other executor commands retain their own fallback contracts. The shared Python
@@ -685,46 +686,39 @@ Executor sync may place `executor-query` in the target `.mir/bin/` from the
 provider lock, with its path and SHA-256 recorded atomically in the host-local
 `.mir/bin/executor-query.json` after the verified binary install. Keep `.mir/bin/`
 git-ignored. The tracked `tools/mir_executor/COMMON_MANIFEST.json` carries no host
-pin. No host artifact removes any existing local pin so queries use Python; other
-files are preserved. Dry-run writes nothing. `check` verifies a local pin only
+pin. Without a host artifact, any existing local pin is removed; native-owned
+queries then refuse the missing pin. Other files are preserved. Dry-run writes
+nothing. `check` verifies a local pin only
 when its file exists; absence is not drift.
 The lightweight entrypoint verifies those bytes before trying `status`, `result`,
 `list-jobs`, direct `execute`, or `cancel`, before importing the Python executor. Both module and installed
 CLI routes use that entrypoint.
 
-`status` and `result` own parsing, registry creation/migration/private permissions,
-and output codecs natively, regardless of implementation selectors. Missing or
+`status`, `result` and `list-jobs` own parsing, registry creation/migration/private
+permissions, and output codecs natively, regardless of implementation selectors. Missing or
 invalid pins, spawn failures and native exit 64 are final refusals. Their only
 Python compatibility routes are stream codecs/error handlers outside the native
 family and invoking-home `local.py` when `python_local_hooks` is not explicitly
 false. Same-home native queries never launch a bridge or child process.
-Cross-root `status` and `result` run `git -C <invoking-home> rev-parse
+Cross-root `status`, `result` and `list-jobs` run `git -C <invoking-home> rev-parse
 --show-toplevel` for both reference authorization passes, inheriting the caller's
 cwd and environment. Help and final-parser errors stop after the first pass, as in the
-reference. Cross-root `list-jobs` runs those checks only when the
-invoking home declares native target authorization; otherwise it declines before
-starting Git and the Python compatibility route performs the reference checks.
+reference.
 These Git children preserve reference admission behavior; queries never launch
 a Python bridge or an execution provider. `result` prints
 stored artifact paths without opening them and slices stored stdout/stderr to
 500 characters (or bytes for BLOB values).
 
-For `list-jobs`, the native reader validates SQLite read-only before
-opening the writable registry, which may create or migrate it and tighten private
-permissions. It admits only
-queries with a fully understood schema, including when
-`tools/mir_executor/local.py` or `config/mir-executor.local.json` exists. These
-same-home queries do not read local configuration or call execution or authorization hooks.
-Python still imports `local.py` and calls `register_execute_options` while building
-its parser. Accepted divergence: if that import or registration fails, Python
-queries fail while native queries can answer without loading local hooks.
-For these queries, unsupported arguments, help, legacy schemas, unsupported
-sidecars and cross-target requests without native home authorization return 64 without output; the caller then
-runs Python with the original arguments. Spawn failure, a missing or mismatched
-pin, `MIR_EXECUTOR_QUERY_IMPL=python`, and `MIR_NATIVE_HOOKS=0` also retain Python.
-`MIR_EXECUTOR_IMPL=python` disables native routes except `status` and `result`; execute and cancel also
-honor `MIR_EXECUTOR_EXECUTE_IMPL=python` and `MIR_EXECUTOR_CANCEL_IMPL=python`.
-For a different target root, the invoking home must be a Git root and declare
+All three queries use the reference's writable registry path, including schema
+migration and private permissions. Schema shapes, database sidecars, help and
+invalid arguments are native-owned outcomes rather than read-only preflight
+declines. Invoking-home local hooks retain only the compatibility route described
+above.
+`MIR_EXECUTOR_IMPL=python` disables native routes except `status`, `result` and
+`list-jobs`; execute and cancel also honor `MIR_EXECUTOR_EXECUTE_IMPL=python` and
+`MIR_EXECUTOR_CANCEL_IMPL=python`.
+For a different target root, the invoking home must be a Git root. Commands
+outside the native-owned query family also require
 `native_policy.target_admission.authorize_target: true`. Supported `sweep`,
 `cancel`, `status`, `list-jobs`, `result` and `resume` routes apply that home's
 native `authorize` decision, including `repository_local`, before registry
@@ -732,11 +726,11 @@ writes. Refusals use execute's authorization diagnostics. Resume also checks
 the saved family before preparing execution. Queries, cancel and sweep expose
 no common `--family` option; unsupported parser extensions on other commands still decline before
 effects. Query pins belong to the invoking home, never the target. Target registry
-paths and local sweep/resume options remain target-owned. Existing conservative
-schema and parser-extension declines for `list-jobs`, and cancel
+paths and local sweep/resume options remain target-owned. Cancel
 local-hook declines still apply; a native
 policy home then fails closed if Python fallback cannot honor its policy.
-Homes without native authorization keep their previous routing and output.
+Homes without native authorization retain reference authorization for native-owned
+queries; other commands keep their previous routing and output.
 
 Native `execute --dispatch` and `resume` compose explicit brief agents and
 target-local `resolve_agent_route` hooks through the bridge, including opaque
@@ -755,8 +749,8 @@ claims ownership before hook imports, output, registry writes, or provider launc
 if writing the receipt fails, it exits 64 before any effect and Python runs. With
 an owned receipt every exit code, including 64, is final. An older pinned binary
 that declines with 64 without a receipt therefore falls back to Python.
-Query buffering remains; `status` and `result` select their two compatibility
-declines before native launch. Exit 64 never triggers Python for either command
+Query buffering remains; `status`, `result` and `list-jobs` select their two
+compatibility declines before native launch. Exit 64 never triggers Python for these commands
 after a native launch.
 The entrypoint forwards interrupts and termination to the native process group
 on POSIX, and console interrupts or termination to the direct child on Windows,
@@ -764,8 +758,9 @@ then waits and escalates to kill when needed. As in Python, interruption leaves
 an inserted background row running and leaves its ledger category unchanged.
 Windows parity runs in the dedicated native Windows CI lane without enabling
 automated Windows bootstrap.
-Text containing characters newly assigned after Unicode 15.0 also uses Python,
-preserving representation across supported Python Unicode database versions.
+Commands outside the native-owned query family may use Python for text containing
+characters newly assigned after Unicode 15.0. Native-owned queries preserve the
+reference representation through their native output path.
 
 ## Native command hooks (`mir-executor.hooks@1`)
 

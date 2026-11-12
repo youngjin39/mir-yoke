@@ -1,7 +1,6 @@
 """Pinned cross-root reads and exact transitive Git child traces.
 
-D03 raw list-jobs preserves its unowned-policy decline (64, no child or effects);
-the public facade then executes the pinned Python admission behavior exactly once.
+Status, result and list-jobs own the pinned Python admission behavior natively.
 """
 import json
 import runpy
@@ -47,14 +46,11 @@ def test_crossroot_frozen_parity(binary, database, tmp_path, route, case):  # no
     home = (tmp_path / "synthetic home").resolve()
     SUPPORT["seed"](home, case, database)
     if route == "module":
-        install_package(home, binary, compatibility=case["command"] == "list-jobs")
+        install_package(home, binary)
     command = ([sys.executable, "-m", "tools.mir_executor"] if route == "module"
                else [str(binary), "--home-root", str(home)])
     actual = SUPPORT["capture"](home, case, command)
     expected = case["expected"]
-    if route == "binary" and case["command"] == "list-jobs" and not case.get("native_home"):
-        expected = {"exit": 64, "stdout_hex": "", "stderr_hex": "",
-                    "storage": case["before_storage"], "git_trace": []}
     assert actual == expected, {"actual": readable(actual), "expected": readable(expected)}
 
 

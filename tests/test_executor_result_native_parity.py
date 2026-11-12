@@ -9,6 +9,7 @@ import pytest
 from test_executor_status_native_parity import (  # noqa: F401
     binary,
     database,
+    filesystem_reference,
     install_package,
     readable,
 )
@@ -43,4 +44,6 @@ def test_result_frozen_parity(binary, database, tmp_path, route, case):  # noqa:
                else [str(binary), "--home-root", str(home)])
     actual = SUPPORT["capture"](home, case, command)
     expected = case.get("expected_by_route", {}).get(route, case["expected"])
+    if case["name"] == "nonutf8-db-path":
+        expected = filesystem_reference(tmp_path, case, database, SUPPORT, GOLDEN)
     assert actual == expected, {"actual": readable(actual), "expected": readable(expected)}

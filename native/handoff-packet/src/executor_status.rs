@@ -1,4 +1,4 @@
-//! Status and result share owned parsing, registry migration, and Python-compatible text.
+//! Status, result and list-jobs share owned parsing, registry migration, and Python-compatible text.
 use handoff_packet::executor_registry::{Error as RegistryError, JobRegistry};
 use rusqlite::types::{Value, ValueRef};
 use std::{
@@ -123,8 +123,10 @@ pub fn owns(raw: &[OsString]) -> bool {
 fn requested(raw: &[OsString]) -> Option<&'static str> {
     let mut index = 0;
     while index < raw.len() {
-        if raw[index] == "status" || raw[index] == "result" {
-            return Some(if raw[index] == "result" {
+        if raw[index] == "status" || raw[index] == "result" || raw[index] == "list-jobs" {
+            return Some(if raw[index] == "list-jobs" {
+                "list-jobs"
+            } else if raw[index] == "result" {
                 "result"
             } else {
                 "status"
@@ -151,6 +153,8 @@ fn requested(raw: &[OsString]) -> Option<&'static str> {
 }
 struct Args {
     result: bool,
+    list: bool,
+    filter: Option<OsString>,
     db: PathBuf,
     root: PathBuf,
     job: OsString,
@@ -199,11 +203,14 @@ fn root_parse_error(raw: &[OsString]) -> Option<String> {
     None
 }
 fn parse(raw: &[OsString], cwd: &Path) -> Parse {
+    let list_query = requested(raw) == Some("list-jobs");
     let mut db = None;
     let mut root = cwd.to_owned();
     let mut job = None;
     let mut command = false;
     let mut result = false;
+    let mut list = false;
+    let mut filter = None;
     let mut unknown = Vec::new();
     let mut help = false;
     let mut global_help = false;
@@ -229,9 +236,10 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
             index += 1;
             continue;
         }
-        if !command && (arg == "status" || arg == "result") {
+        if !command && matches!(arg.as_str(), "status" | "result" | "list-jobs") {
             command = true;
             result = arg == "result";
+            list = arg == "list-jobs";
             index += 1;
             continue;
         }
@@ -240,8 +248,10 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
             .map_or((arg.as_str(), None), |(k, v)| (k, Some(v)));
         let name = if !command && !global_ended && option(key, "--jobs-db") {
             Some("--jobs-db")
-        } else if command && option(key, "--job-id") {
+        } else if command && !list && option(key, "--job-id") {
             Some("--job-id")
+        } else if command && list && option(key, "--status") {
+            Some("--status")
         } else if command && option(key, "--repo-root") {
             Some("--repo-root")
         } else {
@@ -262,10 +272,24 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
                     root = PathBuf::from(value);
                 }
                 "--job-id" => job = Some(value),
+                "--status" => {
+                    if !matches!(
+                        value.to_str(),
+                        Some("running" | "completed" | "cancelled" | "failed")
+                    ) {
+                        return Parse::Error(format!(
+                            "argument --status: invalid choice: {} (choose from running, completed, cancelled, failed)",
+                            repr_points(&os_points(&value))
+                        ));
+                    }
+                    filter = Some(value);
+                }
                 _ => (),
             }
         } else if (command || !global_ended) && (key.starts_with("-h") || option(key, "--help")) {
-            if let Some(value) = inline {
+            if let Some(value) = inline
+                && (!list_query || !(help || global_help))
+            {
                 global_final_error = !command;
                 final_error = Some(format!(
                     "argument -h/--help: ignored explicit argument {}",
@@ -288,8 +312,10 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
         }
         index += 1;
     }
-    let Some(job) = job else {
-        return Parse::Error("the following arguments are required: --job-id".into());
+    let job = match job {
+        Some(job) => job,
+        None if list => OsString::new(),
+        None => return Parse::Error("the following arguments are required: --job-id".into()),
     };
     let root = if root.is_absolute() {
         root
@@ -300,6 +326,8 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
     let db = if db.is_absolute() { db } else { cwd.join(db) };
     Parse::Args(Args {
         result,
+        list,
+        filter,
         db,
         root,
         job,
@@ -694,6 +722,48 @@ fn status(args: &Args) -> Result<(Vec<String>, String, i32)> {
     let db = resolve(&args.db)?;
     let registry = JobRegistry::open(&db).map_err(|e| registry_error(e, &db))?;
     let connection = registry.connection();
+    if args.list {
+        let sql = if args.filter.is_some() {
+            "SELECT * FROM jobs WHERE status = ? ORDER BY started_at DESC"
+        } else {
+            "SELECT * FROM jobs ORDER BY started_at DESC"
+        };
+        let mut statement = connection.prepare(sql).map_err(sql_error)?;
+        let names = statement
+            .column_names()
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        let mut rows = if let Some(filter) = &args.filter {
+            statement.query([os_text(filter)]).map_err(sql_error)?
+        } else {
+            statement.query([]).map_err(sql_error)?
+        };
+        let mut records = Vec::new();
+        while let Some(row) = rows.next().map_err(sql_error)? {
+            records.push(read_values(row, &names, true)?);
+        }
+        for record in &records {
+            validate_record(&names, record, true)?;
+        }
+        if records.is_empty() {
+            let filter = args
+                .filter
+                .as_ref()
+                .map_or_else(String::new, |f| format!(" (status={})", repr(&os_text(f))));
+            return Ok((
+                vec![format!("[LIST] no jobs found{filter}\n")],
+                String::new(),
+                0,
+            ));
+        }
+        let mut out = Vec::new();
+        for record in &records {
+            let (frames, _, _) = render_record(args, &names, record)?;
+            out.extend(frames);
+        }
+        return Ok((out, String::new(), 0));
+    }
     let mut statement = connection
         .prepare("SELECT * FROM jobs WHERE job_id = ?")
         .map_err(sql_error)?;
@@ -733,21 +803,38 @@ fn status(args: &Args) -> Result<(Vec<String>, String, i32)> {
             1,
         ));
     };
+    let values = read_values(row, &names, false)?;
+    validate_record(&names, &values, false)?;
+    render_record(args, &names, &values)
+}
+fn read_values(row: &rusqlite::Row<'_>, names: &[String], list: bool) -> Result<Vec<Value>> {
     let mut values = Vec::new();
     for (index, name) in names.iter().enumerate() {
         let value=match row.get_ref(index).map_err(sql_error)? {
             ValueRef::Null => Value::Null, ValueRef::Integer(n) => Value::Integer(n), ValueRef::Real(n) => Value::Real(n), ValueRef::Blob(bytes) => Value::Blob(bytes.to_vec()),
-            ValueRef::Text(bytes) => Value::Text(std::str::from_utf8(bytes).map_err(|_| format!("sqlite3.OperationalError: Could not decode to UTF-8 column '{}' with text {}",name,repr(&String::from_utf8_lossy(bytes))))?.to_owned()),
+            ValueRef::Text(bytes) => Value::Text(std::str::from_utf8(bytes).map_err(|_| {
+                let text = if list { bytes.split(|b| *b == 0).next().unwrap_or(bytes) } else { bytes };
+                format!("sqlite3.OperationalError: Could not decode to UTF-8 column '{}' with text {}",name,repr(&String::from_utf8_lossy(text)))
+            })?.to_owned()),
         };
         values.push(value);
     }
-    let get = |name: &str| -> Result<&Value> {
-        names
-            .iter()
-            .position(|n| n == name)
-            .map(|i| &values[i])
-            .ok_or_else(|| "IndexError: No item with that key".to_owned())
-    };
+    Ok(values)
+}
+fn get_value<'a>(
+    names: &[String],
+    values: &'a [Value],
+    name: &str,
+    list: bool,
+) -> Result<&'a Value> {
+    names
+        .iter()
+        .position(|n| n == name || (list && n.eq_ignore_ascii_case(name)))
+        .map(|i| &values[i])
+        .ok_or_else(|| "IndexError: No item with that key".to_owned())
+}
+fn validate_record(names: &[String], values: &[Value], list: bool) -> Result<()> {
+    let get = |name: &str| get_value(names, values, name, list);
     // _row_to_record eagerly decodes both JSON fields, even though status does
     // not display them. Other dynamically typed columns remain Python values.
     for name in ["job_id", "change_id", "category", "family", "repo_root"] {
@@ -770,6 +857,35 @@ fn status(args: &Args) -> Result<(Vec<String>, String, i32)> {
         "cancel_requested",
     ] {
         get(name)?;
+    }
+    Ok(())
+}
+fn render_record(
+    args: &Args,
+    names: &[String],
+    values: &[Value],
+) -> Result<(Vec<String>, String, i32)> {
+    let get = |name: &str| get_value(names, values, name, args.list);
+    if args.list {
+        let reason = match blocked(get("stdout")?)? {
+            Some(reason) => Some(reason),
+            None => blocked(get("stderr")?)?,
+        };
+        return Ok((
+            vec![format!(
+                "[JOB] job_id={} status={} change_id={} category={} dispatch_brief_path={} resume_count={} started_at={} blocked_reason={}\n",
+                display(get("job_id")?, false)?,
+                display(get("status")?, false)?,
+                display(get("change_id")?, true)?,
+                display(get("category")?, true)?,
+                display(get("dispatch_brief_path")?, true)?,
+                display(get("resume_count")?, false)?,
+                display(get("started_at")?, false)?,
+                reason.map_or_else(|| "None".into(), |s| repr(&s)),
+            )],
+            String::new(),
+            0,
+        ));
     }
     if args.result {
         if get("status")? == &Value::Text("running".into()) {
@@ -1140,8 +1256,20 @@ fn emit_frames(out: Vec<String>, err: String, code: i32) -> i32 {
 }
 pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     let command = requested(raw).unwrap_or("status");
-    let usage = USAGE.replace(" status", &format!(" {command}"));
-    let help = HELP.replace(" status", &format!(" {command}"));
+    let usage = if command == "list-jobs" {
+        format!(
+            "usage: {PROG} list-jobs [--status STATUS]\n                                              [--repo-root PATH]\n"
+        )
+    } else {
+        USAGE.replace(" status", &format!(" {command}"))
+    };
+    let help = if command == "list-jobs" {
+        format!(
+            "usage: {PROG} list-jobs [-h] [--status STATUS]\n                                              [--repo-root PATH]\n\noptions:\n  -h, --help        show this help message and exit\n  --status STATUS   Filter by status: running / completed / cancelled /\n                    failed.\n  --repo-root PATH  Repository root path (for default jobs.db location).\n"
+        )
+    } else {
+        HELP.replace(" status", &format!(" {command}"))
+    };
     // The facade owns the approved legacy compatibility decline. Direct native
     // callers cannot import hooks or start a bridge as a second execution route.
     let disabled = match handoff_packet::executor_local::python_local_hooks_disabled(home) {
@@ -1229,7 +1357,8 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 )
             } else {
                 format!(
-                    "usage: {PROG} {command} [-h] --job-id JOB_ID\n                                           [--repo-root PATH]\n{PROG} {command}: error: {error}\n"
+                    "{help_usage}{PROG} {command}: error: {error}\n",
+                    help_usage = help.split("\n\n").next().unwrap_or("").to_owned() + "\n"
                 )
             },
             2,

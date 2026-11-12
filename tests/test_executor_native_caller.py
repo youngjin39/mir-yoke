@@ -113,7 +113,7 @@ def test_unsafe_or_unsupported_native_query_falls_back_unchanged(
         return run(*args, **kwargs)
 
     monkeypatch.setattr(subprocess, 'run', record_run)
-    owned = command in {'status', 'result'} and guard != 'mutation'
+    owned = command in {'status', 'result', 'list-jobs'} and guard != 'mutation'
     assert entrypoint.main(argv) == (2 if owned else 7)
     assert calls == ([] if owned else [argv])
     attempts = {'decline', 'spawn', 'python', 'disabled', 'encoding'} if owned else {

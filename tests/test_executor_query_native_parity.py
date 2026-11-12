@@ -107,10 +107,12 @@ def invoke(binary, home, argv, *, python=False, cwd=None):
                        MIR_EXECUTOR_QUERY_IMPL="python", PYTHONDONTWRITEBYTECODE="1")
     result = subprocess.run(command + argv, cwd=cwd or home, env=environment,
                             capture_output=True, timeout=15, check=False)
+    stdout = result.stdout
     stderr = result.stderr
     if python and result.returncode == 1 and b"Traceback (most recent call last):" in stderr:
+        stdout = b""
         stderr = stderr.splitlines(keepends=True)[-1]
-    return result.stdout, stderr, result.returncode
+    return stdout, stderr, result.returncode
 
 
 def install_pin(binary, home):
@@ -201,7 +203,7 @@ def test_cross_root_native_policy_admission(binary, home, tmp_path, command, pol
         assert (target / 'tasks/jobs.db').read_bytes() == before
         if policy_mode in {'absent', 'unowned'}:
             expected = (invoke(binary, home, argv, python=True, cwd=target)
-                        if command in {'status', 'result'} else (b'', b'', 64))
+                        if command in {'status', 'result', 'list-jobs'} else (b'', b'', 64))
             assert result == expected
         elif policy_mode == 'refuse':
             expected = ('policy notice\n[mir_executor] authorize_target refused '
@@ -231,7 +233,7 @@ def test_cross_root_query_family_option_declines(binary, home, tmp_path, command
         argv += ['--job-id', 'running']
     before = (target / 'tasks/jobs.db').read_bytes()
     expected = (invoke(binary, home, argv, python=True, cwd=target)
-                if command in {'status', 'result'} else (b'', b'', 64))
+                if command in {'status', 'result', 'list-jobs'} else (b'', b'', 64))
     assert invoke(binary, home, argv, cwd=target) == expected
     assert (target / 'tasks/jobs.db').read_bytes() == before
 
@@ -317,10 +319,11 @@ def test_executor_query_local_files_match_python(
     before = (home / "tasks/jobs.db").read_bytes()
     legacy_error = f'[mir_executor] legacy {argv[0]} hooks require the Python facade\n'.encode()
     expected_native = ((b'', legacy_error, 2)
-                       if argv[0] in {'status', 'result'} and files != 'config' else reference)
+                       if argv[0] in {'status', 'result', 'list-jobs'} and files != 'config'
+                       else reference)
     assert invoke(binary, home, argv) == expected_native, trace_details()
     install_pin(binary, home)
-    if argv[0] not in {'status', 'result'} or files == 'config':
+    if argv[0] not in {'status', 'result', 'list-jobs'} or files == 'config':
         (home / "tools/mir_executor/cli.py").write_text(
             "raise AssertionError('Python CLI imported')\n")
     assert pinned_cli(home, route, argv) == reference, trace_details()
@@ -340,11 +343,11 @@ def test_executor_query_local_import_failure_accepted_divergence(binary, home, r
     assert b"local import failed" in python[1], trace_details()
     legacy_error = f'[mir_executor] legacy {argv[0]} hooks require the Python facade\n'.encode()
     expected_native = ((b'', legacy_error, 2)
-                       if argv[0] in {'status', 'result'} else reference)
+                       if argv[0] in {'status', 'result', 'list-jobs'} else reference)
     assert invoke(binary, home, argv) == expected_native, trace_details()
     install_pin(binary, home)
     actual = pinned_cli(home, route, argv)
-    if argv[0] in {'status', 'result'}:
+    if argv[0] in {'status', 'result', 'list-jobs'}:
         assert actual[0] == python[0]
         assert actual[1].splitlines()[-1] == python[1].splitlines()[-1]
         assert actual[2] == python[2]
@@ -378,28 +381,31 @@ def test_executor_query_real_pin_result_unicode_is_owned(binary, home, route):
 
 
 @pytest.mark.parametrize("suffix", ["-journal", "-shm", "-wal"])
-def test_executor_query_declines_database_sidecars(binary, home, suffix):
+def test_executor_query_database_sidecars_are_owned(binary, home, suffix):
     database = home / "tasks/jobs.db"
     sidecar = Path(str(database) + suffix)
     sidecar.write_bytes(b"active database sidecar")
     before = database.read_bytes()
-    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64), trace_details()
+    native = invoke(binary, home, ["list-jobs"])
+    native_sidecar = sidecar.read_bytes() if sidecar.exists() else None
     assert database.read_bytes() == before, trace_details()
-    assert sidecar.read_bytes() == b"active database sidecar", trace_details()
+    sidecar.write_bytes(b"active database sidecar")
+    assert native == invoke(binary, home, ["list-jobs"], python=True), trace_details()
+    assert (sidecar.read_bytes() if sidecar.exists() else None) == native_sidecar, trace_details()
 
 
-def test_executor_query_declines_non_utf8_streams(binary, home, monkeypatch):
+def test_executor_query_non_utf8_streams_are_owned(binary, home, monkeypatch):
     monkeypatch.setenv("PYTHONIOENCODING", "ascii")
-    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64), trace_details()
+    assert invoke(binary, home, ["list-jobs"]) == invoke(
+        binary, home, ["list-jobs"], python=True), trace_details()
 
 
-def test_executor_query_declines_parent_database_components(binary, home):
-    assert invoke(binary, home, ["--jobs-db", "tasks/../tasks/jobs.db", "list-jobs"]) == (
-        b"", b"", 64,
-    ), trace_details()
+def test_executor_query_parent_database_components_are_owned(binary, home):
+    argv = ["--jobs-db", "tasks/../tasks/jobs.db", "list-jobs"]
+    assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True), trace_details()
 
 
-def test_executor_query_declines_absent_database_through_dangling_parent(binary, home):
+def test_executor_query_absent_database_through_dangling_parent_is_owned(binary, home):
     database = home / "tasks/jobs.db"
     database.unlink()
     database.parent.rmdir()
@@ -407,14 +413,15 @@ def test_executor_query_declines_absent_database_through_dangling_parent(binary,
         database.parent.symlink_to(home / "absent", target_is_directory=True)
     except OSError:
         pytest.skip("symlink unavailable")
-    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64), trace_details()
-    assert not (home / "absent").exists(), trace_details()
+    assert invoke(binary, home, ["list-jobs"]) == invoke(
+        binary, home, ["list-jobs"], python=True), trace_details()
+    assert (home / "absent/jobs.db").exists(), trace_details()
 
 
 @pytest.mark.parametrize("case", ["cross-target",
                                       "symlink", "malformed-json", "invalid-type",
                                       "unicode-version"])
-def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, case):
+def test_executor_query_storage_shapes_are_owned(binary, home, tmp_path, case):
     database = home / "tasks/jobs.db"
     argv = ["list-jobs"]
     if case == "legacy":
@@ -441,7 +448,7 @@ def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, cas
         with _connect(database) as connection:
             connection.execute("UPDATE jobs SET stdout=? WHERE job_id='running'", ("\U0001fae9",))
     before = database.read_bytes() if database.exists() else None
-    assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+    assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True), trace_details()
     assert (database.read_bytes() if database.exists() else None) == before, trace_details()
 
 
@@ -468,7 +475,7 @@ def test_executor_query_absent_database_matches_with_creation(binary, home, argv
 def test_executor_query_declines_arguments(binary, home, argv):
     before = (home / "tasks/jobs.db").read_bytes()
     expected = (invoke(binary, home, argv, python=True)
-                if argv and argv[0] in {"status", "result"} else (b"", b"", 64))
+                if argv and argv[0] in {"status", "result", "list-jobs"} else (b"", b"", 64))
     assert invoke(binary, home, argv) == expected, trace_details()
     assert (home / "tasks/jobs.db").read_bytes() == before, trace_details()
 
@@ -500,22 +507,23 @@ def test_executor_query_surrogate_escapes(binary, home, field, escape, command):
 @pytest.mark.parametrize("field", ["codex_args", "ai_run_metadata"])
 @pytest.mark.parametrize("payload", [r'["\u12"]', r'["\ud800\u12"]', r'["\ud80z"]'])
 @pytest.mark.parametrize("command", ["status", "result", "list-jobs"])
-def test_executor_query_invalid_unicode_escape_declines(binary, home, field, payload, command):
+def test_executor_query_invalid_unicode_escape_is_owned(binary, home, field, payload, command):
     with pytest.raises(json.JSONDecodeError):
         json.loads(payload)
     with _connect(home / "tasks/jobs.db") as connection:
         connection.execute(f"UPDATE jobs SET {field}=? WHERE job_id='failed'", (payload,))
     argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
     expected = (invoke(binary, home, argv, python=True)
-                if command in {"status", "result"} else (b"", b"", 64))
+                if command in {"status", "result", "list-jobs"} else (b"", b"", 64))
     assert invoke(binary, home, argv) == expected, trace_details()
 
 
 @pytest.mark.parametrize("payload", [r'"\udce2"', r'["\udce2", 1]', r'{"x":"\udce2"}'])
-def test_executor_query_surrogate_args_shape_still_declines(binary, home, payload):
+def test_executor_query_surrogate_args_shapes_are_owned(binary, home, payload):
     with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET codex_args=? WHERE job_id='failed'", (payload,))
-    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64), trace_details()
+    assert invoke(binary, home, ["list-jobs"]) == invoke(
+        binary, home, ["list-jobs"], python=True), trace_details()
 
 
 @pytest.mark.parametrize("job", ["running", "failed", "cancelled", "complete-\ud55c\U0001f600",
@@ -630,8 +638,9 @@ def test_pinned_cancel_and_query_selectors(binary, home, command, selector):
     selectors = {selector: '0' if selector == 'MIR_NATIVE_HOOKS' else 'python'} if selector else {}
     arguments = [command] + (['--job-id', 'running'] if command == 'cancel' else [])
     result = pinned_cli(home, 'module', arguments, selectors=selectors)
-    assert result[2] == (1 if selector else 0), (result, trace_details())
-    assert (b'python selected' in result[1]) == bool(selector), trace_details()
+    python_selected = bool(selector) and command != 'list-jobs'
+    assert result[2] == (1 if python_selected else 0), (result, trace_details())
+    assert (b'python selected' in result[1]) == python_selected, trace_details()
 
 
 def test_pinned_cancel_declines_hook_to_python(binary, home):
