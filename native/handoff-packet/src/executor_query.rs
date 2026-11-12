@@ -14,6 +14,8 @@ use std::fs;
 use std::io::{self, Read, Write};
 use std::path::{Component, Path, PathBuf};
 
+mod executor_status;
+
 type Result<T> = std::result::Result<T, ()>;
 
 // Admit current schemas and missing Python-migratable columns. Extended and
@@ -677,6 +679,16 @@ fn main() {
         return;
     }
     let raw: Vec<OsString> = std::env::args_os().skip(1).collect();
+    if raw.first().is_some_and(|value| value == "--home-root")
+        && let Some(home) = raw.get(1)
+        && executor_status::owns(&raw[2..])
+    {
+        let code = match std::env::current_dir() {
+            Ok(cwd) => executor_status::run(&raw[2..], &cwd, Path::new(home)),
+            Err(error) => executor_status::cwd_failure(error),
+        };
+        std::process::exit(code);
+    }
     if raw.first().is_some_and(|value| value == "--home-root")
         && let Some(home) = raw.get(1)
     {

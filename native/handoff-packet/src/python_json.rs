@@ -650,6 +650,11 @@ pub fn parse(text: &str) -> Result<Value, Error> {
     parse_codes(text.chars().map(u32::from).collect())
 }
 
+/// Parse already decoded Python text without losing lone surrogate code points.
+pub fn parse_codepoints(codepoints: Vec<u32>) -> Result<Value, Error> {
+    parse_codes(codepoints)
+}
+
 /// sys.stdin uses UTF-8 with surrogateescape: undecodable bytes remain codepoints.
 pub fn parse_stdin(bytes: &[u8]) -> Result<Value, Error> {
     let mut chars = Vec::new();

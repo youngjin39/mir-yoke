@@ -469,19 +469,14 @@ pub(crate) fn io_failure(error: std::io::Error, path: &Path) -> PolicyFailure {
 }
 /// Python OSError text: `[Errno N] text: 'path'` when an errno is known.
 pub(crate) fn python_os_error_message(error: &std::io::Error, path: &Path) -> String {
-    let message = error.to_string();
+    let message = python_os_error_text(error);
     // Python reports C runtime errno text; on Windows Rust carries the Win32 code and text instead.
     let errno = match (cfg!(windows), error.kind()) {
         (true, std::io::ErrorKind::NotFound) => Some((2, "No such file or directory")),
         (true, std::io::ErrorKind::PermissionDenied) => Some((13, "Permission denied")),
-        _ => error.raw_os_error().map(|number| {
-            (
-                number,
-                message
-                    .rsplit_once(" (os error ")
-                    .map_or(message.as_str(), |(message, _)| message),
-            )
-        }),
+        _ => error
+            .raw_os_error()
+            .map(|number| (number, message.as_str())),
     };
     match errno {
         Some((number, text)) => format!(
@@ -489,6 +484,19 @@ pub(crate) fn python_os_error_message(error: &std::io::Error, path: &Path) -> St
             crate::executor_execute::repr(&path.display().to_string())
         ),
         None => message.clone(),
+    }
+}
+
+/// Platform errno text without Rust's numeric suffix.
+pub fn python_os_error_text(error: &std::io::Error) -> String {
+    let message = error.to_string();
+    if error.raw_os_error().is_some() {
+        message
+            .rsplit_once(" (os error ")
+            .map_or(message.as_str(), |(message, _)| message)
+            .to_owned()
+    } else {
+        message
     }
 }
 fn issue(

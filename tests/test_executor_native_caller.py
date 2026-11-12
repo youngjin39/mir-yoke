@@ -64,13 +64,14 @@ runpy.run_module(MODULE, run_name="__main__")
     'decline', 'spawn', 'hash', 'pin', 'symlink', 'python', 'disabled', 'mutation',
     'cross_target', 'encoding', 'pin_symlink', 'manifest_only',
 ])
+@pytest.mark.parametrize('command', ['status', 'result'])
 def test_unsafe_or_unsupported_native_query_falls_back_unchanged(
-    tmp_path, monkeypatch, capsys, guard,
+    tmp_path, monkeypatch, capsys, guard, command,
 ):
     executable, manifest = _install(tmp_path, 'echo must-not-leak; exit 64\n')
     monkeypatch.delenv('MIR_EXECUTOR_QUERY_IMPL', raising=False)
     monkeypatch.delenv('MIR_NATIVE_HOOKS', raising=False)
-    argv = ['status', '--repo-root', str(tmp_path), '--job-id', 'job']
+    argv = [command, '--repo-root', str(tmp_path), '--job-id', 'job']
     if guard == 'spawn':
         executable.chmod(0o644)
     elif guard == 'hash':
@@ -102,8 +103,8 @@ def test_unsafe_or_unsupported_native_query_falls_back_unchanged(
         main=lambda args: calls.append(args) or 7,
     ))
     entrypoint = importlib.import_module('tools.mir_executor.entrypoint')
-    if guard != 'cross_target':
-        monkeypatch.setattr(entrypoint, '_HOME_ROOT', tmp_path)
+    monkeypatch.setattr(entrypoint, '_HOME_ROOT',
+                        tmp_path / 'invoking-home' if guard == 'cross_target' else tmp_path)
     native_calls = []
     run = subprocess.run
 
@@ -112,10 +113,16 @@ def test_unsafe_or_unsupported_native_query_falls_back_unchanged(
         return run(*args, **kwargs)
 
     monkeypatch.setattr(subprocess, 'run', record_run)
-    assert entrypoint.main(argv) == 7
-    assert calls == [argv]
-    assert len(native_calls) == (1 if guard in {'decline', 'spawn'} else 0)
-    assert capsys.readouterr() == ('', '')
+    owned = command == 'status' and guard != 'mutation'
+    assert entrypoint.main(argv) == (2 if owned else 7)
+    assert calls == ([] if owned else [argv])
+    attempts = {'decline', 'spawn', 'python', 'disabled', 'encoding'} if owned else {
+        'decline', 'spawn'}
+    assert len(native_calls) == (1 if guard in attempts else 0)
+    output = capsys.readouterr()
+    assert output.out == ''
+    assert output.err == ('[mir_executor] pinned native status unavailable or incompatible; '
+                          'Python status is retired\n' if owned else '')
 
 
 def test_native_exit_status_and_streams_are_forwarded(tmp_path, monkeypatch, capsys):

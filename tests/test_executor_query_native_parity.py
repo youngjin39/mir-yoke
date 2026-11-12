@@ -100,13 +100,17 @@ def home(tmp_path):
 
 
 def invoke(binary, home, argv, *, python=False, cwd=None):
-    command = ([sys.executable, "-m", "tools.mir_executor"] if python else
+    command = ([sys.executable, "-c",
+                "from tools.mir_executor.cli import main; main()"] if python else
                [str(binary), "--home-root", str(home)])
-    environment = dict(os.environ, PYTHONUTF8="1", PYTHONPATH=str(home),
+    environment = dict(os.environ, HOME=str(home), PYTHONUTF8="1", PYTHONPATH=str(home),
                        MIR_EXECUTOR_QUERY_IMPL="python", PYTHONDONTWRITEBYTECODE="1")
     result = subprocess.run(command + argv, cwd=cwd or home, env=environment,
                             capture_output=True, timeout=15, check=False)
-    return result.stdout, result.stderr, result.returncode
+    stderr = result.stderr
+    if python and result.returncode == 1 and b"Traceback (most recent call last):" in stderr:
+        stderr = stderr.splitlines(keepends=True)[-1]
+    return result.stdout, stderr, result.returncode
 
 
 def install_pin(binary, home):
@@ -122,7 +126,7 @@ def install_pin(binary, home):
 
 def pinned_cli(home, route, argv, *, selectors=None):
     prefix = ["-m", "tools.mir_executor"] if route == "module" else ["-m", "mir.cli", "executor"]
-    environment = dict(os.environ, PYTHONUTF8="1",
+    environment = dict(os.environ, HOME=str(home), PYTHONUTF8="1",
                        PYTHONPATH=os.pathsep.join((str(home), str(ROOT / "src"))),
                        MIR_EXECUTOR_QUERY_IMPL="native", MIR_NATIVE_HOOKS="1",
                        PYTHONDONTWRITEBYTECODE="1")
@@ -196,7 +200,9 @@ def test_cross_root_native_policy_admission(binary, home, tmp_path, command, pol
     else:
         assert (target / 'tasks/jobs.db').read_bytes() == before
         if policy_mode in {'absent', 'unowned'}:
-            assert result == (b'', b'', 64)
+            expected = (invoke(binary, home, argv, python=True, cwd=target)
+                        if command == 'status' else (b'', b'', 64))
+            assert result == expected
         elif policy_mode == 'refuse':
             expected = ('policy notice\n[mir_executor] authorize_target refused '
                         f'{target}: SystemExit: 1\n').replace('\n', os.linesep).encode()
@@ -224,7 +230,9 @@ def test_cross_root_query_family_option_declines(binary, home, tmp_path, command
     if command != 'list-jobs':
         argv += ['--job-id', 'running']
     before = (target / 'tasks/jobs.db').read_bytes()
-    assert invoke(binary, home, argv, cwd=target) == (b'', b'', 64)
+    expected = (invoke(binary, home, argv, python=True, cwd=target)
+                if command == 'status' else (b'', b'', 64))
+    assert invoke(binary, home, argv, cwd=target) == expected
     assert (target / 'tasks/jobs.db').read_bytes() == before
 
 
@@ -307,9 +315,13 @@ def test_executor_query_local_files_match_python(
     reference = invoke(binary, home, argv, python=True)
     assert reference[2] == 0, (reference, trace_details())
     before = (home / "tasks/jobs.db").read_bytes()
-    assert invoke(binary, home, argv) == reference, trace_details()
+    expected_native = ((b'', b'[mir_executor] legacy status hooks require the Python facade\n', 2)
+                       if argv[0] == 'status' and files != 'config' else reference)
+    assert invoke(binary, home, argv) == expected_native, trace_details()
     install_pin(binary, home)
-    (home / "tools/mir_executor/cli.py").write_text("raise AssertionError('Python CLI imported')\n")
+    if argv[0] != 'status' or files == 'config':
+        (home / "tools/mir_executor/cli.py").write_text(
+            "raise AssertionError('Python CLI imported')\n")
     assert pinned_cli(home, route, argv) == reference, trace_details()
     assert (home / "tasks/jobs.db").read_bytes() == before, trace_details()
 
@@ -325,9 +337,17 @@ def test_executor_query_local_import_failure_accepted_divergence(binary, home, r
     python = invoke(binary, home, argv, python=True)
     assert python[2] != 0, trace_details()
     assert b"local import failed" in python[1], trace_details()
-    assert invoke(binary, home, argv) == reference, trace_details()
+    expected_native = ((b'', b'[mir_executor] legacy status hooks require the Python facade\n', 2)
+                       if argv[0] == 'status' else reference)
+    assert invoke(binary, home, argv) == expected_native, trace_details()
     install_pin(binary, home)
-    assert pinned_cli(home, route, argv) == reference, trace_details()
+    actual = pinned_cli(home, route, argv)
+    if argv[0] == 'status':
+        assert actual[0] == python[0]
+        assert actual[1].splitlines()[-1] == python[1].splitlines()[-1]
+        assert actual[2] == python[2]
+    else:
+        assert actual == reference, trace_details()
 
 
 @pytest.mark.parametrize("route", ["module", "mir-cli"])
@@ -445,7 +465,9 @@ def test_executor_query_absent_database_matches_with_creation(binary, home, argv
 ])
 def test_executor_query_declines_arguments(binary, home, argv):
     before = (home / "tasks/jobs.db").read_bytes()
-    assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+    expected = (invoke(binary, home, argv, python=True)
+                if argv and argv[0] == "status" else (b"", b"", 64))
+    assert invoke(binary, home, argv) == expected, trace_details()
     assert (home / "tasks/jobs.db").read_bytes() == before, trace_details()
 
 
@@ -482,7 +504,9 @@ def test_executor_query_invalid_unicode_escape_declines(binary, home, field, pay
     with _connect(home / "tasks/jobs.db") as connection:
         connection.execute(f"UPDATE jobs SET {field}=? WHERE job_id='failed'", (payload,))
     argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
-    assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+    expected = (invoke(binary, home, argv, python=True)
+                if command == "status" else (b"", b"", 64))
+    assert invoke(binary, home, argv) == expected, trace_details()
 
 
 @pytest.mark.parametrize("payload", [r'"\udce2"', r'["\udce2", 1]', r'{"x":"\udce2"}'])

@@ -6,8 +6,11 @@ a decline only without an exact owned receipt in a private temporary directory.
 The binary claims ownership before importing hooks, output, registry writes, or
 provider launch; if the receipt cannot be written it exits 64 before any effect.
 With an owned receipt every exit code, including 64, is final. Older binaries
-that decline with 64 without a receipt fall back to Python, except sweep, which
-requires native admission and refuses without a Python fallback. Signals reach the
+that decline with 64 without a receipt fall back to Python, except status and
+sweep, which require native admission and refuse without a Python fallback. Status
+ignores implementation selectors; only codecs/handlers outside the native family
+and configured legacy local hooks use the Python compatibility implementation.
+Signals reach the
 native process group on POSIX; Windows forwards console interrupts and always
 terminates/reaps the direct child.
 Like Python, interruption does not finalize a running background job's row.
@@ -83,6 +86,8 @@ def _pinned_query(root: pathlib.Path, pin: object) -> pathlib.Path | None:
 
 
 def _native_query(argv: list[str]) -> int | None:
+    if _status_requested(argv):
+        return _native_status(argv)
     if (os.environ.get('MIR_EXECUTOR_IMPL') == 'python'
             or os.environ.get('MIR_EXECUTOR_QUERY_IMPL') == 'python'
             or os.environ.get('MIR_NATIVE_HOOKS') == '0'):
@@ -227,8 +232,75 @@ def _write_output(stream, data: bytes) -> None:
         stream.write(data.decode('utf-8', errors='surrogateescape'))
 
 
+def _status_requested(argv: list[str]) -> bool:
+    remaining = argv
+    while remaining:
+        option, separator, _ = remaining[0].partition('=')
+        if option != '--' and option.startswith('--') and any(
+                name.startswith(option) for name in ('--jobs-db', '--repo-root')):
+            remaining = remaining[1 if separator else 2:]
+        elif remaining[0].startswith('-'):
+            remaining = remaining[1:]
+        else:
+            break
+    return bool(remaining and remaining[0] == 'status')
+
+
+def _status_codec_decline() -> bool:
+    """Decline exactly streams outside the native codec/error-handler family."""
+    encodings = {
+        'utf-8', 'utf-8-sig', 'ascii', 'iso8859-1', 'cp1252',
+        'utf-16', 'utf-16-le', 'utf-16-be', 'utf-32', 'utf-32-le', 'utf-32-be',
+    }
+    handlers = {
+        'strict', 'ignore', 'replace', 'backslashreplace', 'xmlcharrefreplace',
+        'surrogateescape', 'surrogatepass',
+    }
+    return any(codecs.lookup(getattr(stream, 'encoding', None) or 'utf-8').name
+               not in encodings or (getattr(stream, 'errors', None) or 'strict')
+               not in handlers for stream in (sys.stdout, sys.stderr))
+
+
+def _native_status(argv: list[str]) -> int:
+    """Native status owns selectors, syntax, pin failures and exit 64."""
+    try:
+        pin = json.loads(_safe_path(_HOME_ROOT, QUERY_PIN).read_bytes())
+        executable = _pinned_query(_HOME_ROOT, pin)
+        if executable is not None:
+            environment = dict(os.environ)
+            environment['MIR_EXECUTOR_ARGPARSE_PROG'] = os.path.basename(sys.argv[0])
+            environment.setdefault('MIR_EXECUTOR_PYTHON', sys.executable)
+            for name, stream in (('STDOUT', sys.stdout), ('STDERR', sys.stderr)):
+                for attribute in ('encoding', 'errors'):
+                    value = getattr(stream, attribute, None)
+                    if value:
+                        if attribute == 'encoding':
+                            value = codecs.lookup(value).name
+                        environment[f'MIR_EXECUTOR_{name}_{attribute.upper()}'] = value
+            result = subprocess.run(
+                [str(executable), '--home-root', str(_HOME_ROOT), *argv],
+                capture_output=True, check=False, env=environment,
+            )
+            if result.returncode != 64:
+                _write_output(sys.stdout, result.stdout)
+                _write_output(sys.stderr, result.stderr)
+                return result.returncode if result.returncode >= 0 else 128 - result.returncode
+    except (OSError, ValueError, TypeError, AttributeError, LookupError):
+        pass
+    print('[mir_executor] pinned native status unavailable or incompatible; '
+          'Python status is retired', file=sys.stderr)
+    return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    if _status_requested(argv):
+        if _status_codec_decline() or (_HOME_ROOT / 'tools/mir_executor/local.py').exists():
+            # LocalBridge redirects hook stdout to stderr and has no output frames.
+            from tools.mir_executor.cli import main as python_main
+
+            return python_main(argv)
+        return _native_status(argv)
     remaining = argv
     if remaining and remaining[0] == '--jobs-db':
         remaining = remaining[2:]

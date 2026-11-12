@@ -30,6 +30,21 @@ schemas/rows) are refused before ownership. Supported dry-run and apply retain
 the frozen Python results and filesystem/ledger effects in
 `native/handoff-packet/tests/fixtures/g6/sweep.json`; dry-run writes nothing.
 
+`status` requires the pinned native executor except for two compatibility declines:
+stream codecs or error handlers outside its bounded family, and a configured
+legacy `tools/mir_executor/local.py`. These use the existing Python implementation.
+The native family is UTF-8 (including BOM), ASCII, Latin-1, CP1252, UTF-16 and
+UTF-32, with strict, ignore, replace, backslashreplace, xmlcharrefreplace,
+surrogateescape and surrogatepass handlers. Codec aliases are canonicalized.
+LocalBridge redirects hook stdout to stderr and has no output frames, so legacy
+hooks require Python to preserve their stdout and ordering. Direct native status
+calls with legacy hooks return an owned exit 2 asking for the Python facade;
+they do not launch Git or the Python bridge. Implementation
+selectors, argument syntax and supported non-UTF-8 streams still use native.
+Missing or invalid pins, spawn failure and an older binary's exit 64 produce an
+owned exit 2 diagnostic without forwarding. The Python status implementation stays
+available as a reference until its separately authorized retirement.
+
 Other executor commands retain their own fallback contracts. The shared Python
 policy library remains required by execute/dispatch handlers in
 `tools/mir_executor/cli.py` and routing in `tools/mir_executor/dispatch.py`.
@@ -664,18 +679,20 @@ The lightweight entrypoint verifies those bytes before trying `status`, `result`
 `list-jobs`, direct `execute`, or `cancel`, before importing the Python executor. Both module and installed
 CLI routes use that entrypoint.
 
-The native reader opens SQLite read-only and never migrates it. It admits only
+For `result` and `list-jobs`, the native reader validates SQLite read-only before
+opening the writable registry, which may create or migrate it and tighten private
+permissions. It admits only
 queries with a fully understood schema, including when
 `tools/mir_executor/local.py` or `config/mir-executor.local.json` exists. These
 same-home queries do not read local configuration or call execution or authorization hooks.
 Python still imports `local.py` and calls `register_execute_options` while building
 its parser. Accepted divergence: if that import or registration fails, Python
 queries fail while native queries can answer without loading local hooks.
-Unsupported arguments, help, legacy schemas, unsupported
+For these queries, unsupported arguments, help, legacy schemas, unsupported
 sidecars and cross-target requests without native home authorization return 64 without output; the caller then
 runs Python with the original arguments. Spawn failure, a missing or mismatched
 pin, `MIR_EXECUTOR_QUERY_IMPL=python`, and `MIR_NATIVE_HOOKS=0` also retain Python.
-`MIR_EXECUTOR_IMPL=python` disables every native route; execute and cancel also
+`MIR_EXECUTOR_IMPL=python` disables native routes except `status`; execute and cancel also
 honor `MIR_EXECUTOR_EXECUTE_IMPL=python` and `MIR_EXECUTOR_CANCEL_IMPL=python`.
 For a different target root, the invoking home must be a Git root and declare
 `native_policy.target_admission.authorize_target: true`. Supported `sweep`,
@@ -686,7 +703,8 @@ the saved family before preparing execution. Queries, cancel and sweep expose
 no common `--family` option; unsupported parser extensions still decline before
 effects. Query pins belong to the invoking home, never the target. Target registry
 paths and local sweep/resume options remain target-owned. Existing conservative
-schema, parser-extension and cancel local-hook declines still apply; a native
+schema and parser-extension declines for `result` and `list-jobs`, and cancel
+local-hook declines still apply; a native
 policy home then fails closed if Python fallback cannot honor its policy.
 Homes without native authorization keep their previous routing and output.
 
@@ -707,7 +725,8 @@ claims ownership before hook imports, output, registry writes, or provider launc
 if writing the receipt fails, it exits 64 before any effect and Python runs. With
 an owned receipt every exit code, including 64, is final. An older pinned binary
 that declines with 64 without a receipt therefore falls back to Python.
-Query buffering and its existing decline protocol are unchanged.
+Query buffering remains; `status` selects its two compatibility declines before
+native launch. Exit 64 never triggers Python status after a native launch.
 The entrypoint forwards interrupts and termination to the native process group
 on POSIX, and console interrupts or termination to the direct child on Windows,
 then waits and escalates to kill when needed. As in Python, interruption leaves
