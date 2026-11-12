@@ -1,0 +1,5115 @@
+{
+  "pin": "1324a3c",
+  "records": [
+    {
+      "argv": [],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: the following arguments are required: command\n"
+      }
+    },
+    {
+      "argv": [
+        "--help"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest [-h] {create,verify} ...\n\npositional arguments:\n  {create,verify}\n\noptions:\n  -h, --help       show this help message and exit\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "-h"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest [-h] {create,verify} ...\n\npositional arguments:\n  {create,verify}\n\noptions:\n  -h, --help       show this help message and exit\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "--h"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest [-h] {create,verify} ...\n\npositional arguments:\n  {create,verify}\n\noptions:\n  -h, --help       show this help message and exit\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--help"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\n\noptions:\n  -h, --help            show this help message and exit\n  --runtime-root RUNTIME_ROOT\n  --manifest MANIFEST\n  --source-url SOURCE_URL\n  --source-commit SOURCE_COMMIT\n  --constraints-sha256 CONSTRAINTS_SHA256\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "verify",
+        "-h"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest verify [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\n\noptions:\n  -h, --help            show this help message and exit\n  --runtime-root RUNTIME_ROOT\n  --manifest MANIFEST\n  --source-url SOURCE_URL\n  --source-commit SOURCE_COMMIT\n  --constraints-sha256 CONSTRAINTS_SHA256\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "bogus"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument command: invalid choice: 'bogus' (choose from create, verify)\n"
+      }
+    },
+    {
+      "argv": [
+        "--"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: the following arguments are required: command\n"
+      }
+    },
+    {
+      "argv": [
+        "--unknown"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: the following arguments are required: command\n"
+      }
+    },
+    {
+      "argv": [
+        "--unknown",
+        "create"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "--help",
+        "bogus"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest [-h] {create,verify} ...\n\npositional arguments:\n  {create,verify}\n\noptions:\n  -h, --help       show this help message and exit\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "create"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "verify"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest verify [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest verify: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "--=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument -h/--help: ignored explicit argument 'x'\n"
+      }
+    },
+    {
+      "argv": [
+        "-hello"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest [-h] {create,verify} ...\n\npositional arguments:\n  {create,verify}\n\noptions:\n  -h, --help       show this help message and exit\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --=x could match --help, --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--help=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument 'x'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-hello"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\n\noptions:\n  -h, --help            show this help message and exit\n  --runtime-root RUNTIME_ROOT\n  --manifest MANIFEST\n  --source-url SOURCE_URL\n  --source-commit SOURCE_COMMIT\n  --constraints-sha256 CONSTRAINTS_SHA256\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--help",
+        "--source=x"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\n\noptions:\n  -h, --help            show this help message and exit\n  --runtime-root RUNTIME_ROOT\n  --manifest MANIFEST\n  --source-url SOURCE_URL\n  --source-commit SOURCE_COMMIT\n  --constraints-sha256 CONSTRAINTS_SHA256\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source=x",
+        "--help"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --source=x could match --source-url, --source-commit\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source",
+        "x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --source could match --source-url, --source-commit\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "--help"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --runtime-root: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "-"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "--unknown",
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: unrecognized arguments: --unknown\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "verify",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value"
+      ],
+      "result": {
+        "command": "verify",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "extra"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: unrecognized arguments: extra\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--",
+        "extra"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: unrecognized arguments: -- extra\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--unknown=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: unrecognized arguments: --unknown=x\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--",
+        "--help"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: unrecognized arguments: -- --help\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "./a//b/"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "a/b",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "//a//./b/"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "//a/b",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest="
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": ".",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "\uac00"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "\uac00",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "a\nb"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "a\nb",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --runtime-root: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime",
+        "tail"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "tail",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--r"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --runtime-root: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--r",
+        "tail"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "tail",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--m"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --manifest: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--m",
+        "tail"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "tail",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--s"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --s could match --source-url, --source-commit\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--s",
+        "tail"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --s could match --source-url, --source-commit\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --source could match --source-url, --source-commit\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source",
+        "tail"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --source could match --source-url, --source-commit\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source-"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --source- could match --source-url, --source-commit\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-",
+        "tail"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --source- could match --source-url, --source-commit\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source-u"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-u",
+        "tail"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "tail",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source-c"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-commit: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-c",
+        "tail"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "tail",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--constraints"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --constraints-sha256: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints",
+        "tail"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "tail"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--",
+        "tail"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: unrecognized arguments: -- tail\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "-x",
+        "tail"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: unrecognized arguments: -x tail\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-h=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument 'x'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "-h=x",
+        "tail"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument 'x'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--="
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --= could match --help, --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--=",
+        "tail"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: ambiguous option: --= could match --help, --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--h=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument 'x'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--h=x",
+        "tail"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument 'x'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-1",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-1",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-1",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-1",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-1",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-1",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-1",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-1",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-1"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=-1"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-1"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-.5",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-.5",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-.5",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-.5",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-.5",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-.5",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-.5",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-.5",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-.5"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=-.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-.5"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-1.5",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-1.5",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-1.5",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-1.5",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-1.5",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-1.5",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-1.5",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-1.5",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-1.5"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=-1.5"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-1.5"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "-1."
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --runtime-root: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=-1."
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-1.",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "-1."
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --manifest: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=-1."
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-1.",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-1."
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=-1."
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-1.",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "-1."
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-commit: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=-1."
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-1.",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "-1."
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --constraints-sha256: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=-1."
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-1."
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "-1e3"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --runtime-root: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=-1e3"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-1e3",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "-1e3"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --manifest: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=-1e3"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-1e3",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-1e3"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=-1e3"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-1e3",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "-1e3"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-commit: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=-1e3"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-1e3",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "-1e3"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --constraints-sha256: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=-1e3"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-1e3"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "--bad"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --runtime-root: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=--bad"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "--bad",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "--bad"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --manifest: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=--bad"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "--bad",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "--bad"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=--bad"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "--bad",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "--bad"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-commit: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=--bad"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "--bad",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "--bad"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --constraints-sha256: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=--bad"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "--bad"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "--source-url=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --runtime-root: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=--source-url=x"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "--source-url=x",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "--source-url=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --manifest: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=--source-url=x"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "--source-url=x",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "--source-url=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=--source-url=x"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "--source-url=x",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "--source-url=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-commit: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=--source-url=x"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "--source-url=x",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "--source-url=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --constraints-sha256: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=--source-url=x"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "--source-url=x"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-x y",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-x y",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-x y",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-x y",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-x y",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-x y",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-x y",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-x y",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-x y"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=-x y"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-x y"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        ""
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": ".",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root="
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": ".",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        ""
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": ".",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest="
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": ".",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        ""
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url="
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        ""
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit="
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        ""
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": ""
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256="
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": ""
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "-",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "-",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "-",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=-"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "-"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "--"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --runtime-root: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=--"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "--",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "--"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --manifest: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=--"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "--",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "--"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=--"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "--",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "--"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-commit: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=--"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "--",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "--"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --constraints-sha256: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=--"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "--"
+        }
+      }
+    },
+    {
+      "argv": [
+        "-hh=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument -h/--help: ignored explicit argument 'x'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-hh=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument 'x'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-hh=x"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "-hh-"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument -h/--help: ignored explicit argument '-'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-hh-"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument '-'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-hh-"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "-hhh="
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument -h/--help: ignored explicit argument ''\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-hhh="
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument ''\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-hhh="
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "-h-h"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument -h/--help: ignored explicit argument '-h'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-h-h"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument '-h'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-h-h"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "-hhh"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest [-h] {create,verify} ...\n\npositional arguments:\n  {create,verify}\n\noptions:\n  -h, --help       show this help message and exit\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-hhh"
+      ],
+      "result": {
+        "code": 0,
+        "stdout": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\n\noptions:\n  -h, --help            show this help message and exit\n  --runtime-root RUNTIME_ROOT\n  --manifest MANIFEST\n  --source-url SOURCE_URL\n  --source-commit SOURCE_COMMIT\n  --constraints-sha256 CONSTRAINTS_SHA256\n",
+        "stderr": ""
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-hhh"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "\u2028"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument command: invalid choice: '\\u2028' (choose from create, verify)\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "\u2028"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "\u2028"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "\u2028",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "\u200b"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument command: invalid choice: '\\u200b' (choose from create, verify)\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "\u200b"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "\u200b"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "\u200b",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "\ue000"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument command: invalid choice: '\\ue000' (choose from create, verify)\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "\ue000"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "\ue000"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "\ue000",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "\u1c89"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument command: invalid choice: '\\u1c89' (choose from create, verify)\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "\u1c89"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "\u1c89"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "\u1c89",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "-\u0661"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument command: invalid choice: '-\u0661' (choose from create, verify)\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-\u0661"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-\u0661"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-\u0661",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "-\u0661.\u0662"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument command: invalid choice: '-\u0661.\u0662' (choose from create, verify)\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-\u0661.\u0662"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-\u0661.\u0662"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-\u0661.\u0662",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "-1\n"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument command: invalid choice: '-1\\n' (choose from create, verify)\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-1\n"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-1\n"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "-1\n",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument command: invalid choice: '\\udcff' (choose from create, verify)\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "\udcff"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "\udcff",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "--bad\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: the following arguments are required: command\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--bad\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "--bad\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "--help=\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument -h/--help: ignored explicit argument '\\udcff'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--help=\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument '\\udcff'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "--help=\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "-hh=\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument -h/--help: ignored explicit argument '\\udcff'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-hh=\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument '\\udcff'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-hh=\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "-hh-\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest [-h] {create,verify} ...\nmir runtime-manifest: error: argument -h/--help: ignored explicit argument '-\\udcff'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "-hh-\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument -h/--help: ignored explicit argument '-\\udcff'\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "-hh-\udcff"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=\udcff"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "\udcff",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --runtime-root: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root=first",
+        "--runtime-root=last"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --manifest, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root",
+        "replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "replacement",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--runtime-root=replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "replacement",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=\udcff"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "\udcff",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--manifest"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --manifest: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--manifest=first",
+        "--manifest=last"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --source-url, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest",
+        "replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "replacement",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--manifest=replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "replacement",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=\udcff"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "\udcff",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source-url"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-url: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source-url=first",
+        "--source-url=last"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-commit, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url",
+        "replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "replacement",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-url=replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "replacement",
+          "--source-commit": "value",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=\udcff"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "\udcff",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source-commit"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --source-commit: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--source-commit=first",
+        "--source-commit=last"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --constraints-sha256\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit",
+        "replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "replacement",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--source-commit=replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "replacement",
+          "--constraints-sha256": "value"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=\udcff"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "\udcff"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--constraints-sha256"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: argument --constraints-sha256: expected one argument\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--constraints-sha256=first",
+        "--constraints-sha256=last"
+      ],
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: mir runtime-manifest create [-h] --runtime-root RUNTIME_ROOT --manifest\n                                   MANIFEST --source-url SOURCE_URL\n                                   --source-commit SOURCE_COMMIT\n                                   --constraints-sha256 CONSTRAINTS_SHA256\nmir runtime-manifest create: error: the following arguments are required: --runtime-root, --manifest, --source-url, --source-commit\n"
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256",
+        "replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "replacement"
+        }
+      }
+    },
+    {
+      "argv": [
+        "create",
+        "--runtime-root",
+        "value",
+        "--manifest",
+        "value",
+        "--source-url",
+        "value",
+        "--source-commit",
+        "value",
+        "--constraints-sha256",
+        "value",
+        "--constraints-sha256=replacement"
+      ],
+      "result": {
+        "command": "create",
+        "options": {
+          "--runtime-root": "value",
+          "--manifest": "value",
+          "--source-url": "value",
+          "--source-commit": "value",
+          "--constraints-sha256": "replacement"
+        }
+      }
+    }
+  ]
+}

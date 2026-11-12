@@ -1,0 +1,117 @@
+{
+  "pin": "1324a3c",
+  "records": {
+    "plain": {
+      "stdout": "{\"status\": \"created\", \"entries\": 1}\n",
+      "stderr": "",
+      "code": 0,
+      "manifest": "{\n  \"constraints_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"entries\": [\n    {\n      \"mode\": 489,\n      \"path\": \"tool\",\n      \"sha256\": \"40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880\",\n      \"type\": \"file\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"source_commit\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"source_url\": \"https://example.invalid/provider.git\"\n}\n",
+      "mode": 384,
+      "leftovers": []
+    },
+    "replace": {
+      "stdout": "{\"status\": \"created\", \"entries\": 1}\n",
+      "stderr": "",
+      "code": 0,
+      "manifest": "{\n  \"constraints_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"entries\": [\n    {\n      \"mode\": 489,\n      \"path\": \"tool\",\n      \"sha256\": \"40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880\",\n      \"type\": \"file\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"source_commit\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"source_url\": \"https://example.invalid/provider.git\"\n}\n",
+      "mode": 384,
+      "leftovers": []
+    },
+    "unicode": {
+      "stdout": "{\"status\": \"created\", \"entries\": 2}\n",
+      "stderr": "",
+      "code": 0,
+      "manifest": "{\n  \"constraints_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"entries\": [\n    {\n      \"mode\": 489,\n      \"path\": \"tool\",\n      \"sha256\": \"40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880\",\n      \"type\": \"file\"\n    },\n    {\n      \"mode\": 420,\n      \"path\": \"\\ud55c\\ud83d\\ude00\\u007f\",\n      \"sha256\": \"2fcf76a4c3c75b1fb5288d83d62dd114dc556d16fba206ab35d38bfe294a2857\",\n      \"type\": \"file\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"source_commit\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"source_url\": \"https://example.invalid/provider.git\"\n}\n",
+      "mode": 384,
+      "leftovers": []
+    },
+    "symlink": {
+      "stdout": "{\"status\": \"created\", \"entries\": 3}\n",
+      "stderr": "",
+      "code": 0,
+      "manifest": "{\n  \"constraints_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"entries\": [\n    {\n      \"mode\": 493,\n      \"path\": \"dirlink\",\n      \"target\": \"folder\",\n      \"type\": \"symlink\"\n    },\n    {\n      \"mode\": 493,\n      \"path\": \"link\",\n      \"target\": \"absent\",\n      \"type\": \"symlink\"\n    },\n    {\n      \"mode\": 489,\n      \"path\": \"tool\",\n      \"sha256\": \"40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880\",\n      \"type\": \"file\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"source_commit\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"source_url\": \"https://example.invalid/provider.git\"\n}\n",
+      "mode": 384,
+      "leftovers": []
+    },
+    "transient": {
+      "stdout": "{\"status\": \"created\", \"entries\": 1}\n",
+      "stderr": "",
+      "code": 0,
+      "manifest": "{\n  \"constraints_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"entries\": [\n    {\n      \"mode\": 489,\n      \"path\": \"tool\",\n      \"sha256\": \"40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880\",\n      \"type\": \"file\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"source_commit\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"source_url\": \"https://example.invalid/provider.git\"\n}\n",
+      "mode": 384,
+      "leftovers": []
+    },
+    "outside": {
+      "stdout": "",
+      "stderr": "runtime manifest error: runtime manifest must be a direct child of the runtime root\n",
+      "code": 2,
+      "manifest": null,
+      "mode": null,
+      "leftovers": []
+    },
+    "directory": {
+      "stdout": "",
+      "stderr": "runtime manifest error: [Errno 21] Is a directory: '.runtime-manifest.json.{TEMP}' -> 'runtime-manifest.json'\n",
+      "code": 2,
+      "manifest": null,
+      "mode": null,
+      "leftovers": []
+    },
+    "empty": {
+      "stdout": "{\"status\": \"created\", \"entries\": 0}\n",
+      "stderr": "",
+      "code": 0,
+      "manifest": "{\n  \"constraints_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"entries\": [],\n  \"schema_version\": 1,\n  \"source_commit\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"source_url\": \"https://example.invalid/provider.git\"\n}\n",
+      "mode": 384,
+      "leftovers": []
+    },
+    "inside-link": {
+      "stdout": "{\"status\": \"created\", \"entries\": 2}\n",
+      "stderr": "",
+      "code": 0,
+      "manifest": "{\n  \"constraints_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"entries\": [\n    {\n      \"mode\": 493,\n      \"path\": \"runtime-manifest.json\",\n      \"target\": \"actual.json\",\n      \"type\": \"symlink\"\n    },\n    {\n      \"mode\": 489,\n      \"path\": \"tool\",\n      \"sha256\": \"40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880\",\n      \"type\": \"file\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"source_commit\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"source_url\": \"https://example.invalid/provider.git\"\n}\n",
+      "mode": 384,
+      "leftovers": []
+    },
+    "outside-link": {
+      "stdout": "",
+      "stderr": "runtime manifest error: runtime manifest must be a direct child of the runtime root\n",
+      "code": 2,
+      "manifest": "outside",
+      "mode": 420,
+      "leftovers": []
+    },
+    "dangling-link": {
+      "stdout": "",
+      "stderr": "runtime manifest error: runtime manifest must be a direct child of the runtime root\n",
+      "code": 2,
+      "manifest": null,
+      "mode": null,
+      "leftovers": []
+    },
+    "nested": {
+      "stdout": "",
+      "stderr": "runtime manifest error: runtime manifest must be a direct child of the runtime root\n",
+      "code": 2,
+      "manifest": null,
+      "mode": null,
+      "leftovers": []
+    },
+    "normalize": {
+      "stdout": "{\"status\": \"created\", \"entries\": 1}\n",
+      "stderr": "",
+      "code": 0,
+      "manifest": null,
+      "mode": null,
+      "leftovers": []
+    },
+    "unwritable": {
+      "stdout": "",
+      "stderr": "runtime manifest error: [Errno 13] Permission denied: '{BASE}/runtime/.runtime-manifest.json.{TEMP}'\n",
+      "code": 2,
+      "manifest": null,
+      "mode": null,
+      "leftovers": []
+    }
+  }
+}

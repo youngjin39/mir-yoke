@@ -4,7 +4,7 @@
 #[cfg(not(any(target_vendor = "apple", target_os = "linux")))]
 compile_error!("account_home requires a reviewed pwd.h layout for this Unix target");
 use std::{
-    ffi::{CStr, OsStr, c_char, c_int},
+    ffi::{CStr, CString, OsStr, c_char, c_int},
     mem::MaybeUninit,
     os::unix::ffi::OsStrExt,
     path::PathBuf,
@@ -37,13 +37,25 @@ unsafe extern "C" {
         length: usize,
         result: *mut *mut Passwd,
     ) -> c_int;
+    fn getpwnam_r(
+        name: *const c_char,
+        pwd: *mut Passwd,
+        buffer: *mut c_char,
+        length: usize,
+        result: *mut *mut Passwd,
+    ) -> c_int;
 }
 
 pub(crate) fn get() -> Option<PathBuf> {
-    lookup(1024)
+    lookup(1024, None)
 }
 
-fn lookup(mut size: usize) -> Option<PathBuf> {
+pub(crate) fn named(name: &OsStr) -> Option<PathBuf> {
+    let name = CString::new(name.as_bytes()).ok()?;
+    lookup(1024, Some(&name))
+}
+
+fn lookup(mut size: usize, name: Option<&CStr>) -> Option<PathBuf> {
     // ERANGE is 34 on Darwin and Linux; getpwuid_r returns the error directly.
     const ERANGE: c_int = 34;
     loop {
@@ -55,13 +67,22 @@ fn lookup(mut size: usize) -> Option<PathBuf> {
         // libc then supplies a NUL-terminated dir inside buffer. Copy its bytes
         // before buffer is dropped. getuid takes no arguments and owns no memory.
         let home = unsafe {
-            let status = getpwuid_r(
-                getuid(),
-                pwd.as_mut_ptr(),
-                buffer.as_mut_ptr().cast(),
-                buffer.len(),
-                &mut result,
-            );
+            let status = match name {
+                Some(name) => getpwnam_r(
+                    name.as_ptr(),
+                    pwd.as_mut_ptr(),
+                    buffer.as_mut_ptr().cast(),
+                    buffer.len(),
+                    &mut result,
+                ),
+                None => getpwuid_r(
+                    getuid(),
+                    pwd.as_mut_ptr(),
+                    buffer.as_mut_ptr().cast(),
+                    buffer.len(),
+                    &mut result,
+                ),
+            };
             if status == ERANGE {
                 None
             } else if status != 0 || result.is_null() {
@@ -88,7 +109,7 @@ fn lookup(mut size: usize) -> Option<PathBuf> {
 mod tests {
     #[test]
     fn grows_small_account_buffer() {
-        assert_eq!(super::lookup(1), super::get());
+        assert_eq!(super::lookup(1, None), super::get());
         assert!(super::get().is_some());
     }
 }

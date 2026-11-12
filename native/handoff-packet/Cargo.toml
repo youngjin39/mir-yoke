@@ -53,3 +53,15 @@ path = "src/delegation_gate.rs"
 [[bin]]
 name = "project-hooks"
 path = "src/project_hooks.rs"
+
+[[bin]]
+name = "run-python"
+path = "src/run_python.rs"
+
+[[bin]]
+name = "run-python-launcher"
+path = "src/run_python.rs"
+
+[[bin]]
+name = "runtime-manifest"
+path = "src/runtime_manifest.rs"

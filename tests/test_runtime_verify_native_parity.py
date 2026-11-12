@@ -154,12 +154,7 @@ def test_runtime_verify_bytes(binary, closure, tmp_path, case):
         reference, native = pair(binary, root, manifest, metadata)
         assert reference[0] == b""
         assert reference[2] in {0, 2}
-        if os.name == "nt" and case in {
-            "manifest-link", "symlink", "symlink-drift", "directory-link", "dangling-link"
-        }:
-            assert native == (b"", b"", 64)
-        else:
-            assert native == reference, case
+        assert native == reference, case
     finally:
         if case in {"unreadable", "unreadable-directory"}:
             path.chmod(0o755)
@@ -171,11 +166,11 @@ def test_runtime_verify_unsupported_args(binary, args):
     assert (result.stdout, result.stderr, result.returncode) == (b"", b"", 64)
 
 
-def test_runtime_verify_unsupported_encoding(binary, closure):
+def test_runtime_verify_encoding_error(binary, closure):
     root, manifest = closure
     manifest.write_bytes(b"\xff")
-    _, native = pair(binary, root, manifest)
-    assert native == (b"", b"", 64)
+    reference, native = pair(binary, root, manifest)
+    assert native == reference
 
 
 @pytest.mark.parametrize("body", ["[]", "null", "true", '{"schema_version": 1}',
@@ -207,21 +202,18 @@ def test_runtime_verify_entry_shapes(binary, closure, mutation):
         manifest.write_text(json.dumps(document))
     try:
         reference, native = pair(binary, root, manifest)
-        if os.name == "nt" and mutation == "unicode-target":
-            assert native == (b"", b"", 64)
-        else:
-            assert native == reference
+        assert native == reference
     finally:
         (root / "bin/tool").chmod(0o755)
 
 
 @pytest.mark.parametrize("body", ['{"entries": NaN}', '{"entries": Infinity}',
                                   '{"entry": "\\ud800"}', '[' * 150 + ']' * 150])
-def test_runtime_verify_unsupported_json(binary, closure, body):
+def test_runtime_verify_python_json(binary, closure, body):
     root, manifest = closure
     manifest.write_text(body)
-    _, native = pair(binary, root, manifest)
-    assert native == (b"", b"", 64)
+    reference, native = pair(binary, root, manifest)
+    assert native == reference
 
 
 def test_runtime_verify_version(binary):
@@ -242,12 +234,12 @@ def test_runtime_verify_unsupported_special_file(binary, closure):
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX symlink loop")
-def test_runtime_verify_unsupported_symlink_loop(binary, closure):
+def test_runtime_verify_symlink_loop(binary, closure):
     root, manifest = closure
     manifest.unlink()
     manifest.symlink_to(manifest.name)
-    _, native = pair(binary, root, manifest)
-    assert native == (b"", b"", 64)
+    reference, native = pair(binary, root, manifest)
+    assert native == (reference[0], reference[1].splitlines()[-1] + b"\n", 1)
 
 
 @pytest.mark.parametrize("name", ["tool.exe", "tool.bat", "tool.cmd", "tool.com",
@@ -281,19 +273,18 @@ def test_runtime_verify_symlink_suffix_modes(binary, closure, name, target):
     create_runtime_manifest(root, manifest, **META)
     reference, native = pair(binary, root, manifest)
     assert reference == (b"", b"", 0)
-    assert native == ((b"", b"", 64) if os.name == "nt" else reference)
+    assert native == reference
 
 
-def test_runtime_verify_unsupported_empty_home(binary, closure, monkeypatch):
+def test_runtime_verify_empty_home(binary, closure, monkeypatch):
     root, manifest = closure
     monkeypatch.chdir(root.parent)
     monkeypatch.setenv("USERPROFILE" if os.name == "nt" else "HOME", "")
     reference, native = pair(binary, Path("~") / root.name, manifest)
-    # On Windows the reference depends on ntpath.expanduser's handling of an
-    # empty USERPROFILE (CI observed exit 0); native defers on every platform.
+    # On Windows ntpath.expanduser keeps its platform-specific empty-home rule.
     if os.name != "nt":
         assert reference[2] == 2
-    assert native == (b"", b"", 64)
+    assert native == reference
 
 
 @pytest.mark.parametrize("absolute", [False, True])
@@ -311,7 +302,4 @@ def test_runtime_verify_link_fallback_precedence(binary, closure, absolute, meta
         metadata["source_commit"] = "different"
     reference, native = pair(binary, root, manifest, metadata)
     assert reference[2] == (0 if metadata_matches else 2)
-    if os.name == "nt" and metadata_matches:
-        assert native == (b"", b"", 64)
-    else:
-        assert native == reference
+    assert native == reference

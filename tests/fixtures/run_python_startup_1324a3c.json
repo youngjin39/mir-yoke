@@ -1,0 +1,1083 @@
+{
+  "pin": "1324a3c",
+  "records": [
+    {
+      "name": "BASH_ENV",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_ENV",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "414c5445524e4154450a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": "737461727475700a"
+      }
+    },
+    {
+      "name": "BASH_ENV",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_FUNC_command%%",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_FUNC_command%%",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": "66756e6374696f6e0a"
+      }
+    },
+    {
+      "name": "BASH_FUNC_command%%",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "command",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "command",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "command",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_FUNC_command()",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_FUNC_command()",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_FUNC_command()",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "ENV",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "ENV",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "ENV",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "2b20736574202d65756f20706970656661696c0a2b2050524f4a4543545f4449523d27247b544d507d2f70726f6a656374270a2b205f4d49525f524543454950543d27247b544d507d2f70726f6a6563742f2e6d69722f626f6f7473747261702d726563656970742e6a736f6e270a2b20636f6d6d616e64202d76206a710a2b20275b27202d782027247b544d507d2f70726f6a6563742f2e76656e762f62696e2f707974686f6e2720275d270a2b20657865632027247b544d507d2f70726f6a6563742f2e76656e762f62696e2f707974686f6e27202d6320756e757365640a2b207072696e746620274f524947494e414c5c6e270a2b207072696e7466202725735c6e2720756e7365740a",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASHOPTS",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASHOPTS",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASHOPTS",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "CDPATH",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "CDPATH",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "CDPATH",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "IFS",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "IFS",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "IFS",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "POSIXLY_CORRECT",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "POSIXLY_CORRECT",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "POSIXLY_CORRECT",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "PS4",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "PS4",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "PS4",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_XTRACEFD",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_XTRACEFD",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_XTRACEFD",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "GLOBIGNORE",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "GLOBIGNORE",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "GLOBIGNORE",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "LC_ALL",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "LC_ALL",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "LC_ALL",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "LANG",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "LANG",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "LANG",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_",
+      "state": "set",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_",
+      "state": "empty",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "PROJECT_DIR",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "PROJECT_DIR",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f70726f6a6563740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "PROJECT_DIR",
+      "state": "empty",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f70726f6a6563740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RECEIPT",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RECEIPT",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f70726f6a6563742f2e6d69722f626f6f7473747261702d726563656970742e6a736f6e0a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RECEIPT",
+      "state": "empty",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f70726f6a6563742f2e6d69722f626f6f7473747261702d726563656970742e6a736f6e0a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_EXTERNAL_CLI",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_EXTERNAL_CLI",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f72756e74696d652f62696e2f6d69720a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_EXTERNAL_CLI",
+      "state": "empty",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f72756e74696d652f62696e2f6d69720a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_EXTERNAL_SHA",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_EXTERNAL_SHA",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "396631373265656638393662633535336238633061306131303836323833623835623838393634323937323731303665333635393735386464393937366138330a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_EXTERNAL_SHA",
+      "state": "empty",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "396631373265656638393662633535336238633061306131303836323833623835623838393634323937323731303665333635393735386464393937366138330a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RUNTIME_ROOT",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RUNTIME_ROOT",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f72756e74696d650a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RUNTIME_ROOT",
+      "state": "empty",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f72756e74696d650a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RUNTIME_MANIFEST",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RUNTIME_MANIFEST",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f72756e74696d652f72756e74696d652d6d616e69666573742e6a736f6e0a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RUNTIME_MANIFEST",
+      "state": "empty",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "247b544d507d2f72756e74696d652f72756e74696d652d6d616e69666573742e6a736f6e0a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RUNTIME_MANIFEST_SHA",
+      "state": "unset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RUNTIME_MANIFEST_SHA",
+      "state": "set",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "343431333666613335356233363738613131343661643136663765383634396539346662346663323166653737653833313063303630663631636161666638610a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "_MIR_RUNTIME_MANIFEST_SHA",
+      "state": "empty",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "343431333666613335356233363738613131343661643136663765383634396539346662346663323166653737653833313063303630663631636161666638610a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "defaults",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "allexport",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a247b544d507d2f70726f6a6563740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "braceexpand",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "emacs",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "errexit",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "errtrace",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "functrace",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "hashall",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "histexpand",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "history",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "ignoreeof",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "interactive-comments",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "keyword",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "monitor",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "noclobber",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "noexec",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "noglob",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "nolog",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "notify",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "nounset",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "onecmd",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "physical",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "pipefail",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "posix",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "privileged",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "verbose",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "23212f7573722f62696e2f656e7620626173680a232052756e20686f6f6b20507974686f6e207468726f756768207468652070726f6a6563742773206d616e6167656420656e7669726f6e6d656e742e204e657665722075736520686f737420507974686f6e2e0a0a736574202d65756f20706970656661696c0a0a50524f4a4543545f4449523d22247b434c415544455f50524f4a4543545f4449523a2d247b4d49525f50524f4a4543545f4449523a2d2e7d7d220a0a5f6d69725f7368613235365f66696c652829207b0a2020696620636f6d6d616e64202d762073686132353673756d203e2f6465762f6e756c6c20323e26313b207468656e2073686132353673756d2022243122207c2061776b20277b7072696e742024317d270a2020656c696620636f6d6d616e64202d762073686173756d203e2f6465762f6e756c6c20323e26313b207468656e2073686173756d202d61203235362022243122207c2061776b20277b7072696e742024317d270a2020656c73652072657475726e20310a202066690a7d0a0a232054686520737461727420676174652072656675736573202e2f73657475702e7368207768656e6576657220636f6e6669672f626f6f7473747261702d61646f7074696f6e2e6a736f6e206578697374732c20736f0a23206e616d696e6720697420696e20616e2061646f7074696f6e207265706f7369746f72792073656e647320746865206f70657261746f72206174206120636f6d6d616e6420746861742063616e6e6f742072756e2e0a23204e616d6520746865207265636f7665727920746861742074686520676174652061637475616c6c79207065726d6974732074686572652e0a5f6d69725f726563656970745f7265636f766572795f68696e742829207b0a20206966205b202d6620222450524f4a4543545f4449522f636f6e6669672f626f6f7473747261702d61646f7074696f6e2e6a736f6e22205d3b207468656e0a202020207072696e746620277265697373756520746865207265636569707420776974682075762072756e202d2d70726f6a656374203c70726f766964657220776f726b747265653e206d697220626f6f7473747261702d61646f7074696f6e202d2d6170706c79270a2020656c73650a202020207072696e74662027726572756e2073657475702e73682028696e736964652057534c206f6e2057696e646f777320686f73747329270a202066690a7d0a0a5f6d69725f696e7465727072657465725f7265636f766572795f68696e742829207b0a20206966205b202d6620222450524f4a4543545f4449522f636f6e6669672f626f6f7473747261702d61646f7074696f6e2e6a736f6e22205d3b207468656e0a202020207072696e74662027637265617465207468652070726f6a65637420656e7669726f6e6d656e74202875762073796e63293b202e2f73657475702e73682069732072656675736564207768696c6520636f6e6669672f626f6f7473747261702d61646f7074696f6e2e6a736f6e20657869737473270a2020656c73650a202020207072696e7466202772756e2073657475702e73682066697273742028696e736964652057534c206f6e2057696e646f777320686f73747329270a202066690a7d0a0a5f4d49525f524543454950543d222450524f4a4543545f4449522f2e6d69722f626f6f7473747261702d726563656970742e6a736f6e220a696620636f6d6d616e64202d76206a71203e2f6465762f6e756c6c20323e2631202626205b202d662022245f4d49525f5245434549505422205d3b207468656e0a20206966206a71202d6520272e636c69207c2074797065203d3d20226f626a65637422272022245f4d49525f5245434549505422203e2f6465762f6e756c6c20323e26313b207468656e0a202020205f4d49525f45585445524e414c5f434c493d2224286a71202d7220272e636c692e65786563757461626c65202f2f20656d707479272022245f4d49525f524543454950542220323e2f6465762f6e756c6c29220a202020205f4d49525f45585445524e414c5f5348413d2224286a71202d7220272e636c692e736861323536202f2f20656d707479272022245f4d49525f524543454950542220323e2f6465762f6e756c6c29220a202020206966205b202d6e2022245f4d49525f45585445524e414c5f434c4922205d202626205b202d782022245f4d49525f45585445524e414c5f434c4922205d202626205c0a202020202020205b202d6e2022245f4d49525f45585445524e414c5f53484122205d202626205c0a202020202020205b202224285f6d69725f7368613235365f66696c652022245f4d49525f45585445524e414c5f434c492220323e2f6465762f6e756c6c207c7c20747275652922203d2022245f4d49525f45585445524e414c5f53484122205d3b207468656e0a2020202020206966205b202d6e202224286a71202d7220272e636c692e72756e74696d655f6d616e6966657374202f2f20656d707479272022245f4d49525f524543454950542220323e2f6465762f6e756c6c2922205d3b207468656e0a20202020202020205f4d49525f52554e54494d455f524f4f543d2224286364202d2d202224286469726e616d65202d2d2022245f4d49525f45585445524e414c5f434c4922292f2e2e2220323e2f6465762f6e756c6c20262620707764202d50207c7c207472756529220a20202020202020205f4d49525f52554e54494d455f4d414e49464553543d2224286a71202d7220272e636c692e72756e74696d655f6d616e6966657374202f2f20656d707479272022245f4d49525f524543454950542220323e2f6465762f6e756c6c29220a20202020202020205f4d49525f52554e54494d455f4d414e49464553545f5348413d2224286a71202d7220272e636c692e72756e74696d655f6d616e69666573745f736861323536202f2f20656d707479272022245f4d49525f524543454950542220323e2f6465762f6e756c6c29220a20202020202020206966205b202d7a2022245f4d49525f52554e54494d455f524f4f5422205d207c7c205c0a20202020202020202020205b2022245f4d49525f52554e54494d455f4d414e49464553542220213d2022245f4d49525f52554e54494d455f524f4f542f72756e74696d652d6d616e69666573742e6a736f6e22205d207c7c205c0a20202020202020202020205b2021202d662022245f4d49525f52554e54494d455f4d414e494645535422205d207c7c205b202d4c2022245f4d49525f52554e54494d455f4d414e494645535422205d207c7c205c0a20202020202020202020205b202224285f6d69725f7368613235365f66696c652022245f4d49525f52554e54494d455f4d414e49464553542220323e2f6465762f6e756c6c207c7c2074727565292220213d2022245f4d49525f52554e54494d455f4d414e49464553545f53484122205d207c7c205c0a2020202020202020202020212022245f4d49525f45585445524e414c5f434c49222072756e74696d652d6d616e696665737420766572696679205c0a202020202020202020202020202d2d72756e74696d652d726f6f742022245f4d49525f52554e54494d455f524f4f5422205c0a202020202020202020202020202d2d6d616e69666573742022245f4d49525f52554e54494d455f4d414e494645535422205c0a202020202020202020202020202d2d736f757263652d75726c202224286a71202d7220272e636c692e736f757263655f75726c202f2f20656d707479272022245f4d49525f52454345495054222922205c0a202020202020202020202020202d2d736f757263652d636f6d6d6974202224286a71202d7220272e636c692e736f757263655f636f6d6d6974202f2f20656d707479272022245f4d49525f52454345495054222922205c0a202020202020202020202020202d2d636f6e73747261696e74732d736861323536202224286a71202d7220272e636c692e636f6e73747261696e74735f736861323536202f2f20656d707479272022245f4d49525f52454345495054222922205c0a202020202020202020202020203e2f6465762f6e756c6c20323e26313b207468656e0a202020202020202020207072696e746620275b6d697220686f6f6b5d20726563656970742d626f756e642065787465726e616c204d69722072756e74696d6520697320696e76616c69643b2025735c6e27202224285f6d69725f726563656970745f7265636f766572795f68696e742922203e26320a2020202020202020202065786974203132370a202020202020202066690a20202020202066690a202020202020657865632022245f4d49525f45585445524e414c5f434c49222072756e2d707974686f6e202d2d70726f6a6563742d726f6f7420222450524f4a4543545f44495222202d2d20222440220a2020202066690a202020207072696e746620275b6d697220686f6f6b5d20726563656970742d626f756e642065787465726e616c204d697220507974686f6e20697320696e76616c69643b2025735c6e27202224285f6d69725f726563656970745f7265636f766572795f68696e742922203e26320a2020202065786974203132370a202066690a66690a0a23204c6f63616c20507974686f6e2072656d61696e732061207072652d626f6f74737472617020616e64206578697374696e672d61646f7074696f6e2066616c6c6261636b2e204120677265656e6669656c640a2320726563656970742077697468206120434c4920636f6e747261637420616c776179732074616b65732074686520686173682d626f756e642065787465726e616c20706174682061626f76652e0a6966205b202d7820222450524f4a4543545f4449522f2e76656e762f62696e2f707974686f6e22205d3b207468656e0a20206578656320222450524f4a4543545f4449522f2e76656e762f62696e2f707974686f6e2220222440220a66690a23212f62696e2f73680a7072696e746620274f524947494e414c5c6e270a7072696e7466202725735c6e272022247b50524f4a4543545f4449522d756e7365747d220a",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "vi",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "SHELLOPTS",
+      "state": "xtrace",
+      "decline": true,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "2b20736574202d65756f20706970656661696c0a2b2050524f4a4543545f4449523d27247b544d507d2f70726f6a656374270a2b205f4d49525f524543454950543d27247b544d507d2f70726f6a6563742f2e6d69722f626f6f7473747261702d726563656970742e6a736f6e270a2b20636f6d6d616e64202d76206a710a2b20275b27202d782027247b544d507d2f70726f6a6563742f2e76656e762f62696e2f707974686f6e2720275d270a2b20657865632027247b544d507d2f70726f6a6563742f2e76656e762f62696e2f707974686f6e27202d6320756e757365640a2b207072696e746620274f524947494e414c5c6e270a2b207072696e7466202725735c6e2720756e7365740a",
+        "effect_hex": null
+      }
+    },
+    {
+      "name": "BASH_FUNC_command%%",
+      "state": "ignored",
+      "decline": false,
+      "reference": {
+        "exit": 0,
+        "stdout_hex": "4f524947494e414c0a756e7365740a",
+        "stderr_hex": "",
+        "effect_hex": null
+      }
+    }
+  ]
+}

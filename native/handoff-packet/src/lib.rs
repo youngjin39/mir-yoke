@@ -10,6 +10,11 @@
 #[cfg(unix)]
 #[allow(unsafe_code)]
 mod account_home;
+/// Account-database fallback for Python-compatible runtime Path.expanduser.
+#[cfg(unix)]
+pub fn runtime_account_home(name: Option<&std::ffi::OsStr>) -> Option<std::path::PathBuf> {
+    name.map_or_else(account_home::get, account_home::named)
+}
 // openat/renameat keep slim mutations confined to pinned parent directories.
 #[allow(unsafe_code)]
 mod adoption_fs;
