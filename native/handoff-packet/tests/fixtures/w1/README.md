@@ -53,6 +53,12 @@ skips POSIX replay and retains the platform-specific suite.
 
 ## Source re-pins
 
+- Clean-checkout hygiene removes the ignored CPython cache from source/copy
+  inventories; the Python source remains pinned and all expected envelopes remain
+  unchanged. Crate build inputs follow committed CLI migration changes, including
+  84b7b8a's selected-root alias correction. Full replay verifies these updated pins
+  against the original observations.
+
 - W1-Y6b(1) re-pins only the bootstrap binary entrypoint for the additive
   enforce/instructions protocol routes and capabilities. The shell sources,
   caller selection and all existing frozen observations remain unchanged.

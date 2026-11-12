@@ -16,7 +16,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -95,7 +94,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -166,7 +164,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -237,7 +234,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -304,7 +300,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -371,7 +366,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -442,7 +436,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -525,7 +518,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -608,7 +600,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -675,7 +666,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -742,7 +732,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -809,7 +798,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -876,7 +864,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -943,7 +930,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1010,7 +996,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1077,7 +1062,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1140,7 +1124,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1207,7 +1190,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1274,7 +1256,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1341,7 +1322,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1408,7 +1388,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1475,7 +1454,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1542,7 +1520,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1605,7 +1582,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1655,7 +1631,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1711,7 +1686,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1780,7 +1754,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1849,7 +1822,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1914,7 +1886,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -1966,7 +1937,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3484,7 +3454,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3534,7 +3503,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3613,7 +3581,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3680,7 +3647,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3730,7 +3696,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3780,7 +3745,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3830,7 +3794,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3880,7 +3843,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3930,7 +3892,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -3993,7 +3954,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4056,7 +4016,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4119,7 +4078,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4186,7 +4144,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4240,7 +4197,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4294,7 +4250,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4348,7 +4303,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4398,7 +4352,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4452,7 +4405,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4506,7 +4458,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4560,7 +4511,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4614,7 +4564,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4664,7 +4613,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4718,7 +4666,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4772,7 +4719,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4826,7 +4772,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4880,7 +4825,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4931,7 +4875,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -4982,7 +4925,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5035,7 +4977,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5088,7 +5029,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5141,7 +5081,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5194,7 +5133,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5244,7 +5182,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5294,7 +5231,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5344,7 +5280,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5398,7 +5333,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5452,7 +5386,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5506,7 +5439,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5556,7 +5488,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5606,7 +5537,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5669,7 +5599,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5747,7 +5676,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5834,7 +5762,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -5921,7 +5848,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6010,7 +5936,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6099,7 +6024,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6162,7 +6086,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6216,7 +6139,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6270,7 +6192,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6324,7 +6245,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6385,7 +6305,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6450,7 +6369,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6515,7 +6433,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6600,7 +6517,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6665,7 +6581,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6730,7 +6645,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6799,7 +6713,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6868,7 +6781,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -6957,7 +6869,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7026,7 +6937,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7107,7 +7017,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7185,7 +7094,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7262,7 +7170,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7336,7 +7243,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7417,7 +7323,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7495,7 +7400,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7580,7 +7484,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7662,7 +7565,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7743,7 +7645,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7821,7 +7722,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7902,7 +7802,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -7980,7 +7879,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8061,7 +7959,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8139,7 +8036,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8220,7 +8116,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8298,7 +8193,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8382,7 +8276,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8463,7 +8356,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8547,7 +8439,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8628,7 +8519,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8709,7 +8599,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8787,7 +8676,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8864,7 +8752,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -8938,7 +8825,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9022,7 +8908,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9103,7 +8988,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9187,7 +9071,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9268,7 +9151,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9349,7 +9231,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9427,7 +9308,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9508,7 +9388,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9586,7 +9465,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9667,7 +9545,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9745,7 +9622,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9826,7 +9702,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9904,7 +9779,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -9985,7 +9859,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10063,7 +9936,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10140,7 +10012,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10214,7 +10085,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10295,7 +10165,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10373,7 +10242,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10454,7 +10322,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10532,7 +10399,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10613,7 +10479,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10691,7 +10556,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10772,7 +10636,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10850,7 +10713,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -10931,7 +10793,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11009,7 +10870,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11090,7 +10950,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11168,7 +11027,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11249,7 +11107,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11327,7 +11184,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11408,7 +11264,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11486,7 +11341,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11567,7 +11421,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11645,7 +11498,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11726,7 +11578,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11804,7 +11655,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11885,7 +11735,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -11963,7 +11812,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -12040,7 +11888,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -12114,7 +11961,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16185,7 +16031,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16247,7 +16092,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16309,7 +16153,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16391,7 +16234,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16453,7 +16295,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16515,7 +16356,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16581,7 +16421,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16647,7 +16486,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16733,7 +16571,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16799,7 +16636,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16868,7 +16704,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -16950,7 +16785,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17036,7 +16870,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17122,7 +16955,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17202,7 +17034,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17291,7 +17122,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17380,7 +17210,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17475,7 +17304,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17566,7 +17394,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17659,7 +17486,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17752,7 +17578,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17820,7 +17645,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17879,7 +17703,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17938,7 +17761,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -17997,7 +17819,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18056,7 +17877,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18115,7 +17935,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18175,7 +17994,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18251,7 +18069,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18310,7 +18127,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18364,7 +18180,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18418,7 +18233,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18472,7 +18286,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18526,7 +18339,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18580,7 +18392,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",
@@ -18634,7 +18445,6 @@
       }
     },
     "copies": [
-      ".claude/hooks/__pycache__/tdd-matrix-guard.cpython-312.pyc",
       ".claude/hooks/_lib/bootstrap-gate.sh",
       ".claude/hooks/_lib/invocation_log.sh",
       ".claude/hooks/_lib/run-python.sh",

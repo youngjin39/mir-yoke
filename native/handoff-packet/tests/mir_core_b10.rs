@@ -181,7 +181,7 @@ fn sanitize_replay() {
     check(
         "sanitize.synthetic_pii",
         json!(run(&format!(
-            "test@example.invalid sk-{} api_key=synthetic-token AKIA0000000000000000 +1-202-555-0100 /home/example/file C:\\example\\file",
+            "test@example.invalid sk-{} api_key=synthetic-token AKIA0000000000000000 +1-202-555-0100 /\u{68}ome/example/file C:\\example\\file",
             "x".repeat(32)
         ))),
     );

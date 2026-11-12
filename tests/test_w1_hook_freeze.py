@@ -62,6 +62,7 @@ def test_freeze_completeness_and_provenance():
         assert [r["id"] for r in RECORDS if r["family"] == family] == ids
     required_sources = FAMILIES - {"bootstrap-native"}
     assert required_sources <= MANIFEST["sources"].keys()
+    assert all("__pycache__" not in Path(source).parts for source in MANIFEST["sources"])
     for source, digest in MANIFEST["sources"].items():
         assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == digest, source
     for record in RECORDS:

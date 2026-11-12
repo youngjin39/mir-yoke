@@ -1126,7 +1126,7 @@ def test_adr89_pending_peer_catchup_uses_receipt_bound_candidate_config(
     shutil.copytree(
         ROOT, source_b,
         ignore=shutil.ignore_patterns(
-            ".git", ".venv", ".pytest_cache", "__pycache__",
+            ".git", ".venv", ".pytest_cache", "__pycache__", "target",
             ".env*", "secrets", "*.db*", "*.sqlite*",
         ),
     )
@@ -1178,7 +1178,7 @@ def test_adr89_rollback_restores_provider_with_its_prior_bound_config(
     shutil.copytree(
         ROOT, source_b,
         ignore=shutil.ignore_patterns(
-            ".git", ".venv", ".pytest_cache", "__pycache__",
+            ".git", ".venv", ".pytest_cache", "__pycache__", "target",
             ".env*", "secrets", "*.db*", "*.sqlite*",
         ),
     )

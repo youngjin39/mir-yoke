@@ -158,7 +158,11 @@ def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> 
 @pytest.mark.usefixtures("isolated_git_config")
 def test_adoption_recovery_allows_only_pinned_official_detached_worktree(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    isolated_temp = tmp_path / "system-temp"
+    isolated_temp.mkdir()
+    monkeypatch.setenv("TMPDIR", str(isolated_temp))
     source = tmp_path / "provider source"
     source.mkdir()
     _git(source, "init", "-q")

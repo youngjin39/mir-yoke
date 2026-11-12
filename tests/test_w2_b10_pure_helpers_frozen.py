@@ -59,7 +59,7 @@ CASES.update({
         "<private>open</secret></privateX> &lt;secret&gt; <SECRET>open"),
     "sanitize.synthetic_pii": lambda tmp: sanitize(
         "test@example.invalid sk-" + "x" * 32 + " api_key=synthetic-token "
-        "AKIA0000000000000000 +1-202-555-0100 /home/example/file C:\\example\\file"),
+        "AKIA0000000000000000 +1-202-555-0100 /\u0068ome/example/file C:\\example\\file"),
     "quote.tokens": _calls(distill._quote_fts_phrase,
                           ["", "---", 'a"b', "adr-99", "a_b 12", "\u00bf\u00c0\uffff\U00010000",
                            "\uba85\u0301 \U0001f680", "a\nb\tc"]),

@@ -5,6 +5,7 @@ import json
 import os
 import runpy
 import shutil
+import signal
 import sqlite3
 import subprocess
 import sys
@@ -26,6 +27,70 @@ CANCEL_SNAPSHOT = runpy.run_path(str(ROOT / 'tests/fixtures/generate_executor_st
 CANCEL_MISSING_DB = next(case['expected']['storage']['tasks/jobs.db'] for case in json.loads(
     (ROOT / 'tests/fixtures/executor_cancel.json').read_text(encoding='ascii'))['cases']
     if case['name'] == 'missing-db')
+
+
+def _reap_owned_group(process, *, group_killed=False):
+    # A reaped leader can still have live children in its process group.
+    # Skip only a SIGKILL already delivered to the whole owned group; a second
+    # killpg after reaping that group can return EPERM on macOS.
+    if not group_killed:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    process.wait(timeout=10)
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='POSIX process group cleanup')
+def test_owned_group_cleanup_kills_child_after_leader_exit(tmp_path):
+    import select
+
+    child = 'import time; print("ready", flush=True); time.sleep(60)'
+    leader = 'import subprocess, sys; subprocess.Popen([sys.executable, "-c", sys.argv[1]])'
+    process = subprocess.Popen([sys.executable, '-c', leader, child], cwd=tmp_path,
+                               stdout=subprocess.PIPE, start_new_session=True)
+    group_killed = False
+    try:
+        assert select.select([process.stdout], [], [], 10)[0]
+        assert process.stdout.readline() == b'ready\n'
+        assert process.wait(timeout=10) == 0
+        _reap_owned_group(process)
+        group_killed = True
+        # The child holds the pipe open until it exits, even after its leader exits.
+        assert select.select([process.stdout], [], [], 10)[0]
+        assert process.stdout.read(1) == b''
+    finally:
+        _reap_owned_group(process, group_killed=group_killed)
+        process.stdout.close()
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='POSIX process group cleanup')
+@pytest.mark.parametrize('group_killed', [False, True])
+def test_owned_group_cleanup_only_skips_previously_killed_group(monkeypatch, group_killed):
+    class ReapedLeader:
+        pid = 12345
+
+        def poll(self):
+            return 0
+
+        def wait(self, timeout):
+            assert timeout == 10
+            return 0
+
+    calls = []
+
+    def denied(pgid, number):
+        calls.append((pgid, number))
+        raise PermissionError(1, 'Operation not permitted')
+
+    monkeypatch.setattr(os, 'killpg', denied)
+    if group_killed:
+        _reap_owned_group(ReapedLeader(), group_killed=True)
+        assert calls == []
+    else:
+        with pytest.raises(PermissionError):
+            _reap_owned_group(ReapedLeader())
+        assert calls == [(12345, signal.SIGKILL)]
 
 
 @pytest.fixture(scope='module')
@@ -506,6 +571,8 @@ def test_pinned_execute_interrupt_preserves_python_job_state(
         process = subprocess.Popen([sys.executable, '-m', 'tools.mir_executor',
                                     *SUPPORT['argv']('background_success')], cwd=root,
                                    env=environment, stdout=stream, stderr=stream,
+                                   # A background shell can pass SIG_IGN for SIGINT.
+                                   preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_DFL),
                                    start_new_session=True)
         try:
             deadline = time.monotonic() + 30
@@ -521,11 +588,7 @@ def test_pinned_execute_interrupt_preserves_python_job_state(
             assert code in (128 + number, -number), (output.read_bytes(), trace_details())
         finally:
             (root / 'provider-release').touch()
-            try:
-                os.killpg(process.pid, 9)
-            except ProcessLookupError:
-                pass
-            process.wait(timeout=10)
+            _reap_owned_group(process)
     connection = sqlite3.connect(root / 'tasks/jobs.db')
     try:
         assert connection.execute('SELECT status, exit_code FROM jobs').fetchall() == [
@@ -715,6 +778,7 @@ def test_cross_root_interrupted_dispatch_sweep_then_resume(binary, tmp_path):
     with output.open('wb') as stream:
         process = subprocess.Popen([*command, *arguments], cwd=target, env=environment,
                                    stdout=stream, stderr=stream, start_new_session=True)
+        group_killed = False
         try:
             deadline = time.monotonic() + 30
             while not (target / 'provider-started').exists():
@@ -722,14 +786,11 @@ def test_cross_root_interrupted_dispatch_sweep_then_resume(binary, tmp_path):
                 assert time.monotonic() < deadline, output.read_bytes()
                 time.sleep(0.02)
             os.killpg(process.pid, 9)
+            group_killed = True
             process.wait(timeout=10)
         finally:
             (target / 'provider-release').touch()
-            try:
-                os.killpg(process.pid, 9)
-            except ProcessLookupError:
-                pass
-            process.wait(timeout=10)
+            _reap_owned_group(process, group_killed=group_killed)
     with sqlite3.connect(target / 'tasks/jobs.db') as connection:
         job_id, status, count = connection.execute(
             'SELECT job_id,status,resume_count FROM jobs').fetchone()

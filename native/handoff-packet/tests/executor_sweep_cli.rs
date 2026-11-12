@@ -18,14 +18,14 @@ impl Fixture {
                 NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
             ));
         fs::create_dir_all(&root).unwrap();
-        // Match pathlib.resolve, including ordinary Windows paths and Unix
-        // aliases such as the platform temporary-directory prefix.
+        // Resolve filesystem aliases before setup, including macOS firmlinks
+        // that pathlib.resolve does not collapse. Keep ordinary Windows paths.
         let output = Command::new(python())
             .args([
                 "-c",
                 "from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())",
             ])
-            .arg(root)
+            .arg(fs::canonicalize(root).unwrap())
             .output()
             .unwrap();
         assert!(output.status.success());
