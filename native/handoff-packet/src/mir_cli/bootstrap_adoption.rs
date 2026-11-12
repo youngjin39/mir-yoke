@@ -279,18 +279,29 @@ pub(super) fn json_text(text: &str) -> Result<Value, Error> {
         .map_err(|e| Error::Json(e.to_string()))
 }
 /// Python `json.detect_encoding` followed by `bytes.decode(encoding, "surrogatepass")`.
-/// A lone surrogate has no Rust `String` form; it is reported as a decode error instead.
-fn json_bytes_text(b: &[u8]) -> Result<String, Error> {
+pub(super) fn json_bytes_text(b: &[u8]) -> Result<String, Error> {
+    json_byte_points(b, false)?
+        .into_iter()
+        .map(char::from_u32)
+        .collect::<Option<String>>()
+        .ok_or_else(|| Error::Unicode("lone surrogate (Python-only)".into()))
+}
+
+/// Preserve Python-only code points until the JSON consumer inspects them.
+pub(super) fn json_bytes_codepoints(b: &[u8]) -> Result<Vec<u32>, Error> {
+    json_byte_points(b, true)
+}
+fn json_byte_points(b: &[u8], surrogatepass: bool) -> Result<Vec<u32>, Error> {
     let starts = |prefix: &[u8]| b.starts_with(prefix);
     if starts(&[0, 0, 0xfe, 0xff]) || starts(&[0xff, 0xfe, 0, 0]) {
-        return wide(b, 4, 4, b[0] == 0, "utf-32");
+        return wide(b, 4, 4, b[0] == 0, "utf-32", surrogatepass);
     }
     if starts(&[0xfe, 0xff]) || starts(&[0xff, 0xfe]) {
-        return wide(b, 2, 2, b[0] == 0xfe, "utf-16");
+        return wide(b, 2, 2, b[0] == 0xfe, "utf-16", surrogatepass);
     }
     if starts(&[0xef, 0xbb, 0xbf]) {
         // utf-8-sig decodes the remainder, so error positions exclude the BOM.
-        return decode(b[3..].to_vec());
+        return json_utf8_points(&b[3..], surrogatepass);
     }
     let (unit, be) = match b {
         [0, 0, _, _, ..] => (4, true),
@@ -299,12 +310,26 @@ fn json_bytes_text(b: &[u8]) -> Result<String, Error> {
         [_, 0, _, _, ..] => (2, false),
         [0, _] => (2, true),
         [_, 0] => (2, false),
-        _ => return decode(b.to_vec()),
+        _ => return json_utf8_points(b, surrogatepass),
     };
-    wide(b, 0, unit, be, if unit == 4 { "utf-32" } else { "utf-16" })
+    wide(
+        b,
+        0,
+        unit,
+        be,
+        if unit == 4 { "utf-32" } else { "utf-16" },
+        surrogatepass,
+    )
 }
 /// UTF-16/UTF-32 decoding; positions count from the start of the input, BOM included.
-fn wide(b: &[u8], start: usize, unit: usize, be: bool, family: &str) -> Result<String, Error> {
+fn wide(
+    b: &[u8],
+    start: usize,
+    unit: usize,
+    be: bool,
+    family: &str,
+    surrogatepass: bool,
+) -> Result<Vec<u32>, Error> {
     let codec = format!("{family}-{}", if be { "be" } else { "le" });
     let fail = |s: usize, e: usize, reason: &str| {
         let portion = if e == s {
@@ -321,7 +346,7 @@ fn wide(b: &[u8], start: usize, unit: usize, be: bool, family: &str) -> Result<S
         let ordered = |k: usize| u32::from(bytes[if be { k } else { unit - 1 - k }]);
         (0..unit).fold(0, |acc, k| acc << 8 | ordered(k))
     };
-    let mut out = String::new();
+    let mut out = Vec::new();
     let mut i = 0;
     while i < whole {
         let at = start + i;
@@ -332,21 +357,24 @@ fn wide(b: &[u8], start: usize, unit: usize, be: bool, family: &str) -> Result<S
                 return Err(fail(at, at + 3, "code point not in range(0x110000)"));
             }
             match char::from_u32(value) {
-                Some(c) => out.push(c),
+                Some(c) => out.push(u32::from(c)),
+                None if surrogatepass => out.push(value),
                 None => return Err(fail(at, at + 3, "lone surrogate (Python-only)")),
             }
         } else if (0xd800..0xdc00).contains(&value) && i < whole {
             let low = word(i);
             match char::decode_utf16([value as u16, low as u16]).next() {
                 Some(Ok(c)) if (0xdc00..0xe000).contains(&low) => {
-                    out.push(c);
+                    out.push(u32::from(c));
                     i += unit;
                 }
+                _ if surrogatepass => out.push(value),
                 _ => return Err(fail(at, at + 1, "lone surrogate (Python-only)")),
             }
         } else {
             match char::from_u32(value) {
-                Some(c) => out.push(c),
+                Some(c) => out.push(u32::from(c)),
+                None if surrogatepass => out.push(value),
                 None => return Err(fail(at, at + 1, "lone surrogate (Python-only)")),
             }
         }
@@ -357,6 +385,47 @@ fn wide(b: &[u8], start: usize, unit: usize, be: bool, family: &str) -> Result<S
             start + body.len() - 1,
             "truncated data",
         ));
+    }
+    Ok(out)
+}
+fn json_utf8_points(b: &[u8], surrogatepass: bool) -> Result<Vec<u32>, Error> {
+    if !surrogatepass {
+        return decode(b.to_vec()).map(|s| s.chars().map(u32::from).collect());
+    }
+    let mut out = Vec::new();
+    let mut offset = 0;
+    while offset < b.len() {
+        match std::str::from_utf8(&b[offset..]) {
+            Ok(text) => {
+                out.extend(text.chars().map(u32::from));
+                break;
+            }
+            Err(error) => {
+                if let Ok(text) = std::str::from_utf8(&b[offset..offset + error.valid_up_to()]) {
+                    out.extend(text.chars().map(u32::from));
+                }
+                offset += error.valid_up_to();
+                if let [0xed, middle @ 0xa0..=0xbf, low @ 0x80..=0xbf, ..] = &b[offset..] {
+                    out.push(0xd000 + (u32::from(middle & 63) << 6) + u32::from(low & 63));
+                    offset += 3;
+                    continue;
+                }
+                let len = error.error_len().unwrap_or(b.len() - offset);
+                let reason = match error.error_len() {
+                    None => "unexpected end of data",
+                    Some(_) if matches!(b[offset], 0xc2..=0xf4) => "invalid continuation byte",
+                    Some(_) => "invalid start byte",
+                };
+                let portion = if len == 1 {
+                    format!("byte 0x{:02x} in position {offset}", b[offset])
+                } else {
+                    format!("bytes in position {offset}-{}", offset + len - 1)
+                };
+                return Err(Error::Unicode(format!(
+                    "'utf-8' codec can't decode {portion}: {reason}"
+                )));
+            }
+        }
     }
     Ok(out)
 }

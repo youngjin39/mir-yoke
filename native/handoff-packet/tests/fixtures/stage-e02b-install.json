@@ -1,0 +1,1781 @@
+{
+  "bootstrap-gate:bad-hash": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "bootstrap-gate:bad-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "bootstrap-gate:disabled": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "bootstrap-gate:empty-local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "bootstrap-gate:existing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/bootstrap-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/bootstrap-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "bootstrap-gate:linked-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "link": "<tmp>/outside"
+      }
+    }
+  },
+  "bootstrap-gate:linked-target": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/bootstrap-gate": {
+        "link": "<tmp>/artifact"
+      }
+    }
+  },
+  "bootstrap-gate:local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/bootstrap-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/bootstrap-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "bootstrap-gate:missing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "bootstrap-gate:missing-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "bootstrap-gate:readonly-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 320
+      },
+      ".mir/bin/bootstrap-gate": {
+        "hex": "6f6c640a",
+        "mode": 493
+      }
+    }
+  },
+  "bootstrap-gate:replace": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/bootstrap-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/bootstrap-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "bootstrap-gate:truncated": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "bootstrap-gate:unsupported": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "bootstrap-gate:url-embedded-newline": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/bootstrap-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/bootstrap-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "bootstrap-gate:url-embedded-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/bootstrap-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/bootstrap-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "bootstrap-gate:url-leading-space": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/bootstrap-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/bootstrap-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "bootstrap-gate:url-leading-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/bootstrap-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/bootstrap-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "bootstrap-gate:valid": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/bootstrap-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/bootstrap-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "bootstrap-gate:wrong-size": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "delegation-gate:bad-hash": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "delegation-gate:bad-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "delegation-gate:disabled": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "delegation-gate:empty-local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "delegation-gate:existing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/delegation-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/delegation-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "delegation-gate:linked-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "link": "<tmp>/outside"
+      }
+    }
+  },
+  "delegation-gate:linked-target": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/delegation-gate": {
+        "link": "<tmp>/artifact"
+      }
+    }
+  },
+  "delegation-gate:local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/delegation-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/delegation-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "delegation-gate:missing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "delegation-gate:missing-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "delegation-gate:readonly-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 320
+      },
+      ".mir/bin/delegation-gate": {
+        "hex": "6f6c640a",
+        "mode": 493
+      }
+    }
+  },
+  "delegation-gate:replace": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/delegation-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/delegation-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "delegation-gate:truncated": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "delegation-gate:unsupported": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "delegation-gate:url-embedded-newline": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/delegation-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/delegation-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "delegation-gate:url-embedded-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/delegation-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/delegation-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "delegation-gate:url-leading-space": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/delegation-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/delegation-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "delegation-gate:url-leading-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/delegation-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/delegation-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "delegation-gate:valid": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/delegation-gate\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/delegation-gate": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "delegation-gate:wrong-size": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "executor-query:bad-hash": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "executor-query:bad-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "executor-query:disabled": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "executor-query:empty-local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "executor-query:existing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/executor-query\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/executor-query": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "executor-query:linked-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "link": "<tmp>/outside"
+      }
+    }
+  },
+  "executor-query:linked-target": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/executor-query": {
+        "link": "<tmp>/artifact"
+      }
+    }
+  },
+  "executor-query:local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/executor-query\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/executor-query": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "executor-query:missing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "executor-query:missing-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "executor-query:readonly-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 320
+      },
+      ".mir/bin/executor-query": {
+        "hex": "6f6c640a",
+        "mode": 493
+      }
+    }
+  },
+  "executor-query:replace": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/executor-query\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/executor-query": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "executor-query:truncated": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "executor-query:unsupported": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "executor-query:url-embedded-newline": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/executor-query\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/executor-query": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "executor-query:url-embedded-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/executor-query\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/executor-query": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "executor-query:url-leading-space": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/executor-query\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/executor-query": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "executor-query:url-leading-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/executor-query\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/executor-query": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "executor-query:valid": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/executor-query\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/executor-query": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "executor-query:wrong-size": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "hooks:bad-hash": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: verified project-hooks placement unavailable\n",
+    "tree": {}
+  },
+  "hooks:bad-identity": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: invalid project-hooks provider identity\n",
+    "tree": {}
+  },
+  "hooks:bad-receipt": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: project-hooks receipt mismatch\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b7d",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:bad-schema": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: unsupported provider metadata schema\n",
+    "tree": {}
+  },
+  "hooks:bool-schema": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: invalid provider metadata\n",
+    "tree": {}
+  },
+  "hooks:broken-receipt": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "6f6c640a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:check": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "project-hooks: ready (verified binary, receipt and capability probe)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b2270617468223a20222e6d69722f62696e2f70726f6a6563742d686f6f6b73222c2022736861323536223a202235613631373137303536306662626639346538613636643333373262323066653532633936663635646435346463356463383763626161313035626636343838227d",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:disabled": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: native artifacts disabled\n",
+    "tree": {}
+  },
+  "hooks:linked-receipt": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: linked project-hook path\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "link": "<tmp>/artifact"
+      }
+    }
+  },
+  "hooks:list-metadata": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: invalid provider metadata\n",
+    "tree": {}
+  },
+  "hooks:missing-plugins": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: 'plugins'\n",
+    "tree": {}
+  },
+  "hooks:missing-receipt": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: [Errno 2] No such file or directory: '<tmp>/project/.mir/bin/project-hooks.json'\n",
+    "tree": {}
+  },
+  "hooks:no-pin": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: no published host pin in provider package\n",
+    "tree": {}
+  },
+  "hooks:nonexec": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: project-hooks is not executable\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 384
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b2270617468223a20222e6d69722f62696e2f70726f6a6563742d686f6f6b73222c2022736861323536223a202235613631373137303536306662626639346538613636643333373262323066653532633936663635646435346463356463383763626161313035626636343838227d",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:null-plugins": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: argument of type 'NoneType' is not iterable\n",
+    "tree": {}
+  },
+  "hooks:probe-cr": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "project-hooks: ready (verified binary, receipt and capability probe)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c726d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c72220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b0a20202270617468223a20222e6d69722f62696e2f70726f6a6563742d686f6f6b73222c0a202022736861323536223a202230613832393838666365616433326639623832313236363035343532636638383333326137343634643533336364666532383839363037613562643561643561220a7d0a",
+        "mode": 384
+      }
+    }
+  },
+  "hooks:probe-delayed-descendant": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "project-hooks: ready (verified binary, receipt and capability probe)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a282f62696e2f736c65657020302e30353b207072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e222920260a6578697420300a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b0a20202270617468223a20222e6d69722f62696e2f70726f6a6563742d686f6f6b73222c0a202022736861323536223a202237633065333333393730326364353931373665366232343361663830363762343065636437346538363038666263303632346235373661376333313764633763220a7d0a",
+        "mode": 384
+      }
+    }
+  },
+  "hooks:probe-failed": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: project-hooks capability probe failed\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a6578697420310a",
+        "mode": 493
+      }
+    }
+  },
+  "hooks:probe-large": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "project-hooks: ready (verified binary, receipt and capability probe)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7061643d2778787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878270a693d300a7768696c65205b2022246922202d6c7420323536205d3b20646f207072696e7466202225735c6e22202224706164223b207072696e7466202225735c6e2220222470616422203e26323b20693d242828692b3129293b20646f6e650a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b0a20202270617468223a20222e6d69722f62696e2f70726f6a6563742d686f6f6b73222c0a202022736861323536223a202234323939303932393265313036656235626435313831376135306366323231363761316161363366393530363561633564383534623465306465633962633732220a7d0a",
+        "mode": 384
+      }
+    }
+  },
+  "hooks:probe-pipe": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "project-hooks: ready (verified binary, receipt and capability probe)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a6966205b202d70202f6465762f7374646f7574205d3b207468656e207072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e223b2066690a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b0a20202270617468223a20222e6d69722f62696e2f70726f6a6563742d686f6f6b73222c0a202022736861323536223a202234386335323062623433373338386435313734373634313064393564333261303865666132323232343835343839383033333562663832323936613433363136220a7d0a",
+        "mode": 384
+      }
+    }
+  },
+  "hooks:probe-timeout": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: Command '['<tmp>/project/.mir/bin/project-hooks', 'capabilities']' timed out after 2 seconds\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a6578656320736c65657020330a",
+        "mode": 493
+      }
+    }
+  },
+  "hooks:receipt-surrogate": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: project-hooks receipt mismatch\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b2270617468223a20225c7564383030227d",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:receipt-surrogate16": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: project-hooks receipt mismatch\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "fffe7b002200700061007400680022003a002000220000d822007d00",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:receipt-surrogate32": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: project-hooks receipt mismatch\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "fffe00007b0000002200000070000000610000007400000068000000220000003a000000200000002200000000d80000220000007d000000",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:receipt-surrogate8": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: project-hooks receipt mismatch\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b2270617468223a2022eda080227d",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:receipt-utf16": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "project-hooks: ready (verified binary, receipt and capability probe)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "fffe7b002200700061007400680022003a00200022002e006d00690072002f00620069006e002f00700072006f006a006500630074002d0068006f006f006b00730022002c002000220073006800610032003500360022003a0020002200350061003600310037003100370030003500360030006600620062006600390034006500380061003600360064003300330037003200620032003000660065003500320063003900360066003600350064006400350034006400630035006400630038003700630062006100610031003000350062006600360034003800380022007d00",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:receipt-utf32": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "project-hooks: ready (verified binary, receipt and capability probe)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "fffe00007b0000002200000070000000610000007400000068000000220000003a00000020000000220000002e0000006d00000069000000720000002f00000062000000690000006e0000002f00000070000000720000006f0000006a0000006500000063000000740000002d000000680000006f0000006f0000006b00000073000000220000002c0000002000000022000000730000006800000061000000320000003500000036000000220000003a000000200000002200000035000000610000003600000031000000370000003100000037000000300000003500000036000000300000006600000062000000620000006600000039000000340000006500000038000000610000003600000036000000640000003300000033000000370000003200000062000000320000003000000066000000650000003500000032000000630000003900000036000000660000003600000035000000640000006400000035000000340000006400000063000000350000006400000063000000380000003700000063000000620000006100000061000000310000003000000035000000620000006600000036000000340000003800000038000000220000007d000000",
+        "mode": 420
+      }
+    }
+  },
+  "hooks:root-dotdot": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "project-hooks: ready (verified binary, receipt and capability probe)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b0a20202270617468223a20222e6d69722f62696e2f70726f6a6563742d686f6f6b73222c0a202022736861323536223a202235613631373137303536306662626639346538613636643333373262323066653532633936663635646435346463356463383763626161313035626636343838220a7d0a",
+        "mode": 384
+      },
+      "nested": {
+        "dir": true,
+        "mode": 493
+      }
+    }
+  },
+  "hooks:unsupported": {
+    "code": 1,
+    "stderr": "",
+    "stdout": "project-hooks: degraded: unsupported host\n",
+    "tree": {}
+  },
+  "hooks:valid": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "project-hooks: ready (verified binary, receipt and capability probe)\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      },
+      ".mir/bin/project-hooks.json": {
+        "hex": "7b0a20202270617468223a20222e6d69722f62696e2f70726f6a6563742d686f6f6b73222c0a202022736861323536223a202235613631373137303536306662626639346538613636643333373262323066653532633936663635646435346463356463383763626161313035626636343838220a7d0a",
+        "mode": 384
+      }
+    }
+  },
+  "project-hooks:bad-hash": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "project-hooks:bad-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "project-hooks:disabled": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "project-hooks:empty-local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "project-hooks:existing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/project-hooks\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "project-hooks:linked-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "link": "<tmp>/outside"
+      }
+    }
+  },
+  "project-hooks:linked-target": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "link": "<tmp>/artifact"
+      }
+    }
+  },
+  "project-hooks:local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/project-hooks\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "project-hooks:missing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "project-hooks:missing-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "project-hooks:readonly-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 320
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "6f6c640a",
+        "mode": 493
+      }
+    }
+  },
+  "project-hooks:replace": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/project-hooks\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "project-hooks:truncated": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "project-hooks:unsupported": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "project-hooks:url-embedded-newline": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/project-hooks\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "project-hooks:url-embedded-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/project-hooks\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "project-hooks:url-leading-space": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/project-hooks\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "project-hooks:url-leading-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/project-hooks\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "project-hooks:valid": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/project-hooks\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/project-hooks": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "project-hooks:wrong-size": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "runtime-verify:bad-hash": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "runtime-verify:bad-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "runtime-verify:disabled": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "runtime-verify:empty-local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "runtime-verify:existing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/runtime-verify\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/runtime-verify": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "runtime-verify:linked-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "link": "<tmp>/outside"
+      }
+    }
+  },
+  "runtime-verify:linked-target": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/runtime-verify": {
+        "link": "<tmp>/artifact"
+      }
+    }
+  },
+  "runtime-verify:local": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/runtime-verify\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/runtime-verify": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "runtime-verify:missing": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "runtime-verify:missing-provider": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "runtime-verify:readonly-parent": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 320
+      },
+      ".mir/bin/runtime-verify": {
+        "hex": "6f6c640a",
+        "mode": 493
+      }
+    }
+  },
+  "runtime-verify:replace": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/runtime-verify\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/runtime-verify": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "runtime-verify:truncated": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "runtime-verify:unsupported": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  },
+  "runtime-verify:url-embedded-newline": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/runtime-verify\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/runtime-verify": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "runtime-verify:url-embedded-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/runtime-verify\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/runtime-verify": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "runtime-verify:url-leading-space": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/runtime-verify\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/runtime-verify": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "runtime-verify:url-leading-tab": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/runtime-verify\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/runtime-verify": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "runtime-verify:valid": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "{\"path\":\".mir/bin/runtime-verify\",\"sha256\":\"5a617170560fbbf94e8a66d3372b20fe52c96f65dd54dc5dc87cbaa105bf6488\"}\n",
+    "tree": {
+      ".mir": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin": {
+        "dir": true,
+        "mode": 493
+      },
+      ".mir/bin/runtime-verify": {
+        "hex": "23212f62696e2f73680a7072696e746620226d69722d70726f6a6563742d686f6f6b732d76315c6e6d69722d70726f6a6563742d686f6f6b732d636f6d706163742d76315c6e220a",
+        "mode": 493
+      }
+    }
+  },
+  "runtime-verify:wrong-size": {
+    "code": 0,
+    "stderr": "",
+    "stdout": "null\n",
+    "tree": {}
+  }
+}

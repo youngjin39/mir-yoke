@@ -65,3 +65,7 @@ path = "src/run_python.rs"
 [[bin]]
 name = "runtime-manifest"
 path = "src/runtime_manifest.rs"
+
+[[bin]]
+name = "adoption-install"
+path = "src/adoption_install.rs"

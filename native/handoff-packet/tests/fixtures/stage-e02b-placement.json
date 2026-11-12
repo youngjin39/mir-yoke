@@ -1,0 +1,475 @@
+{
+  "reference": "ba6aa95673deefcb5f418b3fe9f3007f9b22e62a:src/mir/core/capabilities/native.py",
+  "payload_hex": "6e6174697665207061796c6f61640a",
+  "records": [
+    {
+      "case": "plain",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/runtime": {
+          "bytes": "6e6174697665207061796c6f61640a",
+          "mode": 493
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "mcp",
+      "plugin": "mir-mcp",
+      "name": "mir-mcp",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/native-artifacts.json": {
+          "bytes": "7b226d69722d6d6370223a207b22736861323536223a202235643666333533316434303539653461346530356365353061623436393163663231376262376335666238333662643539613663366466653331663963656336222c202273697a65223a2031352c2022746172676574223a2022616172636836342d6170706c652d64617277696e227d7d",
+          "mode": 384
+        },
+        "bin/runtime": {
+          "bytes": "6e6174697665207061796c6f61640a",
+          "mode": 493
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "disabled",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "unsupported",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": null,
+      "stderr": "",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "other-plugin",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "no-pin",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: no target aarch64-apple-darwin; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "existing",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: install path already exists; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/runtime": {
+          "bytes": "6578697374696e67",
+          "mode": 420
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "destination-link",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: install path already exists; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/runtime": {
+          "link": "<base>/source"
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "parent-link",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: linked native artifact parent; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {
+        "bin": {
+          "link": "<base>/outside"
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "parent-file",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: [Errno 20] Not a directory: '<base>/root/bin/.tmp-native-1'; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {
+        "bin": {
+          "bytes": "706172656e74",
+          "mode": 420
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "missing-source",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: [Errno 2] No such file or directory: '<base>/source'; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "oversize",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: native artifact integrity mismatch: .tmp-native-1; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "bad-sha",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: native artifact integrity mismatch: .tmp-native-1; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "metadata-exists",
+      "plugin": "mir-mcp",
+      "name": "mir-mcp",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact mir-mcp skipped: native artifact metadata already exists; native runtime unavailable\n",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/native-artifacts.json": {
+          "bytes": "6578697374696e67206d65746164617461",
+          "mode": 420
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "metadata-link",
+      "plugin": "mir-mcp",
+      "name": "mir-mcp",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact mir-mcp skipped: native artifact metadata already exists; native runtime unavailable\n",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/native-artifacts.json": {
+          "link": "<base>/source"
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "metadata-parent-missing",
+      "plugin": "mir-mcp",
+      "name": "mir-mcp",
+      "relative": "other/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact mir-mcp skipped: [Errno 2] No such file or directory: '<base>/root/bin/.tmp-native-2'; native runtime unavailable\n",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "readonly-parent",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: [Errno 13] Permission denied: '<base>/root/bin/.tmp-native-1'; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 320
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "warm-unix",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/runtime": {
+          "bytes": "6e6174697665207061796c6f61640a",
+          "mode": 420
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "warm-windows",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "x86_64-pc-windows-msvc",
+      "stderr": "",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/runtime.exe": {
+          "bytes": "6e6174697665207061796c6f61640a",
+          "mode": 420
+        }
+      },
+      "warm": [
+        "bin/runtime.exe"
+      ]
+    },
+    {
+      "case": "warm-missing",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "x86_64-pc-windows-msvc",
+      "stderr": "",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "warm-link",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "x86_64-pc-windows-msvc",
+      "stderr": "",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/runtime.exe": {
+          "link": "<base>/source"
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "warm-bad-sha",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "x86_64-pc-windows-msvc",
+      "stderr": "",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/runtime.exe": {
+          "bytes": "6e6174697665207061796c6f61640a",
+          "mode": 420
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "place-windows",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "x86_64-pc-windows-msvc",
+      "stderr": "",
+      "error": null,
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/runtime.exe": {
+          "bytes": "6e6174697665207061796c6f61640a",
+          "mode": 493
+        }
+      },
+      "warm": [
+        "bin/runtime.exe"
+      ]
+    },
+    {
+      "case": "fail-publish",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: [Errno 13] Permission denied: '<base>/root/bin/.tmp-native-1' -> '<base>/root/bin/runtime'; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "fail-metadata-publish",
+      "plugin": "mir-mcp",
+      "name": "mir-mcp",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact mir-mcp skipped: [Errno 13] Permission denied: '<base>/root/bin/.tmp-native-2' -> '<base>/root/bin/native-artifacts.json'; native runtime unavailable\n",
+      "error": null,
+      "files": {},
+      "warm": []
+    },
+    {
+      "case": "fail-remove-installed",
+      "plugin": "mir-mcp",
+      "name": "mir-mcp",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "",
+      "error": "PermissionError: [Errno 13] Permission denied: '<base>/root/bin/runtime'",
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/native-artifacts.json": {
+          "bytes": "6578697374696e67206d65746164617461",
+          "mode": 420
+        },
+        "bin/runtime": {
+          "bytes": "6e6174697665207061796c6f61640a",
+          "mode": 493
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "fail-remove-temporary",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: native artifact integrity mismatch: .tmp-native-1; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": "PermissionError: [Errno 13] Permission denied: '<base>/root/bin/.tmp-native-1'",
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "bin/.tmp-native-1": {
+          "bytes": "6e6174697665207061796c6f61640a78",
+          "mode": 384
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "fail-remove-directory",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact project-hooks skipped: native artifact integrity mismatch: .tmp-native-1; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": "PermissionError: [Errno 13] Permission denied: '<base>/root/bin'",
+      "files": {
+        "bin": {
+          "directory": true,
+          "mode": 493
+        }
+      },
+      "warm": []
+    },
+    {
+      "case": "multi-order",
+      "plugin": "mir-lifecycle-hooks",
+      "name": "project-hooks",
+      "relative": "bin/runtime",
+      "target": "aarch64-apple-darwin",
+      "stderr": "Warning: native artifact z-last-name-first skipped: no target aarch64-apple-darwin; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\nWarning: native artifact a-first-name-last skipped: no target aarch64-apple-darwin; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit stay silent (exit 0), PreToolUse and Stop emit a note (stderr, exit 0)\n",
+      "error": null,
+      "files": {},
+      "warm": []
+    }
+  ]
+}

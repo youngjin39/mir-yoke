@@ -33,6 +33,41 @@ fn opened(descriptor: libc::c_int) -> io::Result<File> {
     Ok(unsafe { File::from_raw_fd(descriptor) })
 }
 
+#[cfg(unix)]
+pub(crate) fn nonblocking(file: &impl AsRawFd) -> io::Result<()> {
+    // std has no nonblocking setter for ChildStdout/ChildStderr. Borrow the live
+    // descriptor only for fcntl; ownership stays with the caller's pipe handle.
+    let descriptor = file.as_raw_fd();
+    // SAFETY: a live borrowed descriptor; F_GETFL consumes no variadic argument.
+    let flags = unsafe { libc::fcntl(descriptor, libc::F_GETFL) };
+    if flags < 0 {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: same live descriptor and integer flags from F_GETFL.
+    if unsafe { libc::fcntl(descriptor, libc::F_SETFL, flags | libc::O_NONBLOCK) } < 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+pub(crate) fn monotonic_seconds() -> io::Result<f64> {
+    #[cfg(target_vendor = "apple")]
+    let clock = libc::CLOCK_UPTIME_RAW;
+    #[cfg(not(target_vendor = "apple"))]
+    let clock = libc::CLOCK_MONOTONIC;
+    let mut time = std::mem::MaybeUninit::<libc::timespec>::uninit();
+    // SAFETY: clock is a supported monotonic clock and time is writable. On
+    // macOS UPTIME_RAW shares CPython's mach_absolute_time epoch (MONOTONIC
+    // does not). Match Python's integer nanoseconds -> double seconds conversion.
+    if unsafe { libc::clock_gettime(clock, time.as_mut_ptr()) } != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: successful clock_gettime initialized the complete timespec.
+    let time = unsafe { time.assume_init() };
+    Ok((i128::from(time.tv_sec) * 1_000_000_000 + i128::from(time.tv_nsec)) as f64 / 1e9)
+}
+
 pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
     let relative = path.strip_prefix(root).map_err(|_| {
         io::Error::new(
@@ -112,6 +147,99 @@ pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
     ))
 }
 impl Parent {
+    pub(crate) fn open_file(&self) -> io::Result<File> {
+        #[cfg(unix)]
+        {
+            let name = c_name(&self.name)?;
+            // SAFETY: live pinned parent and valid basename. NOFOLLOW rejects
+            // a final link; NONBLOCK lets callers reject a FIFO without waiting.
+            opened(unsafe {
+                libc::openat(
+                    self.directory.as_raw_fd(),
+                    name.as_ptr(),
+                    libc::O_RDONLY | libc::O_NOFOLLOW | libc::O_NONBLOCK | libc::O_CLOEXEC,
+                )
+            })
+        }
+        #[cfg(not(unix))]
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "descriptor-relative adoption requires Unix",
+        ))
+    }
+
+    pub(crate) fn directory_empty(&self) -> io::Result<bool> {
+        #[cfg(any(target_vendor = "apple", target_os = "linux"))]
+        {
+            use std::os::fd::IntoRawFd;
+            struct Listing(*mut libc::DIR);
+            impl Drop for Listing {
+                fn drop(&mut self) {
+                    // SAFETY: fdopendir gave this guard sole ownership, and no
+                    // directory entry pointer outlives the guard.
+                    unsafe {
+                        libc::closedir(self.0);
+                    }
+                }
+            }
+            let name = c_name(&self.name)?;
+            // SAFETY: live pinned parent and valid basename; a readable handle
+            // preserves listdir permission errors and NOFOLLOW rejects links.
+            let file = opened(unsafe {
+                libc::openat(
+                    self.directory.as_raw_fd(),
+                    name.as_ptr(),
+                    libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+                )
+            })?;
+            let descriptor = file.into_raw_fd();
+            // SAFETY: descriptor is an owned readable directory fd. Ownership
+            // transfers to the stream only when fdopendir succeeds.
+            let stream = unsafe { libc::fdopendir(descriptor) };
+            if stream.is_null() {
+                let error = io::Error::last_os_error();
+                // SAFETY: unsuccessful fdopendir leaves descriptor owned here.
+                drop(unsafe { File::from_raw_fd(descriptor) });
+                return Err(error);
+            }
+            let listing = Listing(stream);
+            loop {
+                #[cfg(target_vendor = "apple")]
+                // SAFETY: __error returns this thread's live errno location.
+                let errno = unsafe { libc::__error() };
+                #[cfg(target_os = "linux")]
+                // SAFETY: __errno_location returns this thread's errno location.
+                let errno = unsafe { libc::__errno_location() };
+                // SAFETY: errno is thread-local; the stream remains owned by
+                // listing, and each entry is consumed before the next readdir.
+                let entry = unsafe {
+                    *errno = 0;
+                    libc::readdir(listing.0)
+                };
+                if entry.is_null() {
+                    // SAFETY: same live thread-local errno pointer.
+                    let error = unsafe { *errno };
+                    return if error == 0 {
+                        Ok(true)
+                    } else {
+                        Err(io::Error::from_raw_os_error(error))
+                    };
+                }
+                // SAFETY: successful readdir returns a valid NUL-terminated
+                // d_name until the next call on this stream.
+                let name = unsafe { std::ffi::CStr::from_ptr((*entry).d_name.as_ptr()) };
+                if !matches!(name.to_bytes(), b"." | b"..") {
+                    return Ok(false);
+                }
+            }
+        }
+        #[cfg(not(any(target_vendor = "apple", target_os = "linux")))]
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "descriptor-relative directory listing requires macOS or Linux",
+        ))
+    }
+
     pub(crate) fn sync_file(&self) -> io::Result<File> {
         #[cfg(unix)]
         {
@@ -139,7 +267,7 @@ impl Parent {
                 libc::openat(
                     self.directory.as_raw_fd(),
                     name.as_ptr(),
-                    libc::O_WRONLY
+                    libc::O_RDWR
                         | libc::O_CREAT
                         | libc::O_EXCL
                         | libc::O_NOFOLLOW
@@ -153,6 +281,45 @@ impl Parent {
             io::ErrorKind::Unsupported,
             "descriptor-relative adoption requires Unix",
         ))
+    }
+    pub(crate) fn identity(&self) -> io::Result<Option<(u64, u64)>> {
+        self.object_identity(false)
+    }
+    pub(crate) fn object_identity(&self, directory: bool) -> io::Result<Option<(u64, u64)>> {
+        #[cfg(unix)]
+        {
+            let name = c_name(&self.name)?;
+            let mut metadata = std::mem::MaybeUninit::<libc::stat>::uninit();
+            // SAFETY: live directory fd, valid basename, writable stat record.
+            if unsafe {
+                libc::fstatat(
+                    self.directory.as_raw_fd(),
+                    name.as_ptr(),
+                    metadata.as_mut_ptr(),
+                    libc::AT_SYMLINK_NOFOLLOW,
+                )
+            } != 0
+            {
+                return Err(io::Error::last_os_error());
+            }
+            // SAFETY: successful fstatat initialized the complete stat record.
+            let metadata = unsafe { metadata.assume_init() };
+            Ok((metadata.st_mode & libc::S_IFMT
+                == if directory {
+                    libc::S_IFDIR
+                } else {
+                    libc::S_IFREG
+                })
+            .then_some((metadata.st_dev as u64, metadata.st_ino)))
+        }
+        #[cfg(not(unix))]
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "descriptor-relative adoption requires Unix",
+        ))
+    }
+    fn matches(&self, expected: &(u64, u64)) -> io::Result<bool> {
+        Ok(self.identity()?.as_ref() == Some(expected))
     }
     pub(crate) fn unlink(&self, name: &OsStr, directory: bool) -> io::Result<()> {
         #[cfg(unix)]
@@ -214,27 +381,11 @@ impl Move {
         let destination = parent(root, destination)?;
         #[cfg(unix)]
         {
-            let name = c_name(&source.name)?;
-            let mut metadata = std::mem::MaybeUninit::<libc::stat>::uninit();
-            // SAFETY: live parent descriptor, valid basename and writable stat
-            // allocation. Read metadata only after fstatat reports success.
-            // NOFOLLOW refuses leaf symlinks without requiring file read access.
-            let status = unsafe {
-                libc::fstatat(
-                    source.directory.as_raw_fd(),
-                    name.as_ptr(),
-                    metadata.as_mut_ptr(),
-                    libc::AT_SYMLINK_NOFOLLOW,
-                )
-            };
-            if status != 0 {
-                return Err(io::Error::last_os_error());
-            }
-            // SAFETY: fstatat successfully initialized the whole stat record.
-            let metadata = unsafe { metadata.assume_init() };
-            if metadata.st_mode & libc::S_IFMT != libc::S_IFREG {
-                return Err(io::Error::other("source is not a regular file"));
-            }
+            // Generic moves also support unreadable files. Artifact publication
+            // supplies identity from its still-open verified descriptor instead.
+            source
+                .identity()?
+                .ok_or_else(|| io::Error::other("source is not a regular file"))?;
             Ok(Self {
                 source,
                 destination,
@@ -261,10 +412,10 @@ impl Move {
                     destination.as_ptr(),
                 )
             };
-            if status == 0 {
-                return Ok(());
+            if status != 0 {
+                return Err(io::Error::last_os_error());
             }
-            Err(io::Error::last_os_error())
+            Ok(())
         }
         #[cfg(not(unix))]
         Err(io::Error::new(
@@ -274,15 +425,146 @@ impl Move {
     }
 }
 
+/// An exclusive destination-directory temporary; one descriptor for byte work.
+/// Drop only uses pinned parents, even if the visible directory layout changes.
+pub(crate) struct StagedFile {
+    pub(crate) file: File,
+    pub(crate) path: std::path::PathBuf,
+    source: Parent,
+    cleanup_disabled: std::cell::Cell<bool>,
+}
+impl StagedFile {
+    pub(crate) fn create(root: &Path, path: &Path) -> io::Result<Self> {
+        Self::create_with(root, path, |_| Ok(()))
+    }
+    pub(crate) fn create_with(
+        root: &Path,
+        path: &Path,
+        before: impl FnOnce(&Path) -> io::Result<()>,
+    ) -> io::Result<Self> {
+        let source = parent(root, path)?;
+        before(path)?;
+        // Failure to create gives no ownership and must never trigger cleanup.
+        let file = source.create(&source.name, 0o600)?;
+        Ok(Self {
+            file,
+            path: path.to_path_buf(),
+            source,
+            cleanup_disabled: std::cell::Cell::new(false),
+        })
+    }
+    pub(crate) fn identity(&self) -> io::Result<(u64, u64)> {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            let metadata = self.file.metadata()?;
+            Ok((metadata.dev(), metadata.ino()))
+        }
+        #[cfg(not(unix))]
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "descriptor-relative adoption requires Unix",
+        ))
+    }
+    pub(crate) fn contents(&mut self, limit: usize) -> io::Result<Vec<u8>> {
+        use std::io::{Read, Seek};
+        self.file.sync_all()?;
+        self.file.rewind()?;
+        let mut bytes = Vec::new();
+        (&mut self.file)
+            .take(limit as u64 + 1)
+            .read_to_end(&mut bytes)?;
+        Ok(bytes)
+    }
+    pub(crate) fn publish(&self, root: &Path, destination: &Path) -> io::Result<Parent> {
+        #[cfg(unix)]
+        {
+            // Reject changed visible ancestors before effects, then use only the
+            // staged source fd. Compare against the verified descriptor, not a reopen.
+            let _ = parent(root, &self.path)?;
+            let destination = parent(root, destination)?;
+            let expected = self.identity()?;
+            if !self.source.matches(&expected)? {
+                return Err(io::Error::other("source changed during publication"));
+            }
+            let movement = Move {
+                source: Parent {
+                    directory: self.source.directory.try_clone()?,
+                    name: self.source.name.clone(),
+                },
+                destination: Parent {
+                    directory: destination.directory.try_clone()?,
+                    name: destination.name.clone(),
+                },
+            };
+            movement.rename()?;
+            self.cleanup_disabled.set(true);
+            Ok(destination)
+        }
+        #[cfg(not(unix))]
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "descriptor-relative adoption requires Unix",
+        ))
+    }
+    // An explicit cleanup failure must not be retried by Drop.
+    pub(crate) fn keep(&self) {
+        self.cleanup_disabled.set(true);
+    }
+    pub(crate) fn remove(&self) -> io::Result<()> {
+        if self.cleanup_disabled.get() {
+            return Ok(());
+        }
+        #[cfg(unix)]
+        {
+            let expected = self.identity()?;
+            match self.source.identity() {
+                Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+                Err(error) => return Err(error),
+                Ok(Some(identity)) if identity == expected => (),
+                _ => return Err(io::Error::other("source changed during cleanup")),
+            }
+            self.source.unlink(&self.source.name, false)?;
+            self.cleanup_disabled.set(true);
+            Ok(())
+        }
+        #[cfg(not(unix))]
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "descriptor-relative adoption requires Unix",
+        ))
+    }
+}
+impl Drop for StagedFile {
+    fn drop(&mut self) {
+        let _ = self.remove();
+    }
+}
+
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
     #[test]
+    fn source_swap_after_stat_matches_reference_without_touching_link_target() {
+        use std::os::unix::fs::symlink;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let source = root.join("source");
+        let destination = root.join("destination");
+        let outside = root.join("outside");
+        std::fs::write(&source, b"verified").unwrap();
+        std::fs::write(&outside, b"sentinel").unwrap();
+        let movement = Move::prepare(&root, &source, &destination).unwrap();
+        std::fs::rename(&source, root.join("saved")).unwrap();
+        symlink(&outside, &source).unwrap();
+        movement.rename().unwrap();
+        assert!(destination.is_symlink());
+        assert_eq!(std::fs::read(outside).unwrap(), b"sentinel");
+    }
+    #[test]
     fn unreadable_file_and_search_only_parents_remain_movable() {
-        let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/stage-e01");
-        std::fs::create_dir_all(&scratch).expect("scratch");
-        let temp = tempfile::tempdir_in(scratch).expect("synthetic root");
+        let temp = tempfile::tempdir().expect("synthetic root");
         let root = std::fs::canonicalize(temp.path()).expect("canonical root");
         let source_dir = root.join("source");
         let destination_dir = root.join("destination");
@@ -306,5 +588,84 @@ mod tests {
         result.expect("rename needs search/write, not read permission");
         assert!(!source.exists());
         assert!(destination.is_file());
+    }
+}
+
+#[cfg(all(test, unix))]
+mod owned_cleanup_tests {
+    use super::*;
+    use std::{fs, io::Write};
+    #[test]
+    fn contents_and_chmod_use_the_verified_descriptor() {
+        use std::os::unix::fs::PermissionsExt;
+        let t = tempfile::tempdir().unwrap();
+        let r = t.path().canonicalize().unwrap();
+        let mut staged = StagedFile::create(&r, &r.join("temp")).unwrap();
+        staged.file.write_all(b"verified").unwrap();
+        fs::rename(&staged.path, r.join("saved")).unwrap();
+        fs::write(&staged.path, b"foreign").unwrap();
+        fs::set_permissions(&staged.path, fs::Permissions::from_mode(0o640)).unwrap();
+        assert_eq!(staged.contents(8).unwrap(), b"verified");
+        staged
+            .file
+            .set_permissions(fs::Permissions::from_mode(0o755))
+            .unwrap();
+        assert_eq!(
+            fs::metadata(r.join("saved")).unwrap().permissions().mode() & 0o777,
+            0o755
+        );
+        assert_eq!(
+            fs::metadata(&staged.path).unwrap().permissions().mode() & 0o777,
+            0o640
+        );
+    }
+    #[test]
+    fn creation_collision_leaves_foreign_file() {
+        let t = tempfile::tempdir().unwrap();
+        let r = t.path().canonicalize().unwrap();
+        let mut actual = None;
+        let result = StagedFile::create_with(&r, &r.join("temp"), |p| {
+            actual = Some(p.to_path_buf());
+            fs::write(p, b"foreign")
+        });
+        assert!(result.is_err());
+        assert_eq!(fs::read(actual.unwrap()).unwrap(), b"foreign");
+    }
+    #[test]
+    fn substituted_temporary_survives_cleanup() {
+        let t = tempfile::tempdir().unwrap();
+        let r = t.path().canonicalize().unwrap();
+        let mut s = StagedFile::create(&r, &r.join("temp")).unwrap();
+        s.file.write_all(b"verified").unwrap();
+        fs::rename(&s.path, r.join("saved")).unwrap();
+        fs::write(&s.path, b"foreign").unwrap();
+        let path = s.path.clone();
+        assert!(s.publish(&r, &r.join("dest")).is_err());
+        drop(s);
+        assert_eq!(fs::read(path).unwrap(), b"foreign");
+    }
+    #[test]
+    fn foreign_stage_directory_survives_drop() {
+        let t = tempfile::tempdir().unwrap();
+        let r = t.path().canonicalize().unwrap();
+        let s = StagedFile::create(&r, &r.join("temp")).unwrap();
+        let stage = r.join("temp.stage");
+        if stage.exists() {
+            fs::rename(&stage, r.join("saved-stage")).unwrap();
+        }
+        fs::create_dir(&stage).unwrap();
+        drop(s);
+        assert!(stage.is_dir());
+    }
+    #[test]
+    fn published_temporary_name_is_not_owned_anymore() {
+        let t = tempfile::tempdir().unwrap();
+        let r = t.path().canonicalize().unwrap();
+        let s = StagedFile::create(&r, &r.join("temp")).unwrap();
+        let path = s.path.clone();
+        s.publish(&r, &r.join("dest")).unwrap();
+        fs::write(&path, b"foreign").unwrap();
+        drop(s);
+        assert_eq!(fs::read(path).unwrap(), b"foreign");
     }
 }

@@ -1,12 +1,15 @@
 //! Optional, lock-verified native placement for an explicitly selected project.
 #![forbid(unsafe_code)]
 
+#[cfg(unix)]
+use crate::adoption_fs;
 use crate::mir_core::capabilities::native;
 use serde_json::{Value, json};
 use std::{
+    ffi::OsStr,
     fs,
     io::{self, Write},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
 };
 
 /// All ambient choices are explicit; a missing target means unsupported.
@@ -21,6 +24,18 @@ pub struct InstallOptions<'a> {
 }
 
 pub trait InstallHost {
+    /// Resolve an account without consulting a consumer repository.
+    fn account_home(&mut self, name: Option<&OsStr>) -> Option<PathBuf> {
+        #[cfg(unix)]
+        {
+            crate::runtime_account_home(name)
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = name;
+            None
+        }
+    }
     fn read(&mut self, url: &str, size: u64) -> io::Result<Vec<u8>> {
         native::read(url, size)
     }
@@ -38,7 +53,11 @@ pub fn provider_pin(source_root: &Path, name: &str, target: &str) -> Option<Valu
     if lock_path.parent()?.is_symlink() || lock_path.is_symlink() {
         return None;
     }
-    let lock: Value = serde_json::from_slice(&fs::read(lock_path).ok()?).ok()?;
+    let (lock, _) = super::bootstrap_adoption::load_json_bytes(
+        &lock_path,
+        &mut super::bootstrap_adoption::LocalHost,
+    )
+    .ok()?;
     let records = lock
         .get("native_artifacts")
         .cloned()
@@ -47,12 +66,27 @@ pub fn provider_pin(source_root: &Path, name: &str, target: &str) -> Option<Valu
     records.get(name)?.get("targets")?.get(target).cloned()
 }
 
-fn expanded(path: &Path, home: Option<&Path>) -> Option<PathBuf> {
-    match path.to_str() {
-        Some("~") => home.map(Path::to_path_buf),
-        Some(value) if value.starts_with("~/") => home.map(|home| home.join(&value[2..])),
-        _ => Some(path.to_owned()),
+fn expanded(path: &Path, home: Option<&Path>, host: &mut dyn InstallHost) -> Option<PathBuf> {
+    // pathlib normalizes separators and dot components before expanduser.
+    // Slicing "~//file" as text would join an absolute "/file" to HOME.
+    let normalized: PathBuf = path
+        .components()
+        .filter(|part| !matches!(part, Component::CurDir))
+        .collect();
+    let mut parts = normalized.components();
+    if let Some(Component::Normal(first)) = parts.next()
+        && first.as_encoded_bytes().starts_with(b"~")
+    {
+        let first = first.to_str()?;
+        let home = if first == "~" {
+            home.map(Path::to_path_buf)
+                .or_else(|| host.account_home(None))?
+        } else {
+            host.account_home(Some(OsStr::new(&first[1..])))?
+        };
+        return Some(home.join(parts.as_path()));
     }
+    Some(normalized)
 }
 
 /// Failures preserve an existing destination and prune newly created empty dirs.
@@ -62,16 +96,21 @@ pub fn install(
     options: &InstallOptions<'_>,
     host: &mut dyn InstallHost,
 ) -> Option<Value> {
+    // The public helper accepts a name, but placement always owns one basename.
+    if name.is_empty() || name.contains(['/', '\\']) || matches!(name, "." | "..") {
+        return None;
+    }
     let target = options.target?;
     let windows = target.ends_with("windows-msvc");
     if (windows && name == "bootstrap-gate") || options.native_artifacts == Some("0") {
         return None;
     }
+    let root = root.canonicalize().ok()?;
     let relative = format!(".mir/bin/{name}{}", if windows { ".exe" } else { "" });
     let mut created = Vec::new();
     let result = (|| -> Option<Value> {
         let (pin, data) = if let Some(source) = options.local_source {
-            let source = expanded(source, options.home)?;
+            let source = expanded(source, options.home, host)?;
             if source.is_symlink() || !source.is_file() {
                 return None;
             }
@@ -98,15 +137,25 @@ pub fn install(
             (pin, data)
         };
         let destination = root.join(&relative);
-        let mut parent = root.to_path_buf();
+        let mut parent = root.clone();
         for part in [".mir", "bin"] {
             parent.push(part);
             if parent.is_symlink() {
                 return None;
             }
             if !parent.exists() {
-                fs::create_dir(&parent).ok()?;
-                created.push(parent.clone());
+                #[cfg(unix)]
+                {
+                    let pinned = adoption_fs::parent(&root, &parent).ok()?;
+                    adoption_fs::mkdir(&root, &parent, 0o777).ok()?;
+                    let identity = pinned.object_identity(true).ok()??;
+                    created.push((pinned, identity));
+                }
+                #[cfg(not(unix))]
+                {
+                    fs::create_dir(&parent).ok()?;
+                    created.push(parent.clone());
+                }
             }
         }
         if destination.is_symlink() || (destination.exists() && !destination.is_file()) {
@@ -119,36 +168,87 @@ pub fn install(
         {
             return receipt();
         }
-        let mut temporary = tempfile::Builder::new()
-            .prefix(&format!(".{name}."))
-            .tempfile_in(&parent)
-            .ok()?;
-        temporary.write_all(&data).ok()?;
-        native::verify(temporary.path(), &pin).ok()?;
+        // Verify the downloaded bytes only after the existing-file fast path,
+        // matching the reference's handling of an already valid installation.
+        if pin.get("size")?.as_u64()? != data.len() as u64
+            || pin.get("sha256")?.as_str()? != crate::digest::sha256(&data)
+        {
+            return None;
+        }
         #[cfg(unix)]
         {
-            use std::os::unix::fs::PermissionsExt;
-            temporary
-                .as_file()
-                .set_permissions(fs::Permissions::from_mode(0o755))
-                .ok()?;
+            place(&root, &parent, &destination, name, &data, host)?;
+            receipt()
         }
-        host.before_replace(temporary.path(), &destination).ok()?;
-        // persist replaces atomically and owns cleanup on failure on all targets.
-        match temporary.persist(&destination) {
-            Ok(_) => receipt(),
-            Err(error) => {
-                drop(error);
-                None
+        #[cfg(not(unix))]
+        {
+            let mut temporary = tempfile::Builder::new()
+                .prefix(&format!(".{name}."))
+                .tempfile_in(&parent)
+                .ok()?;
+            temporary.write_all(&data).ok()?;
+            native::verify(temporary.path(), &pin).ok()?;
+            host.before_replace(temporary.path(), &destination).ok()?;
+            // persist replaces atomically and owns cleanup on failure on all targets.
+            match temporary.persist(&destination) {
+                Ok(_) => receipt(),
+                Err(error) => {
+                    drop(error);
+                    None
+                }
             }
         }
     })();
     for parent in created.iter().rev() {
-        if fs::read_dir(parent).is_ok_and(|mut entries| entries.next().is_none()) {
-            let _ = fs::remove_dir(parent);
+        #[cfg(unix)]
+        {
+            let (parent, identity) = parent;
+            if parent.object_identity(true).ok().flatten() == Some(*identity) {
+                let _ = parent.unlink(&parent.name, true);
+            }
         }
+        #[cfg(not(unix))]
+        let _ = fs::remove_dir(parent);
     }
     result
+}
+
+#[cfg(unix)]
+fn place(
+    root: &Path,
+    directory: &Path,
+    destination: &Path,
+    name: &str,
+    data: &[u8],
+    host: &mut dyn InstallHost,
+) -> Option<()> {
+    use std::os::unix::fs::PermissionsExt;
+    let prefix = format!(".{name}.");
+    let temporary = tempfile::Builder::new()
+        .prefix(&prefix)
+        .make_in(directory, |candidate| {
+            adoption_fs::StagedFile::create(root, candidate)
+        })
+        .ok()?;
+    let (mut staged, mut path) = temporary.into_parts();
+    path.disable_cleanup(true);
+    staged.file.write_all(data).ok()?;
+    if staged.contents(data.len()).ok()? != data {
+        return None;
+    }
+    staged
+        .file
+        .set_permissions(fs::Permissions::from_mode(0o755))
+        .ok()?;
+    host.before_replace(&staged.path, destination).ok()?;
+    if destination.is_symlink() || (destination.exists() && !destination.is_file()) {
+        return None;
+    }
+    if staged.contents(data.len()).ok()? != data {
+        return None;
+    }
+    staged.publish(root, destination).ok()?;
+    Some(())
 }
 
 pub fn install_evaluator(
