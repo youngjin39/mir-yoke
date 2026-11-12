@@ -3,10 +3,10 @@
 import importlib.util
 import json
 import os
-import subprocess
 from pathlib import Path
 
 import pytest
+from e02a_binary import binary as e02a_binary
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests/fixtures/runtime_manifest_e02a"
@@ -15,17 +15,9 @@ capture = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(capture)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def binary():
-    override = os.environ.get("MIR_E02A_BINARY")
-    if override:
-        return Path(override)
-    subprocess.run(
-        ["cargo", "build", "--offline", "--locked", "--bin", "runtime-manifest"],
-        cwd=ROOT / "native/handoff-packet",
-        check=True,
-    )
-    return ROOT / "native/handoff-packet/target/debug/runtime-manifest"
+    return e02a_binary("runtime-manifest", "MIR_E02A_BINARY")
 
 
 @pytest.mark.parametrize("case", capture.CASES)

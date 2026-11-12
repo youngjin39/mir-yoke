@@ -5,8 +5,8 @@ import shutil
 import subprocess
 
 import pytest
+from e02a_binary import binary
 from run_python_startup_capture import FIXTURE, capture, reference, result, setup
-from test_run_python_native_parity import LAUNCHER
 
 RECORDS = json.loads(FIXTURE.read_text())["records"]
 
@@ -19,7 +19,7 @@ def test_startup_reference_regeneration():
 def test_startup_admission(tmp_path, record):
     env, decline = setup(tmp_path, record["name"], record["state"])
     script = reference(tmp_path)
-    shutil.copy2(LAUNCHER, script)
+    shutil.copy2(binary("run-python-launcher", "MIR_RUN_PYTHON_LAUNCHER_BINARY"), script)
     process = subprocess.run(
         [str(script), "-c", "unused"], env=env, cwd=tmp_path,
         capture_output=True, check=False, timeout=10,

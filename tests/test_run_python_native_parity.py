@@ -14,13 +14,10 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from e02a_binary import binary
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = "1324a3c"
-BINARY = Path(os.environ.get("MIR_RUN_PYTHON_BINARY", ROOT / ".mir/bin/run-python"))
-LAUNCHER = Path(
-    os.environ.get("MIR_RUN_PYTHON_LAUNCHER_BINARY", BINARY.with_name("run-python-launcher"))
-)
 
 
 @pytest.fixture
@@ -51,6 +48,8 @@ def run_pair(
     sandbox, args, *, shell=False, stdin=b"", environment=None, cli_args=None, decline=False
 ):
     root, project = sandbox
+    executable_binary = binary("run-python", "MIR_RUN_PYTHON_BINARY")
+    launcher = binary("run-python-launcher", "MIR_RUN_PYTHON_LAUNCHER_BINARY")
     env = dict(
         os.environ,
         HOME=str(root / "home"),
@@ -98,7 +97,7 @@ def run_pair(
             return (
                 value.replace(str(root).encode(), b"${TMP}")
                 .replace(cwd_spelling, b"${TMP}")
-                .replace(str(BINARY).encode(), b"${BINARY}")
+                .replace(str(executable_binary).encode(), b"${BINARY}")
             )
 
         record = {
@@ -113,7 +112,7 @@ def run_pair(
         }
         with Path(destination).open("a") as stream:
             stream.write(json.dumps(record) + "\n")
-    shutil.copy2(LAUNCHER if shell else BINARY, installed)
+    shutil.copy2(launcher if shell else executable_binary, installed)
     actual = subprocess.run(
         [str(installed), *argv],
         cwd=root,
