@@ -102,7 +102,7 @@ is performed.
 - Local code: optional `tools/mir_executor/local.py`. Absent hooks use defaults.
 - Yoke itself selects `native_policy` version 1 with the `base_v1` brief profile
   in its local JSON and explicitly sets `python_local_hooks: false`. The retained
-  `local.py` is inactive for native hook routing and status facade selection.
+  `local.py` is inactive for native hook routing, Python API hooks and status facade selection.
   Only the exact JSON boolean `false` disables it; absence retains existing
   consumer routing. A present key must be boolean and requires the retained
   `tools/mir_executor/local.py`; invalid selections are final configuration errors.
@@ -110,7 +110,8 @@ is performed.
   validation and diagnostics; ordinary text passes through. No raw-file size cap
   is added. Yoke's own hook routing does not start LocalBridge. The bridge and
   Python executor APIs remain supported for consumers; Python API calls against
-  Yoke's declarative profile fail closed under the native-policy boundary below.
+  Yoke's exact `base_v1` profile reuse the typed Python file loader without importing
+  the inactive local module.
 - Local data: optional `config/mir-executor.local.json`. Keys are `verifiers` (ID
   to argv list), `codex_sandbox_default`, `require_review`, `max_codex_attempts_cap`,
   `artifact_retention_days`, `child_env_filter`, `child_env_extra_keys` and
@@ -836,7 +837,10 @@ it, so descendants cannot escape ownership before the first hook runs.
 
 
 Python API callers also honour a version-1 `native_policy` containing only
-`version` and `hooks`. Unsupported sections (including unknown keys) fail closed
+`version` and `hooks`. With explicit `python_local_hooks: false`, they also support
+exactly `brief_profile: {"name":"base_v1"}` through the existing typed file loader;
+ordinary text passes through and the retained local module is not imported. Other
+profiles, profile options and unsupported sections (including unknown keys) fail closed
 for the target and the invoking home whose authorization applies. The Python CLI
 continues to refuse declared native policy on execute/resume; it does not bypass
 that command boundary. A covering executable hook and a same-name `local.py`

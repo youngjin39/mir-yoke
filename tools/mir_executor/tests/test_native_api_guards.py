@@ -1,4 +1,4 @@
-"""Python execution APIs refuse native-only policy before loading hooks or mutating."""
+"""Python APIs admit supported policy and refuse unsupported policy before effects."""
 
 from __future__ import annotations
 
@@ -35,9 +35,15 @@ def write_policy(root, field):
     "execute", "execute_async", "run_codex", "run_codex_async", "run_agent_async",
     "run_dispatch", "finalize_dispatch", "resolve_agent_route",
 ])
-def test_refuse_unsupported_policy_before_api_effects(guarded_repo, field, entrypoint):
+@pytest.mark.parametrize("disabled", [False, True])
+def test_refuse_unsupported_policy_before_api_effects(guarded_repo, field, entrypoint, disabled):
     root = guarded_repo
     write_policy(root, field)
+    if disabled:
+        path = root / 'config/mir-executor.local.json'
+        config = json.loads(path.read_text())
+        config['python_local_hooks'] = False
+        path.write_text(json.dumps(config))
     runner = executor.MirExecutor(root, target_agent="reviewer")
     with pytest.raises(ValueError, match="native_policy"):
         if entrypoint == "execute":
@@ -173,3 +179,86 @@ def test_direct_read_only_provider_runner_refuses_policy_before_effects(
         runner(SimpleNamespace(path=root, dispatch_id="direct-read-only"), 1)
     assert effects == []
     assert not (root / ".mir-dispatch").exists()
+
+
+@pytest.fixture
+def yoke_config_repo(guarded_repo):
+    import pathlib
+
+    root = guarded_repo
+    source = pathlib.Path(executor.__file__).resolve().parents[2]
+    config = (source / 'config/mir-executor.local.json').read_bytes()
+    (root / 'config/mir-executor.local.json').write_bytes(config)
+    return root
+
+
+def test_committed_yoke_config_allows_direct_python_api(yoke_config_repo, monkeypatch):
+    root = yoke_config_repo
+    runner = executor.MirExecutor(root)
+    expected = object()
+    monkeypatch.setattr(executor, '_guard_codex_main_worktree', lambda *_: None)
+    monkeypatch.setattr(runner, '_run_codex_mcp_for_async', lambda *_: expected)
+    assert runner.run_codex(['exec', 'go'], cwd=root) is expected
+
+
+def test_yoke_profile_validates_files_without_loading_local_module(yoke_config_repo):
+    from mir.core.conductor.dispatch_brief import load_dispatch_brief
+
+    root = yoke_config_repo
+    local_hooks.guard_python_api(root)
+    assert local_hooks.has_hook(root, 'validate_brief') is True
+    assert local_hooks.invoke_hook(root, 'validate_brief', 'plain text', root) is None
+    assert local_hooks.invoke_hook(root, 'before_run', None, 1) is None
+    assert local_hooks.has_hook(root, 'before_run') is False
+    brief = root / 'brief.json'
+    brief.write_text('{}')
+    with pytest.raises(Exception) as reference:
+        load_dispatch_brief(brief)
+    with pytest.raises(type(reference.value)) as actual:
+        local_hooks.invoke_hook(root, 'validate_brief', brief, root)
+    assert str(actual.value) == str(reference.value)
+
+    import pathlib
+    source = pathlib.Path(executor.__file__).resolve().parents[2]
+    records = json.loads((source / 'tests/fixtures/yoke_local_brief.json').read_text())
+    valid = next(case for case in records['cases'] if case['name'] == 'valid')
+    brief.write_bytes(bytes.fromhex(valid['bytes_hex']))
+    runner = executor.MirExecutor(root, dispatch_brief_path=brief)
+    assert runner.load_dispatch_brief().model_dump(mode='json') == valid['value']
+    assert local_hooks.invoke_hook(
+        root, 'validate_brief', brief, root,
+    ).model_dump(mode='json') == valid['value']
+
+
+@pytest.mark.parametrize('policy', [
+    None, {}, {'version': True}, {'version': 2},
+    {'version': 1, 'unknown': {}},
+    {'version': 1, 'brief_profile': {'name': 'unknown'}},
+    {'version': 1, 'brief_profile': {'name': 'base_v1', 'unknown': True}},
+    {'version': 1, 'brief_profile': {'name': 'base_v1', 'input_limit_bytes': 1}},
+])
+def test_disabled_local_module_does_not_bypass_unsupported_policy(guarded_repo, policy):
+    (guarded_repo / 'config/mir-executor.local.json').write_text(json.dumps({
+        'python_local_hooks': False, 'native_policy': policy,
+    }))
+    with pytest.raises(ValueError, match='native_policy'):
+        executor.MirExecutor(guarded_repo).run_codex(['exec', 'go'])
+
+
+@pytest.mark.parametrize('selector', [None, 0, 'false', [], {}])
+def test_python_api_rejects_invalid_hook_selector(guarded_repo, selector):
+    (guarded_repo / 'config/mir-executor.local.json').write_text(json.dumps({
+        'python_local_hooks': selector,
+    }))
+    with pytest.raises(ValueError, match='python_local_hooks must be a boolean'):
+        local_hooks.guard_python_api(guarded_repo)
+
+
+@pytest.mark.parametrize('selector', [False, True])
+def test_python_api_selector_requires_retained_module(guarded_repo, selector):
+    (guarded_repo / 'tools/mir_executor/local.py').unlink()
+    (guarded_repo / 'config/mir-executor.local.json').write_text(json.dumps({
+        'python_local_hooks': selector,
+    }))
+    with pytest.raises(ValueError, match='python_local_hooks requires'):
+        local_hooks.guard_python_api(guarded_repo)

@@ -63,11 +63,15 @@ def local_config(repo_root: pathlib.Path) -> dict[str, Any]:
 
 def _api_policy(repo_root: pathlib.Path, *, ownership: bool = True) -> dict | None:
     config = local_config(repo_root)
+    disabled = _python_local_hooks_disabled(repo_root)
     native = config.get('native_policy')
     if 'native_policy' not in config:
         return None
+    base_profile = (disabled and isinstance(native, dict)
+                    and native.get('brief_profile') == {'name': 'base_v1'})
+    allowed = {'version', 'hooks'} | ({'brief_profile'} if base_profile else set())
     if (not isinstance(native, dict) or type(native.get('version')) is not int
-            or native['version'] != 1 or set(native) - {'version', 'hooks'}):
+            or native['version'] != 1 or set(native) - allowed):
         raise ValueError('Python executor APIs support only native_policy version 1 hooks; '
                          'use the native executor for other native_policy sections')
     hooks = native.get('hooks')
@@ -92,7 +96,25 @@ def guard_python_api(repo_root: pathlib.Path) -> None:
     _api_policy(root)
 
 
+def _python_local_hooks_disabled(repo_root: pathlib.Path) -> bool:
+    # Keep legacy malformed/unreadable config at its original lazy read point.
+    try:
+        path = pathlib.Path(repo_root) / 'config/mir-executor.local.json'
+        config = json.loads(path.read_text(encoding='utf-8'))
+    except (OSError, ValueError, RecursionError):
+        return False
+    if not isinstance(config, dict) or 'python_local_hooks' not in config:
+        return False
+    if type(config['python_local_hooks']) is not bool:
+        raise ValueError('python_local_hooks must be a boolean')
+    if not (pathlib.Path(repo_root) / 'tools/mir_executor/local.py').is_file():
+        raise ValueError('python_local_hooks requires tools/mir_executor/local.py')
+    return config['python_local_hooks'] is False
+
+
 def _module(repo_root: pathlib.Path) -> ModuleType | None:
+    if _python_local_hooks_disabled(repo_root):
+        return None
     path = pathlib.Path(repo_root).resolve() / 'tools/mir_executor/local.py'
     if not path.exists():
         return None
@@ -116,12 +138,21 @@ def _module(repo_root: pathlib.Path) -> ModuleType | None:
 
 
 def has_hook(repo_root: pathlib.Path, name: str) -> bool:
+    if _python_local_hooks_disabled(repo_root):
+        _api_policy(repo_root)
+        return (name == 'validate_brief'
+                and 'brief_profile' in local_config(repo_root).get('native_policy', {}))
     module = _module(repo_root)
     return module is not None and getattr(module, name, None) is not None
 
 
 def invoke_hook(repo_root: pathlib.Path, name: str, *args: Any, **kwargs: Any) -> Any:
     """Call a declared local hook; a missing hook returns None."""
+    if _python_local_hooks_disabled(repo_root):
+        _api_policy(repo_root)
+        if name == 'validate_brief' and has_hook(repo_root, name):
+            return _validate_base_brief(*args, **kwargs)
+        return None
     module = _module(repo_root)
     hook = getattr(module, name, None) if module is not None else None
     if hook is None:
@@ -129,6 +160,15 @@ def invoke_hook(repo_root: pathlib.Path, name: str, *args: Any, **kwargs: Any) -
     if not callable(hook):
         raise TypeError(f'Executor local hook {name!r} must be callable')
     return hook(*args, **kwargs)
+
+
+def _validate_base_brief(brief: pathlib.Path | str, repo_root: pathlib.Path):
+    """Use the same typed loader as the retained Yoke hook, without importing it."""
+    if isinstance(brief, pathlib.Path):
+        from mir.core.conductor.dispatch_brief import load_dispatch_brief
+
+        return load_dispatch_brief(brief)
+    return None
 
 
 def authorize_target(target_root: pathlib.Path, args: Any) -> None:

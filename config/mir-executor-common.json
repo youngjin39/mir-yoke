@@ -11,7 +11,7 @@
     "tools/mir_executor/executor.py": "8896931377cbe6a87ce7648b2b9a12af5b858e0d7e76de67080de12a54e0f001",
     "tools/mir_executor/jobs.py": "daa7dd5d0dc0136fc8ae8fc23ef057d33e56e5ffd3e5ee36cdff36bce379121c",
     "tools/mir_executor/local_bridge.py": "39581386cbc4a79be10c3ebe4347c66e9c96dc5581045f189bdb79d0d9630c5d",
-    "tools/mir_executor/local_hooks.py": "9cefb2fdf9940e694fc2844d8dd7bca49edb50eb7d428a089576a2aeb8a73b87",
+    "tools/mir_executor/local_hooks.py": "dd8044a17d3d4ff46c9be2af26dc07569f42e3aad2e78ebb6f0e1fc1faed5730",
     "tools/mir_executor/native_hooks.py": "25de9a06ac33616f45e33e24a7b98adb58bbdaa185e18e59ed0d6a1037a787bb",
     "tools/mir_executor/policy.py": "6e0557550652cf4da75a156565da9841269c40ac9e576e7c65244088d96662b9",
     "tools/mir_executor/redaction.py": "20a51dd26a07be6f1cae9354c8961d212a2a91e2a09c2914ce2de18d9380b31a",
