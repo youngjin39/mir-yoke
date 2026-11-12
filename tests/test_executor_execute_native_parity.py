@@ -21,6 +21,11 @@ trace_details = TRACE["trace_details"]
 SUPPORT = runpy.run_path(str(ROOT / 'tests/fixtures/executor_execute_support.py'))
 DISPATCH = runpy.run_path(str(ROOT / 'tests/fixtures/executor_dispatch_cli_support.py'))
 GOLDEN = json.loads((ROOT / 'tests/fixtures/executor_execute.json').read_text(encoding='utf-8'))
+CANCEL_SNAPSHOT = runpy.run_path(str(ROOT / 'tests/fixtures/generate_executor_status.py'))[
+    'snapshot']
+CANCEL_MISSING_DB = next(case['expected']['storage']['tasks/jobs.db'] for case in json.loads(
+    (ROOT / 'tests/fixtures/executor_cancel.json').read_text(encoding='ascii'))['cases']
+    if case['name'] == 'missing-db')
 
 
 @pytest.fixture(scope='module')
@@ -409,9 +414,21 @@ def test_native_owned_receipt_precedes_effects(binary, tmp_path, command, writab
     environment['MIR_EXECUTOR_OWNED_RECEIPT'] = str(receipt)
     arguments = (SUPPORT['argv']('success') if command == 'execute'
                  else ['cancel', '--job-id', 'missing'])
+    before = CANCEL_SNAPSHOT(root)
     result = subprocess.run([str(binary), '--home-root', str(root), *arguments],
                             cwd=root, env=environment, capture_output=True, timeout=60)
-    if writable:
+    if command == 'cancel':
+        # The pinned Python cancel only sets a registry flag; it never claims a
+        # receipt, even when its destination cannot be written.
+        assert (result.returncode, result.stdout, result.stderr) == (
+            1, b'', b"[mir_executor] job_id not found: 'missing'\n"), trace_details()
+        assert CANCEL_SNAPSHOT(root) == {
+            **before, 'tasks/jobs.db': CANCEL_MISSING_DB}, trace_details()
+        assert (receipt.exists(), receipt.is_dir()) == (not writable, not writable), trace_details()
+        if not writable:
+            assert list(receipt.iterdir()) == [], trace_details()
+        assert not (root / 'provider-started').exists(), trace_details()
+    elif writable:
         assert receipt.read_bytes() == b'owned', trace_details()
         assert result.returncode != 64, trace_details()
     else:
@@ -561,9 +578,24 @@ def test_pinned_mutation_routes_keep_admission_guards(binary, tmp_path, guard, c
         environment['PYTHONIOENCODING'] = 'ascii'
     arguments = SUPPORT['argv']('success') if command == 'execute' else [
         'cancel', '--job-id', 'missing']
+    before = CANCEL_SNAPSHOT(root)
     result = invoke_pinned(root, environment, arguments, capture_output=True)
-    assert result.returncode == 1, trace_details()
-    assert b'python guard fallback' in result.stderr, trace_details()
+    if command == 'cancel':
+        if guard == 'encoding':
+            # ASCII is inside the native codec family. Poisoned cli.py proves
+            # the same missing-job response is served without Python fallback.
+            assert (result.returncode, result.stdout, result.stderr) == (
+                1, b'', b"[mir_executor] job_id not found: 'missing'\n"), trace_details()
+            assert CANCEL_SNAPSHOT(root) == {
+                **before, 'tasks/jobs.db': CANCEL_MISSING_DB}, trace_details()
+        else:
+            assert (result.returncode, result.stdout, result.stderr) == (
+                2, b'', b'[mir_executor] pinned native cancel unavailable or incompatible; '
+                b'Python cancel is retired\n'), trace_details()
+            assert CANCEL_SNAPSHOT(root) == before, trace_details()
+    else:
+        assert result.returncode == 1, trace_details()
+        assert b'python guard fallback' in result.stderr, trace_details()
     assert not (root / 'provider-started').exists(), trace_details()
 
 

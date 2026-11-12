@@ -1,4 +1,4 @@
-//! Status, result and list-jobs share owned parsing, registry migration, and Python-compatible text.
+//! Status, result, list-jobs and cancel share owned parsing, migration and text.
 use handoff_packet::executor_registry::{Error as RegistryError, JobRegistry};
 use rusqlite::types::{Value, ValueRef};
 use std::{
@@ -123,9 +123,15 @@ pub fn owns(raw: &[OsString]) -> bool {
 fn requested(raw: &[OsString]) -> Option<&'static str> {
     let mut index = 0;
     while index < raw.len() {
-        if raw[index] == "status" || raw[index] == "result" || raw[index] == "list-jobs" {
+        if raw[index] == "status"
+            || raw[index] == "result"
+            || raw[index] == "list-jobs"
+            || raw[index] == "cancel"
+        {
             return Some(if raw[index] == "list-jobs" {
                 "list-jobs"
+            } else if raw[index] == "cancel" {
+                "cancel"
             } else if raw[index] == "result" {
                 "result"
             } else {
@@ -154,6 +160,7 @@ fn requested(raw: &[OsString]) -> Option<&'static str> {
 struct Args {
     result: bool,
     list: bool,
+    cancel: bool,
     filter: Option<OsString>,
     db: PathBuf,
     root: PathBuf,
@@ -210,6 +217,7 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
     let mut command = false;
     let mut result = false;
     let mut list = false;
+    let mut cancel = false;
     let mut filter = None;
     let mut unknown = Vec::new();
     let mut help = false;
@@ -236,10 +244,11 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
             index += 1;
             continue;
         }
-        if !command && matches!(arg.as_str(), "status" | "result" | "list-jobs") {
+        if !command && matches!(arg.as_str(), "status" | "result" | "list-jobs" | "cancel") {
             command = true;
             result = arg == "result";
             list = arg == "list-jobs";
+            cancel = arg == "cancel";
             index += 1;
             continue;
         }
@@ -327,6 +336,7 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
     Parse::Args(Args {
         result,
         list,
+        cancel,
         filter,
         db,
         root,
@@ -765,13 +775,12 @@ fn status(args: &Args) -> Result<(Vec<String>, String, i32)> {
         return Ok((out, String::new(), 0));
     }
     let mut statement = connection
-        .prepare("SELECT * FROM jobs WHERE job_id = ?")
+        .prepare(if args.cancel {
+            "UPDATE jobs SET cancel_requested = 1 WHERE job_id = ?"
+        } else {
+            "SELECT * FROM jobs WHERE job_id = ?"
+        })
         .map_err(sql_error)?;
-    let names = statement
-        .column_names()
-        .into_iter()
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
     let job = os_text(&args.job);
     if os_points(&args.job)
         .iter()
@@ -795,6 +804,29 @@ fn status(args: &Args) -> Result<(Vec<String>, String, i32)> {
             "surrogates not allowed",
         ));
     }
+    if args.cancel {
+        // The reference uses UPDATE rowcount without decoding any stored row.
+        // It neither signals a process nor changes timestamps, status or receipts.
+        let found = registry.cancel(&job).map_err(|e| registry_error(e, &db))?;
+        return Ok(if found {
+            (
+                vec![format!("[CANCEL] cancel_requested=True for job_id={job}\n")],
+                String::new(),
+                0,
+            )
+        } else {
+            (
+                Vec::new(),
+                format!("[mir_executor] job_id not found: {}\n", repr(&job)),
+                1,
+            )
+        });
+    }
+    let names = statement
+        .column_names()
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
     let mut rows = statement.query([&job]).map_err(sql_error)?;
     let Some(row) = rows.next().map_err(sql_error)? else {
         return Ok((

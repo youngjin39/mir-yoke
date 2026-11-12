@@ -1,5 +1,5 @@
 //! Native writes matching the Python JobRegistry contract.
-use rusqlite::{Connection, params, params_from_iter, types::Value as SqlValue};
+use rusqlite::{Connection, params_from_iter, types::Value as SqlValue};
 use serde_json::Value;
 use std::{
     fs, io,
@@ -301,7 +301,7 @@ impl JobRegistry {
             .prepare("PRAGMA table_info(jobs)")?
             .query_map([], |r| r.get::<_, String>(1))?
             .collect::<std::result::Result<Vec<_>, _>>()?;
-        db.execute_batch("BEGIN")?;
+        // Python executescript/ALTER statements run in autocommit mode.
         for name in EXTRA {
             if !names.iter().any(|n| n == name) {
                 let kind = if matches!(*name, "allow_harness_self_modify" | "resume_count") {
@@ -309,15 +309,9 @@ impl JobRegistry {
                 } else {
                     "TEXT"
                 };
-                if let Err(e) =
-                    db.execute_batch(&format!("ALTER TABLE jobs ADD COLUMN {name} {kind}"))
-                {
-                    db.execute_batch("ROLLBACK")?;
-                    return Err(e.into());
-                }
+                db.execute_batch(&format!("ALTER TABLE jobs ADD COLUMN {name} {kind}"))?;
             }
         }
-        db.execute_batch("COMMIT")?;
         let registry = Self {
             db,
             path: path.to_owned(),
@@ -337,7 +331,16 @@ impl JobRegistry {
         Ok(())
     }
     fn write(&self, query: &str, values: &[SqlValue]) -> Result<usize> {
-        let changed = self.db.execute(query, params_from_iter(values))?;
+        // Like `with self._conn`, roll back both statement and commit failures,
+        // including trigger FAIL (which preserves partial statement changes).
+        let transaction = self.db.unchecked_transaction()?;
+        let result = transaction
+            .execute(query, params_from_iter(values))
+            .and_then(|changed| transaction.execute_batch("COMMIT").map(|()| changed));
+        // Explicit finish also surfaces rollback errors; Drop alone discards them.
+        // A trigger's ROLLBACK may already have ended the transaction.
+        transaction.finish()?;
+        let changed = result?;
         self.protect()?;
         Ok(changed)
     }
@@ -442,10 +445,16 @@ impl JobRegistry {
         bytes: i64,
         at: &str,
     ) -> Result<()> {
-        self.db.execute(
+        self.write(
             "INSERT INTO artifact_sweeps (job_id,path,files,bytes,swept_at) VALUES (?,?,?,?,?)",
-            params![id, path, files, bytes, at],
+            &[
+                SqlValue::Text(id.into()),
+                SqlValue::Text(path.into()),
+                SqlValue::Integer(files),
+                SqlValue::Integer(bytes),
+                SqlValue::Text(at.into()),
+            ],
         )?;
-        self.protect()
+        Ok(())
     }
 }

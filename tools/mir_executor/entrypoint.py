@@ -6,9 +6,10 @@ a decline only without an exact owned receipt in a private temporary directory.
 The binary claims ownership before importing hooks, output, registry writes, or
 provider launch; if the receipt cannot be written it exits 64 before any effect.
 With an owned receipt every exit code, including 64, is final. Older binaries
-that decline with 64 without a receipt fall back to Python, except status, result, list-jobs and
-sweep, which require native admission and refuse without a Python fallback. Status/result/list-jobs
-ignore implementation selectors; only codecs/handlers outside the native family
+that decline with 64 without a receipt fall back to Python, except status, result,
+list-jobs, cancel and sweep, which require native admission and refuse without a
+Python fallback. Status/result/list-jobs/cancel ignore implementation selectors;
+only codecs/handlers outside the native family
 and configured legacy local hooks use the Python compatibility implementation.
 Signals reach the
 native process group on POSIX; Windows forwards console interrupts and always
@@ -87,7 +88,7 @@ def _pinned_query(root: pathlib.Path, pin: object) -> pathlib.Path | None:
 
 def _native_query(argv: list[str]) -> int | None:
     if (_status_requested(argv) or _status_requested(argv, "result")
-            or _status_requested(argv, "list-jobs")):
+            or _status_requested(argv, "list-jobs") or _status_requested(argv, "cancel")):
         return _native_status(argv)
     if (os.environ.get('MIR_EXECUTOR_IMPL') == 'python'
             or os.environ.get('MIR_EXECUTOR_QUERY_IMPL') == 'python'
@@ -284,8 +285,8 @@ def _python_local_hooks_disabled() -> bool:
 
 
 def _native_status(argv: list[str]) -> int:
-    """Native status/result/list-jobs owns selectors, syntax, pin failures and exit 64."""
-    command = next(name for name in ("status", "result", "list-jobs")
+    """Native status/result/list-jobs/cancel owns selectors, syntax, pin failures and exit 64."""
+    command = next(name for name in ("status", "result", "list-jobs", "cancel")
                    if _status_requested(argv, name))
     try:
         pin = json.loads(_safe_path(_HOME_ROOT, QUERY_PIN).read_bytes())
@@ -310,7 +311,7 @@ def _native_status(argv: list[str]) -> int:
                 _write_output(sys.stderr, result.stderr)
                 return result.returncode if result.returncode >= 0 else 128 - result.returncode
     except RecursionError:
-        if command != 'list-jobs':
+        if command not in {'list-jobs', 'cancel'}:
             raise
     except (OSError, ValueError, TypeError, AttributeError, LookupError):
         pass
@@ -322,7 +323,7 @@ def _native_status(argv: list[str]) -> int:
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if (_status_requested(argv) or _status_requested(argv, "result")
-            or _status_requested(argv, "list-jobs")):
+            or _status_requested(argv, "list-jobs") or _status_requested(argv, "cancel")):
         try:
             disabled = _python_local_hooks_disabled()
         except ValueError as error:

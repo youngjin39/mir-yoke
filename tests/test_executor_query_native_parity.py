@@ -203,7 +203,8 @@ def test_cross_root_native_policy_admission(binary, home, tmp_path, command, pol
         assert (target / 'tasks/jobs.db').read_bytes() == before
         if policy_mode in {'absent', 'unowned'}:
             expected = (invoke(binary, home, argv, python=True, cwd=target)
-                        if command in {'status', 'result', 'list-jobs'} else (b'', b'', 64))
+                        if command in {'status', 'result', 'list-jobs', 'cancel'}
+                        else (b'', b'', 64))
             assert result == expected
         elif policy_mode == 'refuse':
             expected = ('policy notice\n[mir_executor] authorize_target refused '
@@ -233,7 +234,7 @@ def test_cross_root_query_family_option_declines(binary, home, tmp_path, command
         argv += ['--job-id', 'running']
     before = (target / 'tasks/jobs.db').read_bytes()
     expected = (invoke(binary, home, argv, python=True, cwd=target)
-                if command in {'status', 'result', 'list-jobs'} else (b'', b'', 64))
+                if command in {'status', 'result', 'list-jobs', 'cancel'} else (b'', b'', 64))
     assert invoke(binary, home, argv, cwd=target) == expected
     assert (target / 'tasks/jobs.db').read_bytes() == before
 
@@ -570,7 +571,8 @@ def test_native_cancel_declines_local_hook(binary, home):
     (home / "tools/mir_executor/local.py").write_text("raise RuntimeError('local hook')\n")
     database = home / "tasks/jobs.db"
     saved = database.read_bytes()
-    assert invoke(binary, home, ["cancel", "--job-id", "running"]) == (b"", b"", 64), (
+    assert invoke(binary, home, ["cancel", "--job-id", "running"]) == (
+        b"", b"[mir_executor] legacy cancel hooks require the Python facade\n", 2), (
         trace_details()
     )
     assert database.read_bytes() == saved, trace_details()
@@ -638,9 +640,8 @@ def test_pinned_cancel_and_query_selectors(binary, home, command, selector):
     selectors = {selector: '0' if selector == 'MIR_NATIVE_HOOKS' else 'python'} if selector else {}
     arguments = [command] + (['--job-id', 'running'] if command == 'cancel' else [])
     result = pinned_cli(home, 'module', arguments, selectors=selectors)
-    python_selected = bool(selector) and command != 'list-jobs'
-    assert result[2] == (1 if python_selected else 0), (result, trace_details())
-    assert (b'python selected' in result[1]) == python_selected, trace_details()
+    assert result[2] == 0, (result, trace_details())
+    assert b'python selected' not in result[1], trace_details()
 
 
 def test_pinned_cancel_declines_hook_to_python(binary, home):

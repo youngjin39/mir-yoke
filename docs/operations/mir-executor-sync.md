@@ -30,7 +30,7 @@ schemas/rows) are refused before ownership. Supported dry-run and apply retain
 the frozen Python results and filesystem/ledger effects in
 `native/handoff-packet/tests/fixtures/g6/sweep.json`; dry-run writes nothing.
 
-`status`, `result` and `list-jobs` require the pinned native executor except for
+`status`, `result`, `list-jobs` and `cancel` require the pinned native executor except for
 two compatibility declines:
 stream codecs or error handlers outside its bounded family, and a configured
 legacy `tools/mir_executor/local.py` (unless local JSON explicitly sets
@@ -694,13 +694,13 @@ The lightweight entrypoint verifies those bytes before trying `status`, `result`
 `list-jobs`, direct `execute`, or `cancel`, before importing the Python executor. Both module and installed
 CLI routes use that entrypoint.
 
-`status`, `result` and `list-jobs` own parsing, registry creation/migration/private
+`status`, `result`, `list-jobs` and `cancel` own parsing, registry creation/migration/private
 permissions, and output codecs natively, regardless of implementation selectors. Missing or
 invalid pins, spawn failures and native exit 64 are final refusals. Their only
 Python compatibility routes are stream codecs/error handlers outside the native
 family and invoking-home `local.py` when `python_local_hooks` is not explicitly
 false. Same-home native queries never launch a bridge or child process.
-Cross-root `status`, `result` and `list-jobs` run `git -C <invoking-home> rev-parse
+Cross-root `status`, `result`, `list-jobs` and `cancel` run `git -C <invoking-home> rev-parse
 --show-toplevel` for both reference authorization passes, inheriting the caller's
 cwd and environment. Help and final-parser errors stop after the first pass, as in the
 reference.
@@ -709,14 +709,13 @@ a Python bridge or an execution provider. `result` prints
 stored artifact paths without opening them and slices stored stdout/stderr to
 500 characters (or bytes for BLOB values).
 
-All three queries use the reference's writable registry path, including schema
+All four commands use the reference's writable registry path, including schema
 migration and private permissions. Schema shapes, database sidecars, help and
 invalid arguments are native-owned outcomes rather than read-only preflight
 declines. Invoking-home local hooks retain only the compatibility route described
 above.
-`MIR_EXECUTOR_IMPL=python` disables native routes except `status`, `result` and
-`list-jobs`; execute and cancel also honor `MIR_EXECUTOR_EXECUTE_IMPL=python` and
-`MIR_EXECUTOR_CANCEL_IMPL=python`.
+`MIR_EXECUTOR_IMPL=python` disables native routes except `status`, `result`,
+`list-jobs` and `cancel`; execute still honors `MIR_EXECUTOR_EXECUTE_IMPL=python`.
 For a different target root, the invoking home must be a Git root. Commands
 outside the native-owned query family also require
 `native_policy.target_admission.authorize_target: true`. Supported `sweep`,
@@ -726,9 +725,8 @@ writes. Refusals use execute's authorization diagnostics. Resume also checks
 the saved family before preparing execution. Queries, cancel and sweep expose
 no common `--family` option; unsupported parser extensions on other commands still decline before
 effects. Query pins belong to the invoking home, never the target. Target registry
-paths and local sweep/resume options remain target-owned. Cancel
-local-hook declines still apply; a native
-policy home then fails closed if Python fallback cannot honor its policy.
+paths and local sweep/resume options remain target-owned. Cancel retains only the
+invoking-home local-hook compatibility route described above.
 Homes without native authorization retain reference authorization for native-owned
 queries; other commands keep their previous routing and output.
 
@@ -743,15 +741,17 @@ definitions or hook results fail with the reference diagnostic after ownership.
 Direct execute retains its existing backend and agent admission boundary.
 Cross-target requests, unsupported arguments and explicit dynamic parser
 extensions still use Python before ownership.
-Execute and cancel inherit the caller's stdin/stdout/stderr without buffering.
+Execute and resume inherit the caller's stdin/stdout/stderr without buffering.
 Their exit 64 permits retry only without an exact private owned receipt. Native
 claims ownership before hook imports, output, registry writes, or provider launch;
 if writing the receipt fails, it exits 64 before any effect and Python runs. With
 an owned receipt every exit code, including 64, is final. An older pinned binary
 that declines with 64 without a receipt therefore falls back to Python.
-Query buffering remains; `status`, `result` and `list-jobs` select their two
+Query buffering remains; `status`, `result`, `list-jobs` and `cancel` select their two
 compatibility declines before native launch. Exit 64 never triggers Python for these commands
-after a native launch.
+after a native launch. Cancel only sets `cancel_requested=1` using UPDATE rowcount;
+it does not decode stored job payloads, signal processes, change status/timestamps,
+write mutation receipts, or inspect lease/lock files.
 The entrypoint forwards interrupts and termination to the native process group
 on POSIX, and console interrupts or termination to the direct child on Windows,
 then waits and escalates to kill when needed. As in Python, interruption leaves
