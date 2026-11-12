@@ -1,6 +1,7 @@
 //! Native lifecycle hooks; unknown external JSON fields are accepted like Python.
-// Unsafe platform boundaries are isolated in account_home (Unix account lookup)
-// and executor_hooks_windows (suspended child assignment to a Windows Job Object).
+// Unsafe platform boundaries are isolated in account_home (Unix account lookup),
+// adoption_fs (descriptor-relative mutations), and executor_hooks_windows
+// (suspended child assignment to a Windows Job Object).
 #![deny(unsafe_code)]
 #![cfg_attr(
     not(test),
@@ -9,6 +10,9 @@
 #[cfg(unix)]
 #[allow(unsafe_code)]
 mod account_home;
+// openat/renameat keep slim mutations confined to pinned parent directories.
+#[allow(unsafe_code)]
+mod adoption_fs;
 #[forbid(unsafe_code)]
 pub mod bootstrap_enforce;
 #[forbid(unsafe_code)]

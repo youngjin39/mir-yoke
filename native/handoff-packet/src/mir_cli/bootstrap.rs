@@ -1,8 +1,11 @@
 //! Library-only bootstrap identity, argument and storage policy.
 #[path = "bootstrap_authored.rs"]
 mod authored;
+#[path = "bootstrap_core_adoption.rs"]
+mod core_adoption;
 #[path = "bootstrap_main_host.rs"]
 mod main_host;
+pub use core_adoption::core_adoption_operation;
 #[path = "bootstrap_main.rs"]
 mod main_port;
 #[path = "bootstrap_memory.rs"]
@@ -193,13 +196,13 @@ pub trait Host: Sized {
         load_capability_sources(root, profile)
     }
     fn load_profile(&mut self, root: &Path) -> Result<Value, Error> {
-        main_host::load_profile(root)
+        core_adoption::load_profile(root)
     }
     fn load_boundary(&mut self, root: &Path) -> Result<Value, Error> {
-        main_host::load_boundary(root, self)
+        core_adoption::load_boundary(root, self)
     }
     fn is_provider_owner(&mut self, profile: &Value, boundary: &Value) -> Result<bool, Error> {
-        main_host::is_provider_owner(profile, boundary)
+        core_adoption::is_provider_owner(profile, boundary)
     }
     fn validate_existing_profile(&mut self, path: &Path, profile: &str) -> Result<Value, Error> {
         validate_existing_profile(path, profile)
@@ -304,13 +307,13 @@ pub trait Host: Sized {
         cli: &Path,
         defer_commit: bool,
     ) -> Result<Value, Error> {
-        main_host::apply_adopter_slim(root, cli, defer_commit, self)
+        core_adoption::apply_adopter_slim(root, cli, defer_commit, self)
     }
     fn rollback_adopter_slim(&mut self, root: &Path, report: &Value) -> Result<(), Error> {
-        main_host::rollback_adopter_slim(root, report, self)
+        core_adoption::rollback_adopter_slim(root, report, self)
     }
     fn commit_adopter_slim(&mut self, root: &Path, report: &Value) -> Result<(), Error> {
-        main_host::commit_adopter_slim(root, report, self)
+        core_adoption::commit_adopter_slim(root, report, self)
     }
     fn slim_process_alive(&mut self, _pid: i64) -> Result<bool, Error> {
         Err(Error::new(
@@ -324,6 +327,29 @@ pub trait Host: Sized {
             "NotImplementedError",
             "slim clean subprocess host is not connected",
         ))
+    }
+    /// Deterministic check/use seam; production does nothing.
+    fn slim_before_move(&mut self, _root: &Path, _source: &Path, _destination: &Path) {}
+    /// Observe or deny a prepared descriptor-relative rename before executing it.
+    fn slim_replace(
+        &mut self,
+        _source: &Path,
+        _destination: &Path,
+        operation: &mut dyn FnMut() -> Result<(), Error>,
+    ) -> Result<(), Error> {
+        operation()
+    }
+    /// Raw descriptor operations preserve Python's errors without a filename.
+    fn slim_write(
+        &mut self,
+        file: &mut std::fs::File,
+        body: &[u8],
+        _phase: &str,
+    ) -> std::io::Result<()> {
+        std::io::Write::write_all(file, body)
+    }
+    fn slim_fsync(&mut self, file: &std::fs::File, _phase: &str) -> std::io::Result<()> {
+        file.sync_all()
     }
     fn slim_pid(&mut self) -> u32 {
         std::process::id()

@@ -19,6 +19,7 @@ name = "bootstrap-gate"
 path = "src/bootstrap_gate.rs"
 
 [dependencies]
+libc = "=0.2.191"
 serde = "1"
 tempfile = "3"
 serde_json = { version = "1", features = ["unbounded_depth", "float_roundtrip", "raw_value"] }
