@@ -64,7 +64,7 @@ runpy.run_module(MODULE, run_name="__main__")
     'decline', 'spawn', 'hash', 'pin', 'symlink', 'python', 'disabled', 'mutation',
     'cross_target', 'encoding', 'pin_symlink', 'manifest_only',
 ])
-@pytest.mark.parametrize('command', ['status', 'result'])
+@pytest.mark.parametrize('command', ['status', 'result', 'list-jobs'])
 def test_unsafe_or_unsupported_native_query_falls_back_unchanged(
     tmp_path, monkeypatch, capsys, guard, command,
 ):
@@ -113,7 +113,7 @@ def test_unsafe_or_unsupported_native_query_falls_back_unchanged(
         return run(*args, **kwargs)
 
     monkeypatch.setattr(subprocess, 'run', record_run)
-    owned = command == 'status' and guard != 'mutation'
+    owned = command in {'status', 'result'} and guard != 'mutation'
     assert entrypoint.main(argv) == (2 if owned else 7)
     assert calls == ([] if owned else [argv])
     attempts = {'decline', 'spawn', 'python', 'disabled', 'encoding'} if owned else {
@@ -121,8 +121,8 @@ def test_unsafe_or_unsupported_native_query_falls_back_unchanged(
     assert len(native_calls) == (1 if guard in attempts else 0)
     output = capsys.readouterr()
     assert output.out == ''
-    assert output.err == ('[mir_executor] pinned native status unavailable or incompatible; '
-                          'Python status is retired\n' if owned else '')
+    assert output.err == (f'[mir_executor] pinned native {command} unavailable or incompatible; '
+                          f'Python {command} is retired\n' if owned else '')
 
 
 def test_native_exit_status_and_streams_are_forwarded(tmp_path, monkeypatch, capsys):

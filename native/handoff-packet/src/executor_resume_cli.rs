@@ -340,7 +340,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     }
     if cross_target {
         let family = row.as_ref().and_then(|row| row["family"].as_str());
-        match crate::executor_admission::authorize_command(home, cwd, &cli.root, family) {
+        match crate::executor_admission::authorize_command(home, cwd, &cli.root, family, false, 2) {
             Ok(true) => (),
             Ok(false) => {
                 return crate::executor_protocol::decline("resume home/root mismatch");

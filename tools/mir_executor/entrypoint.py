@@ -6,8 +6,8 @@ a decline only without an exact owned receipt in a private temporary directory.
 The binary claims ownership before importing hooks, output, registry writes, or
 provider launch; if the receipt cannot be written it exits 64 before any effect.
 With an owned receipt every exit code, including 64, is final. Older binaries
-that decline with 64 without a receipt fall back to Python, except status and
-sweep, which require native admission and refuse without a Python fallback. Status
+that decline with 64 without a receipt fall back to Python, except status, result and
+sweep, which require native admission and refuse without a Python fallback. Status/result
 ignores implementation selectors; only codecs/handlers outside the native family
 and configured legacy local hooks use the Python compatibility implementation.
 Signals reach the
@@ -86,7 +86,7 @@ def _pinned_query(root: pathlib.Path, pin: object) -> pathlib.Path | None:
 
 
 def _native_query(argv: list[str]) -> int | None:
-    if _status_requested(argv):
+    if _status_requested(argv) or _status_requested(argv, "result"):
         return _native_status(argv)
     if (os.environ.get('MIR_EXECUTOR_IMPL') == 'python'
             or os.environ.get('MIR_EXECUTOR_QUERY_IMPL') == 'python'
@@ -232,7 +232,7 @@ def _write_output(stream, data: bytes) -> None:
         stream.write(data.decode('utf-8', errors='surrogateescape'))
 
 
-def _status_requested(argv: list[str]) -> bool:
+def _status_requested(argv: list[str], command: str = "status") -> bool:
     remaining = argv
     while remaining:
         option, separator, _ = remaining[0].partition('=')
@@ -243,7 +243,7 @@ def _status_requested(argv: list[str]) -> bool:
             remaining = remaining[1:]
         else:
             break
-    return bool(remaining and remaining[0] == 'status')
+    return bool(remaining and remaining[0] == command)
 
 
 def _status_codec_decline() -> bool:
@@ -283,7 +283,8 @@ def _python_local_hooks_disabled() -> bool:
 
 
 def _native_status(argv: list[str]) -> int:
-    """Native status owns selectors, syntax, pin failures and exit 64."""
+    """Native status/result owns selectors, syntax, pin failures and exit 64."""
+    command = "result" if _status_requested(argv, "result") else "status"
     try:
         pin = json.loads(_safe_path(_HOME_ROOT, QUERY_PIN).read_bytes())
         executable = _pinned_query(_HOME_ROOT, pin)
@@ -308,14 +309,14 @@ def _native_status(argv: list[str]) -> int:
                 return result.returncode if result.returncode >= 0 else 128 - result.returncode
     except (OSError, ValueError, TypeError, AttributeError, LookupError):
         pass
-    print('[mir_executor] pinned native status unavailable or incompatible; '
-          'Python status is retired', file=sys.stderr)
+    print(f'[mir_executor] pinned native {command} unavailable or incompatible; '
+          f'Python {command} is retired', file=sys.stderr)
     return 2
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if _status_requested(argv):
+    if _status_requested(argv) or _status_requested(argv, "result"):
         try:
             disabled = _python_local_hooks_disabled()
         except ValueError as error:

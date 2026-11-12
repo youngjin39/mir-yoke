@@ -1,4 +1,4 @@
-//! The status command owns parsing, registry migration, and Python-compatible text.
+//! Status and result share owned parsing, registry migration, and Python-compatible text.
 use handoff_packet::executor_registry::{Error as RegistryError, JobRegistry};
 use rusqlite::types::{Value, ValueRef};
 use std::{
@@ -118,10 +118,17 @@ fn jobs_option(arg: &OsStr) -> bool {
 
 /// The first positional after the global database option selects the command.
 pub fn owns(raw: &[OsString]) -> bool {
+    requested(raw).is_some()
+}
+fn requested(raw: &[OsString]) -> Option<&'static str> {
     let mut index = 0;
     while index < raw.len() {
-        if raw[index] == "status" {
-            return true;
+        if raw[index] == "status" || raw[index] == "result" {
+            return Some(if raw[index] == "result" {
+                "result"
+            } else {
+                "status"
+            });
         }
         if jobs_option(&raw[index])
             || option(
@@ -137,12 +144,13 @@ pub fn owns(raw: &[OsString]) -> bool {
         } else if os_text(&raw[index]).starts_with('-') {
             index += 1;
         } else {
-            return false;
+            return None;
         }
     }
-    false
+    None
 }
 struct Args {
+    result: bool,
     db: PathBuf,
     root: PathBuf,
     job: OsString,
@@ -195,6 +203,7 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
     let mut root = cwd.to_owned();
     let mut job = None;
     let mut command = false;
+    let mut result = false;
     let mut unknown = Vec::new();
     let mut help = false;
     let mut global_help = false;
@@ -220,8 +229,9 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
             index += 1;
             continue;
         }
-        if !command && arg == "status" {
+        if !command && (arg == "status" || arg == "result") {
             command = true;
+            result = arg == "result";
             index += 1;
             continue;
         }
@@ -267,7 +277,8 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
             } else {
                 global_help = true;
             }
-        } else if !command && (global_ended || is_value(&arg)) {
+        } else if !command && (global_ended || is_value(&arg) || arg.contains(' ')) {
+            // argparse treats unknown options containing ASCII spaces as positionals.
             return Parse::RootError(format!(
                 "argument subcommand: invalid choice: {} (choose from execute, status, result, cancel, resume, list-jobs, sweep)",
                 repr(&arg)
@@ -288,6 +299,7 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
     let db = db.unwrap_or_else(|| root.join("tasks/jobs.db"));
     let db = if db.is_absolute() { db } else { cwd.join(db) };
     Parse::Args(Args {
+        result,
         db,
         root,
         job,
@@ -759,6 +771,60 @@ fn status(args: &Args) -> Result<(Vec<String>, String, i32)> {
     ] {
         get(name)?;
     }
+    if args.result {
+        if get("status")? == &Value::Text("running".into()) {
+            return Ok((
+                vec![format!(
+                    "[RESULT] job_id={} status=running (not yet completed)\n",
+                    display(get("job_id")?, false)?
+                )],
+                String::new(),
+                0,
+            ));
+        }
+        let mut out = vec![
+            format!("[RESULT] job_id={}\n", display(get("job_id")?, false)?),
+            format!("[RESULT] status={}\n", display(get("status")?, false)?),
+            format!(
+                "[RESULT] exit_code={}\n",
+                display(get("exit_code")?, false)?
+            ),
+            format!(
+                "[RESULT] dispatch_brief_path={}\n",
+                display(get("dispatch_brief_path")?, true)?
+            ),
+            format!(
+                "[RESULT] allow_harness_self_modify={}\n",
+                boolean(get("allow_harness_self_modify")?)
+            ),
+            format!(
+                "[RESULT] resume_count={} last_resumed_at={}\n",
+                display(get("resume_count")?, false)?,
+                display(get("last_resumed_at")?, true)?
+            ),
+            format!(
+                "[RESULT] duration_seconds={}\n",
+                display(get("duration_seconds")?, false)?
+            ),
+        ];
+        for (column, label) in [("stdout", "STDOUT"), ("stderr", "STDERR")] {
+            let value = get(column)?;
+            if truth(value) {
+                let sliced = match value {
+                    Value::Text(text) => Value::Text(text.chars().take(500).collect()),
+                    Value::Blob(bytes) => Value::Blob(bytes.iter().take(500).copied().collect()),
+                    _ => {
+                        return Err(format!(
+                            "TypeError: '{}' object is not subscriptable",
+                            value_type(value)
+                        ));
+                    }
+                };
+                out.push(format!("[{label}] {}\n", display(&sliced, true)?));
+            }
+        }
+        return Ok((out, String::new(), 0));
+    }
     let mut out = vec![
         format!("[STATUS] job_id={}\n", display(get("job_id")?, false)?),
         format!("[STATUS] status={}\n", display(get("status")?, false)?),
@@ -1073,6 +1139,9 @@ fn emit_frames(out: Vec<String>, err: String, code: i32) -> i32 {
     }
 }
 pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
+    let command = requested(raw).unwrap_or("status");
+    let usage = USAGE.replace(" status", &format!(" {command}"));
+    let help = HELP.replace(" status", &format!(" {command}"));
     // The facade owns the approved legacy compatibility decline. Direct native
     // callers cannot import hooks or start a bridge as a second execution route.
     let disabled = match handoff_packet::executor_local::python_local_hooks_disabled(home) {
@@ -1082,7 +1151,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     if home.join("tools/mir_executor/local.py").exists() && !disabled {
         return emit(
             String::new(),
-            "[mir_executor] legacy status hooks require the Python facade\n".into(),
+            format!("[mir_executor] legacy {command} hooks require the Python facade\n"),
             2,
         );
     }
@@ -1101,7 +1170,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         Parse::Error(error) => {
             return emit(
                 String::new(),
-                format!("{USAGE}{PROG} status: error: {error}\n"),
+                format!("{usage}{PROG} {command}: error: {error}\n"),
                 2,
             );
         }
@@ -1122,10 +1191,21 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     if let Err(error) = handoff_packet::executor_local::python_local_hooks_disabled(&root) {
         return emit(String::new(), format!("[mir_executor] {error}\n"), 1);
     }
+    // The final parser stops before the second authorization on help or error.
+    let passes = if args.help
+        || args.global_help
+        || args.final_error.is_some()
+        || !args.unknown.is_empty()
+    {
+        1
+    } else {
+        2
+    };
     let mut native_configuration_error = None;
     if root != home
-        && let Err(error) =
-            handoff_packet::executor_admission::authorize_command(home, cwd, &root, None)
+        && let Err(error) = handoff_packet::executor_admission::authorize_command(
+            home, cwd, &root, None, true, passes,
+        )
     {
         if error
             .windows(b"native local policy configuration error:".len())
@@ -1149,7 +1229,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 )
             } else {
                 format!(
-                    "usage: {PROG} status [-h] --job-id JOB_ID\n                                           [--repo-root PATH]\n{PROG} status: error: {error}\n"
+                    "usage: {PROG} {command} [-h] --job-id JOB_ID\n                                           [--repo-root PATH]\n{PROG} {command}: error: {error}\n"
                 )
             },
             2,
@@ -1159,7 +1239,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         return emit(GLOBAL_HELP.into(), String::new(), 0);
     }
     if args.help {
-        return emit(HELP.into(), String::new(), 0);
+        return emit(help, String::new(), 0);
     }
     if !args.unknown.is_empty() {
         return emit(

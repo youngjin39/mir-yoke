@@ -141,7 +141,9 @@ fn parse(raw: impl IntoIterator<Item = OsString>, cwd: &Path) -> Result<Args> {
         return Err(());
     }
     if root != home {
-        match handoff_packet::executor_admission::authorize_command(&home, cwd, &root, None) {
+        match handoff_packet::executor_admission::authorize_command(
+            &home, cwd, &root, None, false, 2,
+        ) {
             Ok(true) => (),
             Ok(false) => return Err(()),
             Err(stderr) => {

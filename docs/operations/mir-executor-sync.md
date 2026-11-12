@@ -691,7 +691,24 @@ The lightweight entrypoint verifies those bytes before trying `status`, `result`
 `list-jobs`, direct `execute`, or `cancel`, before importing the Python executor. Both module and installed
 CLI routes use that entrypoint.
 
-For `result` and `list-jobs`, the native reader validates SQLite read-only before
+`status` and `result` own parsing, registry creation/migration/private permissions,
+and output codecs natively, regardless of implementation selectors. Missing or
+invalid pins, spawn failures and native exit 64 are final refusals. Their only
+Python compatibility routes are stream codecs/error handlers outside the native
+family and invoking-home `local.py` when `python_local_hooks` is not explicitly
+false. Same-home native queries never launch a bridge or child process.
+Cross-root `status` and `result` run `git -C <invoking-home> rev-parse
+--show-toplevel` for both reference authorization passes, inheriting the caller's
+cwd and environment. Help and final-parser errors stop after the first pass, as in the
+reference. Cross-root `list-jobs` runs those checks only when the
+invoking home declares native target authorization; otherwise it declines before
+starting Git and the Python compatibility route performs the reference checks.
+These Git children preserve reference admission behavior; queries never launch
+a Python bridge or an execution provider. `result` prints
+stored artifact paths without opening them and slices stored stdout/stderr to
+500 characters (or bytes for BLOB values).
+
+For `list-jobs`, the native reader validates SQLite read-only before
 opening the writable registry, which may create or migrate it and tighten private
 permissions. It admits only
 queries with a fully understood schema, including when
@@ -704,7 +721,7 @@ For these queries, unsupported arguments, help, legacy schemas, unsupported
 sidecars and cross-target requests without native home authorization return 64 without output; the caller then
 runs Python with the original arguments. Spawn failure, a missing or mismatched
 pin, `MIR_EXECUTOR_QUERY_IMPL=python`, and `MIR_NATIVE_HOOKS=0` also retain Python.
-`MIR_EXECUTOR_IMPL=python` disables native routes except `status`; execute and cancel also
+`MIR_EXECUTOR_IMPL=python` disables native routes except `status` and `result`; execute and cancel also
 honor `MIR_EXECUTOR_EXECUTE_IMPL=python` and `MIR_EXECUTOR_CANCEL_IMPL=python`.
 For a different target root, the invoking home must be a Git root and declare
 `native_policy.target_admission.authorize_target: true`. Supported `sweep`,
@@ -712,10 +729,10 @@ For a different target root, the invoking home must be a Git root and declare
 native `authorize` decision, including `repository_local`, before registry
 writes. Refusals use execute's authorization diagnostics. Resume also checks
 the saved family before preparing execution. Queries, cancel and sweep expose
-no common `--family` option; unsupported parser extensions still decline before
+no common `--family` option; unsupported parser extensions on other commands still decline before
 effects. Query pins belong to the invoking home, never the target. Target registry
 paths and local sweep/resume options remain target-owned. Existing conservative
-schema and parser-extension declines for `result` and `list-jobs`, and cancel
+schema and parser-extension declines for `list-jobs`, and cancel
 local-hook declines still apply; a native
 policy home then fails closed if Python fallback cannot honor its policy.
 Homes without native authorization keep their previous routing and output.
@@ -737,8 +754,9 @@ claims ownership before hook imports, output, registry writes, or provider launc
 if writing the receipt fails, it exits 64 before any effect and Python runs. With
 an owned receipt every exit code, including 64, is final. An older pinned binary
 that declines with 64 without a receipt therefore falls back to Python.
-Query buffering remains; `status` selects its two compatibility declines before
-native launch. Exit 64 never triggers Python status after a native launch.
+Query buffering remains; `status` and `result` select their two compatibility
+declines before native launch. Exit 64 never triggers Python for either command
+after a native launch.
 The entrypoint forwards interrupts and termination to the native process group
 on POSIX, and console interrupts or termination to the direct child on Windows,
 then waits and escalates to kill when needed. As in Python, interruption leaves

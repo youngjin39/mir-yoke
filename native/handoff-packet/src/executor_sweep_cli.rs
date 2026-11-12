@@ -65,7 +65,7 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, ParseError> 
         .as_ref()
         != Some(&repo)
     {
-        match crate::executor_admission::authorize_command(home, cwd, &repo, None) {
+        match crate::executor_admission::authorize_command(home, cwd, &repo, None, false, 2) {
             Ok(true) => (),
             Ok(false) => return Err("sweep home/root mismatch".into()),
             Err(stderr) => {

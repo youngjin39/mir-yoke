@@ -201,7 +201,7 @@ def test_cross_root_native_policy_admission(binary, home, tmp_path, command, pol
         assert (target / 'tasks/jobs.db').read_bytes() == before
         if policy_mode in {'absent', 'unowned'}:
             expected = (invoke(binary, home, argv, python=True, cwd=target)
-                        if command == 'status' else (b'', b'', 64))
+                        if command in {'status', 'result'} else (b'', b'', 64))
             assert result == expected
         elif policy_mode == 'refuse':
             expected = ('policy notice\n[mir_executor] authorize_target refused '
@@ -231,7 +231,7 @@ def test_cross_root_query_family_option_declines(binary, home, tmp_path, command
         argv += ['--job-id', 'running']
     before = (target / 'tasks/jobs.db').read_bytes()
     expected = (invoke(binary, home, argv, python=True, cwd=target)
-                if command == 'status' else (b'', b'', 64))
+                if command in {'status', 'result'} else (b'', b'', 64))
     assert invoke(binary, home, argv, cwd=target) == expected
     assert (target / 'tasks/jobs.db').read_bytes() == before
 
@@ -315,11 +315,12 @@ def test_executor_query_local_files_match_python(
     reference = invoke(binary, home, argv, python=True)
     assert reference[2] == 0, (reference, trace_details())
     before = (home / "tasks/jobs.db").read_bytes()
-    expected_native = ((b'', b'[mir_executor] legacy status hooks require the Python facade\n', 2)
-                       if argv[0] == 'status' and files != 'config' else reference)
+    legacy_error = f'[mir_executor] legacy {argv[0]} hooks require the Python facade\n'.encode()
+    expected_native = ((b'', legacy_error, 2)
+                       if argv[0] in {'status', 'result'} and files != 'config' else reference)
     assert invoke(binary, home, argv) == expected_native, trace_details()
     install_pin(binary, home)
-    if argv[0] != 'status' or files == 'config':
+    if argv[0] not in {'status', 'result'} or files == 'config':
         (home / "tools/mir_executor/cli.py").write_text(
             "raise AssertionError('Python CLI imported')\n")
     assert pinned_cli(home, route, argv) == reference, trace_details()
@@ -337,12 +338,13 @@ def test_executor_query_local_import_failure_accepted_divergence(binary, home, r
     python = invoke(binary, home, argv, python=True)
     assert python[2] != 0, trace_details()
     assert b"local import failed" in python[1], trace_details()
-    expected_native = ((b'', b'[mir_executor] legacy status hooks require the Python facade\n', 2)
-                       if argv[0] == 'status' else reference)
+    legacy_error = f'[mir_executor] legacy {argv[0]} hooks require the Python facade\n'.encode()
+    expected_native = ((b'', legacy_error, 2)
+                       if argv[0] in {'status', 'result'} else reference)
     assert invoke(binary, home, argv) == expected_native, trace_details()
     install_pin(binary, home)
     actual = pinned_cli(home, route, argv)
-    if argv[0] == 'status':
+    if argv[0] in {'status', 'result'}:
         assert actual[0] == python[0]
         assert actual[1].splitlines()[-1] == python[1].splitlines()[-1]
         assert actual[2] == python[2]
@@ -365,13 +367,13 @@ def test_executor_query_real_pin_avoids_python_executor_import(binary, home, rou
 
 
 @pytest.mark.parametrize("route", ["module", "mir-cli"])
-def test_executor_query_real_pin_unicode_decline_falls_back(binary, home, route):
+def test_executor_query_real_pin_result_unicode_is_owned(binary, home, route):
     with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET stdout=? WHERE job_id='failed'", ("\U0001fae9",))
     argv = ["result", "--job-id", "failed"]
     reference = invoke(binary, home, argv, python=True)
     install_pin(binary, home)
-    assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+    assert invoke(binary, home, argv) == reference, trace_details()
     assert pinned_cli(home, route, argv) == reference, trace_details()
 
 
@@ -466,7 +468,7 @@ def test_executor_query_absent_database_matches_with_creation(binary, home, argv
 def test_executor_query_declines_arguments(binary, home, argv):
     before = (home / "tasks/jobs.db").read_bytes()
     expected = (invoke(binary, home, argv, python=True)
-                if argv and argv[0] == "status" else (b"", b"", 64))
+                if argv and argv[0] in {"status", "result"} else (b"", b"", 64))
     assert invoke(binary, home, argv) == expected, trace_details()
     assert (home / "tasks/jobs.db").read_bytes() == before, trace_details()
 
@@ -505,7 +507,7 @@ def test_executor_query_invalid_unicode_escape_declines(binary, home, field, pay
         connection.execute(f"UPDATE jobs SET {field}=? WHERE job_id='failed'", (payload,))
     argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
     expected = (invoke(binary, home, argv, python=True)
-                if command == "status" else (b"", b"", 64))
+                if command in {"status", "result"} else (b"", b"", 64))
     assert invoke(binary, home, argv) == expected, trace_details()
 
 

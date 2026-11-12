@@ -164,6 +164,13 @@ def cases():
         {"name": "root-negative-newline", "argv": ["-1\n", *BASE_ARGV]},
         {"name": "job-negative-newline", "argv": ["status", "--job-id", "-1\n"]},
     ])
+    for name, prefix in (
+        ("leading-inline-repo-space", ["--repo-root=<HOME>"]),
+        ("leading-inline-repo-space-end", ["--repo-root=<HOME>", "--"]),
+        ("leading-inline-repo-abbreviation-space", ["--rep=<HOME>"]),
+        ("leading-unknown-inline-space", ["--unknown=two words"]),
+    ):
+        values.append({"name": name, "argv": [*prefix, *BASE_ARGV]})
     values.append({"name": "ignores-mutation-receipt",
                    "env": {"MIR_EXECUTOR_OWNED_RECEIPT": "tasks/status-receipt"}})
     return values
