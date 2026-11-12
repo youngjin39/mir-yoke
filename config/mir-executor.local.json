@@ -1,4 +1,9 @@
 {
+  "python_local_hooks": false,
+  "native_policy": {
+    "version": 1,
+    "brief_profile": {"name": "base_v1"}
+  },
   "verifiers": {
     "pytest": ["uv", "run", "pytest", "-q"],
     "ruff": ["uv", "run", "ruff", "check"],

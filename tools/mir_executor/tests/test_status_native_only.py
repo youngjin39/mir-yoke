@@ -125,9 +125,10 @@ def test_status_compatibility_source_is_only_codec_or_legacy():
     source = ast.parse(inspect.getsource(entrypoint.main))
     branch = next(node for node in ast.walk(source) if isinstance(node, ast.If)
                   and '_status_requested' in ast.unparse(node.test))
-    decline = branch.body[0]
+    decline = next(node for node in branch.body if isinstance(node, ast.If))
     assert ast.unparse(decline.test) == (
-        "_status_codec_decline() or (_HOME_ROOT / 'tools/mir_executor/local.py').exists()")
+        "_status_codec_decline() or ((_HOME_ROOT / 'tools/mir_executor/local.py').exists() "
+        "and (not disabled))")
     assert ast.unparse(decline.body[-1]) == 'return python_main(argv)'
     assert ast.unparse(branch.body[-1]) == 'return _native_status(argv)'
     codec_source = ast.parse(inspect.getsource(entrypoint._status_codec_decline))

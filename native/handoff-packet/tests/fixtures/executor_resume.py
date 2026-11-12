@@ -10,11 +10,14 @@ import sys
 from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4]))
-from tools.mir_executor import cli  # noqa: E402
+from tools.mir_executor import cli, local_hooks  # noqa: E402
 from tools.mir_executor.jobs import JobRecord, JobRegistry  # noqa: E402
 
 root = pathlib.Path(sys.argv[1]).resolve()
 root.mkdir(parents=True, exist_ok=True)
+# This is a synthetic consumer, independent of Yoke's native-only home policy.
+cli.__file__ = str(root / "tools/mir_executor/cli.py")
+local_hooks.__file__ = str(root / "tools/mir_executor/local_hooks.py")
 brief = root / "brief.json"
 brief.write_text(json.dumps({"expanded_goal": "fixture task"}), encoding="utf-8")
 options = dict(

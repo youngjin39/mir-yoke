@@ -5,7 +5,12 @@ use crate::{
     executor_target_policy::PolicyFailure,
 };
 use serde_json::{Map, Value, json};
-use std::{collections::BTreeMap, fs, io::Read, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
+    io::Read,
+    path::Path,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Contract {
@@ -20,6 +25,7 @@ pub struct BriefProfile {
     contract: Contract,
     input_limit_bytes: Option<u64>,
     goal_bound: bool,
+    pub(crate) python_file_input: bool,
 }
 impl BriefProfile {
     pub fn parse(value: &Value) -> Result<Self, Error> {
@@ -68,6 +74,7 @@ impl BriefProfile {
             contract,
             input_limit_bytes,
             goal_bound,
+            python_file_input: false,
         })
     }
     /// Bound the validated goal (or plain text), independently of raw file size.
@@ -162,23 +169,31 @@ impl BriefProfile {
         }
         let text = String::from_utf8(bytes.to_vec())
             .map_err(|error| local_failure(Error::Unicode(error)))?;
-        let payload = LocalConfig::default()
-            .parse_argument(&text)
-            .map_err(local_failure)?;
-        let mut reprs = BTreeMap::new();
-        ReprCursor {
-            text: &text,
-            offset: 0,
-            reprs: &mut reprs,
-        }
-        .value(&[]);
+        let (payload, reprs) = if self.python_file_input {
+            // Selected Yoke file hooks use Path.read_text universal newlines.
+            let text = text.replace("\r\n", "\n").replace('\r', "\n");
+            let parsed = crate::python_json::parse(&text)
+                .map_err(|error| failure(error.exception, error.to_string()))?;
+            profile_input(parsed)
+        } else {
+            let payload = LocalConfig::default()
+                .parse_argument(&text)
+                .map_err(local_failure)?;
+            let mut reprs = InputReprs {
+                legacy: true,
+                ..InputReprs::default()
+            };
+            ReprCursor {
+                text: &text,
+                offset: 0,
+                reprs: &mut reprs.values,
+            }
+            .value(&[]);
+            (payload, reprs)
+        };
         self.validate(&payload, &reprs)
     }
-    fn validate(
-        &self,
-        payload: &Value,
-        reprs: &BTreeMap<Vec<String>, String>,
-    ) -> Result<Value, PolicyFailure> {
+    fn validate(&self, payload: &Value, reprs: &InputReprs) -> Result<Value, PolicyFailure> {
         let root_type = issue(Vec::new(), "", "", payload, reprs).input_type;
         let Some(data) = payload.as_object().filter(|_| root_type.is_none()) else {
             return Err(failure(
@@ -191,6 +206,12 @@ impl BriefProfile {
                 ),
             ));
         };
+        if let Some(key) = reprs.invalid_keys.get(&Vec::new()) {
+            return Err(failure(
+                "ValidationError",
+                render_errors(&[unicode_key_issue(Vec::new(), key)]),
+            ));
+        }
         let mut output = Map::new();
         let mut issues = Vec::new();
         let typed = self.contract == Contract::ClosedVerifierV2;
@@ -227,14 +248,19 @@ impl BriefProfile {
                     None => {
                         output.insert((*key).into(), json!(if typed { 2 } else { 1 }));
                     }
-                    Some(value) => match integer(value, reprs.get(&location).map(String::as_str)) {
-                        Ok(parsed) => {
-                            output.insert((*key).into(), parsed);
+                    Some(value) if reprs.invalid_strings.contains(&location) => {
+                        issues.push(issue(location, "Input should be a valid string, unable to parse raw data as a unicode string", "string_unicode", value, reprs));
+                    }
+                    Some(value) => {
+                        match integer(value, reprs.values.get(&location).map(String::as_str)) {
+                            Ok(parsed) => {
+                                output.insert((*key).into(), parsed);
+                            }
+                            Err((message, code)) => {
+                                issues.push(issue(location, message, code, value, reprs))
+                            }
                         }
-                        Err((message, code)) => {
-                            issues.push(issue(location, message, code, value, reprs))
-                        }
-                    },
+                    }
                 },
                 "phase_id" => {
                     if value.is_none_or(Value::is_null) {
@@ -256,8 +282,13 @@ impl BriefProfile {
                 }
                 "source_refs" => {
                     if let Some(value) = value {
+                        if let Some(key) = reprs.invalid_keys.get(&location) {
+                            issues.push(unicode_key_issue(location, key));
+                            continue;
+                        }
                         if let Some(source) = value.as_object().filter(|_| {
                             reprs
+                                .values
                                 .get(&location)
                                 .is_none_or(|repr| repr.starts_with('{'))
                         }) {
@@ -286,7 +317,7 @@ impl BriefProfile {
                                     )),
                                 }
                             }
-                            for extra in ordered_keys(source, reprs.get(&location)) {
+                            for extra in ordered_keys(source, &location, reprs) {
                                 if !["task_spec", "plan", "phase"].contains(&extra.as_str()) {
                                     issues.push(issue(
                                         vec![(*key).into(), extra.clone()],
@@ -395,7 +426,7 @@ impl BriefProfile {
                 },
             }
         }
-        for key in ordered_keys(data, reprs.get(&Vec::new())) {
+        for key in ordered_keys(data, &[], reprs) {
             if !fields.contains(&key.as_str()) {
                 issues.push(issue(
                     vec![key.clone()],
@@ -504,14 +535,14 @@ fn issue(
     message: &str,
     code: &str,
     input: &Value,
-    reprs: &BTreeMap<Vec<String>, String>,
+    reprs: &InputReprs,
 ) -> ValidationIssue {
     let repr_location = if code == "missing" {
         &location[..location.len().saturating_sub(1)]
     } else {
         &location
     };
-    let input_repr = reprs.get(repr_location).cloned();
+    let input_repr = reprs.values.get(repr_location).cloned();
     let input_type = input_repr
         .as_deref()
         .filter(|repr| input.is_object() && !repr.starts_with('{'))
@@ -539,9 +570,17 @@ fn string_field(
     output: &mut Map<String, Value>,
     key: &str,
     issues: &mut Vec<ValidationIssue>,
-    reprs: &BTreeMap<Vec<String>, String>,
+    reprs: &InputReprs,
 ) {
-    if let Some(text) = value.as_str() {
+    if nonempty && reprs.invalid_strings.contains(&location) {
+        issues.push(issue(
+            location,
+            "Input should be a valid string, unable to parse raw data as a unicode string",
+            "string_unicode",
+            value,
+            reprs,
+        ));
+    } else if let Some(text) = value.as_str() {
         if nonempty && text.is_empty() {
             issues.push(issue(
                 location,
@@ -651,7 +690,7 @@ fn execution_id(
     value: &Value,
     location: Vec<String>,
     issues: &mut Vec<ValidationIssue>,
-    reprs: &BTreeMap<Vec<String>, String>,
+    reprs: &InputReprs,
 ) {
     let Some(text) = value.as_str() else { return };
     let bytes = text.as_bytes();
@@ -808,8 +847,157 @@ fn contract_error(output: &Map<String, Value>, typed: bool) -> Option<String> {
     None
 }
 
-// Admission uses the existing parser. This second pass only preserves object
-// insertion order in Python diagnostic representations.
+// Keep Python-only input types until the finite schema checks them. The adapter
+// consumes the tree iteratively so deeply nested invalid extras cannot overflow
+// the native stack. Only schema-reachable paths need retained child values.
+#[derive(Default)]
+struct InputReprs {
+    legacy: bool,
+    values: BTreeMap<Vec<String>, String>,
+    invalid_strings: BTreeSet<Vec<String>>,
+    order: BTreeMap<Vec<String>, Vec<String>>,
+    invalid_keys: BTreeMap<Vec<String>, String>,
+}
+fn unicode_key_issue(location: Vec<String>, key: &str) -> ValidationIssue {
+    ValidationIssue {
+        location,
+        message: "Input should be a valid string, unable to parse raw data as a unicode string"
+            .into(),
+        code: "string_unicode".into(),
+        input: Value::Null,
+        input_repr: Some(key.into()),
+        input_type: Some("str".into()),
+    }
+}
+fn profile_input(input: crate::python_json::Value) -> (Value, InputReprs) {
+    use crate::python_json::Value as Python;
+    enum Work {
+        Node(Python, Option<Vec<String>>),
+        Array(usize, Option<Vec<String>>),
+        Object(Vec<(String, String)>, Option<Vec<String>>),
+    }
+    let mut work = vec![Work::Node(input, Some(Vec::new()))];
+    let mut output: Vec<(Value, String)> = Vec::new();
+    let mut reprs = InputReprs::default();
+    while let Some(item) = work.pop() {
+        let (value, repr, path) = match item {
+            Work::Node(Python::Array(items), path) => {
+                let count = items.len();
+                work.push(Work::Array(count, path.clone()));
+                for (index, value) in items.into_iter().enumerate().rev() {
+                    let child = path.as_ref().filter(|p| p.len() < 3).map(|p| {
+                        let mut child = p.clone();
+                        child.push(index.to_string());
+                        child
+                    });
+                    work.push(Work::Node(value, child));
+                }
+                continue;
+            }
+            Work::Node(Python::Object(object), path) => {
+                let entries = object.into_entries();
+                let mut keys = Vec::new();
+                let mut names = BTreeSet::new();
+                for (key, _) in &entries {
+                    if key.has_surrogates()
+                        && let Some(path) = &path
+                    {
+                        reprs
+                            .invalid_keys
+                            .entry(path.clone())
+                            .or_insert_with(|| key.repr());
+                    }
+                    let mut name = key.py_str();
+                    while names.contains(&name) {
+                        name.push('\0');
+                    }
+                    names.insert(name.clone());
+                    keys.push((name, key.repr()));
+                }
+                if let Some(path) = &path {
+                    reprs
+                        .order
+                        .insert(path.clone(), keys.iter().map(|(k, _)| k.clone()).collect());
+                }
+                work.push(Work::Object(keys.clone(), path.clone()));
+                for ((_, value), (key, _)) in entries.into_iter().zip(keys).rev() {
+                    let child = path.as_ref().filter(|p| p.len() < 3).map(|p| {
+                        let mut child = p.clone();
+                        child.push(key);
+                        child
+                    });
+                    work.push(Work::Node(value, child));
+                }
+                continue;
+            }
+            Work::Node(value, path) => {
+                let repr = value.repr();
+                let value = match value {
+                    Python::String(text) => {
+                        if text.has_surrogates()
+                            && let Some(path) = &path
+                        {
+                            reprs.invalid_strings.insert(path.clone());
+                        }
+                        json!(text.py_str())
+                    }
+                    Python::Number(number) => serde_json::from_str::<Value>(&number.token)
+                        .ok()
+                        .filter(|value| !number.is_integer() || !value.is_f64())
+                        .unwrap_or_else(|| json!({"$python_number":number.token})),
+                    Python::Null => Value::Null,
+                    Python::Bool(value) => json!(value),
+                    Python::Array(_) | Python::Object(_) => Value::Null,
+                };
+                (value, repr, path)
+            }
+            Work::Array(count, path) => {
+                let children = output.split_off(output.len() - count);
+                let repr = format!(
+                    "[{}]",
+                    children
+                        .iter()
+                        .map(|(_, r)| r.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+                let value = if path.is_some() {
+                    Value::Array(children.into_iter().map(|(v, _)| v).collect())
+                } else {
+                    json!([])
+                };
+                (value, repr, path)
+            }
+            Work::Object(keys, path) => {
+                let children = output.split_off(output.len() - keys.len());
+                let repr = format!(
+                    "{{{}}}",
+                    keys.iter()
+                        .zip(&children)
+                        .map(|((_, k), (_, r))| format!("{k}: {r}"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+                let value = if path.is_some() {
+                    Value::Object(
+                        keys.into_iter()
+                            .zip(children)
+                            .map(|((k, _), (v, _))| (k, v))
+                            .collect(),
+                    )
+                } else {
+                    json!({})
+                };
+                (value, repr, path)
+            }
+        };
+        if let Some(path) = path {
+            reprs.values.insert(path, repr.clone());
+        }
+        output.push((value, repr));
+    }
+    (output.pop().map_or(Value::Null, |(v, _)| v), reprs)
+}
 struct ReprCursor<'a, 'b> {
     text: &'a str,
     offset: usize,
@@ -930,15 +1118,22 @@ impl ReprCursor<'_, '_> {
         result
     }
 }
-fn ordered_keys(data: &Map<String, Value>, repr: Option<&String>) -> Vec<String> {
-    let mut keys = data.keys().cloned().collect::<Vec<_>>();
-    if let Some(repr) = repr {
-        keys.sort_by_key(|key| {
-            repr.find(&format!("{}: ", crate::executor_execute::repr(key)))
-                .unwrap_or(usize::MAX)
-        });
+fn ordered_keys(data: &Map<String, Value>, path: &[String], reprs: &InputReprs) -> Vec<String> {
+    if reprs.legacy {
+        let mut keys = data.keys().cloned().collect::<Vec<_>>();
+        if let Some(repr) = reprs.values.get(path) {
+            keys.sort_by_key(|key| {
+                repr.find(&format!("{}: ", crate::executor_execute::repr(key)))
+                    .unwrap_or(usize::MAX)
+            });
+        }
+        return keys;
     }
-    keys
+    reprs
+        .order
+        .get(path)
+        .cloned()
+        .unwrap_or_else(|| data.keys().cloned().collect())
 }
 
 #[cfg(test)]

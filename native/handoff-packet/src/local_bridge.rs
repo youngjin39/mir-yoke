@@ -85,6 +85,11 @@ impl LocalBridge {
     pub fn start_in(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>> {
         let policy = crate::executor_admission::native_policy(&config.target_root)
             .map_err(BridgeError::Configuration)?;
+        if crate::executor_local::python_local_hooks_disabled(&config.target_root)
+            .map_err(BridgeError::Configuration)?
+        {
+            return Ok(None);
+        }
         match config
             .target_root
             .join("tools/mir_executor/local.py")

@@ -74,34 +74,40 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, ParseError> 
         }
     }
     // Unsupported parser extensions are refused at admission before target import.
-    let bridge = match fs::read(repo.join("tools").join("mir_executor").join("local.py")) {
-        Err(e) if e.kind() == io::ErrorKind::NotFound => None,
-        Ok(source) => {
-            if source
-                .windows(b"register_execute_options".len())
-                .any(|part| part == b"register_execute_options")
-            {
-                return Err("sweep local parser extension".into());
+    let disabled = crate::executor_local::python_local_hooks_disabled(&repo)
+        .map_err(|error| ParseError::Refused(format!("[mir_executor] {error}\n").into_bytes()))?;
+    let bridge = if disabled {
+        None
+    } else {
+        match fs::read(repo.join("tools").join("mir_executor").join("local.py")) {
+            Err(e) if e.kind() == io::ErrorKind::NotFound => None,
+            Ok(source) => {
+                if source
+                    .windows(b"register_execute_options".len())
+                    .any(|part| part == b"register_execute_options")
+                {
+                    return Err("sweep local parser extension".into());
+                }
+                let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
+                let interpreter = crate::executor_execute::interpreter(&environment, cwd)
+                    .ok_or("sweep Python interpreter lookup")?;
+                let bridge_script = repo
+                    .join("tools")
+                    .join("mir_executor")
+                    .join("local_bridge.py");
+                if !bridge_script.is_file() {
+                    return Err("sweep bridge script missing".into());
+                }
+                Some(BridgeConfig {
+                    interpreter,
+                    target_root: repo.clone(),
+                    bridge_script,
+                    environment,
+                    timeout: Duration::from_secs(10),
+                })
             }
-            let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
-            let interpreter = crate::executor_execute::interpreter(&environment, cwd)
-                .ok_or("sweep Python interpreter lookup")?;
-            let bridge_script = repo
-                .join("tools")
-                .join("mir_executor")
-                .join("local_bridge.py");
-            if !bridge_script.is_file() {
-                return Err("sweep bridge script missing".into());
-            }
-            Some(BridgeConfig {
-                interpreter,
-                target_root: repo.clone(),
-                bridge_script,
-                environment,
-                timeout: Duration::from_secs(10),
-            })
+            _ => return Err("sweep local source read".into()),
         }
-        _ => return Err("sweep local source read".into()),
     };
     let db = db.unwrap_or_else(|| repo.join("tasks").join("jobs.db"));
     let db = if db.is_absolute() { db } else { cwd.join(db) };

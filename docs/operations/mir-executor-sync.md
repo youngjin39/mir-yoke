@@ -32,7 +32,8 @@ the frozen Python results and filesystem/ledger effects in
 
 `status` requires the pinned native executor except for two compatibility declines:
 stream codecs or error handlers outside its bounded family, and a configured
-legacy `tools/mir_executor/local.py`. These use the existing Python implementation.
+legacy `tools/mir_executor/local.py` (unless local JSON explicitly sets
+`python_local_hooks: false`). These use the existing Python implementation.
 The native family is UTF-8 (including BOM), ASCII, Latin-1, CP1252, UTF-16 and
 UTF-32, with strict, ignore, replace, backslashreplace, xmlcharrefreplace,
 surrogateescape and surrogatepass handlers. Codec aliases are canonicalized.
@@ -99,6 +100,17 @@ is performed.
 - Common: CLI/parser/job handlers, policy loader, dispatch, executor, jobs,
   worktree, app-server client, redactor and the small local-hook adapter.
 - Local code: optional `tools/mir_executor/local.py`. Absent hooks use defaults.
+- Yoke itself selects `native_policy` version 1 with the `base_v1` brief profile
+  in its local JSON and explicitly sets `python_local_hooks: false`. The retained
+  `local.py` is inactive for native hook routing and status facade selection.
+  Only the exact JSON boolean `false` disables it; absence retains existing
+  consumer routing. A present key must be boolean and requires the retained
+  `tools/mir_executor/local.py`; invalid selections are final configuration errors.
+  The file-loader compatibility changes apply only to this explicit selection. File briefs retain the typed loader's
+  validation and diagnostics; ordinary text passes through. No raw-file size cap
+  is added. Yoke's own hook routing does not start LocalBridge. The bridge and
+  Python executor APIs remain supported for consumers; Python API calls against
+  Yoke's declarative profile fail closed under the native-policy boundary below.
 - Local data: optional `config/mir-executor.local.json`. Keys are `verifiers` (ID
   to argv list), `codex_sandbox_default`, `require_review`, `max_codex_attempts_cap`,
   `artifact_retention_days`, `child_env_filter`, `child_env_extra_keys` and

@@ -287,6 +287,14 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     let Some(cli) = parse(raw, cwd) else {
         return crate::executor_protocol::decline("resume options/root parse");
     };
+    let disabled = match crate::executor_local::python_local_hooks_disabled(&cli.root) {
+        Ok(disabled) => disabled,
+        Err(error) => {
+            crate::executor_protocol::claim();
+            execute::diagnostic(&error);
+            return 1;
+        }
+    };
     let cross_target = fs::canonicalize(home)
         .ok()
         .map(crate::supply::plain)
@@ -345,17 +353,19 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         }
     }
     let local = cli.root.join("tools").join("mir_executor").join("local.py");
-    match fs::read(local) {
-        Ok(source)
-            if source
-                .windows(b"register_execute_options".len())
-                .any(|s| s == b"register_execute_options") =>
-        {
-            return crate::executor_protocol::decline("resume local parser extension");
+    if !disabled {
+        match fs::read(local) {
+            Ok(source)
+                if source
+                    .windows(b"register_execute_options".len())
+                    .any(|s| s == b"register_execute_options") =>
+            {
+                return crate::executor_protocol::decline("resume local parser extension");
+            }
+            Ok(_) => (),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
+            Err(_) => return crate::executor_protocol::decline("resume local source read"),
         }
-        Ok(_) => (),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
-        Err(_) => return crate::executor_protocol::decline("resume local source read"),
     }
     let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
     let target_policy = match target_policy {
@@ -373,8 +383,12 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             .join("mir_executor")
             .join("local.py")
             .exists();
-    let python = execute::interpreter(&environment, cwd)
-        .or_else(|| native_only.then(|| cwd.join("unused-python")));
+    let python = if disabled {
+        Some(cwd.join("unused-python"))
+    } else {
+        execute::interpreter(&environment, cwd)
+            .or_else(|| native_only.then(|| cwd.join("unused-python")))
+    };
     let Some(python) = python else {
         return crate::executor_protocol::decline("resume Python interpreter lookup");
     };

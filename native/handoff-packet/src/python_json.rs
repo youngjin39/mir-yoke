@@ -109,6 +109,9 @@ impl Number {
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct Object(Vec<(Text, Value)>);
 impl Object {
+    pub fn into_entries(self) -> Vec<(Text, Value)> {
+        self.0
+    }
     pub fn get(&self, key: &str) -> Option<&Value> {
         self.0
             .iter()

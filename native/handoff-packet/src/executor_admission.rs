@@ -603,6 +603,7 @@ pub fn authorize_command(
 // references conservatively: aliases and conditional exports must not bypass
 // duplicate ownership by avoiding a literal function definition.
 pub(crate) fn native_policy(root: &Path) -> Result<Option<NativePolicy>, String> {
+    crate::executor_local::python_local_hooks_disabled(root)?;
     let bytes = match fs::read(root.join("config").join("mir-executor.local.json")) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
@@ -632,6 +633,9 @@ fn check_policy_hooks(
     policy: &NativePolicy,
     include_command_hooks: bool,
 ) -> Result<(), String> {
+    if crate::executor_local::python_local_hooks_disabled(root)? {
+        return Ok(());
+    }
     match fs::read_to_string(root.join("tools").join("mir_executor").join("local.py")) {
         Ok(source) => {
             for hook in policy.covered_hooks() {

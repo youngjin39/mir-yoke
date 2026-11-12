@@ -153,7 +153,19 @@ fn parse(raw: impl IntoIterator<Item = OsString>, cwd: &Path) -> Result<Args> {
             }
         }
     }
-    if matches!(command, Command::Cancel(_)) && !absent(&root.join("tools/mir_executor/local.py"))?
+    let disabled = match handoff_packet::executor_local::python_local_hooks_disabled(&root) {
+        Ok(disabled) => disabled,
+        Err(error) => {
+            return Ok(Args {
+                db: root.join("tasks/jobs.db"),
+                command,
+                refusal: Some(format!("[mir_executor] {error}\n").into_bytes()),
+            });
+        }
+    };
+    if matches!(command, Command::Cancel(_))
+        && !disabled
+        && !absent(&root.join("tools/mir_executor/local.py"))?
     {
         return Err(());
     }

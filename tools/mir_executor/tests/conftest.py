@@ -11,6 +11,21 @@ def _mark_codex_main(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def _isolate_invoking_home(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Consumer API tests must not inherit Yoke's native-only invoking policy."""
+    from tools.mir_executor import cli, local_hooks
+
+    home = tmp_path_factory.mktemp("invoking-home")
+    monkeypatch.setattr(
+        local_hooks, "__file__", str(home / "tools/mir_executor/local_hooks.py"))
+    monkeypatch.setattr(
+        cli, "__file__", str(home / "tools/mir_executor/cli.py"))
+    monkeypatch.chdir(home)
+
+
+@pytest.fixture(autouse=True)
 def _isolate_default_global_policy(
     tmp_path: pathlib.Path,
     monkeypatch: pytest.MonkeyPatch,

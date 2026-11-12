@@ -59,6 +59,35 @@ impl std::error::Error for Error {
     }
 }
 
+/// The selector is opt-in; legacy configurations retain lazy error handling.
+pub fn python_local_hooks_disabled(root: &Path) -> Result<bool, String> {
+    let error = |message: &str| format!("native local policy configuration error: {message}");
+    let bytes = match fs::read(root.join("config/mir-executor.local.json")) {
+        Ok(bytes) => bytes,
+        Err(_) => return Ok(false),
+    };
+    let config = match String::from_utf8(bytes)
+        .ok()
+        .and_then(|text| crate::python_json::parse(&text).ok())
+    {
+        Some(config) => config,
+        // Unparseable legacy data keeps the command's original lazy read point.
+        None => return Ok(false),
+    };
+    let Some(value) = config.get("python_local_hooks") else {
+        return Ok(false);
+    };
+    let crate::python_json::Value::Bool(enabled) = value else {
+        return Err(error("python_local_hooks must be a boolean"));
+    };
+    if !root.join("tools/mir_executor/local.py").is_file() {
+        return Err(error(
+            "python_local_hooks requires tools/mir_executor/local.py",
+        ));
+    }
+    Ok(!enabled)
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct LocalConfig {
     data: Map<String, Value>,
@@ -113,10 +142,19 @@ impl LocalConfig {
     pub fn native_policy(
         &self,
     ) -> Result<Option<crate::executor_target_policy::NativePolicy>, Error> {
-        self.data
+        let mut policy = self
+            .data
             .get("native_policy")
             .map(crate::executor_target_policy::NativePolicy::parse)
-            .transpose()
+            .transpose()?;
+        if self.data.get("python_local_hooks") == Some(&Value::Bool(false))
+            && let Some(profile) = policy
+                .as_mut()
+                .and_then(|policy| policy.brief_profile.as_mut())
+        {
+            profile.python_file_input = true;
+        }
+        Ok(policy)
     }
 
     pub(crate) fn verifier_order(&self) -> &[String] {

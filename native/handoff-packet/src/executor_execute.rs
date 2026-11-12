@@ -223,18 +223,29 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     }
     // Decline explicit parser extensions without importing target-owned code.
     // A computed export discovered by hello is already owned and must fail finally.
-    let extension = argv_root(&argv, cwd).join("tools/mir_executor/local.py");
-    match fs::read(extension) {
-        Ok(source)
-            if source
-                .windows(b"register_execute_options".len())
-                .any(|part| part == b"register_execute_options") =>
-        {
-            return crate::executor_protocol::decline("execute local parser extension");
+    let disabled = match crate::executor_local::python_local_hooks_disabled(&argv_root(&argv, cwd))
+    {
+        Ok(disabled) => disabled,
+        Err(error) => {
+            crate::executor_protocol::claim();
+            diagnostic(&error);
+            return 1;
         }
-        Ok(_) => (),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => (),
-        Err(_) => return crate::executor_protocol::decline("execute local source read"),
+    };
+    let extension = argv_root(&argv, cwd).join("tools/mir_executor/local.py");
+    if !disabled {
+        match fs::read(extension) {
+            Ok(source)
+                if source
+                    .windows(b"register_execute_options".len())
+                    .any(|part| part == b"register_execute_options") =>
+            {
+                return crate::executor_protocol::decline("execute local parser extension");
+            }
+            Ok(_) => (),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => (),
+            Err(_) => return crate::executor_protocol::decline("execute local source read"),
+        }
     }
     if !ledger_preflight(&argv, cwd) {
         return crate::executor_protocol::decline("execute ledger preflight");
@@ -268,8 +279,11 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
             .join("mir_executor")
             .join("local.py")
             .exists();
-    let python =
-        interpreter(&environment, cwd).or_else(|| native_only.then(|| cwd.join("unused-python")));
+    let python = if disabled {
+        Some(cwd.join("unused-python"))
+    } else {
+        interpreter(&environment, cwd).or_else(|| native_only.then(|| cwd.join("unused-python")))
+    };
     let Some(python) = python else {
         return crate::executor_protocol::decline("execute Python interpreter lookup");
     };

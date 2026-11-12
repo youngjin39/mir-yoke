@@ -248,8 +248,9 @@ def test_should_reject_unsafe_manifest_paths(source, tmp_path):
         api.sync(_target(tmp_path), source_root=source, apply=True)
 
 
-def test_should_use_defaults_when_local_module_absent(tmp_path):
+def test_should_use_defaults_when_local_module_absent(tmp_path, monkeypatch):
     hooks = importlib.import_module('tools.mir_executor.local_hooks')
+    monkeypatch.setattr(hooks, '__file__', str(tmp_path / 'tools/mir_executor/local_hooks.py'))
     assert hooks.local_config(tmp_path) == {}
     assert hooks.invoke_hook(tmp_path, 'pre_execute', object(), tmp_path) is None
     with hooks.writer_scope(tmp_path):

@@ -1075,7 +1075,11 @@ fn emit_frames(out: Vec<String>, err: String, code: i32) -> i32 {
 pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     // The facade owns the approved legacy compatibility decline. Direct native
     // callers cannot import hooks or start a bridge as a second execution route.
-    if home.join("tools/mir_executor/local.py").exists() {
+    let disabled = match handoff_packet::executor_local::python_local_hooks_disabled(home) {
+        Ok(disabled) => disabled,
+        Err(error) => return emit(String::new(), format!("[mir_executor] {error}\n"), 1),
+    };
+    if home.join("tools/mir_executor/local.py").exists() && !disabled {
         return emit(
             String::new(),
             "[mir_executor] legacy status hooks require the Python facade\n".into(),
@@ -1115,6 +1119,9 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         Ok(root) => root,
         Err(error) => return emit(String::new(), format!("{error}\n"), 1),
     };
+    if let Err(error) = handoff_packet::executor_local::python_local_hooks_disabled(&root) {
+        return emit(String::new(), format!("[mir_executor] {error}\n"), 1);
+    }
     let mut native_configuration_error = None;
     if root != home
         && let Err(error) =

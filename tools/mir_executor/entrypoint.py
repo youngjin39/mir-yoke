@@ -261,6 +261,27 @@ def _status_codec_decline() -> bool:
                not in handlers for stream in (sys.stdout, sys.stderr))
 
 
+def _python_local_hooks_disabled() -> bool:
+    path = _HOME_ROOT / 'config/mir-executor.local.json'
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return False
+    try:
+        data = json.loads(raw.decode('utf-8'))
+    except (UnicodeError, ValueError, RecursionError):
+        # Unparseable legacy data keeps the command's original lazy read point.
+        return False
+    if not isinstance(data, dict) or 'python_local_hooks' not in data:
+        return False
+    enabled = data['python_local_hooks']
+    if not isinstance(enabled, bool):
+        raise ValueError('python_local_hooks must be a boolean')
+    if not (_HOME_ROOT / 'tools/mir_executor/local.py').is_file():
+        raise ValueError('python_local_hooks requires tools/mir_executor/local.py')
+    return not enabled
+
+
 def _native_status(argv: list[str]) -> int:
     """Native status owns selectors, syntax, pin failures and exit 64."""
     try:
@@ -295,7 +316,14 @@ def _native_status(argv: list[str]) -> int:
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if _status_requested(argv):
-        if _status_codec_decline() or (_HOME_ROOT / 'tools/mir_executor/local.py').exists():
+        try:
+            disabled = _python_local_hooks_disabled()
+        except ValueError as error:
+            sys.stderr.write(f'[mir_executor] native local policy configuration error: {error}\n')
+            return 1
+        if _status_codec_decline() or (
+                (_HOME_ROOT / 'tools/mir_executor/local.py').exists()
+                and not disabled):
             # LocalBridge redirects hook stdout to stderr and has no output frames.
             from tools.mir_executor.cli import main as python_main
 
