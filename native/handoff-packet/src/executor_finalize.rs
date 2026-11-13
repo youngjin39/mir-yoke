@@ -432,7 +432,7 @@ fn completed(
             &evidence_text,
             false,
         )
-        .map_err(Error::Worktree)?;
+        .map_err(|e| Error::Worktree(wt.error_spelling(e)))?;
         if !evidence.passed {
             return blocked(wt, options, observer, &evidence.reason);
         }

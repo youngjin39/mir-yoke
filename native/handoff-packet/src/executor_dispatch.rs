@@ -333,13 +333,19 @@ fn state(
     );
     Ok(())
 }
-fn append(p: &Path, v: Value) -> Result<()> {
+fn append(p: &Path, display: &Path, v: Value) -> Result<()> {
     let text = crate::executor_ledger_json::render(
         r#"{"kind":null,"dispatch_id":null,"attempt":null,"exit_code":null,"error_sig":null,"lane_unavailable":null,"retryable":null,"reason":null,"consecutive_failures":null,"threshold":null,"attempts":null}"#,
         &v,
     ).map_err(Error::Invalid)?;
     let text = executor_worktree::compact_json(&text).map_err(Error::Worktree)?;
-    executor_worktree::secure_write(p, &text, true).map_err(Error::Worktree)
+    executor_worktree::secure_write_contained(p, &text, true).map_err(|e| {
+        Error::Worktree(executor_worktree::error_spelling(
+            e,
+            p.parent().unwrap_or(Path::new("")),
+            display.parent().unwrap_or(Path::new("")),
+        ))
+    })
 }
 fn outcome(
     w: &DispatchWorktree,
@@ -500,7 +506,7 @@ fn attempts<F>(
 where
     F: FnMut(&DispatchWorktree, usize) -> Result<CodexAttempt>,
 {
-    let w = if let Some(w) = &c.worktree {
+    let mut w = if let Some(w) = &c.worktree {
         w.clone()
     } else {
         let w = executor_worktree::create_dispatch_worktree(
@@ -514,17 +520,32 @@ where
         c.worktree = Some(w.clone());
         w
     };
+    // Keep the same selected container through hooks, retries and finalization.
+    let artifact_root = o
+        .artifacts_root
+        .as_ref()
+        .map(|root| w.select_artifact_root(root))
+        .transpose()
+        .map_err(Error::Worktree)?;
+    c.worktree = Some(w.clone());
+    let display_events = o.dispatch_events_path.clone().unwrap_or_else(|| {
+        o.artifacts_root.as_ref().map_or_else(
+            || w.display_path(&w.path.join(".mir-dispatch/dispatch-events.jsonl")),
+            |root| root.join(&o.dispatch_id).join("dispatch-events.jsonl"),
+        )
+    });
+    let events = if let Some(path) = &o.dispatch_events_path {
+        executor_worktree::selected_file(path).map_err(Error::Worktree)?
+    } else if let Some(root) = artifact_root {
+        root.join(&o.dispatch_id).join("dispatch-events.jsonl")
+    } else {
+        w.path.join(".mir-dispatch/dispatch-events.jsonl")
+    };
     event(
         c,
         "dispatch_state",
         json!({"dispatch_id":o.dispatch_id,"state":"started","evidence":{}}),
     );
-    let events = o.dispatch_events_path.clone().unwrap_or_else(|| {
-        o.artifacts_root.as_ref().map_or_else(
-            || w.path.join(".mir-dispatch/dispatch-events.jsonl"),
-            |p| p.join(&o.dispatch_id).join("dispatch-events.jsonl"),
-        )
-    });
     let budget = usize::try_from(o.max_codex_attempts)
         .map_err(|_| Error::Invalid("attempt budget exceeds platform capacity".into()))?;
     let mut last = CodexAttempt::default();
@@ -592,17 +613,20 @@ where
             state(c, &w, "codex_completed", json!({"attempt":attempt}))?;
             append(
                 &events,
+                &display_events,
                 json!({"kind":"codex_success","dispatch_id":o.dispatch_id,"attempt":attempt}),
             )?;
             return Ok(outcome(&w, r, attempt, None));
         }
         append(
             &events,
+            &display_events,
             json!({"kind":"codex_failure","dispatch_id":o.dispatch_id,"attempt":attempt,"exit_code":r.exit_code,"error_sig":r.error_sig,"lane_unavailable":r.lane_unavailable,"retryable":r.retryable}),
         )?;
         let reason = if r.lane_unavailable {
             append(
                 &events,
+                &display_events,
                 json!({"kind":"lane_unavailable","dispatch_id":o.dispatch_id,"attempt":attempt}),
             )?;
             Some("lane-unavailable".to_owned())
@@ -615,6 +639,7 @@ where
                 .unwrap_or_else(|| "non-retryable".into());
             append(
                 &events,
+                &display_events,
                 json!({"kind":"non_retryable_blocker","dispatch_id":o.dispatch_id,"attempt":attempt,"reason":reason}),
             )?;
             Some(reason)
@@ -635,12 +660,14 @@ where
     let reason = if consecutive >= o.outage_threshold {
         append(
             &events,
+            &display_events,
             json!({"kind":"codex_outage_halt","dispatch_id":o.dispatch_id,"consecutive_failures":consecutive,"threshold":o.outage_threshold}),
         )?;
         "codex-outage"
     } else {
         append(
             &events,
+            &display_events,
             json!({"kind":"retry_exhausted","dispatch_id":o.dispatch_id,"attempts":budget}),
         )?;
         "retry-exhausted"

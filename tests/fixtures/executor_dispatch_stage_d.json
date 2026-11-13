@@ -3019,6 +3019,134 @@
       "expected": {
         "effects": {
           "branch_commits": {
+            "master": "offline fixture",
+            "mir-dispatch/<id>": "offline fixture"
+          },
+          "branches": "master\nmir-dispatch/<id>\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "blocker": {
+              "hex": "756e6368616e67656420626c6f636b6572",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "hook-events": {
+              "hex": "5b227772697465725f656e746572222c206e756c6c5d0a5b227072655f65786563757465222c206e756c6c5d0a5b226a6f625f696e736572746564222c207b226a6f625f6964223a20223c69643e222c20226a6f62735f6462223a20223c726f6f743e2f7461736b732f6a6f62732e6462222c202270617468223a20226469737061746368222c20227265706f5f726f6f74223a20223c726f6f743e227d5d0a5b2264697370617463685f7374617465222c207b2264697370617463685f6964223a20223c69643e222c202265766964656e6365223a207b7d2c20226a6f625f6964223a20223c69643e222c20227374617465223a202273746172746564227d5d0a5b2264697370617463685f7374617465222c207b2264697370617463685f6964223a20223c69643e222c202265766964656e6365223a207b22617474656d7074223a20317d2c20226a6f625f6964223a20223c69643e222c20227374617465223a202272756e6e696e67227d5d0a5b2264697370617463685f7374617465222c207b2264697370617463685f6964223a20223c69643e222c202265766964656e6365223a207b22617474656d7074223a20317d2c20226a6f625f6964223a20223c69643e222c20227374617465223a2022636f6465785f636f6d706c65746564227d5d0a5b2264697370617463685f6661696c6564222c207b2264697370617463685f6964223a20223c69643e222c20226572726f725f74797065223a20224e6f74414469726563746f72794572726f72222c20226a6f625f6964223a20223c69643e222c20226d657373616765223a20225b4572726e6f2032305d204e6f742061206469726563746f72793a20273c726f6f743e2f626c6f636b65722f6172746966616374732f3c69643e27227d5d0a5b227772697465725f65786974222c206e756c6c5d0a",
+              "mode": "0o644"
+            },
+            "mir-wt-<temp>": {
+              "directory_mode": "0o700"
+            },
+            "mir-wt-<temp>/<id>": {
+              "directory_mode": "0o755"
+            },
+            "mir-wt-<temp>/<id>/.gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "mir-wt-<temp>/<id>/.mir-dispatch": {
+              "directory_mode": "0o755"
+            },
+            "mir-wt-<temp>/<id>/.mir-dispatch/brief.md": {
+              "hex": "6f66666c696e652066697874757265",
+              "mode": "0o600"
+            },
+            "mir-wt-<temp>/<id>/.mir-dispatch/events.jsonl": {
+              "hex": "7b227472616e73706f7274223a20226170702d736572766572222c20226576656e74223a202270726f6772657373222c20226475726174696f6e5f73223a20223c6475726174696f6e3e222c20226d6574686f64223a20227475726e2f636f6d706c65746564227d0a7b22657869745f636f6465223a20302c20226475726174696f6e5f73223a20223c6475726174696f6e3e222c20226572726f725f736967223a2022222c20227472616e73706f7274223a20226170702d736572766572222c20227468726561644964223a2022666978747572652d746872656164222c20226c616e655f756e617661696c61626c65223a2066616c73657d0a",
+              "mode": "0o600"
+            },
+            "mir-wt-<temp>/<id>/.mir-dispatch/status.json": {
+              "hex": "7b0a20202264697370617463685f6964223a20223c69643e222c0a2020227374617465223a2022636f6465785f636f6d706c65746564222c0a202022626173655f636f6d6d6974223a20223c636f6d6d69743e222c0a202022617474656d7074223a20310a7d0a",
+              "mode": "0o600"
+            },
+            "mir-wt-<temp>/<id>/code.txt": {
+              "hex": "64656c656761746564206368616e67650a",
+              "mode": "0o644"
+            },
+            "provider-diagnostics": {
+              "hex": "7b22737464657272223a2022222c20226572726f725f736967223a2022227d0a",
+              "mode": "0o644"
+            },
+            "provider-methods": {
+              "hex": "696e697469616c697a650a696e697469616c697a65640a7468726561642f73746172740a7475726e2f73746172740a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o600",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": "{\"dispatch_id\":\"<id>\",\"dispatch_ids\":[\"<id>\"]}",
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unclassified",
+                    "change_id": "dispatch-<id>",
+                    "codex_args": "[]",
+                    "completed_at": "<timestamp>",
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"allow_paths\": [\"code.txt\"], \"artifacts_dir\": \"<root>/blocker/artifacts\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"category\": null, \"change_id\": null, \"dispatch_brief\": \"<root>/brief.json\", \"execution_backend\": \"codex\", \"expect_changes\": true, \"finalize_lock_timeout\": 30, \"max_codex_attempts\": 1, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"stall_timeout\": null, \"timeout\": null, \"verify_cmds\": [\"offline\"]}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": 1,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "<id>",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": "[Errno 20] Not a directory: '<root>/blocker/artifacts/<id>'",
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 600
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\nworktree <root>/mir-wt-<temp>/<id>\nHEAD <commit>\nbranch refs/heads/mir-dispatch/<id>\n\n"
+        },
+        "exit": 1,
+        "stderr_hex": "5b6d69725f6578656375746f725d206469737061746368206661696c65643a205b4572726e6f2032305d204e6f742061206469726563746f72793a20273c726f6f743e2f626c6f636b65722f6172746966616374732f3c69643e270a",
+        "stdout_hex": ""
+      },
+      "name": "artifacts-parent-file"
+    },
+    {
+      "expected": {
+        "effects": {
+          "branch_commits": {
             "master": "offline fixture"
           },
           "branches": "master\n",

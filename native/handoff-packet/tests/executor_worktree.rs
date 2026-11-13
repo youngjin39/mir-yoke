@@ -180,20 +180,30 @@ fn python_golden_child_env() {
     }
 }
 #[test]
-fn seed_failure_cleans_git_registration_branch_and_tree() {
+fn seed_failure_retains_git_registration_branch_and_tree_like_reference() {
     let fixture = Fixture::new();
     let repo = fixture.repo("repo", &json!({".mir-dispatch":"blocked\n"}));
     let trees = fixture.0.join("trees");
-    assert!(create_dispatch_worktree(&repo, "failure", "HEAD", "brief", Some(&trees)).is_err());
-    assert!(!trees.join("failure").exists());
-    assert!(git(&repo, &["branch", "--list", "mir-dispatch/failure"]).is_empty());
+    let error =
+        create_dispatch_worktree(&repo, "failure", "HEAD", "brief", Some(&trees)).unwrap_err();
+    assert_eq!(error.kind(), "FileExistsError");
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "[Errno 17] File exists: '{}'",
+            trees.join("failure/.mir-dispatch").display()
+        )
+    );
+    assert!(trees.join("failure").exists());
+    assert!(!git(&repo, &["branch", "--list", "mir-dispatch/failure"]).is_empty());
     assert_eq!(
         git(&repo, &["worktree", "list", "--porcelain"])
             .matches("worktree ")
             .count(),
-        1
+        2
     );
 }
+
 #[test]
 fn private_replacement_and_invalid_json() {
     let fixture = Fixture::new();
@@ -224,10 +234,11 @@ fn artifact_and_private_symlinks_are_refused() {
     let dest = fixture.0.join("private");
     symlink(&outside, &dest).unwrap();
     let refusal = write_private_text(&dest, "overwrite", true).unwrap_err();
+    assert_eq!(refusal.kind(), "OSError");
     assert!(
         refusal
             .to_string()
-            .contains("symlink/reparse point rejected:")
+            .starts_with(&format!("[Errno {}]", libc::ELOOP))
     );
     assert_eq!(fs::read_to_string(outside).unwrap(), "{}");
     cleanup_worktree(&wt, true).unwrap();
@@ -344,7 +355,11 @@ fn git_refusal_preserves_existing_branch_and_checkout() {
     let refusal =
         create_dispatch_worktree(&repo, "existing", "HEAD", "", Some(&trees)).unwrap_err();
     assert_eq!(refusal.kind(), "CalledProcessError");
-    assert!(refusal.to_string().contains("already exists"));
+    assert!(
+        refusal
+            .to_string()
+            .contains("returned non-zero exit status 255.")
+    );
     match refusal {
         Error::Git { stderr, .. } => {
             assert_eq!(stderr, golden()["cases"][0]["expected"]["refusal_stderr"])
@@ -555,4 +570,192 @@ fn invalid_terminal_roots_keep_existing_guard_refusal() {
     assert_eq!(fs::read_to_string(file).unwrap(), "keep");
     assert!(!fixture.0.join("missing").exists());
     cleanup_worktree(&wt, true).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn artifact_existing_file_preserves_write_permission_contract() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new();
+    let path = fixture.0.join("artifact.md");
+    fs::write(&path, "original").unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o400)).unwrap();
+    let refusal = secure_write(&path, "replacement", false).unwrap_err();
+    assert_eq!(refusal.kind(), "PermissionError");
+    assert_eq!(fs::read_to_string(&path).unwrap(), "original");
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o200)).unwrap();
+    secure_write(&path, "replacement", false).unwrap();
+    secure_write(&path, "+append", true).unwrap();
+    assert_eq!(fs::read_to_string(&path).unwrap(), "replacement+append");
+    assert_eq!(
+        fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+}
+
+#[test]
+fn selected_alias_errors_preserve_caller_spelling() {
+    let fixture = Fixture::new();
+    let real = fixture.0.join("real");
+    fs::create_dir(&real).unwrap();
+    let alias = fixture.0.join("alias");
+    if !directory_link(&fs::canonicalize(&real).unwrap(), &alias) {
+        return;
+    }
+    fs::write(real.join("blocked"), "keep").unwrap();
+    let file = alias.join("blocked/child/evidence.md");
+    let error = secure_write(&file, "probe", false).unwrap_err();
+    assert_eq!(error.kind(), "NotADirectoryError");
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "[Errno 20] Not a directory: '{}'",
+            file.parent().unwrap().display()
+        )
+    );
+    let file = alias.join("blocked");
+    let error = secure_write(&file.join("evidence.md"), "probe", false).unwrap_err();
+    assert_eq!(error.kind(), "FileExistsError");
+    assert_eq!(
+        error.to_string(),
+        format!("[Errno 17] File exists: '{}'", file.display())
+    );
+    let error = write_private_text(&alias.join("missing/evidence.md"), "probe", false).unwrap_err();
+    assert_eq!(error.kind(), "FileNotFoundError");
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "[Errno 2] No such file or directory: '{}'",
+            alias.join("missing/evidence.md").display()
+        )
+    );
+}
+
+#[test]
+fn git_refusal_uses_caller_alias_in_command() {
+    let fixture = Fixture::new();
+    let real = fixture.0.join("real");
+    let repo = fixture.repo("real/repo", &json!({"code":"keep"}));
+    let alias = fixture.0.join("alias");
+    if !directory_link(&fs::canonicalize(&real).unwrap(), &alias) {
+        return;
+    }
+    git(&repo, &["branch", "mir-dispatch/existing"]);
+    let error = create_dispatch_worktree(
+        &alias.join("repo"),
+        "existing",
+        "HEAD",
+        "",
+        Some(&alias.join("trees")),
+    )
+    .unwrap_err();
+    assert_eq!(error.kind(), "CalledProcessError");
+    assert!(matches!(
+        &error,
+        Error::Git {
+            code: Some(255),
+            ..
+        }
+    ));
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "Command '['git', '-C', '{}', 'worktree', 'add', '-b', 'mir-dispatch/existing', '{}', '{}']' returned non-zero exit status 255.",
+            alias.join("repo").display(),
+            alias.join("trees/existing").display(),
+            git(&repo, &["rev-parse", "HEAD"])
+        )
+    );
+    // An explicit physical worktree root must not inherit the repo alias.
+    let physical_trees = fs::canonicalize(&repo).unwrap().join("trees");
+    let error = create_dispatch_worktree(
+        &alias.join("repo"),
+        "existing",
+        "HEAD",
+        "",
+        Some(&physical_trees),
+    )
+    .unwrap_err();
+    let Error::Git {
+        command: Some(command),
+        ..
+    } = error
+    else {
+        panic!("expected Git refusal");
+    };
+    assert_eq!(Path::new(&command[2]), alias.join("repo"));
+    assert_eq!(Path::new(&command[7]), physical_trees.join("existing"));
+}
+
+#[test]
+fn alias_status_inspection_and_event_errors_keep_spelling() {
+    use handoff_packet::executor_dispatch::{
+        CodexAttempt, DispatchContext, DispatchOptions, run_dispatch,
+    };
+    let fixture = Fixture::new();
+    let repo = fixture.repo("real/repo", &json!({"code":"keep"}));
+    let alias = fixture.0.join("alias");
+    if !directory_link(&fs::canonicalize(fixture.0.join("real")).unwrap(), &alias) {
+        return;
+    }
+    let trees = alias.join("trees");
+    let wt =
+        create_dispatch_worktree(&alias.join("repo"), "inspect", "HEAD", "", Some(&trees)).unwrap();
+    fs::remove_dir_all(wt.path.join(".mir-dispatch")).unwrap();
+    let error = write_status(&wt, "complete", &json!({})).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "[Errno 2] No such file or directory: '{}'",
+            trees.join("inspect/.mir-dispatch/status.json").display()
+        )
+    );
+    fs::remove_file(wt.path.join(".git")).unwrap();
+    let error = inspect_worktree(&wt).unwrap_err();
+    assert_eq!(error.kind(), "CalledProcessError");
+    assert!(matches!(
+        &error,
+        Error::Git {
+            code: Some(128),
+            ..
+        }
+    ));
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "Command '['git', '-C', '{}', 'rev-parse', 'HEAD']' returned non-zero exit status 128.",
+            trees.join("inspect").display()
+        )
+    );
+    for mode in ["default", "explicit", "artifacts"] {
+        let mut options = DispatchOptions::new(&repo, mode);
+        options.worktrees_root = Some(trees.clone());
+        let expected = match mode {
+            "explicit" => {
+                let path = alias.join("events/explicit.jsonl");
+                options.dispatch_events_path = Some(path.clone());
+                path
+            }
+            "artifacts" => {
+                options.artifacts_root = Some(alias.join("artifacts"));
+                alias.join("artifacts/artifacts/dispatch-events.jsonl")
+            }
+            _ => trees.join("default/.mir-dispatch/dispatch-events.jsonl"),
+        };
+        let error = run_dispatch(
+            &options,
+            &mut DispatchContext::default(),
+            &mut |_: &DispatchWorktree, _: usize| {
+                fs::create_dir_all(&expected).unwrap();
+                Ok(CodexAttempt::default())
+            },
+        )
+        .unwrap_err();
+        assert_eq!(error.kind(), "IsADirectoryError", "{mode}");
+        assert_eq!(
+            error.to_string(),
+            format!("[Errno 21] Is a directory: '{}'", expected.display()),
+            "{mode}"
+        );
+    }
 }
