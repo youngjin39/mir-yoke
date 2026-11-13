@@ -75,6 +75,44 @@ pub struct LocalBridge {
     timeout: Duration,
     closed: bool,
 }
+// Parser callbacks share the selected bridge's cached local module and writer lifetime.
+const PARSER_BRIDGE: &str = r#"
+import contextlib, io, runpy, sys
+script = sys.argv.pop(1)
+sys.argv[0] = script
+scope = runpy.run_path(script, run_name='__mir_bridge__')
+Bridge = scope['Bridge']
+original = Bridge.call
+def call(self, frame):
+    if frame.get('hook') != 'bridge.parse_execute':
+        return original(self, frame)
+    output, errors = io.StringIO(), io.StringIO()
+    args, code = None, 0
+    with contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors):
+        try:
+            from tools.mir_executor.cli_parser import _build_parser
+            argv, root = scope['_decode'](frame['args'])
+            args = vars(_build_parser(root).parse_args(argv))
+        except SystemExit as exc:
+            if exc.code is None:
+                code = 0
+            elif isinstance(exc.code, int):
+                code = int(exc.code)
+                # CPython converts the status through C long before exit().
+                limit = 2**31 - 1 if sys.platform == 'win32' else sys.maxsize
+                if not -limit - 1 <= code <= limit:
+                    code = -1
+            else:
+                code = 1
+                print(exc.code, file=sys.stderr)
+        except Exception as exc:
+            code = 1
+            print(type(exc).__name__ + ': ' + str(exc), file=sys.stderr)
+    return dict(version=scope['VERSION'], id=frame['id'], ok=True, handle=None, error=None,
+        result=dict(args=scope['_encode'](args), code=code, stdout=output.getvalue(), stderr=errors.getvalue()))
+Bridge.call = call
+sys.exit(scope['main']())
+"#;
 impl LocalBridge {
     /// No child is started when the target has no local hook file.
     pub fn start(config: BridgeConfig) -> Result<Option<Self>> {
@@ -83,6 +121,12 @@ impl LocalBridge {
     }
     /// Admission preserves the invoking command's working directory for hooks.
     pub fn start_in(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>> {
+        Self::start_inner(config, cwd, false)
+    }
+    pub(crate) fn start_with_parser(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>> {
+        Self::start_inner(config, cwd, true)
+    }
+    fn start_inner(config: BridgeConfig, cwd: &Path, parser: bool) -> Result<Option<Self>> {
         let policy = crate::executor_admission::native_policy(&config.target_root)
             .map_err(BridgeError::Configuration)?;
         if crate::executor_local::python_local_hooks_disabled(&config.target_root)
@@ -117,8 +161,12 @@ impl LocalBridge {
                 "interpreter, target and bridge paths must be absolute",
             ));
         }
-        let mut child = Command::new(&config.interpreter)
-            .arg("-I")
+        let mut command = Command::new(&config.interpreter);
+        command.arg("-I");
+        if parser {
+            command.args(["-c", PARSER_BRIDGE]);
+        }
+        let mut child = command
             .arg(&config.bridge_script)
             .arg(&config.target_root)
             .current_dir(cwd)

@@ -220,7 +220,20 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     OUTPUT_FAILED.store(false, Ordering::Relaxed);
     STDOUT_STARTED.store(false, Ordering::Relaxed);
     STDERR_STARTED.store(false, Ordering::Relaxed);
-    let direct = !crate::executor_execute_parser::dispatch(raw);
+    let direct = crate::executor_execute_parser::requested(raw);
+    let dispatch_requested = crate::executor_execute_parser::dispatch(raw);
+    let direct = direct
+        && !(dispatch_requested
+            && (matches!(crate::executor_execute_parser::parse_known(raw, cwd), crate::executor_execute_parser::Parsed::Output { text, .. } if (text.ends_with("argument --codex-args-file: not allowed with argument --codex-args\n") || text.ends_with("argument --codex-args: not allowed with argument --codex-args-file\n")))
+                || executor_admission::native_policy(home_root)
+                    .is_ok_and(|policy| policy.is_some())
+                || executor_admission::native_policy(&argv_root(
+                    &raw.iter()
+                        .map(|s| crate::executor_text::os_text(s))
+                        .collect::<Vec<_>>(),
+                    cwd,
+                ))
+                .is_ok_and(|policy| policy.is_some())));
     let (argv, environment, python, parsed) = if direct {
         if !crate::executor_text::supported_streams() {
             return crate::executor_protocol::decline("execute stream codec or error handler");
@@ -233,7 +246,8 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
                 return 1;
             }
         };
-        if !disabled
+        if !dispatch_requested
+            && !disabled
             && let Ok(source) = fs::read(home_root.join("tools/mir_executor/local.py"))
             && source
                 .windows(b"register_execute_options".len())
@@ -243,8 +257,35 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
                 "execute invoking-home local parser extension",
             );
         }
-        let args = match crate::executor_execute_parser::parse(raw, cwd) {
-            crate::executor_execute_parser::Parsed::Args(args) => args,
+        let preliminary = crate::executor_execute_parser::parse_known(raw, cwd);
+        let local_parser = if dispatch_requested
+            && let crate::executor_execute_parser::Parsed::Args(args) = &preliminary
+        {
+            let root = value_path(&args["repo_root"], cwd);
+            root.join("tools/mir_executor/local.py").is_file()
+                && match crate::executor_local::python_local_hooks_disabled(&root) {
+                    Ok(disabled) => !disabled,
+                    Err(error) => {
+                        crate::executor_protocol::claim();
+                        diagnostic(&error);
+                        return 1;
+                    }
+                }
+        } else {
+            false
+        };
+        let parsed = if local_parser {
+            preliminary
+        } else {
+            crate::executor_execute_parser::parse(raw, cwd)
+        };
+        let args = match parsed {
+            crate::executor_execute_parser::Parsed::Args(mut args) => {
+                if local_parser {
+                    args["__native_parse_pending"] = json!(true);
+                }
+                args
+            }
             crate::executor_execute_parser::Parsed::Output {
                 text,
                 code,
@@ -283,7 +324,16 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
         };
         let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
         let python = interpreter(&environment, cwd).unwrap_or_else(|| cwd.join("unused-python"));
-        (vec!["execute".into()], environment, python, Some(args))
+        let argv = if local_parser {
+            raw.iter()
+                .map(|s| crate::executor_text::os_text(s))
+                .collect()
+        } else {
+            std::iter::once("execute".to_owned())
+                .chain(dispatch_requested.then(|| "--dispatch".to_owned()))
+                .collect()
+        };
+        (argv, environment, python, Some(args))
     } else {
         let Some(argv) = preflight(raw) else {
             return crate::executor_protocol::decline("execute options preflight");
@@ -601,7 +651,7 @@ fn ledger_preflight(argv: &[String], cwd: &Path) -> bool {
         .any(|v| tagged(v, extended.numeric_tag()))
         && serde_json::from_str::<Value>(&text).is_ok()
 }
-fn argv_root(argv: &[String], cwd: &Path) -> PathBuf {
+pub(crate) fn argv_root(argv: &[String], cwd: &Path) -> PathBuf {
     let mut root = cwd.to_owned();
     for (index, arg) in argv.iter().enumerate() {
         let raw = arg.strip_prefix("--repo-root=").or_else(|| {
@@ -910,7 +960,7 @@ fn argument_number(value: &Value) -> Option<f64> {
 fn number_display(value: &Value) -> String {
     numeric_token(value).map_or_else(|| value.to_string(), str::to_owned)
 }
-fn utf8_error(points: &[u32]) -> Option<String> {
+pub(crate) fn utf8_error(points: &[u32]) -> Option<String> {
     let start = points
         .iter()
         .position(|point| (0xd800..=0xdfff).contains(point))?;
@@ -1101,7 +1151,7 @@ pub(crate) fn prompt(args: &[String]) -> String {
         parts.join(" ").trim().to_owned()
     }
 }
-fn argument_codepoints(args: &Value, name: &str) -> Option<Vec<u32>> {
+pub(crate) fn argument_codepoints(args: &Value, name: &str) -> Option<Vec<u32>> {
     let points = args["__native_arg_codepoints"][name]
         .as_array()?
         .iter()

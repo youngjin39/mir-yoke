@@ -298,6 +298,7 @@ def test_direct_native_declines_are_named_or_dispatch_guarded():
                 return position
         raise AssertionError("unclosed Rust block")
 
+    assert "let direct = crate::executor_execute_parser::requested(raw);" in source
     run_start = source.index("pub fn run(")
     run_open = cleaned.index("{", run_start)
     run_end = block_end(run_open)

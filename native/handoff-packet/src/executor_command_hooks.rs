@@ -45,10 +45,28 @@ pub struct CommandHooks {
 }
 impl CommandHooks {
     pub fn start_in(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>, BridgeError> {
+        Self::start_inner(config, cwd, false)
+    }
+    pub(crate) fn start_with_parser(
+        config: BridgeConfig,
+        cwd: &Path,
+    ) -> Result<Option<Self>, BridgeError> {
+        Self::start_inner(config, cwd, true)
+    }
+    fn start_inner(
+        config: BridgeConfig,
+        cwd: &Path,
+        parser: bool,
+    ) -> Result<Option<Self>, BridgeError> {
         let policy = crate::executor_admission::native_policy(&config.target_root)
             .map_err(BridgeError::Configuration)?;
         // Start the bridge first: its hello can reveal computed duplicate exports.
-        let python = LocalBridge::start_in(
+        let start = if parser {
+            LocalBridge::start_with_parser
+        } else {
+            LocalBridge::start_in
+        };
+        let python = start(
             BridgeConfig {
                 interpreter: config.interpreter.clone(),
                 target_root: config.target_root.clone(),
