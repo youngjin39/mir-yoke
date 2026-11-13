@@ -7162,6 +7162,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tests/fixtures/executor_resume_stage_d.json",
+      "sha256": "063710c9a09c022a0be3f46f0932915c43618aaa273827c00525e62a96a2f739"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tests/fixtures/executor_status.json",
       "sha256": "57b003711cf5945c07cdefe968cf23de1dee5c17213f414ac393b89216178323"
     },
@@ -7193,7 +7199,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/generate_executor_dispatch_stage_d.py",
-      "sha256": "1ab20b2634f4073bed1b5d8ce0a93edca91ffe18d45c396b8f2427a5e95c1d92"
+      "sha256": "1ab4c81a75fcd9bc4883b4387abc816f16af7b3dd49ef2daa279babaf321f1e2"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7218,6 +7224,12 @@
       "disposition": "remove",
       "path": "tests/fixtures/generate_executor_result.py",
       "sha256": "ebb4a30e1fe3275cb7785f57fb499c9b49436d40efe61385cb6e5fb4342efe97"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/generate_executor_resume_stage_d.py",
+      "sha256": "3726d7b97734276b7670f5109d7e0215e32843d98301d45f2f27082cc4626d1d"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7686,6 +7698,12 @@
       "disposition": "remove",
       "path": "tests/test_executor_result_native_parity.py",
       "sha256": "bfef58e2277aa177882e193c47a72b47deb13d88e205760933a21558461cce95"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_executor_resume_stage_d.py",
+      "sha256": "0524c763433438dba4514022ed289e9b3fcc1295b51d75942dbd1c5c2ff78287"
     },
     {
       "classification": "template-maintainer-tool",

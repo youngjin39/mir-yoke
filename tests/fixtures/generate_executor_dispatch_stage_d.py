@@ -511,7 +511,7 @@ def snapshot(home):
 
 
 @isolated_git_environment()
-def capture(home, case, setup, route="reference", binary=None):
+def capture(home, case, setup, route="reference", binary=None, *, timeout=40):
     _, env, argv = setup
     command = [sys.executable, "-c", "from tools.mir_executor.cli import main; main()"]
     if route == "module":
@@ -535,7 +535,7 @@ def capture(home, case, setup, route="reference", binary=None):
             start_new_session=True,
         )
         try:
-            stdout, stderr = process.communicate(timeout=40)
+            stdout, stderr = process.communicate(timeout=timeout)
         finally:
             try:
                 os.killpg(process.pid, signal.SIGKILL)
