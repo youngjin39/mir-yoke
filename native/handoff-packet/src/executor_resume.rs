@@ -72,6 +72,20 @@ fn hook(bridge: &mut dyn HookClient, name: &str, args: Vec<Value>) -> Result<Val
     }
     Ok(reply)
 }
+// Match pathlib.Path before filesystem access; preserve parent components.
+fn python_path(raw: &str) -> PathBuf {
+    let path = crate::executor_admission::lexical(Path::new(raw));
+    let path = path.strip_prefix(".").unwrap_or(&path);
+    #[cfg(unix)]
+    if raw.starts_with("//") && !raw.starts_with("///") {
+        return PathBuf::from(format!("/{}", path.display()));
+    }
+    if path.as_os_str().is_empty() {
+        PathBuf::from(".")
+    } else {
+        path.to_owned()
+    }
+}
 /// Pure read/validation phase. A caller must load the row without migrating its
 /// registry, then authorize it before opening a writable registry or launching.
 pub fn prepare(row: &Value, defaults: &Value, timeout: Option<Value>) -> Result<PreparedResume> {
@@ -82,22 +96,32 @@ pub fn prepare(row: &Value, defaults: &Value, timeout: Option<Value>) -> Result<
     }
     let saved = match row.get("dispatch_options_json").filter(|v| !v.is_null()) {
         Some(value) => {
-            let options: Value = serde_json::from_str(
-                value
-                    .as_str()
-                    .ok_or_else(|| invalid("stored dispatch options must be a JSON object"))?,
-            )
-            .map_err(Error::Json)?;
+            let source = value
+                .as_str()
+                .ok_or_else(|| invalid("stored dispatch options must be a JSON object"))?;
+            // Validate Python diagnostics first; retain strict execution
+            // representation so unsupported numeric/Unicode values never become defaults.
+            let decoded = crate::python_json::parse(source).map_err(|e| invalid(&e.to_string()))?;
+            let options: Value = serde_json::from_str(source).map_err(Error::Json)?;
             if !options.is_object() {
                 return Err(invalid("stored dispatch options must be a JSON object"));
             }
-            let path = options["dispatch_brief"]
-                .as_str()
-                .filter(|p| !p.is_empty())
-                .unwrap_or(brief);
-            let digest = text(&options, "brief_sha256")?;
-            let bytes =
-                fs::read(path).map_err(|e| Error::Local(crate::executor_local::Error::Io(e)))?;
+            let saved_brief = &options["dispatch_brief"];
+            let selected = if decoded["dispatch_brief"].truthy() {
+                saved_brief.clone()
+            } else {
+                json!(brief)
+            };
+            let (Some(path), Some(digest)) = (selected.as_str(), options["brief_sha256"].as_str())
+            else {
+                return Err(invalid("stored dispatch brief requires a sha256 digest"));
+            };
+            let path = python_path(path);
+            let bytes = fs::read(&path).map_err(|e| {
+                invalid(&crate::executor_brief_profile::python_os_error_message(
+                    &e, &path,
+                ))
+            })?;
             if crate::digest::sha256(&bytes) != digest {
                 return Err(invalid("dispatch brief sha256 changed; refusing resume"));
             }
@@ -142,14 +166,26 @@ pub fn prepare(row: &Value, defaults: &Value, timeout: Option<Value>) -> Result<
             "execution_backend",
             "finalize_lock_timeout",
             "stall_timeout",
-            "dispatch_brief",
-            "artifacts_dir",
             "timeout",
         ] {
             if key == "timeout" && timeout.is_some() {
                 continue;
             }
             if let Some(value) = options.get(key) {
+                args[key] = value.clone();
+            }
+        }
+        for key in ["dispatch_brief", "artifacts_dir"] {
+            if let Some(value) = options.get(key) {
+                if !value.is_null() && !value.is_string() {
+                    return Err(Error::Hook {
+                        kind: "TypeError".into(),
+                        message: format!(
+                            "argument should be a str or an os.PathLike object where __fspath__ returns a str, not '{}'",
+                            crate::executor_brief_render::python_type(value)
+                        ),
+                    });
+                }
                 args[key] = value.clone();
             }
         }
@@ -328,5 +364,109 @@ impl PreparedResume {
             return Err(invalid("resume root changed; refusing resume"));
         }
         executor_dispatch::run_dispatch(options, context, runner)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fixture() -> (tempfile::TempDir, Value, Value) {
+        let scratch =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/sd-yoke-resume-b1");
+        fs::create_dir_all(&scratch).unwrap();
+        let root = tempfile::tempdir_in(scratch).unwrap();
+        let brief = root.path().join("brief.json");
+        fs::write(&brief, b"{}").unwrap();
+        let options = json!({
+            "dispatch_brief": brief,
+            "brief_sha256": crate::digest::sha256(b"{}"),
+        });
+        let row = json!({
+            "job_id": "resume-test",
+            "repo_root": root.path(),
+            "dispatch_brief_path": brief,
+            "dispatch_options_json": options.to_string(),
+        });
+        (root, row, options)
+    }
+
+    #[test]
+    fn resume_integrity_json_error_uses_python_character_position() {
+        let (_root, mut row, _) = fixture();
+        row["dispatch_options_json"] = json!("{");
+        let error = prepare(&row, &json!({}), None).unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+        );
+    }
+
+    #[test]
+    fn resume_integrity_requires_string_brief_and_digest() {
+        let (_root, mut row, options) = fixture();
+        for (field, value) in [
+            ("brief_sha256", Value::Null),
+            ("brief_sha256", json!(42)),
+            ("dispatch_brief", json!(42)),
+        ] {
+            let mut saved = options.clone();
+            saved[field] = value;
+            row["dispatch_options_json"] = json!(saved.to_string());
+            assert_eq!(
+                prepare(&row, &json!({}), None).unwrap_err().to_string(),
+                "stored dispatch brief requires a sha256 digest"
+            );
+        }
+    }
+
+    #[test]
+    fn resume_integrity_read_error_keeps_python_errno_and_path() {
+        let (root, mut row, mut options) = fixture();
+        let missing = root.path().join("missing.json");
+        options["dispatch_brief"] = json!(missing);
+        row["dispatch_options_json"] = json!(options.to_string());
+        let error = prepare(&row, &json!({}), None).unwrap_err();
+        assert!(matches!(error, Error::Invalid(_)));
+        assert_eq!(
+            error.to_string(),
+            format!(
+                "[Errno 2] No such file or directory: {}",
+                crate::executor_execute::repr(&missing.display().to_string())
+            )
+        );
+    }
+
+    #[test]
+    fn resume_integrity_diagnostic_normalizes_path_spelling() {
+        let (_root, mut row, mut options) = fixture();
+        for raw in [
+            "./__b1_review_missing__/./brief.json",
+            "__b1_review_missing__//brief.json/",
+        ] {
+            options["dispatch_brief"] = json!(raw);
+            row["dispatch_options_json"] = json!(options.to_string());
+            assert_eq!(
+                prepare(&row, &json!({}), None).unwrap_err().to_string(),
+                "[Errno 2] No such file or directory: '__b1_review_missing__/brief.json'"
+            );
+        }
+        assert_eq!(python_path(""), Path::new("."));
+        assert_eq!(python_path("./x/../y"), Path::new("x/../y"));
+        #[cfg(unix)]
+        assert_eq!(python_path("//x/./y").as_os_str(), "//x/y");
+    }
+
+    #[test]
+    fn resume_restored_path_type_error_remains_uncaught() {
+        let (_root, mut row, mut options) = fixture();
+        options["artifacts_dir"] = json!(42);
+        row["dispatch_options_json"] = json!(options.to_string());
+        let error = prepare(&row, &json!({}), None).unwrap_err();
+        assert!(matches!(error, Error::Hook { ref kind, .. } if kind == "TypeError"));
+        assert_eq!(
+            error.to_string(),
+            "argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'int'"
+        );
     }
 }

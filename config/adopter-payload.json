@@ -3113,13 +3113,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_resume.rs",
-      "sha256": "8dd50c7dbd50e0cf43f6b807861c19afa7e28f8b33d1e25bac71e7b5ea574f22"
+      "sha256": "eab0ae732fe7185259a035ecbb82dd061526c6fe066c383a7917aa9d461523a1"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_resume_cli.rs",
-      "sha256": "dfe20a23b65e0915472cbb57cc4a0937dd39013b287a5e28bf621e59e216aa0f"
+      "sha256": "2906b5f8502fed773224b9e6a38f2012a85ca249593b68d799e7a660ca417908"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7703,7 +7703,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_resume_stage_d.py",
-      "sha256": "0524c763433438dba4514022ed289e9b3fcc1295b51d75942dbd1c5c2ff78287"
+      "sha256": "f039dd8b9803328783738445cb97525a872c43b52ef8a8ef498d05bded9deb8e"
     },
     {
       "classification": "template-maintainer-tool",

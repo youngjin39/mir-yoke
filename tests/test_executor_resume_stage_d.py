@@ -94,3 +94,71 @@ def test_resume_isolates_inherited_git(binary, oracle, tmp_path, monkeypatch, ro
     actual, _ = S["capture"](home, case, setup, route, binary)
     assert D["first_difference"](case["expected"], actual) is None
     assert {key: os.environ[key] for key in hostile} == hostile
+
+
+@pytest.mark.parametrize("route", ["binary", "module"])
+@pytest.mark.parametrize(
+    "scenario",
+    ["relative-slash", "absolute-slash", "parent-slash", "uncaught-exit-ok",
+     "uncaught-exit-fail", "caught-exit-fail"],
+)
+def test_resume_read_path_and_writer_teardown(binary, oracle, tmp_path, route, scenario):  # noqa: F811
+    reference, database = oracle
+    observations = {}
+    for implementation in ["reference", route]:
+        home = (tmp_path / implementation).resolve()
+        case = {"name": "v2"}
+        setup = S["seed"](
+            home, case, reference, database, None if implementation == "reference" else binary
+        )
+        if scenario.endswith("slash"):
+            spelling = {
+                "relative-slash": "./brief.json/",
+                "absolute-slash": str(home) + "//./brief.json/",
+                "parent-slash": "tools/..//./brief.json/",
+            }[scenario]
+            with sqlite3.connect(home / "tasks/jobs.db") as db:
+                raw = db.execute("SELECT dispatch_options_json FROM jobs").fetchone()[0]
+                saved = json.loads(raw)
+                saved["dispatch_brief"] = spelling
+                db.execute("UPDATE jobs SET dispatch_options_json=?", (json.dumps(saved),))
+        else:
+            kind = "ValueError" if scenario.startswith("caught") else "RuntimeError"
+            exit_body = (
+                'raise RuntimeError("exit failed")'
+                if scenario.endswith("fail") else "return False"
+            )
+            with (home / "tools/mir_executor/local.py").open("a") as stream:
+                stream.write(
+                    '\nimport sys\n'
+                    f'def pre_execute(*args):\n    raise {kind}("pre failed")\n'
+                    'class ResumeWriter:\n'
+                    '    def __enter__(self):\n        return self\n'
+                    '    def __exit__(self, *args):\n'
+                    '        print("EXIT-MARKER", file=sys.stderr, flush=True)\n'
+                    f'        {exit_body}\n'
+                    'def writer_scope(*args):\n    return ResumeWriter()\n'
+                )
+        actual, _ = S["capture"](home, case, setup, implementation, binary)
+        # Keep flushed diagnostics/markers as well as the final exception; the
+        # frozen capture helper alone retains only the traceback's final line.
+        stderr = (home.parent / (home.name + ".stderr")).read_bytes()
+        if b"Traceback (most recent call last):" in stderr:
+            prefix = stderr.split(b"Traceback (most recent call last):", 1)[0]
+            stderr = prefix + stderr.splitlines()[-1] + b"\n"
+        observations[implementation] = (actual["exit"], actual["stdout_hex"], stderr)
+    expected = observations["reference"]
+    if scenario.endswith("slash"):
+        assert expected[0] == 0
+    else:
+        error = (
+            b"RuntimeError: exit failed\n"
+            if scenario.endswith("fail") else b"RuntimeError: pre failed\n"
+        )
+        caught = (
+            b"[mir_executor] resume root error: pre failed\n"
+            if scenario.startswith("caught") else b""
+        )
+        assert expected[0] == 1
+        assert expected[2] == caught + b"EXIT-MARKER\n" + error
+    assert observations[route] == expected

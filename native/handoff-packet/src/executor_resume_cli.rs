@@ -220,10 +220,13 @@ fn pre_execute_refusal(has_options: bool, kind: &str, message: &str) -> String {
     if has_options && CAUGHT.contains(&kind) {
         format!("resume root error: {message}")
     } else {
-        format!("{kind}: {message}")
+        format!("\0resume_uncaught:{kind}: {message}")
     }
 }
 fn prepare_error(error: crate::executor_dispatch::Error, row: &Value) -> String {
+    if let crate::executor_dispatch::Error::Hook { kind, message } = &error {
+        return format!("\0resume_uncaught:{kind}: {message}");
+    }
     let timeout = match &error {
         crate::executor_dispatch::Error::Local(crate::executor_local::Error::Io(_)) => {
             // E10 reports brief reads and local configuration reads through the
@@ -247,6 +250,13 @@ fn prepare_error(error: crate::executor_dispatch::Error, row: &Value) -> String 
         if timeout { "timeout" } else { "integrity" }
     )
 }
+fn report_error(error: &str) {
+    if let Some(error) = error.strip_prefix("\0resume_uncaught:") {
+        let _ = execute::emit(&format!("{error}\n"), true);
+    } else {
+        execute::diagnostic(error);
+    }
+}
 struct Lease {
     bridge: Option<Box<CommandHooks>>,
     handle: Option<String>,
@@ -264,7 +274,7 @@ impl Lease {
                 .map_err(|e| e.to_string())?;
             if reply["ok"] != true {
                 return Err(format!(
-                    "{}: {}",
+                    "\0resume_uncaught:{}: {}",
                     reply["error"]["type"].as_str().unwrap_or("Error"),
                     reply["error"]["message"].as_str().unwrap_or("")
                 ));
@@ -434,133 +444,145 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             bridge,
             handle: None,
         };
-        execute::line(&format!(
-            "[RESUME] job_id={} allow_harness_self_modify={}",
-            cli.job,
-            if row["allow_harness_self_modify"] == true {
-                "True"
-            } else {
-                "False"
-            }
-        ));
-        if let Some(bridge) = lease.bridge.as_mut() {
-            let reply = bridge
-                .call("writer_scope", vec![execute::path(&cli.root)], json!({}))
-                .map_err(|e| e.to_string())?;
-            if reply["ok"] != true {
-                return Err(format!(
-                    "{}: {}",
-                    reply["error"]["type"].as_str().unwrap_or("Error"),
-                    reply["error"]["message"].as_str().unwrap_or("")
-                ));
-            }
-            if let Some(handle) = reply["handle"].as_str() {
-                lease.handle = Some(handle.to_owned());
+        let result = (|| {
+            execute::line(&format!(
+                "[RESUME] job_id={} allow_harness_self_modify={}",
+                cli.job,
+                if row["allow_harness_self_modify"] == true {
+                    "True"
+                } else {
+                    "False"
+                }
+            ));
+            if let Some(bridge) = lease.bridge.as_mut() {
                 let reply = bridge
-                    .call(
-                        "writer_scope.enter",
-                        vec![Value::Null],
-                        json!({"handles":{"0":handle}}),
-                    )
+                    .call("writer_scope", vec![execute::path(&cli.root)], json!({}))
                     .map_err(|e| e.to_string())?;
                 if reply["ok"] != true {
                     return Err(format!(
-                        "{}: {}",
+                        "\0resume_uncaught:{}: {}",
                         reply["error"]["type"].as_str().unwrap_or("Error"),
                         reply["error"]["message"].as_str().unwrap_or("")
                     ));
                 }
-            }
-        }
-        // Python resumes a job with saved dispatch options through _prepare_execute_root,
-        // which reports OSError, TypeError and ValueError as a resume root error.
-        let has_options = !row["dispatch_options_json"].is_null();
-        if let Some(policy) = native_policy.filter(|p| p.covered_hooks().contains(&"pre_execute")) {
-            policy
-                .pre_execute(&cli.root, cwd, &cli.root, &mut prepared.args, &environment)
-                .map_err(|error| {
-                    if let Some(stderr) = error.stderr {
-                        let _ = execute::emit(&stderr, true);
+                if let Some(handle) = reply["handle"].as_str() {
+                    let reply = bridge
+                        .call(
+                            "writer_scope.enter",
+                            vec![Value::Null],
+                            json!({"handles":{"0":handle}}),
+                        )
+                        .map_err(|e| e.to_string())?;
+                    if reply["ok"] != true {
+                        return Err(format!(
+                            "\0resume_uncaught:{}: {}",
+                            reply["error"]["type"].as_str().unwrap_or("Error"),
+                            reply["error"]["message"].as_str().unwrap_or("")
+                        ));
                     }
-                    pre_execute_refusal(has_options, &error.kind, &error.message)
-                })?;
-        } else if let Some(bridge) = lease.bridge.as_mut() {
-            let reply = bridge
-                .call(
-                    "pre_execute",
-                    vec![execute::namespace(&prepared.args), execute::path(&cli.root)],
-                    json!({}),
-                )
-                .map_err(|e| e.to_string())?;
-            if reply["ok"] != true {
-                return Err(pre_execute_refusal(
-                    has_options,
-                    reply["error"]["type"].as_str().unwrap_or("Error"),
-                    reply["error"]["message"].as_str().unwrap_or(""),
-                ));
+                    lease.handle = Some(handle.to_owned());
+                }
             }
-            prepared.args = reply["args"][0]["value"].clone();
-            if !prepared.args.is_object() {
-                return Err("missing post-hook namespace".into());
+            // Python resumes a job with saved dispatch options through _prepare_execute_root,
+            // which reports OSError, TypeError and ValueError as a resume root error.
+            let has_options = !row["dispatch_options_json"].is_null();
+            if let Some(policy) =
+                native_policy.filter(|p| p.covered_hooks().contains(&"pre_execute"))
+            {
+                policy
+                    .pre_execute(&cli.root, cwd, &cli.root, &mut prepared.args, &environment)
+                    .map_err(|error| {
+                        if let Some(stderr) = error.stderr {
+                            let _ = execute::emit(&stderr, true);
+                        }
+                        pre_execute_refusal(has_options, &error.kind, &error.message)
+                    })?;
+            } else if let Some(bridge) = lease.bridge.as_mut() {
+                let reply = bridge
+                    .call(
+                        "pre_execute",
+                        vec![execute::namespace(&prepared.args), execute::path(&cli.root)],
+                        json!({}),
+                    )
+                    .map_err(|e| e.to_string())?;
+                if reply["ok"] != true {
+                    return Err(pre_execute_refusal(
+                        has_options,
+                        reply["error"]["type"].as_str().unwrap_or("Error"),
+                        reply["error"]["message"].as_str().unwrap_or(""),
+                    ));
+                }
+                prepared.args = reply["args"][0]["value"].clone();
+                if !prepared.args.is_object() {
+                    return Err("missing post-hook namespace".into());
+                }
             }
-        }
-        if let Some(bridge) = lease.bridge.as_mut() {
-            let argv = prepared.codex_args.as_array().map(|v| {
-                v.iter()
-                    .filter_map(Value::as_str)
-                    .map(str::to_owned)
-                    .collect()
-            });
-            bridge
-                .bind_instruction(&cli.root, cwd, &prepared.args, argv)
-                .map_err(|e| pre_execute_refusal(has_options, &e.kind, &e.message))?;
-        }
-        if fs::canonicalize(execute::value_path(&prepared.args["repo_root"], cwd))
-            .ok()
-            .map(crate::supply::plain)
-            .as_ref()
-            != Some(&cli.root)
+            if let Some(bridge) = lease.bridge.as_mut() {
+                let argv = prepared.codex_args.as_array().map(|v| {
+                    v.iter()
+                        .filter_map(Value::as_str)
+                        .map(str::to_owned)
+                        .collect()
+                });
+                bridge
+                    .bind_instruction(&cli.root, cwd, &prepared.args, argv)
+                    .map_err(|e| pre_execute_refusal(has_options, &e.kind, &e.message))?;
+            }
+            if fs::canonicalize(execute::value_path(&prepared.args["repo_root"], cwd))
+                .ok()
+                .map(crate::supply::plain)
+                .as_ref()
+                != Some(&cli.root)
+            {
+                return Err("resume root changed; refusing resume".into());
+            }
+            if prepared.args["execution_backend"]
+                .as_str()
+                .is_some_and(|s| !matches!(s, "codex" | "claude"))
+            {
+                return Err("pre_execute selected an unsupported native execution path".into());
+            }
+            let codex_args = prepared
+                .codex_args
+                .as_array()
+                .ok_or("stored codex_args must be a list")?
+                .iter()
+                .map(|v| {
+                    v.as_str()
+                        .map(str::to_owned)
+                        .ok_or("stored codex_args must contain strings".to_owned())
+                })
+                .collect::<Result<Vec<_>>>()?;
+            execute::dispatch(
+                &cli.root,
+                &prepared.args,
+                Some(codex_args),
+                cwd,
+                &environment,
+                &mut lease.bridge,
+            )
+        })();
+        // Caught root errors are printed inside writer_scope. Uncaught errors
+        // propagate after exit, and an exit failure replaces the pending error.
+        if let Err(error) = &result
+            && !error.starts_with("\0resume_uncaught:")
         {
-            return Err("resume root changed; refusing resume".into());
+            report_error(error);
         }
-        if prepared.args["execution_backend"]
-            .as_str()
-            .is_some_and(|s| !matches!(s, "codex" | "claude"))
-        {
-            return Err("pre_execute selected an unsupported native execution path".into());
-        }
-        let codex_args = prepared
-            .codex_args
-            .as_array()
-            .ok_or("stored codex_args must be a list")?
-            .iter()
-            .map(|v| {
-                v.as_str()
-                    .map(str::to_owned)
-                    .ok_or("stored codex_args must contain strings".to_owned())
-            })
-            .collect::<Result<Vec<_>>>()?;
-        let result = execute::dispatch(
-            &cli.root,
-            &prepared.args,
-            Some(codex_args),
-            cwd,
-            &environment,
-            &mut lease.bridge,
-        );
-        let exit = lease.exit(if matches!(result, Ok(0)) {
+        lease.exit(if matches!(result, Ok(0)) {
             TeardownOutcome::Clean
         } else {
             TeardownOutcome::Unclean
-        });
-        let code = result?;
-        exit?;
-        Ok(code)
+        })?;
+        match result {
+            Err(error) if error.starts_with("\0resume_uncaught:") => Err(error),
+            result => Ok(result.unwrap_or(1)),
+        }
     })();
     match result {
         Ok(code) => code,
         Err(error) => {
-            execute::diagnostic(&error);
+            report_error(&error);
             1
         }
     }
@@ -578,11 +600,11 @@ mod tests {
         );
         assert_eq!(
             pre_execute_refusal(true, "RuntimeError", "other"),
-            "RuntimeError: other"
+            "\0resume_uncaught:RuntimeError: other"
         );
         assert_eq!(
             pre_execute_refusal(false, "ValueError", "owned"),
-            "ValueError: owned"
+            "\0resume_uncaught:ValueError: owned"
         );
     }
 }
