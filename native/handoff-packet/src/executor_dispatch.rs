@@ -286,7 +286,17 @@ fn worktree_value(w: &DispatchWorktree) -> Value {
     json!({"dispatch_id":w.dispatch_id,"main_repo_root":w.main_repo_root,"path":w.path,"branch":w.branch,"base_commit":w.base_commit,"brief_path":w.brief_path,"status_path":w.status_path,"result_path":w.result_path})
 }
 fn worktree_wire(w: &DispatchWorktree) -> Value {
-    json!({"$type":"dispatch_worktree","value":worktree_value(w)})
+    let mut value = worktree_value(w);
+    for (name, path) in [
+        ("main_repo_root", &w.main_repo_root),
+        ("path", &w.path),
+        ("brief_path", &w.brief_path),
+        ("status_path", &w.status_path),
+        ("result_path", &w.result_path),
+    ] {
+        value[name] = path_value(path);
+    }
+    json!({"$type":"dispatch_worktree","value":value})
 }
 fn hook(
     c: &mut DispatchContext<'_>,
@@ -297,7 +307,12 @@ fn hook(
     let Some(b) = c.bridge.as_deref_mut() else {
         return Ok(json!({"ok":true,"result":null,"handle":null}));
     };
-    let reply = b.call(name, args, options).map_err(Error::Bridge)?;
+    let reply = if name == "after_provider_call" {
+        b.dispatch_provider_call(args, options)
+    } else {
+        b.call(name, args, options)
+    }
+    .map_err(Error::Bridge)?;
     if reply["ok"] != true {
         return Err(Error::Hook {
             kind: reply["error"]["type"].as_str().unwrap_or("Error").into(),
@@ -328,13 +343,13 @@ fn state(
     );
     Ok(())
 }
-fn append(p: &Path, v: Value) -> Result<()> {
+fn append(p: &executor_worktree::DispatchPath, v: Value) -> Result<()> {
     let text = crate::executor_ledger_json::render(
         r#"{"kind":null,"dispatch_id":null,"attempt":null,"exit_code":null,"error_sig":null,"lane_unavailable":null,"retryable":null,"reason":null,"consecutive_failures":null,"threshold":null,"attempts":null}"#,
         &v,
     ).map_err(Error::Invalid)?;
     let text = executor_worktree::compact_json(&text).map_err(Error::Worktree)?;
-    executor_worktree::secure_write(p, &text, true).map_err(Error::Worktree)
+    executor_worktree::secure_write_contained(p, &text, true).map_err(Error::Worktree)
 }
 fn outcome(
     w: &DispatchWorktree,
@@ -495,7 +510,7 @@ fn attempts<F>(
 where
     F: FnMut(&DispatchWorktree, usize) -> Result<CodexAttempt>,
 {
-    let w = if let Some(w) = &c.worktree {
+    let mut w = if let Some(w) = &c.worktree {
         w.clone()
     } else {
         let w = executor_worktree::create_dispatch_worktree(
@@ -509,17 +524,26 @@ where
         c.worktree = Some(w.clone());
         w
     };
+    // Keep the same selected container through hooks, retries and finalization.
+    let artifact_root = o
+        .artifacts_root
+        .as_ref()
+        .map(|root| w.select_artifact_root(root))
+        .transpose()
+        .map_err(Error::Worktree)?;
+    c.worktree = Some(w.clone());
+    let events = if let Some(path) = &o.dispatch_events_path {
+        executor_worktree::DispatchPath::file(path).map_err(Error::Worktree)?
+    } else if let Some(root) = artifact_root {
+        root.join(&o.dispatch_id).join("dispatch-events.jsonl")
+    } else {
+        w.tree().join(".mir-dispatch/dispatch-events.jsonl")
+    };
     event(
         c,
         "dispatch_state",
         json!({"dispatch_id":o.dispatch_id,"state":"started","evidence":{}}),
     );
-    let events = o.dispatch_events_path.clone().unwrap_or_else(|| {
-        o.artifacts_root.as_ref().map_or_else(
-            || w.path.join(".mir-dispatch/dispatch-events.jsonl"),
-            |p| p.join(&o.dispatch_id).join("dispatch-events.jsonl"),
-        )
-    });
     let budget = usize::try_from(o.max_codex_attempts)
         .map_err(|_| Error::Invalid("attempt budget exceeds platform capacity".into()))?;
     let mut last = CodexAttempt::default();

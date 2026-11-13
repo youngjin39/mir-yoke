@@ -148,24 +148,42 @@ pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
 }
 impl Parent {
     pub(crate) fn open_file(&self) -> io::Result<File> {
+        self.open(false, false)
+    }
+
+    pub(crate) fn open_private(&self, append: bool) -> io::Result<File> {
+        self.open(true, append)
+    }
+
+    fn open(&self, write: bool, append: bool) -> io::Result<File> {
         #[cfg(unix)]
         {
             let name = c_name(&self.name)?;
+            let access = if write {
+                libc::O_WRONLY | libc::O_CREAT | if append { libc::O_APPEND } else { 0 }
+            } else {
+                libc::O_RDONLY
+            };
             // SAFETY: live pinned parent and valid basename. NOFOLLOW rejects
             // a final link; NONBLOCK lets callers reject a FIFO without waiting.
+            // Truncation follows descriptor validation and private permissions.
             opened(unsafe {
                 libc::openat(
                     self.directory.as_raw_fd(),
                     name.as_ptr(),
-                    libc::O_RDONLY | libc::O_NOFOLLOW | libc::O_NONBLOCK | libc::O_CLOEXEC,
+                    access | libc::O_NOFOLLOW | libc::O_NONBLOCK | libc::O_CLOEXEC,
+                    0o600 as libc::c_uint,
                 )
             })
         }
         #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        {
+            let _ = (write, append);
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "descriptor-relative adoption requires Unix",
+            ))
+        }
     }
 
     pub(crate) fn directory_empty(&self) -> io::Result<bool> {

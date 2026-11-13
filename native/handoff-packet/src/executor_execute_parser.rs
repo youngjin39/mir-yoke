@@ -299,6 +299,12 @@ pub(crate) fn dispatch(raw: &[OsString]) -> bool {
     false
 }
 pub(crate) fn parse(raw_argv: &[OsString], cwd: &Path) -> Parsed {
+    parse_inner(raw_argv, cwd, false)
+}
+pub(crate) fn parse_known(raw_argv: &[OsString], cwd: &Path) -> Parsed {
+    parse_inner(raw_argv, cwd, true)
+}
+fn parse_inner(raw_argv: &[OsString], cwd: &Path, known: bool) -> Parsed {
     let words = raw_argv
         .iter()
         .map(|arg| executor_text::os_text(arg))
@@ -608,6 +614,9 @@ pub(crate) fn parse(raw_argv: &[OsString], cwd: &Path) -> Parsed {
             args[dest] = value;
         }
         index += 1;
+    }
+    if known {
+        return Parsed::Args(args);
     }
     if global_help {
         if let Some(error) = help_error {

@@ -307,6 +307,10 @@ fn admit_inner(
         }
         args
     };
+    let parse_pending = args["__native_parse_pending"] == true;
+    if let Some(values) = args.as_object_mut() {
+        values.remove("__native_parse_pending");
+    }
     let root_arg = from_path_value(&args["repo_root"]).unwrap_or_else(|| request.cwd.to_owned());
     let mut root = resolved(&root_arg, request.cwd)?;
     let home = resolved(request.invoking_home, request.cwd)?;
@@ -349,7 +353,12 @@ fn admit_inner(
             }
         }
     }
-    let mut bridge = match CommandHooks::start_in(bridge_config(&request, &root), request.cwd) {
+    let start = if parse_pending {
+        CommandHooks::start_with_parser
+    } else {
+        CommandHooks::start_in
+    };
+    let mut bridge = match start(bridge_config(&request, &root), request.cwd) {
         Ok(bridge) => bridge,
         Err(error) if command_scope => return Ok(refusal(error.to_string())),
         Err(_) => return Ok(decline("target bridge failed before hello")),
@@ -368,14 +377,88 @@ fn admit_inner(
             }
         }
     }
-    if bridge
+    if command_scope && parse_pending {
+        let dynamic = policy.is_none()
+            && bridge
+                .as_ref()
+                .is_some_and(|b| b.hello()["register_execute_options"] == true);
+        if dynamic {
+            if let Some(local) = bridge.as_mut() {
+                let reply = local.call(
+                    "bridge.parse_execute",
+                    vec![
+                        json!(request.argv),
+                        path_value(&root).ok_or(BridgeError::Protocol("invalid parser root"))?,
+                    ],
+                    json!({}),
+                )?;
+                let output = &reply["result"];
+                for (key, error) in [("stdout", false), ("stderr", true)] {
+                    crate::executor_execute::emit(output[key].as_str().unwrap_or(""), error)?;
+                }
+                if reply["result"]["args"].is_object() {
+                    let points = args["__native_arg_codepoints"].clone();
+                    args = reply["result"]["args"].clone();
+                    if !points.is_null() {
+                        args["__native_arg_codepoints"] = points;
+                    }
+                } else {
+                    let output = &reply["result"];
+                    return Ok(Admission::Refused {
+                        code: output["code"].as_i64().unwrap_or(1) as i32,
+                        stderr: vec![],
+                    });
+                }
+            }
+        } else {
+            let raw = request.argv.iter().map(OsString::from).collect::<Vec<_>>();
+            match crate::executor_execute_parser::parse(&raw, request.cwd) {
+                crate::executor_execute_parser::Parsed::Args(_) => {}
+                crate::executor_execute_parser::Parsed::Output {
+                    text, code, error, ..
+                } => {
+                    if !error {
+                        let _ = crate::executor_execute::emit(&text, false);
+                    }
+                    return Ok(Admission::Refused {
+                        code,
+                        stderr: if error { text.into_bytes() } else { vec![] },
+                    });
+                }
+            }
+        }
+        let selected = resolved(
+            &from_path_value(&args["repo_root"]).unwrap_or_else(|| request.cwd.to_owned()),
+            request.cwd,
+        )?;
+        if selected != root {
+            let declared = match fs::read(selected.join("config/mir-executor.local.json")) {
+                Ok(bytes) => policy_declared(&bytes),
+                Err(e) if e.kind() == io::ErrorKind::NotFound => false,
+                Err(e) => return Err(e.into()),
+            };
+            if declared {
+                return Ok(refusal(format!(
+                    "{} declares native_policy; the native executor is required",
+                    selected.display()
+                )));
+            }
+        }
+        if let Some(refused) =
+            authorize(&request, &home, &selected, &args, &mut home_bridge, false)?
+        {
+            return Ok(refused);
+        }
+        if selected != root {
+            root = selected;
+            bridge = CommandHooks::start_in(bridge_config(&request, &root), request.cwd)?;
+        }
+    } else if bridge
         .as_ref()
         .is_some_and(|b| b.hello()["register_execute_options"] == true)
     {
         if command_scope {
-            return Ok(refusal(
-                "local import dynamically registered execute options; native ownership is final, invoke Python explicitly".into(),
-            ));
+            return Ok(refusal("local import dynamically registered execute options; native ownership is final, invoke Python explicitly".into()));
         }
         return Ok(decline("target registers execute options"));
     }
@@ -404,11 +487,20 @@ fn admit_inner(
                 json!({"handles":{"0":handle}}),
             )?;
             if entered["ok"] == false {
-                return Ok(refusal(format!(
-                    "{}: {}",
-                    entered["error"]["type"].as_str().unwrap_or(""),
-                    entered["error"]["message"].as_str().unwrap_or("")
-                )));
+                return Ok(Admission::Refused {
+                    code: 1,
+                    stderr: format!(
+                        "{}{}: {}\n",
+                        if handle != "native-writer" && entered["error"]["type"] == "ValueError" {
+                            ""
+                        } else {
+                            "[mir_executor] "
+                        },
+                        entered["error"]["type"].as_str().unwrap_or(""),
+                        entered["error"]["message"].as_str().unwrap_or("")
+                    )
+                    .into_bytes(),
+                });
             }
         }
     }
@@ -697,6 +789,14 @@ pub fn authorize_command(
 // Never import Python to decide which implementation owns admission. Reject
 // references conservatively: aliases and conditional exports must not bypass
 // duplicate ownership by avoiding a literal function definition.
+fn policy_declared(bytes: &[u8]) -> bool {
+    match serde_json::from_slice::<Value>(bytes) {
+        Ok(value) => value.get("native_policy").is_some(),
+        Err(_) => bytes
+            .windows(b"native_policy".len())
+            .any(|w| w == b"native_policy"),
+    }
+}
 pub(crate) fn native_policy(root: &Path) -> Result<Option<NativePolicy>, String> {
     crate::executor_local::python_local_hooks_disabled(root)?;
     let bytes = match fs::read(root.join("config").join("mir-executor.local.json")) {
@@ -713,12 +813,7 @@ pub(crate) fn native_policy(root: &Path) -> Result<Option<NativePolicy>, String>
     };
     // Only the new section is eager. Legacy malformed data must still fail at
     // its original lazy read point, after any preceding repository hooks.
-    let declared = match serde_json::from_slice::<Value>(&bytes) {
-        Ok(value) => value.get("native_policy").is_some(),
-        Err(_) => bytes
-            .windows(b"native_policy".len())
-            .any(|w| w == b"native_policy"),
-    };
+    let declared = policy_declared(&bytes);
     if !declared {
         return Ok(None);
     }

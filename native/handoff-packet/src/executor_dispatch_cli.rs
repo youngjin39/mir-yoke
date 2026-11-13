@@ -39,13 +39,21 @@ fn brief_call(
         .call(name, args, json!({"handles":handles}))
         .map_err(|e| e.to_string())?;
     if reply["ok"] != true {
+        let kind = reply["error"]["type"].as_str().unwrap_or("Error");
+        let message = reply["error"]["message"].as_str().unwrap_or("");
+        let uncaught = name == "render_brief" && kind == "RuntimeError";
         return Err(format!(
-            "{}: {}",
-            reply["error"]["type"].as_str().unwrap_or("Error"),
-            reply["error"]["message"].as_str().unwrap_or("")
+            "{}{kind}: {message}",
+            if uncaught { "\0uncaught:" } else { "" }
         ));
     }
     Ok(reply)
+}
+fn read_brief(path: &Path) -> Result<crate::python_json::Value> {
+    let bytes = fs::read(path).map_err(|e| crate::executor_text::io_error(e, path))?;
+    let text = String::from_utf8(bytes).map_err(|e| e.to_string())?;
+    crate::python_json::parse(&text.replace("\r\n", "\n").replace('\r', "\n"))
+        .map_err(|e| e.to_string())
 }
 fn resolved(value: &Value, cwd: &Path) -> Result<PathBuf> {
     let p = value_path(value, cwd);
@@ -231,7 +239,7 @@ pub fn dispatch(
     let prepared = (|| -> Result<(String, String, Option<Value>)> {
         let mut validated = if let Some(p) = &brief {
             let cache = &args["__native_brief"];
-            let bytes = fs::read(p).map_err(|e| e.to_string())?;
+            let bytes = fs::read(p).map_err(|e| crate::executor_text::io_error(e, p))?;
             if cache["path"] == json!(p) && cache["sha256"] == crate::digest::sha256(&bytes) {
                 json!({"result":cache["value"],"handle":null})
             } else {
@@ -249,8 +257,7 @@ pub fn dispatch(
         if text.is_empty()
             && let Some(p) = &brief
         {
-            let data: Value = serde_json::from_slice(&fs::read(p).map_err(|e| e.to_string())?)
-                .map_err(|e| e.to_string())?;
+            let data = read_brief(p)?;
             text = data["expanded_goal"]
                 .as_str()
                 .ok_or("DispatchBrief expanded_goal must be a string")?
@@ -308,9 +315,15 @@ pub fn dispatch(
         if target.is_null()
             && let Some(p) = &brief
         {
-            let data: Value = serde_json::from_slice(&fs::read(p).map_err(|e| e.to_string())?)
-                .map_err(|e| e.to_string())?;
-            target = data["target_agent"].clone();
+            let data = read_brief(p)?;
+            target = match &data["target_agent"] {
+                crate::python_json::Value::Null => Value::Null,
+                value => json!(
+                    value
+                        .as_str()
+                        .ok_or("DispatchBrief target_agent must be a non-empty string")?
+                ),
+            };
         }
         let agent = if target.is_null() {
             None
@@ -369,6 +382,9 @@ pub fn dispatch(
     let (text, brief_text, agent) = match prepared {
         Ok(v) => v,
         Err(e) => {
+            if e.starts_with("\0uncaught:") {
+                return Err(e);
+            }
             diagnostic(&format!("DispatchBrief error: {}", strip_class(&e)));
             return Ok(1);
         }
@@ -398,9 +414,15 @@ pub fn dispatch(
         .as_str()
         .map(str::to_owned)
         .unwrap_or_else(|| format!("dispatch-{id}"));
-    let prior = executor_dispatch::count_consecutive_codex_failures(&db, &change)
-        .map_err(|e| e.to_string())?;
-    let registry = JobRegistry::open(&db).map_err(|e| format!("registry error: {e:?}"))?;
+    let prior = executor_dispatch::count_consecutive_codex_failures(&db, &change).map_err(|e| {
+        let text = match e {
+            executor_dispatch::Error::Registry(e) => crate::executor_text::registry_error(e, &db),
+            e => e.to_string(),
+        };
+        format!("\0uncaught:{text}")
+    })?;
+    let registry =
+        JobRegistry::open(&db).map_err(|e| crate::executor_text::registry_error(e, &db))?;
     let previous = registry
         .connection()
         .query_row(
@@ -478,13 +500,21 @@ pub fn dispatch(
             )?;
             registry
                 .mark_resumed(&id, &utc_now())
-                .map_err(|e| format!("{e:?}"))?;
+                .map_err(|e| crate::executor_text::registry_error(e, &db))?;
         } else {
-            pending["identity_json"] = hook(
+            let identity = brief_call(
                 bridge,
                 "job_identity",
                 vec![namespace(args), path(root), json!(text), json!(model)],
+                json!({}),
             )?;
+            pending["identity_json"] = identity["result"].clone();
+            if !identity["handle"].is_null() {
+                return Err(format!(
+                    "\0uncaught:{}",
+                    executor_registry::unsupported_binding("identity_json", "object")
+                ));
+            }
             let mut options = json!({});
             for key in [
                 "allow_paths",
@@ -514,9 +544,26 @@ pub fn dispatch(
             } else {
                 json!(resolved(&args["artifacts_dir"], cwd)?)
             };
-            pending["dispatch_options_json"] =
-                json!(executor_registry::json(&options, true).map_err(|e| format!("{e:?}"))?);
-            registry.insert(&pending).map_err(|e| format!("{e:?}"))?;
+            let mut encoded = executor_registry::json(&options, true)
+                .map_err(|e| crate::executor_text::registry_error(e, &db))?;
+            for key in ["model", "reasoning_effort"] {
+                if let Some(points) = crate::executor_execute::argument_codepoints(args, key) {
+                    let before = executor_registry::json(&options[key], true);
+                    let after = executor_registry::quoted_points(&points);
+                    let (before, after) = before
+                        .and_then(|a| after.map(|b| (a, b)))
+                        .map_err(|e| crate::executor_text::registry_error(e, &db))?;
+                    encoded = encoded.replacen(
+                        &format!("\"{key}\": {before}"),
+                        &format!("\"{key}\": {after}"),
+                        1,
+                    );
+                }
+            }
+            pending["dispatch_options_json"] = json!(encoded);
+            registry
+                .insert(&pending)
+                .map_err(|e| crate::executor_text::registry_error(e, &db))?;
             emit_event(
                 bridge,
                 "job_inserted",
@@ -526,10 +573,17 @@ pub fn dispatch(
         }
         registry
             .update_ai_run_metadata(&id, &metadata)
-            .map_err(|e| format!("{e:?}"))?;
+            .map_err(|e| crate::executor_text::registry_error(e, &db))?;
+        for key in ["model", "reasoning_effort"] {
+            if let Some(points) = crate::executor_execute::argument_codepoints(args, key)
+                && let Some(error) = crate::executor_execute::utf8_error(&points)
+            {
+                return Err(error);
+            }
+        }
         registry
             .update_route_metadata(&id, &json!(backend), &json!(model), &json!(effort))
-            .map_err(|e| format!("{e:?}"))?;
+            .map_err(|e| crate::executor_text::registry_error(e, &db))?;
         if backend == "codex"
             && (model.is_none_or(|m| m.trim().is_empty())
                 || effort.is_none_or(|e| e.trim().is_empty()))
@@ -622,7 +676,35 @@ pub fn dispatch(
             }
             .map_err(|e| executor_dispatch::Error::Runner(e.to_string()))
         })
-        .map_err(|e| format!("{}: {e}", e.kind()));
+        .map_err(|e| {
+            // An unborn admitted root fails before a worktree exists. Diagnose
+            // it after the original failure so brief/cap refusals keep precedence.
+            if let executor_dispatch::Error::Worktree(crate::executor_worktree::Error::Git {
+                code,
+                ..
+            }) = &e
+                && Command::new("git")
+                    .arg("-C")
+                    .arg(root)
+                    .args(["rev-parse", "HEAD"])
+                    .output()
+                    .is_ok_and(|out| !out.status.success())
+            {
+                let command = vec![
+                    "git".into(),
+                    "-C".into(),
+                    root.display().to_string(),
+                    "rev-parse".into(),
+                    "HEAD".into(),
+                ];
+                return format!(
+                    "CalledProcessError: Command '{}' returned non-zero exit status {}.",
+                    list_repr(&command),
+                    code.unwrap_or(1)
+                );
+            }
+            format!("{}: {e}", e.kind())
+        });
         errors.append(&mut context.event_errors);
         drop(context);
         let outcome = outcome?;
@@ -657,7 +739,7 @@ pub fn dispatch(
                             .unwrap_or(attempt);
                         let replacement = hook(
                             bridge,
-                            "after_provider_call",
+                            "bridge.dispatch_provider_call",
                             vec![
                                 json!({"$type":"codex_attempt","value":attempt.to_value()}),
                                 meta.clone(),
@@ -749,7 +831,7 @@ pub fn dispatch(
         metadata["mcp_protocol"] = json!(outcome.mcp_protocol);
         registry
             .update_ai_run_metadata(&id, &metadata)
-            .map_err(|e| format!("{e:?}"))?;
+            .map_err(|e| crate::executor_text::registry_error(e, &db))?;
         let artifact = args["artifacts_dir"]["value"]
             .as_str()
             .or_else(|| args["artifacts_dir"].as_str())
@@ -789,7 +871,7 @@ pub fn dispatch(
             .chain(errors.iter().cloned())
             .collect::<Vec<_>>()
             .join("; ");
-        registry.update_status(&id,if merged{"completed"}else{"failed"},&json!({"exit_code":code,"stdout":format!("artifacts={}",artifact.display()),"stderr":if stderr.is_empty(){None}else{Some(stderr)},"completed_at":utc_now()})).map_err(|e|format!("{e:?}"))?;
+        registry.update_status(&id,if merged{"completed"}else{"failed"},&json!({"exit_code":code,"stdout":format!("artifacts={}",artifact.display()),"stderr":if stderr.is_empty(){None}else{Some(stderr)},"completed_at":utc_now()})).map_err(|e|crate::executor_text::registry_error(e, &db))?;
         Ok((outcome, final_result, code))
     })();
     match work {
@@ -815,6 +897,9 @@ pub fn dispatch(
             Ok(code)
         }
         Err(e) => {
+            if e.starts_with("\0uncaught:") {
+                return Err(e);
+            }
             let exists = registry
                 .connection()
                 .query_row("SELECT 1 FROM jobs WHERE job_id=?", [&id], |r| {
@@ -822,7 +907,9 @@ pub fn dispatch(
                 })
                 .is_ok();
             if !exists {
-                registry.insert(&pending).map_err(|e| format!("{e:?}"))?;
+                registry
+                    .insert(&pending)
+                    .map_err(|e| crate::executor_text::registry_error(e, &db))?;
             }
             let (kind, message) = e
                 .split_once(": ")
@@ -831,7 +918,7 @@ pub fn dispatch(
             emit_event(
                 bridge,
                 "dispatch_failed",
-                json!({"job_id":id,"dispatch_id":dispatch_id,"error_type":kind,"message":message}),
+                json!({"job_id":id,"dispatch_id":dispatch_id,"error_type":kind.strip_prefix("sqlite3.").unwrap_or(kind),"message":message}),
                 Some(&mut errors),
             )?;
             let stderr = std::iter::once(message.to_owned())
@@ -844,7 +931,7 @@ pub fn dispatch(
                     "failed",
                     &json!({"exit_code":1,"stderr":stderr,"completed_at":utc_now()}),
                 )
-                .map_err(|e| format!("{e:?}"))?;
+                .map_err(|e| crate::executor_text::registry_error(e, &db))?;
             diagnostic(&format!("dispatch failed: {message}"));
             Ok(1)
         }

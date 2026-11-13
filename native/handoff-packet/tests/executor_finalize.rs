@@ -472,3 +472,665 @@ fn run_case(case: &Value, source: &Value) {
         );
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn refused_commit_retains_requested_worktree_alias() {
+    for nested in [false, true] {
+        refused_commit_alias_case(nested);
+    }
+}
+
+#[cfg(unix)]
+fn refused_commit_alias_case(nested: bool) {
+    use std::os::unix::{fs::PermissionsExt, fs::symlink};
+    let fixture = Fixture::new("commit-alias");
+    let repo = fixture.0.join("repo");
+    seed(&repo, &json!({"pkg/a.py":"a = 1\n"}));
+    let trees = if nested {
+        repo.join("trees")
+    } else {
+        fixture.0.join("physical-trees")
+    };
+    fs::create_dir(&trees).unwrap();
+    let alias = if nested {
+        trees.join("caller")
+    } else {
+        fixture.0.join("alias-trees")
+    };
+    symlink(&trees, &alias).unwrap();
+    let wt = create_dispatch_worktree(&repo, "alias", "HEAD", "brief", Some(&alias)).unwrap();
+    write(&wt.path, "pkg/a.py", "a = 2\n");
+    let hook = repo.join(".git/hooks/pre-commit");
+    fs::write(&hook, "#!/bin/sh\nexit 73\n").unwrap();
+    fs::set_permissions(&hook, fs::Permissions::from_mode(0o700)).unwrap();
+    let outcome = DispatchOutcome {
+        status: "completed".into(),
+        attempts: 1,
+        fell_back: false,
+        blocked_reason: None,
+        worktree: Some(wt.clone()),
+        tokens_used: vec![],
+        model_id: None,
+        mcp_protocol: None,
+        stdout: String::new(),
+        exit_code: Some(0),
+        stderr: String::new(),
+    };
+    let options = FinalizeOptions {
+        artifacts_root: Some(fixture.0.join("artifacts")),
+        ..FinalizeOptions::default()
+    };
+    let result = executor_finalize::finalize_dispatch(&wt, &outcome, &options, None, None).unwrap();
+    assert_eq!(result.action, "blocked");
+    assert_eq!(
+        result.reason,
+        format!(
+            "error:Command '[\'git\', \'-C\', \'{}\', \'commit\', \'-m\', \'mir-dispatch alias\']' returned non-zero exit status 1.",
+            alias.join("alias").display()
+        )
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn reviewer_write_error_converts_nested_alias_once() {
+    use std::os::unix::fs::symlink;
+    let fixture = Fixture::new("reviewer-nested-alias");
+    let repo = fixture.0.join("repo");
+    seed(&repo, &json!({"pkg/a.py":"a = 1\n"}));
+    let alias = repo.join("alias");
+    symlink(&repo, &alias).unwrap();
+    let trees = alias.join("trees");
+    let wt = create_dispatch_worktree(&alias, "nested", "HEAD", "brief", Some(&trees)).unwrap();
+    write(&wt.path, "pkg/a.py", "a = 2\n");
+    let mut review = |wt: &DispatchWorktree, _: &[String]| {
+        fs::create_dir(wt.path.join(".mir-dispatch/reviewer.json")).unwrap();
+        Ok(ReviewEvidence {
+            passed: true,
+            reason: "approved".into(),
+            content: String::new(),
+            provider: "fixture".into(),
+        })
+    };
+    let mut options = FinalizeOptions {
+        artifacts_root: Some(fixture.0.join("artifacts")),
+        ..FinalizeOptions::default()
+    };
+    options.gate.allowlist = vec!["pkg/".into()];
+    options.gate.verification_commands = vec!["ok".into()];
+    options.gate.scratch_root = fixture.0.join("verify");
+    options.gate.source_env = std::env::vars().collect();
+    let result = executor_finalize::finalize_dispatch(
+        &wt,
+        &completed_outcome(&wt),
+        &options,
+        Some(&mut review),
+        None,
+    )
+    .unwrap();
+    assert_eq!(result.action, "blocked");
+    assert_eq!(
+        result.reason,
+        format!(
+            "error:[Errno 21] Is a directory: '{}'",
+            trees.join("nested/.mir-dispatch/reviewer.json").display()
+        )
+    );
+}
+
+fn completed_outcome(wt: &DispatchWorktree) -> DispatchOutcome {
+    DispatchOutcome {
+        status: "completed".into(),
+        attempts: 1,
+        fell_back: false,
+        blocked_reason: None,
+        worktree: Some(wt.clone()),
+        tokens_used: vec![],
+        model_id: None,
+        mcp_protocol: None,
+        stdout: String::new(),
+        exit_code: Some(0),
+        stderr: String::new(),
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn commit_hook_invalid_utf8_matches_python_diagnostic() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new("commit-invalid-utf8");
+    let repo = fixture.0.join("repo");
+    seed(&repo, &json!({"pkg/a.py":"a = 1\n"}));
+    let wt = create_dispatch_worktree(
+        &repo,
+        "hook",
+        "HEAD",
+        "brief",
+        Some(&fixture.0.join("trees")),
+    )
+    .unwrap();
+    write(&wt.path, "pkg/a.py", "a = 2\n");
+    let hook = repo.join(".git/hooks/pre-commit");
+    fs::write(&hook, "#!/bin/sh\nprintf '\\377' >&2\nexit 1\n").unwrap();
+    fs::set_permissions(&hook, fs::Permissions::from_mode(0o700)).unwrap();
+    let options = FinalizeOptions {
+        artifacts_root: Some(fixture.0.join("artifacts")),
+        ..FinalizeOptions::default()
+    };
+    let result =
+        executor_finalize::finalize_dispatch(&wt, &completed_outcome(&wt), &options, None, None)
+            .unwrap();
+    assert_eq!(result.action, "blocked");
+    // Pinned Python observation: scratch freeze.py / reference-errors.json.
+    assert_eq!(
+        result.reason,
+        "error:'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+    );
+    assert!(wt.path.exists());
+    assert_eq!(
+        fs::read_to_string(repo.join("pkg/a.py")).unwrap(),
+        "a = 1\n"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn artifact_error_converts_nested_alias_once() {
+    use std::os::unix::fs::symlink;
+    let fixture = Fixture::new("artifact-nested-alias");
+    let repo = fixture.0.join("repo");
+    seed(&repo, &json!({"pkg/a.py":"a = 1\n"}));
+    let alias = repo.join("alias");
+    symlink(&repo, &alias).unwrap();
+    let wt = create_dispatch_worktree(
+        &alias,
+        "nested",
+        "HEAD",
+        "brief",
+        Some(&alias.join("trees")),
+    )
+    .unwrap();
+    write(&wt.path, "pkg/a.py", "a = 2\n");
+    fs::create_dir(repo.join("artifacts")).unwrap();
+    fs::write(repo.join("artifacts/nested"), "blocked").unwrap();
+    let options = FinalizeOptions {
+        artifacts_root: Some(alias.join("artifacts")),
+        ..FinalizeOptions::default()
+    };
+    let result =
+        executor_finalize::finalize_dispatch(&wt, &completed_outcome(&wt), &options, None, None)
+            .unwrap();
+    assert_eq!(result.action, "blocked");
+    assert_eq!(
+        result.reason,
+        format!(
+            "error:[Errno 17] File exists: '{}'",
+            alias.join("artifacts/nested").display()
+        )
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn artifact_error_nested_alias_other_consumers() {
+    use std::os::unix::fs::symlink;
+    for mode in ["preserved", "reviewed", "merged"] {
+        let fixture = Fixture::new(mode);
+        let repo = fixture.0.join("repo");
+        seed(&repo, &json!({"pkg/a.py":"a = 1\n"}));
+        let alias = repo.join("alias");
+        symlink(&repo, &alias).unwrap();
+        let wt = create_dispatch_worktree(
+            &alias,
+            "nested",
+            "HEAD",
+            "brief",
+            Some(&alias.join("trees")),
+        )
+        .unwrap();
+        if mode == "merged" {
+            write(&wt.path, "pkg/a.py", "a = 2\n");
+        }
+        fs::create_dir(repo.join("artifacts")).unwrap();
+        fs::write(repo.join("artifacts/nested"), "blocked").unwrap();
+        let mut options = FinalizeOptions {
+            artifacts_root: Some(alias.join("artifacts")),
+            require_review: Some(false),
+            ..FinalizeOptions::default()
+        };
+        options.gate.expect_changes = mode == "merged";
+        options.gate.allowlist = vec!["pkg/".into()];
+        options.gate.verification_commands = vec!["ok".into()];
+        options.gate.scratch_root = fixture.0.join("verify");
+        options.gate.source_env = std::env::vars().collect();
+        let expected = format!(
+            "[Errno 17] File exists: '{}'",
+            alias.join("artifacts/nested").display()
+        );
+        let direct = handoff_packet::executor_worktree::persist_dispatch_artifacts(
+            &wt,
+            &alias,
+            options.artifacts_root.as_deref(),
+        )
+        .unwrap_err();
+        assert_eq!(direct.to_string(), expected, "direct/{mode}");
+        let mut outcome = completed_outcome(&wt);
+        if mode == "preserved" {
+            outcome.status = "failed".into();
+        }
+        let result = executor_finalize::finalize_dispatch(&wt, &outcome, &options, None, None);
+        if mode == "preserved" {
+            assert_eq!(result.unwrap_err().to_string(), expected);
+        } else {
+            let result = result.unwrap();
+            assert_eq!(result.action, format!("{mode}-but-cleanup-failed"));
+            let prefix = if mode == "merged" {
+                "post-merge-error"
+            } else {
+                "post-review-error"
+            };
+            assert_eq!(result.reason, format!("{prefix}:{expected}"));
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn artifact_spelling_root_matrix() {
+    use std::os::unix::fs::symlink;
+    // Default first: the third review's missing owning-root case.
+    for artifact_mode in ["default", "alias", "physical"] {
+        for repo_mode in ["alias", "physical"] {
+            for consumer in ["direct", "preserved", "blocked", "reviewed", "merged"] {
+                let fixture = Fixture::new("root-matrix");
+                let repo = fixture.0.join("repo");
+                seed(&repo, &json!({"pkg/a.py":"a = 1\n"}));
+                let alias = repo.join("alias");
+                symlink(&repo, &alias).unwrap();
+                let root = if repo_mode == "alias" { &alias } else { &repo };
+                let wt = create_dispatch_worktree(
+                    root,
+                    "d",
+                    "HEAD",
+                    "brief",
+                    Some(&alias.join("trees")),
+                )
+                .unwrap();
+                if consumer == "merged" {
+                    write(&wt.path, "pkg/a.py", "a = 2\n");
+                }
+                let artifacts = match artifact_mode {
+                    "alias" => Some(alias.join("artifacts")),
+                    "physical" => Some(repo.join("artifacts")),
+                    _ => None,
+                };
+                let destination = artifacts
+                    .clone()
+                    .unwrap_or_else(|| root.join("tasks/dispatch"))
+                    .join("d");
+                fs::create_dir_all(destination.parent().unwrap()).unwrap();
+                fs::write(&destination, "blocked").unwrap();
+                let expected = format!("[Errno 17] File exists: '{}'", destination.display());
+                let mut options = FinalizeOptions {
+                    artifacts_root: artifacts,
+                    require_review: Some(false),
+                    ..FinalizeOptions::default()
+                };
+                options.gate.expect_changes = consumer == "merged";
+                options.gate.allowlist = vec!["pkg/".into()];
+                options.gate.verification_commands = vec!["ok".into()];
+                options.gate.scratch_root = fixture.0.join("verify");
+                options.gate.source_env = std::env::vars().collect();
+                let actual = if consumer == "direct" {
+                    handoff_packet::executor_worktree::persist_dispatch_artifacts(
+                        &wt,
+                        root,
+                        options.artifacts_root.as_deref(),
+                    )
+                    .unwrap_err()
+                    .to_string()
+                } else {
+                    let mut outcome = completed_outcome(&wt);
+                    if consumer == "preserved" {
+                        outcome.status = "failed".into();
+                    }
+                    if consumer == "blocked" {
+                        options.gate.expect_changes = true;
+                    }
+                    match executor_finalize::finalize_dispatch(&wt, &outcome, &options, None, None)
+                    {
+                        Err(e) => e.to_string(),
+                        Ok(result) => {
+                            let prefix = match consumer {
+                                "reviewed" => "post-review-error:",
+                                "merged" => "post-merge-error:",
+                                _ => "error:",
+                            };
+                            assert_eq!(
+                                result.action,
+                                match consumer {
+                                    "reviewed" => "reviewed-but-cleanup-failed",
+                                    "merged" => "merged-but-cleanup-failed",
+                                    _ => "blocked",
+                                }
+                            );
+                            result.reason.strip_prefix(prefix).unwrap().to_owned()
+                        }
+                    }
+                };
+                assert_eq!(actual, expected, "{artifact_mode}/{repo_mode}/{consumer}");
+            }
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn caller_spelling_producer_matrix() {
+    use handoff_packet::{
+        executor_dispatch::{CodexAttempt, DispatchContext, DispatchOptions, run_dispatch},
+        executor_worktree as worktree,
+    };
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    fn git_error(root: &Path, args: &[&str], code: i32) -> String {
+        let root = root.to_str().unwrap();
+        let command = ["git", "-C", root]
+            .into_iter()
+            .chain(args.iter().copied())
+            .map(|s| format!("'{s}'"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("Command '[{command}]' returned non-zero exit status {code}.")
+    }
+    for artifact_mode in ["default", "alias", "physical"] {
+        for repo_mode in ["alias", "physical"] {
+            for tree_mode in ["alias", "physical"] {
+                for producer in [
+                    "private",
+                    "json",
+                    "secure",
+                    "create-setup",
+                    "create-head",
+                    "create-add",
+                    "status",
+                    "event-default",
+                    "event-explicit",
+                    "event-artifact",
+                    "inspect",
+                    "cleanup",
+                    "merge",
+                    "reviewer",
+                    "commit",
+                    "success",
+                ] {
+                    let fixture = Fixture::new("producer-matrix");
+                    let repo = fixture.0.join("repo");
+                    seed(&repo, &json!({"pkg/a.py":"a = 1\n"}));
+                    let alias = repo.join("alias");
+                    symlink(&repo, &alias).unwrap();
+                    let root = if repo_mode == "alias" { &alias } else { &repo };
+                    let tree_root = if tree_mode == "alias" { &alias } else { &repo };
+                    let trees = tree_root.join("trees");
+                    let artifacts = match artifact_mode {
+                        "alias" => Some(alias.join("artifacts")),
+                        "physical" => Some(repo.join("artifacts")),
+                        _ => None,
+                    };
+                    let mut options = FinalizeOptions {
+                        artifacts_root: artifacts.clone(),
+                        require_review: Some(false),
+                        ..FinalizeOptions::default()
+                    };
+                    options.gate.expect_changes = false;
+                    options.gate.allowlist = vec!["pkg/".into()];
+                    options.gate.verification_commands = vec!["ok".into()];
+                    options.gate.scratch_root = fixture.0.join("verify");
+                    options.gate.source_env = std::env::vars().collect();
+                    let expected_io = |errno, message, path: &Path| {
+                        format!("[Errno {errno}] {message}: '{}'", path.display())
+                    };
+                    let (actual, expected) = match producer {
+                        "private" | "json" => {
+                            let path = root.join("missing/brief.md");
+                            let error = if producer == "private" {
+                                worktree::write_private_text(&path, "brief", false)
+                            } else {
+                                worktree::write_json(&path, &json!({}))
+                            }
+                            .unwrap_err();
+                            (
+                                error.to_string(),
+                                expected_io(2, "No such file or directory", &path),
+                            )
+                        }
+                        "secure" => {
+                            let path = root.join("directory.json");
+                            fs::create_dir(&path).unwrap();
+                            (
+                                worktree::secure_write(&path, "{}", false)
+                                    .unwrap_err()
+                                    .to_string(),
+                                expected_io(21, "Is a directory", &path),
+                            )
+                        }
+                        "create-setup" => {
+                            fs::write(repo.join(".mir-dispatch"), "file").unwrap();
+                            git(&repo, &["add", "-f", ".mir-dispatch"]);
+                            git(&repo, &["commit", "-qm", "evidence-file"]);
+                            (
+                                create_dispatch_worktree(root, "d", "HEAD", "", Some(&trees))
+                                    .unwrap_err()
+                                    .to_string(),
+                                expected_io(17, "File exists", &trees.join("d/.mir-dispatch")),
+                            )
+                        }
+                        "create-head" => (
+                            create_dispatch_worktree(root, "d", "missing-ref", "", Some(&trees))
+                                .unwrap_err()
+                                .to_string(),
+                            git_error(
+                                root,
+                                &["rev-parse", "--verify", "--end-of-options", "missing-ref"],
+                                128,
+                            ),
+                        ),
+                        _ => {
+                            let wt =
+                                create_dispatch_worktree(root, "d", "HEAD", "brief", Some(&trees))
+                                    .unwrap();
+                            match producer {
+                                "create-add" => (
+                                    create_dispatch_worktree(root, "d", "HEAD", "", Some(&trees))
+                                        .unwrap_err()
+                                        .to_string(),
+                                    git_error(
+                                        root,
+                                        &[
+                                            "worktree",
+                                            "add",
+                                            "-b",
+                                            "mir-dispatch/d",
+                                            trees.join("d").to_str().unwrap(),
+                                            &wt.base_commit,
+                                        ],
+                                        255,
+                                    ),
+                                ),
+                                "status" => {
+                                    fs::remove_dir_all(wt.path.join(".mir-dispatch")).unwrap();
+                                    (
+                                        worktree::write_status(&wt, "complete", &json!({}))
+                                            .unwrap_err()
+                                            .to_string(),
+                                        expected_io(
+                                            2,
+                                            "No such file or directory",
+                                            &trees.join("d/.mir-dispatch/status.json"),
+                                        ),
+                                    )
+                                }
+                                "inspect" => {
+                                    fs::write(wt.path.join(".git"), "gitdir: absent\n").unwrap();
+                                    (
+                                        worktree::inspect_worktree(&wt).unwrap_err().to_string(),
+                                        git_error(&wt.path, &["rev-parse", "HEAD"], 128),
+                                    )
+                                }
+                                "cleanup" => {
+                                    git(&repo, &["worktree", "lock", wt.path.to_str().unwrap()]);
+                                    (
+                                        worktree::cleanup_worktree(&wt, false)
+                                            .unwrap_err()
+                                            .to_string(),
+                                        git_error(
+                                            root,
+                                            &[
+                                                "worktree",
+                                                "remove",
+                                                "--force",
+                                                wt.path.to_str().unwrap(),
+                                            ],
+                                            128,
+                                        ),
+                                    )
+                                }
+                                "merge" => (
+                                    worktree::merge_result(&wt, Some("missing-ref"), None, false)
+                                        .unwrap_err()
+                                        .to_string(),
+                                    git_error(
+                                        root,
+                                        &[
+                                            "diff",
+                                            "--no-renames",
+                                            "--name-only",
+                                            "-z",
+                                            &wt.base_commit,
+                                            "missing-ref",
+                                        ],
+                                        128,
+                                    ),
+                                ),
+                                "reviewer" | "commit" => {
+                                    write(&wt.path, "pkg/a.py", "a = 2\n");
+                                    options.gate.expect_changes = true;
+                                    let hook = repo.join(".git/hooks/pre-commit");
+                                    if producer == "commit" {
+                                        fs::write(&hook, "#!/bin/sh\nexit 1\n").unwrap();
+                                        fs::set_permissions(
+                                            &hook,
+                                            fs::Permissions::from_mode(0o700),
+                                        )
+                                        .unwrap();
+                                    }
+                                    let mut review = |wt: &DispatchWorktree, _: &[String]| {
+                                        fs::create_dir(wt.path.join(".mir-dispatch/reviewer.json"))
+                                            .unwrap();
+                                        Ok(ReviewEvidence {
+                                            passed: true,
+                                            reason: "approved".into(),
+                                            content: String::new(),
+                                            provider: "fixture".into(),
+                                        })
+                                    };
+                                    let result = executor_finalize::finalize_dispatch(
+                                        &wt,
+                                        &completed_outcome(&wt),
+                                        &options,
+                                        if producer == "reviewer" {
+                                            Some(&mut review)
+                                        } else {
+                                            None
+                                        },
+                                        None,
+                                    )
+                                    .unwrap();
+                                    assert_eq!(result.action, "blocked");
+                                    let expected = if producer == "commit" {
+                                        git_error(&wt.path, &["commit", "-m", "mir-dispatch d"], 1)
+                                    } else {
+                                        expected_io(
+                                            21,
+                                            "Is a directory",
+                                            &trees.join("d/.mir-dispatch/reviewer.json"),
+                                        )
+                                    };
+                                    (result.reason, format!("error:{expected}"))
+                                }
+                                "success" => {
+                                    assert_eq!(wt.main_repo_root, *root);
+                                    assert_eq!(wt.path, trees.join("d"));
+                                    assert_eq!(
+                                        wt.brief_path,
+                                        trees.join("d/.mir-dispatch/brief.md")
+                                    );
+                                    assert_eq!(
+                                        wt.status_path,
+                                        trees.join("d/.mir-dispatch/status.json")
+                                    );
+                                    assert_eq!(
+                                        wt.result_path,
+                                        trees.join("d/.mir-dispatch/result.json")
+                                    );
+                                    let destination = worktree::persist_dispatch_artifacts(
+                                        &wt,
+                                        root,
+                                        artifacts.as_deref(),
+                                    )
+                                    .unwrap();
+                                    assert!(destination.join("brief.md").is_file());
+                                    (
+                                        destination.display().to_string(),
+                                        artifacts
+                                            .unwrap_or_else(|| root.join("tasks/dispatch"))
+                                            .join("d")
+                                            .display()
+                                            .to_string(),
+                                    )
+                                }
+                                _ => {
+                                    let mut dispatch = DispatchOptions::new(root, "d");
+                                    dispatch.worktrees_root = Some(trees.clone());
+                                    dispatch.artifacts_root = artifacts.clone();
+                                    let path = match producer {
+                                        "event-explicit" => {
+                                            let path = root.join("events/explicit.jsonl");
+                                            dispatch.dispatch_events_path = Some(path.clone());
+                                            path
+                                        }
+                                        "event-artifact" if artifacts.is_some() => {
+                                            artifacts.unwrap().join("d/dispatch-events.jsonl")
+                                        }
+                                        _ => {
+                                            dispatch.artifacts_root = None;
+                                            trees.join("d/.mir-dispatch/dispatch-events.jsonl")
+                                        }
+                                    };
+                                    let mut context = DispatchContext {
+                                        worktree: Some(wt),
+                                        ..DispatchContext::default()
+                                    };
+                                    let error = run_dispatch(
+                                        &dispatch,
+                                        &mut context,
+                                        &mut |_: &DispatchWorktree, _: usize| {
+                                            fs::create_dir_all(&path).unwrap();
+                                            Ok(CodexAttempt::default())
+                                        },
+                                    )
+                                    .unwrap_err();
+                                    (error.to_string(), expected_io(21, "Is a directory", &path))
+                                }
+                            }
+                        }
+                    };
+                    assert_eq!(
+                        actual, expected,
+                        "{artifact_mode}/{repo_mode}/{tree_mode}/{producer}"
+                    );
+                }
+            }
+        }
+    }
+}

@@ -76,6 +76,16 @@ const COLUMNS: &[&str] = &[
     "ai_run_metadata",
 ];
 
+pub(crate) fn unsupported_binding(column: &str, kind: &str) -> String {
+    let index = COLUMNS
+        .iter()
+        .position(|name| *name == column)
+        .map_or(0, |i| i + 1);
+    format!(
+        "sqlite3.ProgrammingError: Error binding parameter {index}: type '{kind}' is not supported"
+    )
+}
+
 fn quoted(text: &str) -> Result<String> {
     let encoded = serde_json::to_string(text).map_err(|_| Error::Shape)?;
     let mut out = String::new();
@@ -88,6 +98,19 @@ fn quoted(text: &str) -> Result<String> {
             }
         }
     }
+    Ok(out)
+}
+pub(crate) fn quoted_points(points: &[u32]) -> Result<String> {
+    let mut out = String::from("\"");
+    for &point in points {
+        if let Some(c) = char::from_u32(point) {
+            let encoded = quoted(&c.to_string())?;
+            out.push_str(&encoded[1..encoded.len() - 1]);
+        } else {
+            out.push_str(&format!("\\u{point:04x}"));
+        }
+    }
+    out.push('"');
     Ok(out)
 }
 pub(crate) fn python_float(value: f64) -> Result<String> {

@@ -14,7 +14,7 @@ use std::{
     collections::BTreeSet,
     fmt, fs, io,
     path::{Path, PathBuf},
-    process::{Command, Output},
+    process::Output,
     thread,
     time::{Duration, Instant},
 };
@@ -176,36 +176,26 @@ fn reject_lock_link(path: &Path) -> Result<()> {
     }
 }
 
-fn git(root: &Path, args: &[&str], check: bool) -> Result<Output> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(root)
-        .args(args)
-        .output()?;
-    if check && !output.status.success() {
-        return Err(Error::Git {
-            code: output.status.code(),
-            stderr: String::from_utf8(output.stderr)?,
-        });
-    }
-    Ok(output)
+fn git(root: &executor_worktree::DispatchPath, args: &[&str], check: bool) -> Result<Output> {
+    let args: Vec<_> = args.iter().map(std::ffi::OsStr::new).collect();
+    executor_worktree::git(root, &args, check).map_err(Error::Worktree)
 }
-fn git_text(root: &Path, args: &[&str]) -> Result<String> {
+fn git_text(root: &executor_worktree::DispatchPath, args: &[&str]) -> Result<String> {
     Ok(String::from_utf8(git(root, args, true)?.stdout)?)
 }
-fn head(root: &Path) -> Result<String> {
+fn head(root: &executor_worktree::DispatchPath) -> Result<String> {
     Ok(git_text(root, &["rev-parse", "HEAD"])?.trim().into())
 }
 fn commit_worktree(wt: &DispatchWorktree) -> Result<()> {
-    git(&wt.path, &["add", "-A"], true)?;
-    git(&wt.path, &["reset", "--", ".mir-dispatch"], false)?;
-    if git(&wt.path, &["diff", "--cached", "--quiet"], false)?
+    git(wt.tree(), &["add", "-A"], true)?;
+    git(wt.tree(), &["reset", "--", ".mir-dispatch"], false)?;
+    if git(wt.tree(), &["diff", "--cached", "--quiet"], false)?
         .status
         .code()
         == Some(1)
     {
         git(
-            &wt.path,
+            wt.tree(),
             &["commit", "-m", &format!("mir-dispatch {}", wt.dispatch_id)],
             true,
         )?;
@@ -214,7 +204,7 @@ fn commit_worktree(wt: &DispatchWorktree) -> Result<()> {
 }
 fn dispatch_dirty(wt: &DispatchWorktree) -> Result<bool> {
     Ok(!git_text(
-        &wt.path,
+        wt.tree(),
         &[
             "status",
             "--porcelain=v2",
@@ -228,7 +218,7 @@ fn dispatch_dirty(wt: &DispatchWorktree) -> Result<bool> {
     )?
     .is_empty())
 }
-fn head_tracks(root: &Path, path: &str) -> Result<bool> {
+fn head_tracks(root: &executor_worktree::DispatchPath, path: &str) -> Result<bool> {
     Ok(!git_text(
         root,
         &[
@@ -243,17 +233,17 @@ fn head_tracks(root: &Path, path: &str) -> Result<bool> {
     )?
     .is_empty())
 }
-fn head_absent_collision(root: &Path, path: &str) -> Result<bool> {
+fn head_absent_collision(root: &executor_worktree::DispatchPath, path: &str) -> Result<bool> {
     if head_tracks(root, path)? {
         return Ok(false);
     }
-    match fs::symlink_metadata(root.join(path)) {
+    match fs::symlink_metadata(root.io.join(path)) {
         Ok(_) => return Ok(true),
         Err(e) if e.kind() == io::ErrorKind::NotFound => {}
         Err(e) if e.kind() == io::ErrorKind::NotADirectory => {}
         Err(e) => return Err(e.into()),
     }
-    let mut parent = root.to_path_buf();
+    let mut parent = root.io.clone();
     let mut parts = Path::new(path).components().peekable();
     while let Some(part) = parts.next() {
         if parts.peek().is_none() {
@@ -269,7 +259,7 @@ fn head_absent_collision(root: &Path, path: &str) -> Result<bool> {
     }
     Ok(false)
 }
-fn targets_dirty(root: &Path, paths: &[String]) -> Result<bool> {
+fn targets_dirty(root: &executor_worktree::DispatchPath, paths: &[String]) -> Result<bool> {
     if paths.is_empty() {
         return Ok(false);
     }
@@ -296,7 +286,7 @@ fn rollback(
     tracked: &BTreeSet<String>,
     observer: &mut Observer<'_>,
 ) -> Vec<String> {
-    let root = &wt.main_repo_root;
+    let root = wt.repo();
     let mut failures = Vec::new();
     if let Err(e) = observer(FinalizeStep::BeforeRollback, wt) {
         match targets_dirty(root, paths) {
@@ -403,7 +393,7 @@ fn completed(
     config: &LocalConfig,
 ) -> Result<FinalizeResult> {
     commit_worktree(wt)?;
-    let source = head(&wt.path)?;
+    let source = head(wt.tree())?;
     let mut gate_options = options.gate.clone();
     gate_options.source_commit = Some(source.clone());
     gate_options.allow_harness_self_modify |=
@@ -427,8 +417,8 @@ fn completed(
             &evidence.to_value(),
         )
         .map_err(Error::Invalid)?;
-        executor_worktree::secure_write(
-            &wt.path.join(".mir-dispatch/reviewer.json"),
+        executor_worktree::secure_write_contained(
+            &wt.tree().join(".mir-dispatch/reviewer.json"),
             &evidence_text,
             false,
         )
@@ -442,10 +432,10 @@ fn completed(
     else {
         return blocked(wt, options, observer, "finalize-lock-timeout");
     };
-    if head(&wt.main_repo_root)? != wt.base_commit {
+    if head(wt.repo())? != wt.base_commit {
         return blocked(wt, options, observer, "main-moved");
     }
-    if head(&wt.path)? != source {
+    if head(wt.tree())? != source {
         return blocked(wt, options, observer, "dispatch-moved");
     }
     if dispatch_dirty(wt)? {
@@ -454,12 +444,12 @@ fn completed(
     if gate.changed_files.is_empty() {
         return Ok(post_success(wt, options, observer, None));
     }
-    if targets_dirty(&wt.main_repo_root, &gate.changed_files)? {
+    if targets_dirty(wt.repo(), &gate.changed_files)? {
         return blocked(wt, options, observer, "main-dirty");
     }
     let mut tracked = BTreeSet::new();
     for path in &gate.changed_files {
-        if head_tracks(&wt.main_repo_root, path)? {
+        if head_tracks(wt.repo(), path)? {
             tracked.insert(path.clone());
         }
     }

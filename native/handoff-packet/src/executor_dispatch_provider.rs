@@ -255,8 +255,10 @@ pub fn codex_attempt(
     let requested_model = options.model.clone();
     options.approval_policy = "never".into();
     let mut progress_error = None;
+    let mut initialized = false;
     let result = match Client::spawn(command, initialize_timeout, kill_timeout) {
         Ok(mut client) => {
+            initialized = true;
             let result = client.call(options, &mut |method, _| {
                 match event(events_file, &json!({"transport":"app-server", "event":"progress", "duration_s":started.elapsed().as_secs_f64(), "method":method})) {
                     Ok(()) => Ok(()),
@@ -319,10 +321,12 @@ pub fn codex_attempt(
             )
         }
     };
-    event(
-        events_file,
-        &json!({"exit_code":attempt.exit_code,"duration_s":started.elapsed().as_secs_f64(),"error_sig":attempt.error_sig,"transport":"app-server","threadId":thread_id,"lane_unavailable":attempt.lane_unavailable}),
-    )?;
+    let mut completion = json!({"exit_code":attempt.exit_code,"duration_s":started.elapsed().as_secs_f64(),"error_sig":attempt.error_sig,"transport":"app-server","threadId":thread_id,"lane_unavailable":attempt.lane_unavailable});
+    // The reference's client-entry failure event has no threadId field.
+    if !initialized && let Some(fields) = completion.as_object_mut() {
+        fields.remove("threadId");
+    }
+    event(events_file, &completion)?;
     Ok(attempt)
 }
 
