@@ -24,6 +24,15 @@ use std::{
     time::Duration,
 };
 
+// Resume defers uncaught diagnostics until its writer scope has exited.
+fn resume_uncaught(args: &Value, error: String) -> String {
+    if args["resume_job_id"].is_null() {
+        error
+    } else {
+        format!("\0resume_uncaught:{error}")
+    }
+}
+
 // Validated briefs may be project-owned objects. Preserve their bridge handle
 // through rendering and target extraction rather than requiring a JSON object.
 fn brief_call(
@@ -394,7 +403,26 @@ pub fn dispatch(
             &root.join("tasks").join("tdd.json"),
             change,
             args["category"].as_str().unwrap_or(""),
-        )?;
+        )
+        .map_err(|error| {
+            // _handle_dispatch catches only FileNotFoundError, KeyError and
+            // ValueError (including JSON/Unicode subclasses) at this boundary.
+            if [
+                "FileNotFoundError:",
+                "KeyError:",
+                "ValueError:",
+                "JSONDecodeError:",
+                "UnicodeDecodeError:",
+                "UnicodeEncodeError:",
+            ]
+            .iter()
+            .any(|kind| error.starts_with(kind))
+            {
+                error
+            } else {
+                resume_uncaught(args, error)
+            }
+        })?;
     }
     let db = if args["jobs_db"].is_null() {
         root.join("tasks").join("jobs.db")
@@ -820,15 +848,15 @@ pub fn dispatch(
         } else {
             outcome.exit_code.filter(|c| *c != 0).unwrap_or(1)
         };
-        metadata["model_id"] = outcome.model_id.as_ref().map_or(json!(model), |v| json!(v));
-        metadata["tokens_used"] = json!(
-            outcome
-                .tokens_used
-                .iter()
-                .cloned()
-                .collect::<BTreeMap<_, _>>()
-        );
-        metadata["mcp_protocol"] = json!(outcome.mcp_protocol);
+        // The initial write preserves the previous attempt's context; the
+        // completed attempt replaces it with only its result and dispatch IDs.
+        metadata = json!({
+            "model_id": outcome.model_id.as_ref().map_or(json!(model), |v| json!(v)),
+            "tokens_used": outcome.tokens_used.iter().cloned().collect::<BTreeMap<_, _>>(),
+            "mcp_protocol": outcome.mcp_protocol,
+            "dispatch_id": dispatch_id,
+            "dispatch_ids": metadata["dispatch_ids"],
+        });
         registry
             .update_ai_run_metadata(&id, &metadata)
             .map_err(|e| crate::executor_text::registry_error(e, &db))?;
@@ -907,9 +935,9 @@ pub fn dispatch(
                 })
                 .is_ok();
             if !exists {
-                registry
-                    .insert(&pending)
-                    .map_err(|e| crate::executor_text::registry_error(e, &db))?;
+                registry.insert(&pending).map_err(|e| {
+                    resume_uncaught(args, crate::executor_text::registry_error(e, &db))
+                })?;
             }
             let (kind, message) = e
                 .split_once(": ")
@@ -931,7 +959,7 @@ pub fn dispatch(
                     "failed",
                     &json!({"exit_code":1,"stderr":stderr,"completed_at":utc_now()}),
                 )
-                .map_err(|e| crate::executor_text::registry_error(e, &db))?;
+                .map_err(|e| resume_uncaught(args, crate::executor_text::registry_error(e, &db)))?;
             diagnostic(&format!("dispatch failed: {message}"));
             Ok(1)
         }

@@ -2975,7 +2975,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_dispatch_cli.rs",
-      "sha256": "00da69b22ee672b3bab12407f18326ffd7df45e7e4fe31b5b453ea22936b163a"
+      "sha256": "58e808c5f9e352ee3bbb043fb61fe913125ea5845aad2420bd55fef3153fe885"
     },
     {
       "classification": "template-maintainer-tool",
