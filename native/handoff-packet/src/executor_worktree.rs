@@ -7,9 +7,9 @@
 //! requires those system utilities; Unix requires a supported O_NOFOLLOW constant.
 //! Selected roots resolve directory aliases once, including terminal links;
 //! descendant checks reject existing symlinks/reparse points. Callers must keep
-//! ancestor directories under their control: std-only checks cannot pin them
-//! against concurrent swaps. This differs from Python artifact reads, which pin
-//! the dispatch directory with a directory fd before opening its entries.
+//! ancestor directories under their control for Git operations. Unix artifact
+//! writes reuse descriptor-relative mkdir and private opens so a replaced
+//! parent cannot redirect writes outside the selected artifact container.
 use crate::executor_local::LocalConfig;
 use serde_json::{Value, json};
 use std::{
@@ -27,6 +27,11 @@ use std::{
 pub enum Error {
     Io(io::Error),
     Json(serde_json::Error),
+    PathIo {
+        kind: &'static str,
+        message: String,
+        path: PathBuf,
+    },
     Git {
         code: Option<i32>,
         stderr: String,
@@ -40,6 +45,7 @@ impl Error {
     pub fn kind(&self) -> &'static str {
         match self {
             Self::Io(_) => "OSError",
+            Self::PathIo { kind, .. } => kind,
             Self::Json(_) => "JSONDecodeError",
             Self::Git { .. } => "CalledProcessError",
             Self::Invalid(_) => "ValueError",
@@ -52,6 +58,11 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(e) => e.fmt(f),
+            Self::PathIo { message, path, .. } => write!(
+                f,
+                "{message}: {}",
+                crate::executor_text::repr(&path.to_string_lossy())
+            ),
             Self::Json(e) => e.fmt(f),
             Self::Git {
                 code,
@@ -81,7 +92,7 @@ impl std::error::Error for Error {
             Self::Io(e) => Some(e),
             Self::Json(e) => Some(e),
             Self::Local(e) => Some(e),
-            Self::Git { .. } | Self::Invalid(_) | Self::Redaction(_) => None,
+            Self::Git { .. } | Self::Invalid(_) | Self::Redaction(_) | Self::PathIo { .. } => None,
         }
     }
 }
@@ -114,6 +125,56 @@ pub struct DispatchWorktree {
     pub result_path: PathBuf,
     // Ownership is held by the returned handle, never inferred from a pathname.
     auto_temp_base: Option<PathBuf>,
+    artifact_selection: Option<(PathBuf, PathBuf)>,
+    requested_paths: Option<(PathBuf, PathBuf)>,
+}
+
+impl DispatchWorktree {
+    pub(crate) fn display_path(&self, selected: &Path) -> PathBuf {
+        if let Some((root, path)) = &self.requested_paths {
+            // Choose from the original path once, with the worktree taking
+            // precedence when the selected roots overlap.
+            for (from, to) in [(&self.path, path), (&self.main_repo_root, root)] {
+                if let Ok(suffix) = selected.strip_prefix(from) {
+                    return if suffix.as_os_str().is_empty() {
+                        to.clone()
+                    } else {
+                        to.join(suffix)
+                    };
+                }
+            }
+        }
+        selected.to_owned()
+    }
+
+    pub(crate) fn error_spelling(&self, mut error: Error) -> Error {
+        if let Error::PathIo { path, .. } = &mut error {
+            *path = self.display_path(path);
+        }
+        let root = match &error {
+            Error::Git {
+                command: Some(command),
+                ..
+            } => command.get(2).map(|p| self.display_path(Path::new(p))),
+            _ => None,
+        };
+        match root {
+            Some(root) => git_error_spelling(error, &root, Some(&self.display_path(&self.path))),
+            None => error,
+        }
+    }
+
+    pub(crate) fn select_artifact_root(&mut self, root: &Path) -> Result<PathBuf> {
+        let requested = absolute(root)?;
+        if let Some((previous, selected)) = &self.artifact_selection
+            && previous == &requested
+        {
+            return Ok(selected.clone());
+        }
+        let selected = selected_root(&requested)?;
+        self.artifact_selection = Some((requested, selected.clone()));
+        Ok(selected)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -131,35 +192,91 @@ fn git(root: &Path, args: &[&OsStr], check: bool) -> Result<Output> {
     if check && !out.status.success() {
         return Err(Error::Git {
             code: out.status.code(),
-            command: if args.iter().any(|arg| *arg == OsStr::new("checkout")) {
-                Some(
-                    std::iter::once("git".to_owned())
-                        .chain(std::iter::once("-C".to_owned()))
-                        .chain(std::iter::once(
-                            root.to_str()
-                                .ok_or_else(|| Error::Invalid("non UTF-8 Git root".into()))?
-                                .to_owned(),
-                        ))
-                        .chain(
-                            args.iter()
-                                .map(|s| {
-                                    s.to_str().map(str::to_owned).ok_or_else(|| {
-                                        Error::Invalid("non UTF-8 Git argument".into())
-                                    })
-                                })
-                                .collect::<Result<Vec<_>>>()?,
-                        )
-                        .collect(),
-                )
-            } else {
-                None
-            },
+            command: Some(git_command(root, args)?),
             stderr: String::from_utf8(out.stderr)
                 .map_err(|_| Error::Invalid("non UTF-8 Git error".into()))?,
         });
     }
     Ok(out)
 }
+fn git_command(root: &Path, args: &[&OsStr]) -> Result<Vec<String>> {
+    std::iter::once(OsStr::new("git"))
+        .chain(std::iter::once(OsStr::new("-C")))
+        .chain(std::iter::once(root.as_os_str()))
+        .chain(args.iter().copied())
+        .map(|s| {
+            s.to_str()
+                .map(str::to_owned)
+                .ok_or_else(|| Error::Invalid("non UTF-8 Git argument".into()))
+        })
+        .collect()
+}
+fn path_io(error: io::Error, path: &Path) -> Error {
+    let Some(errno) = error.raw_os_error() else {
+        return Error::Io(error);
+    };
+    let kind = match error.kind() {
+        io::ErrorKind::NotADirectory => "NotADirectoryError",
+        io::ErrorKind::IsADirectory => "IsADirectoryError",
+        io::ErrorKind::NotFound => "FileNotFoundError",
+        io::ErrorKind::PermissionDenied => "PermissionError",
+        io::ErrorKind::AlreadyExists => "FileExistsError",
+        _ => "OSError",
+    };
+    let Some(path) = path.to_str() else {
+        return Error::Invalid("non UTF-8 evidence path".into());
+    };
+    let text = error.to_string();
+    let message = text.split(" (os error ").next().unwrap_or(&text);
+    Error::PathIo {
+        kind,
+        message: format!("[Errno {errno}] {message}"),
+        path: PathBuf::from(path),
+    }
+}
+// Containment uses selected paths; Python's filename retains the caller's spelling.
+// Rebase the structured filename only, never provider output or error prose.
+pub(crate) fn error_spelling(mut error: Error, selected: &Path, requested: &Path) -> Error {
+    if let Error::PathIo { path, .. } = &mut error
+        && let Ok(suffix) = path.strip_prefix(selected)
+    {
+        *path = if suffix.as_os_str().is_empty() {
+            requested.to_owned()
+        } else {
+            requested.join(suffix)
+        };
+    }
+    error
+}
+
+fn git_error_spelling(mut error: Error, root: &Path, worktree: Option<&Path>) -> Error {
+    if let Error::Git {
+        command: Some(command),
+        ..
+    } = &mut error
+    {
+        // The root and worktree are separate arguments, even when one is
+        // beneath the other. Never rebase a ref, provider output or raw stderr.
+        if let Some(argument) = command.get_mut(2) {
+            *argument = root.to_string_lossy().into_owned();
+        }
+        let index = match (
+            command.get(3).map(String::as_str),
+            command.get(4).map(String::as_str),
+        ) {
+            (Some("worktree"), Some("add")) => Some(7),
+            (Some("worktree"), Some("remove")) => Some(6),
+            _ => None,
+        };
+        if let Some((index, path)) = index.zip(worktree)
+            && let Some(argument) = command.get_mut(index)
+        {
+            *argument = path.to_string_lossy().into_owned();
+        }
+    }
+    error
+}
+
 fn git_text(root: &Path, args: &[&str]) -> Result<String> {
     let args: Vec<_> = args.iter().map(OsStr::new).collect();
     String::from_utf8(git(root, &args, true)?.stdout)
@@ -195,7 +312,7 @@ fn absolute(path: &Path) -> Result<PathBuf> {
 // A missing root is rebuilt beneath its nearest existing ancestor. Existing
 // terminal directory aliases resolve here too; other terminal links retain the
 // existing guard refusal.
-fn selected_root(path: &Path) -> Result<PathBuf> {
+pub(crate) fn selected_root(path: &Path) -> Result<PathBuf> {
     let path = absolute(path)?;
     let mut ancestor = path.as_path();
     let mut missing = Vec::new();
@@ -226,7 +343,15 @@ fn selected_root(path: &Path) -> Result<PathBuf> {
                 }
                 return Ok(resolved);
             }
-            Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            // A file ancestor does not prevent selecting the path. Like the
+            // reference, fail when the event directory is created, after the
+            // provider and status hooks; writes still reject replaced links.
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+                ) =>
+            {
                 missing.push(
                     ancestor
                         .file_name()
@@ -244,7 +369,7 @@ fn selected_root(path: &Path) -> Result<PathBuf> {
 
 // Standalone file APIs select their containing directory; the file itself is
 // still opened with no-follow and checked before content is written.
-fn selected_file(path: &Path) -> Result<PathBuf> {
+pub(crate) fn selected_file(path: &Path) -> Result<PathBuf> {
     let path = absolute(path)?;
     let parent = path
         .parent()
@@ -276,7 +401,11 @@ fn reject_links(path: &Path) -> Result<()> {
                     )));
                 }
             }
-            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+                ) => {}
             Err(e) => return Err(e.into()),
         }
     }
@@ -284,7 +413,28 @@ fn reject_links(path: &Path) -> Result<()> {
 }
 fn ensure_dir(path: &Path) -> Result<()> {
     reject_links(path)?;
-    fs::create_dir_all(path)?;
+    #[cfg(unix)]
+    {
+        let path = absolute(path)?;
+        let mut current = PathBuf::from("/");
+        for component in path
+            .components()
+            .filter(|c| matches!(c, Component::Normal(_)))
+        {
+            current.push(component.as_os_str());
+            match crate::adoption_fs::mkdir(Path::new("/"), &current, 0o777) {
+                Ok(()) => {}
+                Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {
+                    if current == path && !fs::metadata(&current)?.is_dir() {
+                        return Err(path_io(e, &path));
+                    }
+                }
+                Err(e) => return Err(path_io(e, &path)),
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    fs::create_dir_all(path).map_err(|e| path_io(e, path))?;
     reject_links(path)
 }
 
@@ -503,16 +653,25 @@ pub fn write_private_text(path: &Path, text: &str, redact: bool) -> Result<()> {
     } else {
         text.to_owned()
     };
-    private_write(&selected_file(path)?, &text, false)
+    let selected = selected_file(path)?;
+    private_write(&selected, &text, false).map_err(|e| {
+        error_spelling(
+            e,
+            selected.parent().unwrap_or(Path::new("")),
+            path.parent().unwrap_or(Path::new("")),
+        )
+    })
 }
 #[cfg(not(windows))]
 fn private_write(path: &Path, text: &str, append: bool) -> Result<()> {
-    reject_links(path)?;
+    if let Some(parent) = path.parent() {
+        reject_links(parent)?;
+    }
     let mut options = fs::OpenOptions::new();
     options.write(true).create(true).truncate(false);
     // Do not truncate before checking the opened file and establishing its ACL.
     nofollow(&mut options)?;
-    let mut file = options.open(path)?;
+    let mut file = options.open(path).map_err(|e| path_io(e, path))?;
     regular_file(&file)?;
     private(&file, path)?;
     if append {
@@ -618,8 +777,22 @@ pub(crate) fn compact_json(original: &str) -> Result<String> {
     Ok(out)
 }
 pub fn secure_write(path: &Path, text: &str, append: bool) -> Result<()> {
-    let path = selected_file(path)?;
+    let selected = selected_file(path)?;
+    secure_write_contained(&selected, text, append).map_err(|e| {
+        error_spelling(
+            e,
+            selected.parent().unwrap_or(Path::new("")),
+            path.parent().unwrap_or(Path::new("")),
+        )
+    })
+}
+
+// The dispatch caller selects its artifact root before invoking mutable hooks.
+// Do not resolve a new directory alias after that boundary.
+pub(crate) fn secure_write_contained(path: &Path, text: &str, append: bool) -> Result<()> {
+    let path = absolute(path)?;
     let path = path.as_path();
+    reject_links(path)?;
     let text = match path.extension().and_then(OsStr::to_str) {
         Some("json") => compact_json(text)? + "\n",
         Some("jsonl") => {
@@ -635,6 +808,22 @@ pub fn secure_write(path: &Path, text: &str, append: bool) -> Result<()> {
     if let Some(parent) = path.parent() {
         ensure_dir(parent)?;
     }
+    #[cfg(unix)]
+    {
+        // Each traversal refuses replaced ancestors; writes use the pinned
+        // descriptor rather than reinterpreting a validated pathname.
+        let root = Path::new("/");
+        let parent = crate::adoption_fs::parent(root, path).map_err(|e| path_io(e, path))?;
+        let mut file = parent.open_private(append).map_err(|e| path_io(e, path))?;
+        regular_file(&file)?;
+        private(&file, path)?;
+        if !append {
+            file.set_len(0)?;
+        }
+        file.write_all(text.as_bytes())?;
+        Ok(())
+    }
+    #[cfg(not(unix))]
     private_write(path, &text, append)
 }
 
@@ -685,7 +874,8 @@ pub fn create_dispatch_worktree(
     let base_sha = git_text(
         &root,
         &["rev-parse", "--verify", "--end-of-options", base_commit],
-    )?
+    )
+    .map_err(|e| git_error_spelling(e, main_repo_root, None))?
     .trim()
     .to_owned();
     let auto_temp_base = if worktrees_root.is_none() {
@@ -698,7 +888,8 @@ pub fn create_dispatch_worktree(
         (None, Some(path)) => path.clone(),
         _ => return Err(Error::Invalid("missing worktree root".into())),
     };
-    ensure_dir(&parent)?;
+    let display_parent = worktrees_root.unwrap_or(&parent);
+    ensure_dir(&parent).map_err(|e| error_spelling(e, &parent, display_parent))?;
     let path = parent.join(dispatch_id);
     reject_links(&path)?;
     let branch = format!("mir-dispatch/{dispatch_id}");
@@ -714,7 +905,11 @@ pub fn create_dispatch_worktree(
         if let Some(temp) = auto_temp_base {
             let _ = fs::remove_dir_all(temp);
         }
-        return Err(e);
+        return Err(git_error_spelling(
+            e,
+            main_repo_root,
+            Some(&display_parent.join(dispatch_id)),
+        ));
     }
     let dispatch_dir = path.join(".mir-dispatch");
     let wt = DispatchWorktree {
@@ -727,6 +922,8 @@ pub fn create_dispatch_worktree(
         branch,
         base_commit: base_sha,
         auto_temp_base,
+        artifact_selection: None,
+        requested_paths: Some((main_repo_root.to_owned(), display_parent.join(dispatch_id))),
     };
     let setup = (|| {
         let profile = wt.main_repo_root.join(".mir/repo-profile.toml");
@@ -754,12 +951,7 @@ pub fn create_dispatch_worktree(
             &json!({"dispatch_id": dispatch_id, "state":"created", "base_commit":wt.base_commit}),
         )
     })();
-    if let Err(e) = setup {
-        if let Err(cleanup) = cleanup_worktree(&wt, true) {
-            return Err(Error::Invalid(format!("{e}; rollback failed: {cleanup}")));
-        }
-        return Err(e);
-    }
+    setup.map_err(|e| error_spelling(e, &parent, display_parent))?;
     Ok(wt)
 }
 
@@ -819,11 +1011,15 @@ pub fn write_status(worktree: &DispatchWorktree, state: &str, fields: &Value) ->
     layout.push('}');
     let text = crate::executor_ledger_json::render(&layout, &redact_structured_value(&data)?)
         .map_err(Error::Invalid)?;
-    write_private_text(&worktree.status_path, &text, false)
+    write_private_text(&worktree.status_path, &text, false).map_err(|e| worktree.error_spelling(e))
 }
 
 /// Inspect only the explicitly supplied worktree; no consumer discovery.
 pub fn inspect_worktree(worktree: &DispatchWorktree) -> Result<Value> {
+    inspect_worktree_inner(worktree).map_err(|e| worktree.error_spelling(e))
+}
+
+fn inspect_worktree_inner(worktree: &DispatchWorktree) -> Result<Value> {
     reject_links(&worktree.path)?;
     Ok(json!({
         "dispatch_id":worktree.dispatch_id, "branch":worktree.branch,
@@ -834,6 +1030,10 @@ pub fn inspect_worktree(worktree: &DispatchWorktree) -> Result<Value> {
 }
 
 pub fn cleanup_worktree(worktree: &DispatchWorktree, delete_branch: bool) -> Result<()> {
+    cleanup_worktree_inner(worktree, delete_branch).map_err(|e| worktree.error_spelling(e))
+}
+
+fn cleanup_worktree_inner(worktree: &DispatchWorktree, delete_branch: bool) -> Result<()> {
     reject_links(&worktree.path)?;
     let removal = git(
         &worktree.main_repo_root,
@@ -848,7 +1048,15 @@ pub fn cleanup_worktree(worktree: &DispatchWorktree, delete_branch: bool) -> Res
     if !removal.status.success() && worktree.path.try_exists()? {
         return Err(Error::Git {
             code: removal.status.code(),
-            command: None,
+            command: Some(git_command(
+                &worktree.main_repo_root,
+                &[
+                    OsStr::new("worktree"),
+                    OsStr::new("remove"),
+                    OsStr::new("--force"),
+                    worktree.path.as_os_str(),
+                ],
+            )?),
             stderr: String::from_utf8(removal.stderr)
                 .map_err(|_| Error::Invalid("non UTF-8 Git error".into()))?,
         });
@@ -900,6 +1108,21 @@ pub fn cleanup_worktree(worktree: &DispatchWorktree, delete_branch: bool) -> Res
 }
 
 pub fn merge_result(
+    worktree: &DispatchWorktree,
+    source_commit: Option<&str>,
+    approved_files: Option<&[String]>,
+    allow_harness_self_modify: bool,
+) -> Result<MergeOutcome> {
+    merge_result_inner(
+        worktree,
+        source_commit,
+        approved_files,
+        allow_harness_self_modify,
+    )
+    .map_err(|e| worktree.error_spelling(e))
+}
+
+fn merge_result_inner(
     worktree: &DispatchWorktree,
     source_commit: Option<&str>,
     approved_files: Option<&[String]>,
@@ -1084,37 +1307,108 @@ pub fn persist_dispatch_artifacts(
 ) -> Result<PathBuf> {
     identifier(&worktree.dispatch_id)?;
     let root = match artifacts_root {
-        Some(root) => selected_root(root)?,
+        Some(root) => match &worktree.artifact_selection {
+            Some((requested, selected)) if requested == &absolute(root)? => selected.clone(),
+            _ => selected_root(root)?,
+        },
         None => selected_root(main_repo_root)?.join("tasks/dispatch"),
     };
-    let destination = root.join(&worktree.dispatch_id);
-    ensure_dir(&destination)?;
-    let source = worktree.path.join(".mir-dispatch");
-    reject_links(&source)?;
-    match fs::metadata(&source) {
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(destination),
-        Err(e) => return Err(e.into()),
-        Ok(meta) if !meta.is_dir() => {
-            return Err(Error::Invalid(
-                "dispatch evidence must be a directory".into(),
-            ));
+    let display_root = artifacts_root
+        .map(Path::to_owned)
+        .unwrap_or_else(|| main_repo_root.join("tasks/dispatch"));
+    let result = (|| {
+        let destination = root.join(&worktree.dispatch_id);
+        ensure_dir(&destination)?;
+        let source = worktree.path.join(".mir-dispatch");
+        reject_links(&source)?;
+        match fs::metadata(&source) {
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(destination),
+            Err(e) => return Err(e.into()),
+            Ok(meta) if !meta.is_dir() => {
+                return Err(Error::Invalid(
+                    "dispatch evidence must be a directory".into(),
+                ));
+            }
+            Ok(_) => {}
         }
-        Ok(_) => {}
+        for filename in [
+            "reviewer.json",
+            "brief.md",
+            "status.json",
+            "result.json",
+            "events.jsonl",
+            "dispatch-events.jsonl",
+        ] {
+            let text = match read_text(&source.join(filename)) {
+                Ok(text) => text,
+                Err(Error::Io(e)) if e.kind() == io::ErrorKind::NotFound => continue,
+                Err(e) => return Err(e),
+            };
+            secure_write_contained(&destination.join(filename), &text, false)?;
+        }
+        Ok(destination)
+    })();
+    result.map_err(|e| error_spelling(e, &root, &display_root))
+}
+
+#[cfg(all(test, unix))]
+mod containment_tests {
+    use super::*;
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn artifact_parent_swap_refuses_before_external_effect() {
+        let scratch = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(scratch.path()).unwrap();
+        let container = root.join("container");
+        let outside = root.join("outside");
+        fs::create_dir(&container).unwrap();
+        fs::create_dir(&outside).unwrap();
+        fs::write(outside.join("canary"), "unchanged").unwrap();
+        let selected = selected_root(&container.join("artifacts")).unwrap();
+        fs::remove_dir(&container).unwrap();
+        symlink(&outside, &container).unwrap();
+        let result = secure_write_contained(&selected.join("job/events.jsonl"), "{}", true);
+        assert!(result.is_err());
+        assert_eq!(
+            fs::read_to_string(outside.join("canary")).unwrap(),
+            "unchanged"
+        );
+        assert_eq!(fs::read_dir(&outside).unwrap().count(), 1);
     }
-    for filename in [
-        "reviewer.json",
-        "brief.md",
-        "status.json",
-        "result.json",
-        "events.jsonl",
-        "dispatch-events.jsonl",
-    ] {
-        let text = match read_text(&source.join(filename)) {
-            Ok(text) => text,
-            Err(Error::Io(e)) if e.kind() == io::ErrorKind::NotFound => continue,
-            Err(e) => return Err(e),
+    #[test]
+    fn artifact_alias_retarget_keeps_selected_container_for_persistence() {
+        let scratch = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(scratch.path()).unwrap();
+        let inside = root.join("inside");
+        let outside = root.join("outside");
+        fs::create_dir(&inside).unwrap();
+        fs::create_dir(&outside).unwrap();
+        fs::write(outside.join("canary"), "unchanged").unwrap();
+        let alias = root.join("artifacts");
+        symlink(&inside, &alias).unwrap();
+        let mut worktree = DispatchWorktree {
+            dispatch_id: "job".into(),
+            main_repo_root: root.clone(),
+            path: root.join("tree"),
+            branch: "unused".into(),
+            base_commit: "unused".into(),
+            brief_path: root.join("brief"),
+            status_path: root.join("status"),
+            result_path: root.join("result"),
+            auto_temp_base: None,
+            artifact_selection: None,
+            requested_paths: None,
         };
-        secure_write(&destination.join(filename), &text, false)?;
+        worktree.select_artifact_root(&alias).unwrap();
+        fs::remove_file(&alias).unwrap();
+        symlink(&outside, &alias).unwrap();
+        let destination = persist_dispatch_artifacts(&worktree, &root, Some(&alias)).unwrap();
+        assert_eq!(destination, inside.join("job"));
+        assert_eq!(
+            fs::read_to_string(outside.join("canary")).unwrap(),
+            "unchanged"
+        );
+        assert_eq!(fs::read_dir(&outside).unwrap().count(), 1);
     }
-    Ok(destination)
 }

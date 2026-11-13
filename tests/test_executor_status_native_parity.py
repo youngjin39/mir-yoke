@@ -22,7 +22,10 @@ GOLDEN = json.loads((ROOT / "tests/fixtures/executor_status.json").read_text(enc
 def binary():
     if shutil.which("cargo") is None:
         pytest.skip("cargo unavailable")
-    environment = dict(os.environ, CARGO_BUILD_JOBS="4", CARGO_TARGET_DIR=str(CRATE / "target"))
+    environment = dict(
+        os.environ, CARGO_BUILD_JOBS=os.environ.get("CARGO_BUILD_JOBS", "4"),
+        CARGO_TARGET_DIR=str(CRATE / "target"),
+    )
     command = ["cargo", "build", "--release", "--offline", "--locked", "--bin", "executor-query"]
     subprocess.run(command, cwd=CRATE, env=environment, check=True)
     target = Path(environment.get("CARGO_TARGET_DIR", "target"))

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import runpy
@@ -59,6 +60,35 @@ def test_first_difference_reports_decoded_byte_offset():
     }
 
 
+def contained_parent_swap_expected(case):
+    """Owner exception: refuse at the same write boundary as artifacts-file.
+
+    Derive every byte from frozen Python failure/state records, never native output.
+    Only the error and the parent-swap input layout differ from artifacts-file.
+    """
+    failure = next(item for item in GOLDEN["cases"] if item["name"] == "artifacts-file")
+    expected = copy.deepcopy(failure["expected"])
+    message = "symlink/reparse point rejected: <root>/artifact-container"
+    files = expected["effects"]["files"]
+    del files["artifacts"]
+    for name, value in case["expected"]["effects"]["files"].items():
+        if name == "artifact-container" or name.startswith("fault-"):
+            if not name.startswith("fault-outside/artifacts"):
+                files[name] = copy.deepcopy(value)
+    old = "[Errno 20] Not a directory: '<root>/artifacts/<id>'"
+    hooks = bytes.fromhex(files["hook-events"]["hex"]).decode()
+    files["hook-events"]["hex"] = hooks.replace(old, message).replace(
+        "NotADirectoryError", "ValueError"
+    ).encode().hex()
+    row = files["tasks/jobs.db"]["tables"]["jobs"][0]
+    row["stderr"] = message
+    row["dispatch_options_json"] = row["dispatch_options_json"].replace(
+        "<root>/artifacts", "<root>/artifact-container/artifacts"
+    )
+    expected["stderr_hex"] = f"[mir_executor] dispatch failed: {message}\n".encode().hex()
+    return expected
+
+
 @pytest.mark.parametrize("route", ["reference", "binary", "module"])
 @pytest.mark.parametrize("case", GOLDEN["cases"], ids=lambda case: case["name"])
 def test_dispatch_frozen_parity(binary, oracle, tmp_path, case, route):  # noqa: F811
@@ -69,6 +99,8 @@ def test_dispatch_frozen_parity(binary, oracle, tmp_path, case, route):  # noqa:
     )
     actual, routing = SUPPORT["capture"](home, case, setup, route, binary)
     expected = case.get("expected_by_route", {}).get(route, case["expected"])
+    if route != "reference" and case["name"] == "fault-artifacts-parent-swap-to-outside":
+        expected = contained_parent_swap_expected(case)
     difference = SUPPORT["first_difference"](expected, actual)
     if route != "reference" and case["name"] == "fault-artifacts-parent-swap-to-outside":
         assert (home / "fault-parent-swapped").exists(), "directory swap was not reached"
@@ -84,3 +116,54 @@ def test_dispatch_frozen_parity(binary, oracle, tmp_path, case, route):  # noqa:
         "first_difference": difference,
         **routing,
     }
+
+
+def alias_observation(value, physical, key=""):
+    """Keep alias <root> and reference-selected <physical> spellings distinct."""
+    if isinstance(value, dict):
+        return {key: alias_observation(item, physical, key) for key, item in value.items()}
+    if isinstance(value, list):
+        return [alias_observation(item, physical) for item in value]
+    if isinstance(value, str):
+        if key == "hex" or key.endswith("_hex"):
+            return bytes.fromhex(value).replace(str(physical).encode(), b"<physical>").hex()
+        return value.replace(str(physical), "<physical>")
+    return value
+
+
+@pytest.mark.parametrize("route", ["binary", "module"])
+@pytest.mark.parametrize("name", [
+    "success", "fault-review-malformed", "reviewer-write", "artifacts-file",
+    "fault-cleanup-remove", "fault-cleanup-branch",
+])
+def test_dispatch_caller_alias_spelling(binary, oracle, tmp_path, name, route):  # noqa: F811
+    """Pass a real alias in argv/HOME; compare pinned observations at each surface."""
+    reference, database = oracle
+    scenario = "fault-review-pass" if name == "reviewer-write" else name
+    case = next(case for case in GOLDEN["cases"] if case["name"] == scenario)
+    captures = []
+    for implementation in ("reference", route):
+        parent = tmp_path / implementation
+        parent.mkdir()
+        physical = parent / "physical"
+        physical.mkdir()
+        alias = parent / "alias"
+        alias.symlink_to(physical, target_is_directory=True)
+        home = alias / "home"
+        assert str(home) != str(home.resolve())
+        setup = SUPPORT["seed"](
+            home, case, reference, database,
+            None if implementation == "reference" else binary,
+        )
+        if name == "reviewer-write":
+            for script in (home / "server.py", home / "fake-codex"):
+                text = script.read_text().replace(
+                    "        if review:\n",
+                    "        if review:\n"
+                    "            (cwd / '.mir-dispatch/reviewer.json').mkdir()\n",
+                )
+                script.write_text(text)
+        actual, _ = SUPPORT["capture"](home, case, setup, implementation, binary)
+        captures.append(alias_observation(actual, (physical / "home").resolve()))
+    difference = SUPPORT["first_difference"](*captures)
+    assert difference is None, difference

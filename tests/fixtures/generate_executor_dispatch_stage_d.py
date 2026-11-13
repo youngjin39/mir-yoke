@@ -56,6 +56,7 @@ def cases():
             "no-expect-changes",
             "default-artifacts",
             "artifacts-file",
+            "artifacts-parent-file",
             "artifacts-symlink",
             "brief-missing",
             "brief-malformed",
@@ -216,6 +217,9 @@ def seed(home, case, reference, database, binary=None):
         argv += ["--no-expect-changes"]
     if name == "artifacts-file":
         (home / "artifacts").write_text("blocker")
+    if name == "artifacts-parent-file":
+        (home / "blocker").write_text("unchanged blocker")
+        argv[argv.index("--artifacts-dir") + 1] = str(home / "blocker/artifacts")
     if name == "artifacts-symlink":
         (home / "outside").mkdir()
         (home / "artifacts").symlink_to(home / "outside", target_is_directory=True)
