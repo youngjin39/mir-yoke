@@ -285,7 +285,10 @@ fn non_force_removal_preserves_dirt_created_after_reinspection() {
 #[test]
 fn registered_firmlink_removes_clean_and_finished_worktrees() {
     let fixture = Fixture::new("firmlink");
-    let alias = Path::new("/System/Volumes/Data").join(fixture.0.strip_prefix("/").unwrap());
+    let alias = Path::new("/System")
+        .join("Volumes")
+        .join("Data")
+        .join(fixture.0.strip_prefix("/").unwrap());
     assert!(
         alias.is_dir(),
         "macOS Data firmlink must resolve to fixture"
@@ -321,7 +324,10 @@ fn registered_spelling_retarget_before_remove_is_refused() {
     let alias = fixture.0.join("registered");
     symlink(&fixture.0, &alias).unwrap();
     #[cfg(target_os = "macos")]
-    let unchanged = Path::new("/System/Volumes/Data").join(fixture.0.strip_prefix("/").unwrap());
+    let unchanged = Path::new("/System")
+        .join("Volumes")
+        .join("Data")
+        .join(fixture.0.strip_prefix("/").unwrap());
     #[cfg(not(target_os = "macos"))]
     let unchanged = fixture.0.join("registered-unchanged");
     #[cfg(not(target_os = "macos"))]
