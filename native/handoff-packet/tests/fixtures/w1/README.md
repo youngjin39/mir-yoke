@@ -91,6 +91,12 @@ skips POSIX replay and retains the platform-specific suite.
   revalidation. The `bootstrap-gate` target, shell sources and every frozen
   observation remain unchanged; full replay passes.
 
+- The native execute-direct slice re-pins ten crate sources (`lib.rs`,
+  `codex_binary.rs`, `local_bridge.rs` and the `executor_*` admission, command
+  hooks, hooks, execute, ledger JSON, query and transport modules). The
+  `bootstrap-gate` target, shell sources and every frozen observation remain
+  unchanged; full replay passes.
+
 ## W1-Y9a SessionStart reference extension
 
 `session-start.json` adds 36 isolated shell-reference observations without changing
