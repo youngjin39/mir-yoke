@@ -3089,7 +3089,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_sweep.rs",
-      "sha256": "1924a5ad6cd8370976abb2ff6c3fa1e936ebd43cc9f9b12e27efebdd60718256"
+      "sha256": "4f9d1b028096dcbf2851ee26415484a69b41b683e3d89565f0392f08cfdde4ec"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3917,7 +3917,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_sweep.rs",
-      "sha256": "64dcc3eaa8409a2d81eb46269dc4d0981b81b4be95d70ddc8b54b36af45373e9"
+      "sha256": "f94f7010160786e198407f03048959982c21c27c7eb2d77ce94603cf47f5b027"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4325,13 +4325,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/README.md",
-      "sha256": "3261e6be04ba90f838476b341bdfb5642f03ed2daef5d5d6fe66cfa7e83d592c"
+      "sha256": "2c004bc2af0fef54a320648bbca10c8229255c4de76c525f1b2a12f44ed3d262"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/manifest.json",
-      "sha256": "bf40d97be5743dc998959c8d7e62a00acef891d438af6a2542180c9432711f1f"
+      "sha256": "2a93f407b609eff31c5352dc210d6ac2c6157641911492a17a80579b8bc3a9c7"
     },
     {
       "classification": "template-maintainer-tool",

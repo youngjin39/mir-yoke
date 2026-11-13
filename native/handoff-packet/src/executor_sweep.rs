@@ -192,9 +192,37 @@ fn receipt_time(text: &str) -> Result<String> {
         tod % 60
     ))
 }
+// Device/inode identity is independent of path spelling and survives alias resolution.
+fn directory_identity(path: &Path) -> std::io::Result<(u64, u64)> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let metadata = fs::metadata(path)?;
+        if !metadata.is_dir() {
+            return Err(std::io::Error::other("worktree is not a directory"));
+        }
+        Ok((metadata.dev(), metadata.ino()))
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        use windows_sys::Win32::Storage::FileSystem::FILE_FLAG_BACKUP_SEMANTICS;
+        let file = fs::OpenOptions::new()
+            .access_mode(0)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+            .open(path)?;
+        if !file.metadata()?.is_dir() {
+            return Err(std::io::Error::other("worktree is not a directory"));
+        }
+        let identity = crate::transcript_windows::identity(&file)?;
+        Ok((identity.volume, identity.index))
+    }
+}
 #[derive(Clone)]
 struct Worktree {
     path: PathBuf,
+    registered: PathBuf,
+    identity: Option<(u64, u64)>,
     branch: String,
     id: String,
 }
@@ -274,10 +302,13 @@ fn list(repo: &Path) -> Result<Vec<Worktree>> {
         if let (Some(path), Some(branch)) = (get("worktree"), get("branch"))
             && let Some(id) = branch.strip_prefix("refs/heads/mir-dispatch/")
         {
-            let path = resolved(Path::new(path))?;
+            let registered = PathBuf::from(path);
+            let path = resolved(&registered)?;
             if path != repo {
                 result.push(Worktree {
+                    identity: directory_identity(&path).ok(),
                     path,
+                    registered,
                     branch: branch.trim_start_matches("refs/heads/").into(),
                     id: id.into(),
                 });
@@ -354,7 +385,19 @@ pub fn sweep_run_state_with_observer(
                 continue;
             }
             observer("before-remove", &wt.path)?;
-            let reason = match git(&repo, &["worktree", "remove", &path]) {
+            // Keep inspection/reporting canonical, but Git requires its registered spelling.
+            // Revalidate after the observer so retargeted aliases and replaced directories
+            // cannot turn a previously inspected tree into authority to remove another.
+            if resolved(&wt.registered).ok().as_ref() != Some(&wt.path)
+                || wt.identity.is_none()
+                || directory_identity(&wt.path).ok() != wt.identity
+                || directory_identity(&wt.registered).ok() != wt.identity
+            {
+                drifted.push(json!({"path":path,"reasons":["apply-time-drift:remove-refused"]}));
+                continue;
+            }
+            let registered = wire(&wt.registered)?;
+            let reason = match git(&repo, &["worktree", "remove", &registered]) {
                 Err(_) => Some("apply-time-drift:remove-inspection-failed"),
                 Ok(o) if !o.status.success() => Some("apply-time-drift:remove-refused"),
                 Ok(_) => None,

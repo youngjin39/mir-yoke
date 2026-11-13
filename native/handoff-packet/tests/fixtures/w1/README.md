@@ -86,6 +86,11 @@ skips POSIX replay and retains the platform-specific suite.
   `[[bin]]` declaration. The `bootstrap-gate` target, shell sources and every
   frozen observation remain unchanged; full replay passes.
 
+- The sweep firmlink fix re-pins `native/handoff-packet/src/executor_sweep.rs`:
+  removal passes Git its registered worktree spelling after a device/inode
+  revalidation. The `bootstrap-gate` target, shell sources and every frozen
+  observation remain unchanged; full replay passes.
+
 ## W1-Y9a SessionStart reference extension
 
 `session-start.json` adds 36 isolated shell-reference observations without changing

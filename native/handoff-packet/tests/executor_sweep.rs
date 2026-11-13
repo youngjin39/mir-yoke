@@ -281,6 +281,144 @@ fn non_force_removal_preserves_dirt_created_after_reinspection() {
             }))
     );
 }
+#[cfg(target_os = "macos")]
+#[test]
+fn registered_firmlink_removes_clean_and_finished_worktrees() {
+    let fixture = Fixture::new("firmlink");
+    let alias = Path::new("/System/Volumes/Data").join(fixture.0.strip_prefix("/").unwrap());
+    assert!(
+        alias.is_dir(),
+        "macOS Data firmlink must resolve to fixture"
+    );
+    reference("setup", &alias, "run-mixed", &[]);
+    let listing = Command::new("git")
+        .arg("-C")
+        .arg(fixture.0.join("repo"))
+        .args(["worktree", "list", "--porcelain"])
+        .output()
+        .unwrap();
+    assert!(listing.status.success());
+    assert!(
+        String::from_utf8(listing.stdout)
+            .unwrap()
+            .contains(alias.to_str().unwrap())
+    );
+    let result = run_native(&fixture.0, "run-mixed", true);
+    assert_eq!(
+        result["removed_worktrees"],
+        json!(["$ROOT/wt-clean", "$ROOT/wt-finished"])
+    );
+    assert!(!fixture.0.join("wt-clean").exists());
+    assert!(!fixture.0.join("wt-finished").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn registered_spelling_retarget_before_remove_is_refused() {
+    use std::os::unix::fs::symlink;
+    let fixture = Fixture::new("registered-retarget");
+    reference("setup", &fixture.0, "run-mixed", &[]);
+    let alias = fixture.0.join("registered");
+    symlink(&fixture.0, &alias).unwrap();
+    #[cfg(target_os = "macos")]
+    let unchanged = Path::new("/System/Volumes/Data").join(fixture.0.strip_prefix("/").unwrap());
+    #[cfg(not(target_os = "macos"))]
+    let unchanged = fixture.0.join("registered-unchanged");
+    #[cfg(not(target_os = "macos"))]
+    symlink(&fixture.0, &unchanged).unwrap();
+    // Git lists the path from this registration, including its original spelling.
+    for (registered, name) in [(&alias, "wt-clean"), (&unchanged, "wt-finished")] {
+        fs::write(
+            fixture
+                .0
+                .join("repo/.git/worktrees")
+                .join(name)
+                .join("gitdir"),
+            format!("{}\n", registered.join(name).join(".git").display()),
+        )
+        .unwrap();
+    }
+    let outside = fixture.0.join("outside");
+    fs::create_dir(&outside).unwrap();
+    fs::create_dir(outside.join("wt-clean")).unwrap();
+    for name in ["tracked.txt", ".gitignore", ".git"] {
+        fs::copy(
+            fixture.0.join("wt-clean").join(name),
+            outside.join("wt-clean").join(name),
+        )
+        .unwrap();
+    }
+    let result = executor_sweep::sweep_run_state_with_observer(
+        &fixture.0.join("repo"),
+        &fixture.0.join("jobs.db"),
+        NOW,
+        120,
+        true,
+        |stage, path| {
+            if stage == "before-remove" && path.ends_with("wt-clean") {
+                fs::remove_file(&alias).unwrap();
+                symlink(&outside, &alias).unwrap();
+            }
+            Ok(())
+        },
+    )
+    .unwrap();
+    // A stable registered alias must still be removed while the retargeted one is refused.
+    assert!(!fixture.0.join("wt-finished").exists());
+    assert_eq!(
+        result["removed_worktrees"],
+        json!([fixture.0.join("wt-finished")])
+    );
+    assert!(fixture.0.join("wt-clean/tracked.txt").is_file());
+    assert_eq!(
+        fs::read_to_string(outside.join("wt-clean/tracked.txt")).unwrap(),
+        "initial\n"
+    );
+    assert!(
+        result["preserved_worktrees"]
+            .as_array()
+            .unwrap()
+            .contains(&json!({
+                "path": fixture.0.join("wt-clean"), "reasons": ["apply-time-drift:remove-refused"]
+            }))
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn replacement_at_same_canonical_path_before_remove_is_refused() {
+    let fixture = Fixture::new("directory-replacement");
+    reference("setup", &fixture.0, "run-mixed", &[]);
+    let result = executor_sweep::sweep_run_state_with_observer(
+        &fixture.0.join("repo"),
+        &fixture.0.join("jobs.db"),
+        NOW,
+        120,
+        true,
+        |stage, path| {
+            if stage == "before-remove" && path.ends_with("wt-clean") {
+                fs::rename(path, fixture.0.join("saved-clean")).unwrap();
+                fs::create_dir(path).unwrap();
+                for name in ["tracked.txt", ".gitignore", ".git"] {
+                    fs::copy(fixture.0.join("saved-clean").join(name), path.join(name)).unwrap();
+                }
+            }
+            Ok(())
+        },
+    )
+    .unwrap();
+    assert!(fixture.0.join("wt-clean/tracked.txt").is_file());
+    assert!(fixture.0.join("saved-clean/tracked.txt").is_file());
+    assert!(
+        result["preserved_worktrees"]
+            .as_array()
+            .unwrap()
+            .contains(&json!({
+                "path": fixture.0.join("wt-clean"), "reasons": ["apply-time-drift:remove-refused"]
+            }))
+    );
+}
+
 #[test]
 fn negative_retention_is_rejected_without_mutation() {
     let fixture = Fixture::new("negative");
