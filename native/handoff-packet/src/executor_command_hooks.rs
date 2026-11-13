@@ -8,6 +8,13 @@ use std::path::Path;
 
 pub trait HookClient {
     fn call(&mut self, name: &str, args: Vec<Value>, options: Value) -> Result<Value, BridgeError>;
+    fn dispatch_provider_call(
+        &mut self,
+        args: Vec<Value>,
+        options: Value,
+    ) -> Result<Value, BridgeError> {
+        self.call("after_provider_call", args, options)
+    }
 }
 impl HookClient for LocalBridge {
     fn call(&mut self, name: &str, args: Vec<Value>, options: Value) -> Result<Value, BridgeError> {
@@ -45,28 +52,19 @@ pub struct CommandHooks {
 }
 impl CommandHooks {
     pub fn start_in(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>, BridgeError> {
-        Self::start_inner(config, cwd, false)
+        Self::start_inner(config, cwd)
     }
     pub(crate) fn start_with_parser(
         config: BridgeConfig,
         cwd: &Path,
     ) -> Result<Option<Self>, BridgeError> {
-        Self::start_inner(config, cwd, true)
+        Self::start_inner(config, cwd)
     }
-    fn start_inner(
-        config: BridgeConfig,
-        cwd: &Path,
-        parser: bool,
-    ) -> Result<Option<Self>, BridgeError> {
+    fn start_inner(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>, BridgeError> {
         let policy = crate::executor_admission::native_policy(&config.target_root)
             .map_err(BridgeError::Configuration)?;
         // Start the bridge first: its hello can reveal computed duplicate exports.
-        let start = if parser {
-            LocalBridge::start_with_parser
-        } else {
-            LocalBridge::start_in
-        };
-        let python = start(
+        let python = LocalBridge::start_with_parser(
             BridgeConfig {
                 interpreter: config.interpreter.clone(),
                 target_root: config.target_root.clone(),
@@ -210,7 +208,20 @@ impl CommandHooks {
     }
 }
 impl HookClient for CommandHooks {
+    fn dispatch_provider_call(
+        &mut self,
+        args: Vec<Value>,
+        options: Value,
+    ) -> Result<Value, BridgeError> {
+        self.call("bridge.dispatch_provider_call", args, options)
+    }
     fn call(&mut self, name: &str, args: Vec<Value>, options: Value) -> Result<Value, BridgeError> {
+        let dispatch_provider = name == "bridge.dispatch_provider_call";
+        let name = if dispatch_provider {
+            "after_provider_call"
+        } else {
+            name
+        };
         self.error_points = None;
         if name == "bridge.target_agent" && self.brief_profile.as_ref().is_some_and(|p| p.packet())
         {
@@ -426,7 +437,15 @@ impl HookClient for CommandHooks {
             }
         }
         if let Some(python) = self.python.as_mut() {
-            return python.call(name, args, options);
+            return python.call(
+                if dispatch_provider {
+                    "bridge.dispatch_provider_call"
+                } else {
+                    name
+                },
+                args,
+                options,
+            );
         }
         Ok(json!({"ok":true,"result":null,"handle":null,"args":args}))
     }

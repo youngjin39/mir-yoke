@@ -487,11 +487,20 @@ fn admit_inner(
                 json!({"handles":{"0":handle}}),
             )?;
             if entered["ok"] == false {
-                return Ok(refusal(format!(
-                    "{}: {}",
-                    entered["error"]["type"].as_str().unwrap_or(""),
-                    entered["error"]["message"].as_str().unwrap_or("")
-                )));
+                return Ok(Admission::Refused {
+                    code: 1,
+                    stderr: format!(
+                        "{}{}: {}\n",
+                        if handle != "native-writer" && entered["error"]["type"] == "ValueError" {
+                            ""
+                        } else {
+                            "[mir_executor] "
+                        },
+                        entered["error"]["type"].as_str().unwrap_or(""),
+                        entered["error"]["message"].as_str().unwrap_or("")
+                    )
+                    .into_bytes(),
+                });
             }
         }
     }

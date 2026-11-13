@@ -297,7 +297,12 @@ fn hook(
     let Some(b) = c.bridge.as_deref_mut() else {
         return Ok(json!({"ok":true,"result":null,"handle":null}));
     };
-    let reply = b.call(name, args, options).map_err(Error::Bridge)?;
+    let reply = if name == "after_provider_call" {
+        b.dispatch_provider_call(args, options)
+    } else {
+        b.call(name, args, options)
+    }
+    .map_err(Error::Bridge)?;
     if reply["ok"] != true {
         return Err(Error::Hook {
             kind: reply["error"]["type"].as_str().unwrap_or("Error").into(),

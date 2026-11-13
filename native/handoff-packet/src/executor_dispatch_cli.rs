@@ -39,10 +39,12 @@ fn brief_call(
         .call(name, args, json!({"handles":handles}))
         .map_err(|e| e.to_string())?;
     if reply["ok"] != true {
+        let kind = reply["error"]["type"].as_str().unwrap_or("Error");
+        let message = reply["error"]["message"].as_str().unwrap_or("");
+        let uncaught = name == "render_brief" && kind == "RuntimeError";
         return Err(format!(
-            "{}: {}",
-            reply["error"]["type"].as_str().unwrap_or("Error"),
-            reply["error"]["message"].as_str().unwrap_or("")
+            "{}{kind}: {message}",
+            if uncaught { "\0uncaught:" } else { "" }
         ));
     }
     Ok(reply)
@@ -380,6 +382,9 @@ pub fn dispatch(
     let (text, brief_text, agent) = match prepared {
         Ok(v) => v,
         Err(e) => {
+            if e.starts_with("\0uncaught:") {
+                return Err(e);
+            }
             diagnostic(&format!("DispatchBrief error: {}", strip_class(&e)));
             return Ok(1);
         }
@@ -735,7 +740,7 @@ pub fn dispatch(
                             .unwrap_or(attempt);
                         let replacement = hook(
                             bridge,
-                            "after_provider_call",
+                            "bridge.dispatch_provider_call",
                             vec![
                                 json!({"$type":"codex_attempt","value":attempt.to_value()}),
                                 meta.clone(),

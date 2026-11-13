@@ -75,8 +75,8 @@ pub struct LocalBridge {
     timeout: Duration,
     closed: bool,
 }
-// Parser callbacks share the selected bridge's cached local module and writer lifetime.
-const PARSER_BRIDGE: &str = r#"
+// Command adapters share the selected bridge's cached local module and writer lifetime.
+const COMMAND_BRIDGE: &str = r#"
 import contextlib, io, runpy, sys
 script = sys.argv.pop(1)
 sys.argv[0] = script
@@ -84,6 +84,20 @@ scope = runpy.run_path(script, run_name='__mir_bridge__')
 Bridge = scope['Bridge']
 original = Bridge.call
 def call(self, frame):
+    if frame.get('hook') == 'bridge.dispatch_provider_call':
+        function = getattr(self.module, 'after_provider_call', None)
+        if not callable(function):
+            return original(self, dict(frame, hook='after_provider_call'))
+        def checked(*args, **kwargs):
+            result = function(*args, **kwargs)
+            if result is not None:
+                result.exit_code
+            return result
+        self.module.after_provider_call = checked
+        try:
+            return original(self, dict(frame, hook='after_provider_call'))
+        finally:
+            self.module.after_provider_call = function
     if frame.get('hook') != 'bridge.parse_execute':
         return original(self, frame)
     output, errors = io.StringIO(), io.StringIO()
@@ -164,7 +178,7 @@ impl LocalBridge {
         let mut command = Command::new(&config.interpreter);
         command.arg("-I");
         if parser {
-            command.args(["-c", PARSER_BRIDGE]);
+            command.args(["-c", COMMAND_BRIDGE]);
         }
         let mut child = command
             .arg(&config.bridge_script)
