@@ -18,6 +18,12 @@ GOLDEN = json.loads(SUPPORT["OUTPUT"].read_text(encoding="ascii"))
 pytestmark = pytest.mark.skipif(os.name != "posix", reason="POSIX synthetic provider fixtures")
 
 
+@pytest.fixture(scope="module", autouse=True)
+def isolated_git_environment():
+    with SUPPORT["isolated_git_environment"]():
+        yield
+
+
 @pytest.fixture(scope="module")
 def oracle(tmp_path_factory):
     scratch = tmp_path_factory.mktemp("dispatch-oracle")
@@ -37,6 +43,33 @@ def test_dispatch_frozen_provenance():
     assert (
         GOLDEN["exception_protocol"] == "exit 1; preserve raw stdout; traceback final stderr line"
     )
+
+
+@pytest.mark.parametrize("route", ["reference", "binary", "module"])
+def test_dispatch_ignores_inherited_git_environment(binary, oracle, tmp_path, monkeypatch, route):  # noqa: F811
+    reference, database = oracle
+    config = tmp_path / "host.gitconfig"
+    config.write_text("[init]\n\tdefaultBranch = trunk\n")
+    inherited = {
+        "GIT_CONFIG_SYSTEM": str(config),
+        "GIT_CONFIG_GLOBAL": str(config),
+        "GIT_CONFIG_NOSYSTEM": "0",
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "init.defaultBranch",
+        "GIT_CONFIG_VALUE_0": "trunk",
+        "GIT_DIR": str(tmp_path / "foreign.git"),
+        "GIT_WORK_TREE": str(tmp_path / "foreign-worktree"),
+        "GIT_INDEX_FILE": str(tmp_path / "foreign-index"),
+    }
+    for key, value in inherited.items():
+        monkeypatch.setenv(key, value)
+    case = next(case for case in GOLDEN["cases"] if case["name"] == "argv-async")
+    home = (tmp_path / "home").resolve()
+    setup = SUPPORT["seed"](home, case, reference, database,
+                            None if route == "reference" else binary)
+    actual, _ = SUPPORT["capture"](home, case, setup, route, binary)
+    assert SUPPORT["first_difference"](case["expected"], actual) is None
+    assert {key: os.environ[key] for key in inherited} == inherited
 
 
 @pytest.mark.parametrize("payload", [b"0123456789abcdef", b"0123456789abcdefghij"])

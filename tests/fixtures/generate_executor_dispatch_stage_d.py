@@ -17,6 +17,7 @@ import sqlite3
 import stat
 import subprocess
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,6 +29,22 @@ FAULTS = runpy.run_path(str(HERE / "executor_dispatch_stage_d_faults.py"))
 PIN = "d7ce42656224c719094358f343317907bf6e46a9"
 DIRECT["STATUS"].PIN = PIN
 OUTPUT = HERE / "executor_dispatch_stage_d.json"
+
+
+@contextmanager
+def isolated_git_environment():
+    """Isolate nested fixture helpers and their children from caller Git state."""
+    inherited = {key: value for key, value in os.environ.items() if key.startswith("GIT_")}
+    for key in inherited:
+        del os.environ[key]
+    os.environ.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL="/dev/null")
+    try:
+        yield
+    finally:
+        for key in tuple(os.environ):
+            if key.startswith("GIT_"):
+                del os.environ[key]
+        os.environ.update(inherited)
 
 
 def cases():
@@ -159,6 +176,7 @@ SERVER = (
 )
 
 
+@isolated_git_environment()
 def seed(home, case, reference, database, binary=None):
     launcher, env, argv = DISPATCH["seed"](home, case["name"], SUPPORT)
     shutil.copytree(
@@ -351,6 +369,7 @@ def install(home, binary, fault=None):
     )
 
 
+@isolated_git_environment()
 def git(home, *args):
     return subprocess.check_output(["git", "-C", str(home), *args], stderr=subprocess.PIPE).decode()
 
@@ -491,6 +510,7 @@ def snapshot(home):
     )
 
 
+@isolated_git_environment()
 def capture(home, case, setup, route="reference", binary=None):
     _, env, argv = setup
     command = [sys.executable, "-c", "from tools.mir_executor.cli import main; main()"]
@@ -595,6 +615,7 @@ def first_difference(expected, actual, prefix=""):
     }
 
 
+@isolated_git_environment()
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scratch", required=True, type=Path)
