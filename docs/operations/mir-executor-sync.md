@@ -30,7 +30,7 @@ schemas/rows) are refused before ownership. Supported dry-run and apply retain
 the frozen Python results and filesystem/ledger effects in
 `native/handoff-packet/tests/fixtures/g6/sweep.json`; dry-run writes nothing.
 
-`status`, `result`, `list-jobs` and `cancel` require the pinned native executor except for
+`status`, `result`, `list-jobs`, `cancel` and direct `execute` require the pinned native executor except for
 two compatibility declines:
 stream codecs or error handlers outside its bounded family, and a configured
 legacy `tools/mir_executor/local.py` (unless local JSON explicitly sets
@@ -715,7 +715,8 @@ invalid arguments are native-owned outcomes rather than read-only preflight
 declines. Invoking-home local hooks retain only the compatibility route described
 above.
 `MIR_EXECUTOR_IMPL=python` disables native routes except `status`, `result`,
-`list-jobs` and `cancel`; execute still honors `MIR_EXECUTOR_EXECUTE_IMPL=python`.
+`list-jobs`, `cancel` and direct `execute`. Direct execution also ignores
+`MIR_EXECUTOR_EXECUTE_IMPL` and `MIR_NATIVE_HOOKS`; dispatch keeps its selectors.
 For a different target root, the invoking home must be a Git root. Commands
 outside the native-owned query family also require
 `native_policy.target_admission.authorize_target: true`. Supported `sweep`,
@@ -738,15 +739,17 @@ resume resolves the agent again from the current integrity-checked brief and
 definitions. A missing definition warns and proceeds without an agent route.
 No agent-route shape is declined solely because it selects an agent. Invalid
 definitions or hook results fail with the reference diagnostic after ownership.
-Direct execute retains its existing backend and agent admission boundary.
-Cross-target requests, unsupported arguments and explicit dynamic parser
-extensions still use Python before ownership.
+Direct execute owns argument and cross-target admission errors natively. Its only
+Python compatibility routes are the codec and invoking-home local-hook conditions
+described above; dynamic local parser extensions use that hook route.
 Execute and resume inherit the caller's stdin/stdout/stderr without buffering.
 Their exit 64 permits retry only without an exact private owned receipt. Native
 claims ownership before hook imports, output, registry writes, or provider launch;
-if writing the receipt fails, it exits 64 before any effect and Python runs. With
+if writing the receipt fails, it exits 64 before any effect. Direct execute then
+refuses with exit 2; resume retains its Python fallback. With
 an owned receipt every exit code, including 64, is final. An older pinned binary
-that declines with 64 without a receipt therefore falls back to Python.
+that declines with 64 without a receipt therefore refuses direct execute with
+exit 2; resume retains its Python fallback.
 Query buffering remains; `status`, `result`, `list-jobs` and `cancel` select their two
 compatibility declines before native launch. Exit 64 never triggers Python for these commands
 after a native launch. Cancel only sets `cancel_requested=1` using UPDATE rowcount;

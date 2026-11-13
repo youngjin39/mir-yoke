@@ -7,8 +7,9 @@ The binary claims ownership before importing hooks, output, registry writes, or
 provider launch; if the receipt cannot be written it exits 64 before any effect.
 With an owned receipt every exit code, including 64, is final. Older binaries
 that decline with 64 without a receipt fall back to Python, except status, result,
-list-jobs, cancel and sweep, which require native admission and refuse without a
-Python fallback. Status/result/list-jobs/cancel ignore implementation selectors;
+list-jobs, cancel, direct execute and sweep, which require native admission and
+refuse without a Python fallback. Status/result/list-jobs/cancel and direct execute
+ignore implementation selectors;
 only codecs/handlers outside the native family
 and configured legacy local hooks use the Python compatibility implementation.
 Signals reach the
@@ -159,36 +160,52 @@ def _stop_native(child, number: int) -> None:
                 pass
 
 
-def _native_command(argv: list[str]) -> int | None:
+def _native_command(argv: list[str], *, required: bool = False) -> int | None:
     remaining = list(argv)
     if remaining and remaining[0] == '--jobs-db':
         del remaining[:2]
     elif remaining and remaining[0].startswith('--jobs-db='):
         del remaining[0]
-    if not remaining or remaining[0] not in {'execute', 'cancel', 'resume', 'sweep'}:
+    if required:
+        command = 'execute'
+    elif not remaining or remaining[0] not in {'execute', 'cancel', 'resume', 'sweep'}:
         return None
-    command = remaining[0]
-    if (os.environ.get('MIR_EXECUTOR_IMPL') == 'python'
+    else:
+        command = remaining[0]
+    if not required and (os.environ.get('MIR_EXECUTOR_IMPL') == 'python'
             or os.environ.get(f'MIR_EXECUTOR_{command.upper()}_IMPL') == 'python'
             or (command == 'execute' and '--dispatch' in remaining[1:]
                 and os.environ.get('MIR_EXECUTOR_DISPATCH_IMPL') == 'python')
             or os.environ.get('MIR_NATIVE_HOOKS') == '0'):
         return None
     try:
-        if any(codecs.lookup(stream.encoding or '').name != 'utf-8'
-               for stream in (sys.stdout, sys.stderr)):
+        if not required and any(codecs.lookup(stream.encoding or '').name != 'utf-8'
+                                for stream in (sys.stdout, sys.stderr)):
             return None
         pin = json.loads(_safe_path(_HOME_ROOT, QUERY_PIN).read_bytes())
         executable = _pinned_query(_HOME_ROOT, pin)
         if executable is None:
             return None
         directory = tempfile.TemporaryDirectory(prefix='mir-executor-')
+    except RecursionError:
+        if not required:
+            raise
+        return None
     except (OSError, ValueError, TypeError, AttributeError, LookupError):
         return None
     with directory:
         receipt = pathlib.Path(directory.name) / 'owned'
         environment = dict(os.environ, MIR_EXECUTOR_OWNED_RECEIPT=str(receipt))
         environment.setdefault('MIR_EXECUTOR_PYTHON', sys.executable)
+        if required:
+            environment['MIR_EXECUTOR_ARGPARSE_PROG'] = os.path.basename(sys.argv[0])
+            for name, stream in (('STDOUT', sys.stdout), ('STDERR', sys.stderr)):
+                for attribute in ('encoding', 'errors'):
+                    value = getattr(stream, attribute, None)
+                    if value:
+                        if attribute == 'encoding':
+                            value = codecs.lookup(value).name
+                        environment[f'MIR_EXECUTOR_{name}_{attribute.upper()}'] = value
         previous = {}
         child = None
         try:
@@ -234,7 +251,7 @@ def _write_output(stream, data: bytes) -> None:
         stream.write(data.decode('utf-8', errors='surrogateescape'))
 
 
-def _status_requested(argv: list[str], command: str = "status") -> bool:
+def _command_arguments(argv: list[str]) -> list[str]:
     remaining = argv
     while remaining:
         option, separator, _ = remaining[0].partition('=')
@@ -245,7 +262,21 @@ def _status_requested(argv: list[str], command: str = "status") -> bool:
             remaining = remaining[1:]
         else:
             break
+    return remaining
+
+
+def _status_requested(argv: list[str], command: str = "status") -> bool:
+    remaining = _command_arguments(argv)
     return bool(remaining and remaining[0] == command)
+
+
+def _dispatch_requested(argv: list[str]) -> bool:
+    remaining = _command_arguments(argv)
+    if not remaining or remaining[0] != 'execute':
+        return False
+    options = remaining[1:]
+    options = options[:options.index('--')] if '--' in options else options
+    return '--dispatch' in options
 
 
 def _status_codec_decline() -> bool:
@@ -337,6 +368,24 @@ def main(argv: list[str] | None = None) -> int:
 
             return python_main(argv)
         return _native_status(argv)
+    if _status_requested(argv, 'execute') and not _dispatch_requested(argv):
+        try:
+            disabled = _python_local_hooks_disabled()
+        except ValueError as error:
+            sys.stderr.write(f'[mir_executor] native local policy configuration error: {error}\n')
+            return 1
+        if _status_codec_decline() or (
+                (_HOME_ROOT / 'tools/mir_executor/local.py').exists()
+                and not disabled):
+            from tools.mir_executor.cli import main as python_main
+
+            return python_main(argv)
+        result = _native_command(argv, required=True)
+        if result is None:
+            print('[mir_executor] pinned native execute unavailable or incompatible; '
+                  'Python execute is retired', file=sys.stderr)
+            return 2
+        return result
     remaining = argv
     if remaining and remaining[0] == '--jobs-db':
         remaining = remaining[2:]

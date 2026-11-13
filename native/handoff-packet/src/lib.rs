@@ -1,7 +1,7 @@
 //! Native lifecycle hooks; unknown external JSON fields are accepted like Python.
 // Unsafe platform boundaries are isolated in account_home (Unix account lookup),
-// adoption_fs (descriptor-relative mutations), and executor_hooks_windows
-// (suspended child assignment to a Windows Job Object).
+// adoption_fs (descriptor-relative mutations), executor_process_unix (owned-child
+// termination), and executor_hooks_windows (Windows Job Object assignment).
 #![deny(unsafe_code)]
 #![cfg_attr(
     not(test),
@@ -10,6 +10,9 @@
 #[cfg(unix)]
 #[allow(unsafe_code)]
 mod account_home;
+#[cfg(unix)]
+#[allow(unsafe_code)]
+pub mod executor_process_unix;
 /// Account-database fallback for Python-compatible runtime Path.expanduser.
 #[cfg(unix)]
 pub fn runtime_account_home(name: Option<&std::ffi::OsStr>) -> Option<std::path::PathBuf> {
@@ -41,9 +44,14 @@ pub mod executor_dispatch_provider;
 #[forbid(unsafe_code)]
 pub mod executor_execute;
 #[forbid(unsafe_code)]
+mod executor_execute_parser;
+#[forbid(unsafe_code)]
 pub mod executor_finalize;
 #[forbid(unsafe_code)]
 pub mod executor_hooks;
+#[forbid(unsafe_code)]
+pub mod executor_text;
+pub(crate) mod python_decimal;
 #[forbid(unsafe_code)]
 pub mod python_json;
 #[forbid(unsafe_code)]

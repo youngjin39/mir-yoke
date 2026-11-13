@@ -1,0 +1,33 @@
+{
+  "pin": "99a8c865d6977b97d32c42beb330206f6b3f10a3",
+  "source_sha256": "8896931377cbe6a87ce7648b2b9a12af5b858e0d7e76de67080de12a54e0f001",
+  "retry_source": "CPython 3.12 Lib/tempfile.py TMP_MAX and _mkstemp_inner",
+  "test_retry_bound": 3,
+  "records": {
+    "collision": {
+      "error": null,
+      "attempts": [
+        "one",
+        "two"
+      ],
+      "preserved": {
+        "one": "owner-one"
+      },
+      "status": "pass"
+    },
+    "exhaustion": {
+      "error": "FileExistsError: [Errno 17] No usable temporary file name found",
+      "attempts": [
+        "one",
+        "two",
+        "three"
+      ],
+      "preserved": {
+        "one": "owner-one",
+        "two": "owner-two",
+        "three": "owner-three"
+      },
+      "status": "pending"
+    }
+  }
+}

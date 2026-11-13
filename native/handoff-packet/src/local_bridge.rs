@@ -95,7 +95,14 @@ impl LocalBridge {
             .join("tools/mir_executor/local.py")
             .metadata()
         {
-            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+                ) =>
+            {
+                return Ok(None);
+            }
             Err(error) => return Err(error.into()),
             Ok(metadata) if !metadata.is_file() => {
                 return Err(BridgeError::Protocol("local hook is not a file"));

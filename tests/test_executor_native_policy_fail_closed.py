@@ -15,6 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PARITY = runpy.run_path(str(ROOT / 'tests/test_executor_execute_native_parity.py'))
 SUPPORT = PARITY['SUPPORT']
 binary = PARITY['binary']
+DIRECT = {case['name']: case['expected'] for case in json.loads(
+    (ROOT / 'tests/fixtures/executor_direct.json').read_text(encoding='ascii'))['cases']}
 SECTIONS = {
     'target_admission': {},
     'verifier_aliases': {'configuration_root': 'initial'},
@@ -64,10 +66,9 @@ def invoke(root, environment, args):
 def assert_refusal(result, repository):
     assert result.returncode == 1, (result.stdout, result.stderr)
     assert result.stdout == b''
-    diagnostic = result.stderr.decode()
-    assert diagnostic.count('\n') == 1, diagnostic
-    assert str(repository) in diagnostic
-    assert 'native_policy' in diagnostic and 'native executor is required' in diagnostic
+    assert result.stderr == (
+        f'[mir_executor] {repository} declares native_policy; '
+        f'the native executor is required{os.linesep}').encode()
 
 
 @pytest.mark.parametrize('section', SECTIONS)
@@ -212,12 +213,13 @@ def test_parser_selected_native_target_is_guarded_before_its_import(tmp_path):
                                   'interpreter', 'resume_options', 'resume_parser',
                                   'resume_interpreter', 'resume_saved_root', 'resume_source_read',
                                   'non_utf8_provider', 'admission_value', 'receipt'])
-def test_native_declines_end_in_python_refusal(binary, tmp_path, case):
+def test_native_ownership_and_named_compatibility_refusals(binary, tmp_path, case):
     home, launcher, environment = PARITY['pinned_home'](binary, tmp_path)
     environment['TMPDIR'] = str(tmp_path)
     declare(home, 'agent_route')
     args = arguments('execute')
-    source = POISON
+    source = (POISON + "with (root / 'import-count').open('a') as stream:\n"
+              "    stream.write('import\\n')\n")
     if case == 'unknown':
         args += ['--unknown']
     elif case == 'help':
@@ -279,10 +281,8 @@ def test_native_declines_end_in_python_refusal(binary, tmp_path, case):
     else:
         local.write_text(source)
     before = snapshot(tmp_path)
-    direct = subprocess.run([str(binary), '--home-root', str(home), *args], cwd=home,
-                            env=environment, capture_output=True, timeout=45, check=False)
-    assert (direct.returncode, direct.stdout, direct.stderr) == (64, b'', b'')
-    assert snapshot(tmp_path) == before
+    # Enabled invoking-home local.py is the named compatibility route. Its
+    # Python policy guard must refuse before importing or mutating anything.
     result = invoke(home, environment, args)
     if case in ('unknown', 'admission_value', 'resume_options'):
         # Malformed arguments surface as argparse errors; nothing runs either way.
@@ -294,6 +294,64 @@ def test_native_declines_end_in_python_refusal(binary, tmp_path, case):
     else:
         assert_refusal(result, home)
     assert snapshot(tmp_path) == before
+    direct = subprocess.run([str(binary), '--home-root', str(home), *args], cwd=home,
+                            env=environment, capture_output=True, timeout=45, check=False)
+    owned = {'unknown', 'help', 'ledger', 'cross_root', 'interpreter',
+             'non_utf8_provider', 'admission_value'}
+    if case not in owned:
+        assert (direct.returncode, direct.stdout, direct.stderr) == (64, b'', b'')
+        assert snapshot(tmp_path) == before
+        return
+    if case in ('unknown', 'help', 'admission_value'):
+        expected = DIRECT['invalid-timeout' if case == 'admission_value' else case]
+        assert direct.returncode == expected['exit']
+        for stream in ('stdout', 'stderr'):
+            actual = SUPPORT['normalize'](getattr(direct, stream).decode(), home, launcher)
+            frozen = bytes.fromhex(expected[stream + '_hex']).decode()
+            if case == 'admission_value':
+                frozen = frozen.replace("'bad'", "'not-an-integer'")
+            assert actual == frozen
+        assert snapshot(tmp_path) == before
+        return
+    changed = []
+    if case in ('ledger', 'cross_root'):
+        assert direct.returncode == 0 and direct.stderr == b''
+        output = SUPPORT['normalize'](direct.stdout.decode(), home, launcher)
+        expected = bytes.fromhex(DIRECT['success']['stdout_hex']).decode()
+        if case == 'ledger':
+            expected = expected.replace("previous_status='planned'", 'previous_status=nan')
+        assert output == expected
+        ledger = (target if case == 'cross_root' else home) / 'tasks/tdd.json'
+        rendered = SUPPORT['normalize'](ledger.read_text(), home, launcher)
+        assert rendered.encode().hex() == DIRECT['success']['storage']['tasks/tdd.json']['bytes']
+        methods = (home / 'provider-methods').read_text().splitlines()
+        assert methods == ['initialize', 'initialized', 'thread/start', 'turn/start']
+        assert (home / 'provider-started').read_text() == 'started'
+        changed += [ledger, home / 'provider-methods', home / 'provider-started']
+    elif case == 'interpreter':
+        message = os.strerror(2)
+        if os.name == 'nt':
+            import ctypes
+
+            message = ctypes.FormatError(2).strip()
+        assert (direct.returncode, direct.stdout, direct.stderr) == (
+            1, b'', f'[mir_executor] local bridge I/O: {message} (os error 2)\n'.encode())
+    else:
+        assert (direct.returncode, direct.stdout, direct.stderr) == (
+            1, b'', b"[mir_executor] FileNotFoundError: Codex binary not found: "
+            b"'codex-\\udcff'. Set CODEX_BIN to the full path of the codex executable.\n")
+    if case != 'interpreter':
+        assert (home / 'unexpected-import').exists()
+        assert (home / 'import-count').read_text() == 'import\n'
+        changed += [home / 'unexpected-import', home / 'import-count']
+    if case not in ('ledger', 'cross_root'):
+        assert not (home / 'provider-started').exists()
+    after = snapshot(tmp_path)
+    for path in changed:
+        key = str(path.relative_to(tmp_path))
+        before.pop(key, None)
+        after.pop(key, None)
+    assert after == before
 
 
 def test_native_admission_remains_final_and_keeps_uncovered_bridge_hooks(binary, tmp_path):
@@ -303,7 +361,12 @@ def test_native_admission_remains_final_and_keeps_uncovered_bridge_hooks(binary,
     (home / 'tools/mir_executor/local.py').write_text(
         'def pre_execute(args, root):\n'
         "    (root / 'bridge-served').write_text('native-admitted')\n")
-    result = invoke(home, environment, arguments('execute'))
+    before = snapshot(tmp_path)
+    assert_refusal(invoke(home, environment, arguments('execute')), home)
+    assert snapshot(tmp_path) == before
+    result = subprocess.run([str(binary), '--home-root', str(home), *arguments('execute')],
+                            cwd=home, env=environment, capture_output=True, timeout=45,
+                            check=False)
     assert result.returncode == 0, (result.stdout, result.stderr)
     assert (home / 'bridge-served').read_text() == 'native-admitted'
     assert (home / 'provider-started').exists()
@@ -326,9 +389,26 @@ def test_native_owned_failures_never_retry_python(binary, tmp_path, case):
         interpreter.chmod(0o755)
         environment['MIR_EXECUTOR_PYTHON'] = str(interpreter)
     before = snapshot(tmp_path)
-    result = invoke(home, environment, arguments('execute'))
-    assert result.returncode == 1 and result.stderr
-    assert b'native executor is required' not in result.stderr
+    assert_refusal(invoke(home, environment, arguments('execute')), home)
+    assert snapshot(tmp_path) == before
+    result = subprocess.run([str(binary), '--home-root', str(home), *arguments('execute')],
+                            cwd=home, env=environment, capture_output=True, timeout=45,
+                            check=False)
+    expected = 'local bridge protocol: unexpected end of frame'
+    if case == 'source_read':
+        with pytest.raises(OSError) as failure:
+            local.read_bytes()
+        error = failure.value
+        number, message = error.errno, error.strerror
+        if os.name == 'nt':
+            import ctypes
+
+            number = error.winerror
+            message = ctypes.FormatError(number).strip()
+        expected = (f'native local policy configuration error: {message} '
+                    f'(os error {number})')
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, b'', f'[mir_executor] {expected}\n'.encode())
     assert snapshot(tmp_path) == before
 
 

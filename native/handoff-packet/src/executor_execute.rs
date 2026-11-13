@@ -7,6 +7,7 @@ use crate::{
     executor_registry::JobRegistry,
     executor_transport::{CallOptions, Client, Error as TransportError},
 };
+use rusqlite::OptionalExtension;
 use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
@@ -25,14 +26,42 @@ pub(crate) type Result<T> = std::result::Result<T, String>;
 const BASE: &str = "You are a code-implementation sub-agent in an isolated git worktree for the Mir harness. Read .mir-dispatch/brief.md and implement the task fully. Rules: modify only files inside this worktree, never edit tasks/plan.md, follow existing code style and structure, keep changes minimal and scoped to the brief, when tests are specified make them pass. Report a concise summary of what you changed.";
 static SERIAL: AtomicU64 = AtomicU64::new(0);
 static OUTPUT_FAILED: AtomicBool = AtomicBool::new(false);
+static STDOUT_STARTED: AtomicBool = AtomicBool::new(false);
+static STDERR_STARTED: AtomicBool = AtomicBool::new(false);
 static NONPRINTABLE: OnceLock<std::result::Result<regex::Regex, regex::Error>> = OnceLock::new();
 pub(crate) fn emit(text: &str, error: bool) -> io::Result<()> {
+    if OUTPUT_FAILED.load(Ordering::Relaxed) {
+        return Err(io::Error::other("output failed"));
+    }
     #[cfg(windows)]
     let text = text.replace('\n', "\r\n");
-    if error {
-        io::stderr().write_all(text.as_bytes())
+    #[cfg(windows)]
+    let text = text.as_str();
+    let started = if error {
+        &STDERR_STARTED
     } else {
-        io::stdout().write_all(text.as_bytes())
+        &STDOUT_STARTED
+    };
+    let bytes =
+        match crate::executor_text::encode(text, error, !started.swap(true, Ordering::Relaxed)) {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                OUTPUT_FAILED.store(true, Ordering::Relaxed);
+                let text = format!("{error}\n");
+                let bytes = crate::executor_text::encode(
+                    &text,
+                    true,
+                    !STDERR_STARTED.swap(true, Ordering::Relaxed),
+                )
+                .unwrap_or_else(|_| text.into_bytes());
+                let _ = io::stderr().write_all(&bytes);
+                return Err(io::Error::other(error));
+            }
+        };
+    if error {
+        io::stderr().write_all(&bytes)
+    } else {
+        io::stdout().write_all(&bytes)
     }
 }
 pub(crate) fn line(text: &str) {
@@ -44,27 +73,20 @@ pub(crate) fn diagnostic(text: &str) {
     let _ = emit(&format!("[mir_executor] {text}\n"), true);
 }
 pub(crate) fn path(path: &Path) -> Value {
-    json!({"$type":"path","value":path.to_str().unwrap_or("")})
+    crate::executor_admission::path_value(path)
+        .unwrap_or_else(|| json!({"$type":"path","value":""}))
 }
 pub(crate) fn namespace(args: &Value) -> Value {
     // The native brief cache is executor-internal; hooks and events see the Python namespace.
     let mut args = args.clone();
     if let Some(map) = args.as_object_mut() {
-        map.remove("__native_brief");
+        map.retain(|key, _| !key.starts_with("__native_"));
     }
     json!({"$type":"namespace","value":args})
 }
 pub(crate) fn value_path(value: &Value, cwd: &Path) -> PathBuf {
-    let raw = value["value"]
-        .as_str()
-        .or_else(|| value.as_str())
-        .unwrap_or("");
-    let p = Path::new(raw);
-    if p.is_absolute() {
-        p.into()
-    } else {
-        cwd.join(p)
-    }
+    let p = crate::executor_admission::from_path_value(value).unwrap_or_default();
+    if p.is_absolute() { p } else { cwd.join(p) }
 }
 pub(crate) fn repr(s: &str) -> String {
     repr_codepoints(&s.chars().map(u32::from).collect::<Vec<_>>())
@@ -111,13 +133,6 @@ pub(crate) fn repr_codepoints(s: &[u32]) -> String {
     }
     out.push(quote);
     out
-}
-fn repr_value(v: &Value) -> String {
-    if v.is_null() {
-        "None".into()
-    } else {
-        repr(v.as_str().unwrap_or(""))
-    }
 }
 pub(crate) fn list_repr(values: &[String]) -> String {
     format!(
@@ -203,98 +218,173 @@ pub(crate) fn interpreter(
 /// Raw argv includes execute; global --jobs-db may precede it. 64 declines silently.
 pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     OUTPUT_FAILED.store(false, Ordering::Relaxed);
-    let Some(argv) = preflight(raw) else {
-        return crate::executor_protocol::decline("execute options preflight");
-    };
-    let target = fs::canonicalize(argv_root(&argv, cwd)).ok();
-    let home = fs::canonicalize(home_root).ok();
-    // Only a policy that owns pre_execute (target admission) may admit a
-    // target other than the home root; an agent-route-only policy declines.
-    let declared_policy = match executor_admission::native_policy(home_root) {
-        Ok(policy) => policy.is_some_and(|p| p.covered_hooks().contains(&"pre_execute")),
-        Err(error) => {
-            crate::executor_protocol::claim();
-            diagnostic(&error);
-            return 1;
+    STDOUT_STARTED.store(false, Ordering::Relaxed);
+    STDERR_STARTED.store(false, Ordering::Relaxed);
+    let direct = !crate::executor_execute_parser::dispatch(raw);
+    let (argv, environment, python, parsed) = if direct {
+        if !crate::executor_text::supported_streams() {
+            return crate::executor_protocol::decline("execute stream codec or error handler");
         }
-    };
-    if target.is_none() || (target != home && !declared_policy) {
-        return crate::executor_protocol::decline("execute home/root mismatch");
-    }
-    // Decline explicit parser extensions without importing target-owned code.
-    // A computed export discovered by hello is already owned and must fail finally.
-    let disabled = match crate::executor_local::python_local_hooks_disabled(&argv_root(&argv, cwd))
-    {
-        Ok(disabled) => disabled,
-        Err(error) => {
-            crate::executor_protocol::claim();
-            diagnostic(&error);
-            return 1;
-        }
-    };
-    let extension = argv_root(&argv, cwd).join("tools/mir_executor/local.py");
-    if !disabled {
-        match fs::read(extension) {
-            Ok(source)
-                if source
-                    .windows(b"register_execute_options".len())
-                    .any(|part| part == b"register_execute_options") =>
-            {
-                return crate::executor_protocol::decline("execute local parser extension");
+        let disabled = match crate::executor_local::python_local_hooks_disabled(home_root) {
+            Ok(disabled) => disabled,
+            Err(error) => {
+                crate::executor_protocol::claim();
+                diagnostic(&error);
+                return 1;
             }
-            Ok(_) => (),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => (),
-            Err(_) => return crate::executor_protocol::decline("execute local source read"),
+        };
+        if !disabled
+            && let Ok(source) = fs::read(home_root.join("tools/mir_executor/local.py"))
+            && source
+                .windows(b"register_execute_options".len())
+                .any(|part| part == b"register_execute_options")
+        {
+            return crate::executor_protocol::decline(
+                "execute invoking-home local parser extension",
+            );
         }
-    }
-    if !ledger_preflight(&argv, cwd) {
-        return crate::executor_protocol::decline("execute ledger preflight");
-    }
-    let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
-    if environment_value(&environment, "CODEX_BIN", cfg!(windows))
-        .is_some_and(|s| s.to_str().is_none())
-    {
-        return crate::executor_protocol::decline("execute non-UTF8 CODEX_BIN");
-    }
-    let target_policy = match executor_admission::native_policy(&argv_root(&argv, cwd)) {
-        Ok(policy) => policy,
-        Err(error) => {
-            crate::executor_protocol::claim();
-            diagnostic(&error);
-            return 1;
-        }
-    };
-    if target_policy.as_ref().is_some_and(|policy| {
-        policy
-            .brief_profile
-            .as_ref()
-            .is_some_and(|profile| profile.packet())
-    }) && !crate::executor_packet_preflight::execute(&argv, cwd)
-    {
-        return crate::executor_protocol::decline("execute development packet representation");
-    }
-    let native_only = target_policy.is_some()
-        && !argv_root(&argv, cwd)
-            .join("tools")
-            .join("mir_executor")
-            .join("local.py")
-            .exists();
-    let python = if disabled {
-        Some(cwd.join("unused-python"))
+        let args = match crate::executor_execute_parser::parse(raw, cwd) {
+            crate::executor_execute_parser::Parsed::Args(args) => args,
+            crate::executor_execute_parser::Parsed::Output {
+                text,
+                code,
+                error,
+                admission,
+            } => {
+                crate::executor_protocol::claim();
+                if let Some(args) = admission {
+                    let root = value_path(&args["repo_root"], cwd);
+                    let root = match executor_admission::resolved(&root, cwd) {
+                        Ok(root) => root,
+                        Err(error) => {
+                            let _ = emit(
+                                &format!("{}\n", crate::executor_text::io_error(error, &root)),
+                                true,
+                            );
+                            return 1;
+                        }
+                    };
+                    if executor_admission::resolved(home_root, cwd).ok().as_ref() != Some(&root)
+                        && let Err(stderr) = executor_admission::authorize_command(
+                            home_root,
+                            cwd,
+                            &root,
+                            args["family"].as_str(),
+                            true,
+                            1,
+                        )
+                    {
+                        let _ = emit(&String::from_utf8_lossy(&stderr), true);
+                        return 1;
+                    }
+                }
+                return if emit(&text, error).is_err() { 1 } else { code };
+            }
+        };
+        let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
+        let python = interpreter(&environment, cwd).unwrap_or_else(|| cwd.join("unused-python"));
+        (vec!["execute".into()], environment, python, Some(args))
     } else {
-        interpreter(&environment, cwd).or_else(|| native_only.then(|| cwd.join("unused-python")))
+        let Some(argv) = preflight(raw) else {
+            return crate::executor_protocol::decline("execute options preflight");
+        };
+        let target = fs::canonicalize(argv_root(&argv, cwd)).ok();
+        let home = fs::canonicalize(home_root).ok();
+        // Only a policy that owns pre_execute (target admission) may admit a
+        // target other than the home root; an agent-route-only policy declines.
+        let declared_policy = match executor_admission::native_policy(home_root) {
+            Ok(policy) => policy.is_some_and(|p| p.covered_hooks().contains(&"pre_execute")),
+            Err(error) => {
+                crate::executor_protocol::claim();
+                diagnostic(&error);
+                return 1;
+            }
+        };
+        if target.is_none() || (target != home && !declared_policy) {
+            return crate::executor_protocol::decline("execute home/root mismatch");
+        }
+        // Decline explicit parser extensions without importing target-owned code.
+        // A computed export discovered by hello is already owned and must fail finally.
+        let disabled =
+            match crate::executor_local::python_local_hooks_disabled(&argv_root(&argv, cwd)) {
+                Ok(disabled) => disabled,
+                Err(error) => {
+                    crate::executor_protocol::claim();
+                    diagnostic(&error);
+                    return 1;
+                }
+            };
+        let extension = argv_root(&argv, cwd).join("tools/mir_executor/local.py");
+        if !disabled {
+            match fs::read(extension) {
+                Ok(source)
+                    if source
+                        .windows(b"register_execute_options".len())
+                        .any(|part| part == b"register_execute_options") =>
+                {
+                    return crate::executor_protocol::decline("execute local parser extension");
+                }
+                Ok(_) => (),
+                Err(error) if error.kind() == io::ErrorKind::NotFound => (),
+                Err(_) => return crate::executor_protocol::decline("execute local source read"),
+            }
+        }
+        if !ledger_preflight(&argv, cwd) {
+            return crate::executor_protocol::decline("execute ledger preflight");
+        }
+        let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
+        if environment_value(&environment, "CODEX_BIN", cfg!(windows))
+            .is_some_and(|s| s.to_str().is_none())
+        {
+            return crate::executor_protocol::decline("execute non-UTF8 CODEX_BIN");
+        }
+        let target_policy = match executor_admission::native_policy(&argv_root(&argv, cwd)) {
+            Ok(policy) => policy,
+            Err(error) => {
+                crate::executor_protocol::claim();
+                diagnostic(&error);
+                return 1;
+            }
+        };
+        if target_policy.as_ref().is_some_and(|policy| {
+            policy
+                .brief_profile
+                .as_ref()
+                .is_some_and(|profile| profile.packet())
+        }) && !crate::executor_packet_preflight::execute(&argv, cwd)
+        {
+            return crate::executor_protocol::decline("execute development packet representation");
+        }
+        let native_only = target_policy.is_some()
+            && !argv_root(&argv, cwd)
+                .join("tools")
+                .join("mir_executor")
+                .join("local.py")
+                .exists();
+        let python = if disabled {
+            Some(cwd.join("unused-python"))
+        } else {
+            interpreter(&environment, cwd)
+                .or_else(|| native_only.then(|| cwd.join("unused-python")))
+        };
+        let Some(python) = python else {
+            return crate::executor_protocol::decline("execute Python interpreter lookup");
+        };
+        (argv, environment, python, None)
     };
-    let Some(python) = python else {
-        return crate::executor_protocol::decline("execute Python interpreter lookup");
-    };
-    let admission = executor_admission::admit_execute(executor_admission::Request {
+    let request = executor_admission::Request {
         argv: &argv,
         cwd,
         invoking_home: home_root,
         environment: &environment,
         interpreter: &python,
         bridge_script: &home_root.join("tools/mir_executor/local_bridge.py"),
-    });
+    };
+    let admission = if let Some(args) = parsed {
+        executor_admission::admit_execute_args(request, args)
+    } else {
+        executor_admission::admit_execute(request)
+    };
     let (root, args, mut bridge, writer_handle) = match admission {
         Ok(Admission::Admitted {
             root,
@@ -303,13 +393,25 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
             writer_handle,
             ..
         }) => (root, args, bridge, writer_handle),
-        Ok(Admission::Decline { reason, .. }) => return crate::executor_protocol::decline(reason),
+        Ok(Admission::Decline { reason, .. }) if !direct => {
+            return crate::executor_protocol::decline(reason);
+        }
+        Ok(Admission::Decline { .. }) => {
+            crate::executor_protocol::claim();
+            diagnostic("native execute admission refused common arguments");
+            return 1;
+        }
         Ok(Admission::Refused { code, stderr }) => {
-            let _ = io::stderr().write_all(&stderr);
+            let _ = emit(&String::from_utf8_lossy(&stderr), true);
             return code;
         }
         Err(e) => {
-            diagnostic(&e.to_string());
+            let error = e.to_string();
+            if direct && error.starts_with("UnicodeEncodeError:") {
+                let _ = emit(&format!("{error}\n"), true);
+            } else {
+                diagnostic(&error);
+            }
             return 1;
         }
     };
@@ -321,7 +423,28 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     let mut code = match result {
         Ok(code) => code,
         Err(error) => {
-            diagnostic(&error);
+            if let Some(error) = error.strip_prefix("\0uncaught:") {
+                let _ = emit(&format!("{error}\n"), true);
+            } else if let Some(error) = error.strip_prefix("\0caught:") {
+                diagnostic(error);
+            } else if direct
+                && (error.starts_with("sqlite3.")
+                    || error.starts_with("AttributeError:")
+                    || error.starts_with("TypeError:")
+                    || error.starts_with("RuntimeError:")
+                    || error.starts_with("NativeHookError:")
+                    || error
+                        .starts_with("tools.mir_executor.codex_mcp_client.CodexMcpTimeoutError:")
+                    || error.starts_with("RecursionError:")
+                    || error.starts_with("OverflowError:")
+                    || error.starts_with("OSError:")
+                    || error.starts_with("IsADirectoryError:")
+                    || error.starts_with("NotADirectoryError:"))
+            {
+                let _ = emit(&format!("{error}\n"), true);
+            } else {
+                diagnostic(&error);
+            }
             1
         }
     };
@@ -356,6 +479,9 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     } else {
         code
     }
+}
+pub fn owns(raw: &[OsString]) -> bool {
+    crate::executor_execute_parser::requested(raw)
 }
 pub(crate) fn preflight(raw: &[OsString]) -> Option<Vec<String>> {
     let mut argv = raw
@@ -512,13 +638,40 @@ fn execute(
     let local = LocalConfig::load(root).map_err(|e| format!("{}: {e}", e.kind()))?;
     if local.raw().contains_key("timeout_seconds_range") {
         for key in ["timeout", "stall_timeout"] {
+            let converted = numeric_token(&args[key])
+                .map(|token| local.parse_argument(&canonical_number(token)))
+                .transpose()
+                .map_err(|error| format!("{}: {error}", error.kind()))?;
             local
-                .validate_timeout(args.get(key))
-                .map_err(|e| format!("argument parse error: {e}"))?;
+                .validate_timeout(converted.as_ref().or_else(|| args.get(key)))
+                .map_err(|error| {
+                    if matches!(error.kind(), "OverflowError" | "TypeError") {
+                        format!("\0uncaught:{}: {error}", error.kind())
+                    } else {
+                        format!("argument parse error: {error}")
+                    }
+                })?;
         }
     }
-    let codex_args =
-        resolve_args(args, cwd, &local).map_err(|e| format!("argument parse error: {e}"))?;
+    let codex_args = resolve_args(args, cwd, &local).map_err(|error| {
+        if [
+            "OSError:",
+            "FileNotFoundError:",
+            "PermissionError:",
+            "IsADirectoryError:",
+            "NotADirectoryError:",
+        ]
+        .iter()
+        .any(|kind| error.starts_with(kind))
+        {
+            format!("\0caught:{error}")
+        } else {
+            format!(
+                "argument parse error: {}",
+                error.strip_prefix("UnicodeDecodeError: ").unwrap_or(&error)
+            )
+        }
+    })?;
     let env_text = environment
         .iter()
         .filter_map(|(k, v)| Some((k.to_str()?.to_owned(), v.to_str()?.to_owned())))
@@ -548,16 +701,21 @@ fn execute(
         } else {
             value_path(&args["jobs_db"], cwd)
         };
-        let registry = JobRegistry::open(&db).map_err(|e| format!("registry error: {e:?}"))?;
+        let registry = JobRegistry::open(&db).map_err(|error| {
+            format!(
+                "\0uncaught:{}",
+                crate::executor_text::registry_error(error, &db)
+            )
+        })?;
         let id = unique_id();
-        let mut record = json!({"job_id":id,"change_id":change,"category":category,"family":args["family"],"repo_root":root.to_str(),"codex_args":codex_args,"timeout_seconds":args["timeout"].as_i64().unwrap_or(600),"status":"running","started_at":utc_now(),"cancel_requested":false,"allow_harness_self_modify":args["allow_harness_self_modify"]==true,"resume_count":0});
+        let mut record = json!({"job_id":id,"change_id":change,"category":category,"family":args["family"],"repo_root":root.to_str(),"codex_args":codex_args,"timeout_seconds":if args["timeout"].is_null(){json!(600)}else{args["timeout"].clone()},"status":"running","started_at":utc_now(),"cancel_requested":false,"allow_harness_self_modify":args["allow_harness_self_modify"]==true,"resume_count":0});
         let inserted = (|| -> Result<()> {
             record["identity_json"] = hook(
                 bridge,
                 "job_identity",
                 vec![namespace(args), path(root), json!(prompt), json!(model)],
             )?;
-            registry.insert(&record).map_err(|e| format!("{e:?}"))?;
+            direct_insert(&registry, &record, args, root, &db)?;
             hook(
                 bridge,
                 "on_job_event",
@@ -576,7 +734,31 @@ fn execute(
                 })
                 .is_ok();
             if !exists {
-                registry.insert(&record).map_err(|e| format!("{e:?}"))?;
+                direct_insert(&registry, &record, args, root, &db)
+                    .map_err(|error| format!("\0uncaught:{error}"))?;
+            }
+            if let Some(points) = bridge
+                .as_mut()
+                .and_then(|bridge| bridge.take_error_points())
+                && let Some(start) = points
+                    .iter()
+                    .position(|point| (0xd800..=0xdfff).contains(point))
+            {
+                let end = start
+                    + points[start..]
+                        .iter()
+                        .take_while(|&&point| (0xd800..=0xdfff).contains(&point))
+                        .count();
+                return Err(format!(
+                    "\0uncaught:{}",
+                    crate::executor_text::encode_error(
+                        "utf-8",
+                        &points,
+                        start,
+                        end,
+                        "surrogates not allowed",
+                    )
+                ));
             }
             fail_job(&registry, &id, &strip_class(&error))?;
             return Err(format!("background insert failed: {}", strip_class(&error)));
@@ -584,24 +766,39 @@ fn execute(
         line(&format!("[BACKGROUND] job_id={id}"));
         let _ = io::stdout().flush();
         if let Err(error) = validate_ledger(&ledger, change, category) {
+            if ![
+                "FileNotFoundError:",
+                "KeyError:",
+                "ValueError:",
+                "JSONDecodeError:",
+                "UnicodeDecodeError:",
+                "UnicodeEncodeError:",
+            ]
+            .iter()
+            .any(|kind| error.starts_with(kind))
+            {
+                return Err(format!("\0uncaught:{error}"));
+            }
             fail_job(&registry, &id, &strip_class(&error))?;
             return Err(error);
         }
-        let cancelled = registry
-            .connection()
-            .query_row(
-                "SELECT cancel_requested FROM jobs WHERE job_id=?",
-                [&id],
-                |r| r.get::<_, bool>(0),
-            )
-            .map_err(|e| e.to_string())?;
-        if cancelled {
-            registry
-                .update_status(&id, "cancelled", &json!({"completed_at":utc_now()}))
-                .map_err(|e| format!("{e:?}"))?;
-            return Ok(1);
-        }
-        let completed = (|| -> Result<Value> {
+        let completed = (|| -> Result<()> {
+            let cancelled = registry
+                .connection()
+                .query_row(
+                    "SELECT cancel_requested FROM jobs WHERE job_id=?",
+                    [&id],
+                    |r| r.get::<_, bool>(0),
+                )
+                .optional()
+                .map_err(crate::executor_text::sql_error)?
+                .unwrap_or(false);
+            if cancelled {
+                registry
+                    .update_status(&id, "cancelled", &json!({"completed_at":utc_now()}))
+                    .map_err(|error| crate::executor_text::registry_error(error, &db))?;
+                return Ok(());
+            }
             let result = provider(
                 args,
                 cwd,
@@ -613,19 +810,22 @@ fn execute(
                 bridge,
             )?;
             update_ledger(&ledger, change, category, &result)?;
-            Ok(result)
+            let code = result["exit_code"].as_i64().unwrap_or(1) as i32;
+            registry.update_status(&id,if code==0{"completed"}else{"failed"},&json!({"exit_code":code,"stdout":result["stdout"],"stderr":result["stderr"],"duration_seconds":result["duration_seconds"],"completed_at":utc_now()})).map_err(|error| crate::executor_text::registry_error(error, &db))?;
+            Ok(())
         })();
-        return match completed {
-            Ok(result) => {
-                let code = result["exit_code"].as_i64().unwrap_or(1) as i32;
-                registry.update_status(&id,if code==0{"completed"}else{"failed"},&json!({"exit_code":code,"stdout":result["stdout"],"stderr":result["stderr"],"duration_seconds":result["duration_seconds"],"completed_at":utc_now()})).map_err(|e|format!("{e:?}"))?;
-                Ok(code)
-            }
-            Err(error) => {
-                fail_job(&registry, &id, &strip_class(&error))?;
-                Ok(1)
-            }
-        };
+        if let Err(error) = completed {
+            fail_job(&registry, &id, &strip_class(&error))?;
+        }
+        let exit_code = registry
+            .connection()
+            .query_row("SELECT exit_code FROM jobs WHERE job_id=?", [&id], |row| {
+                row.get::<_, Option<i32>>(0)
+            })
+            .optional()
+            .map_err(crate::executor_text::sql_error)?
+            .flatten();
+        return Ok(exit_code.unwrap_or(1));
     }
     validate_ledger(&ledger, change, category)?;
     let result = provider(
@@ -639,12 +839,13 @@ fn execute(
         bridge,
     )?;
     let (previous, status, notes) = update_ledger(&ledger, change, category, &result)?;
-    line(&format!(
+    let mut frames = Vec::new();
+    frames.push(format!(
         "[RESULT] change_id={} category={}",
         repr(change),
         repr(category)
     ));
-    line(&format!(
+    frames.push(format!(
         "[RESULT] codex exit_code={} duration={:.2}s",
         result["exit_code"],
         result["duration_seconds"].as_f64().unwrap_or(0.0)
@@ -659,24 +860,96 @@ fn execute(
                 .ok_or("TypeError: command must contain strings".to_owned())
         })
         .collect::<Result<Vec<_>>>()?;
-    line(&format!("[RESULT] command={}", list_repr(&command)));
-    line(&format!(
+    frames.push(format!("[RESULT] command={}", list_repr(&command)));
+    frames.push(format!(
         "[LEDGER] previous_status={} -> new_status={}",
-        repr_value(&previous),
+        previous.repr(),
         repr(status)
     ));
-    line(&format!("[LEDGER] notes={}", repr(&notes)));
+    frames.push(format!("[LEDGER] notes={}", repr(&notes)));
     for (key, label) in [("stdout", "STDOUT"), ("stderr", "STDERR")] {
         if let Some(s) = result[key].as_str().filter(|s| !s.is_empty()) {
-            line(&format!("[{label}] {}", repr(&chars(s, 500))));
+            frames.push(format!("[{label}] {}", repr(&chars(s, 500))));
+        }
+    }
+    for frame in frames {
+        if emit(&format!("{frame}\n"), false).is_err() {
+            return Ok(1);
         }
     }
     Ok(result["exit_code"].as_i64().unwrap_or(1) as i32)
 }
 fn strip_class(s: &str) -> String {
+    let s = s
+        .strip_prefix("\0uncaught:")
+        .or_else(|| s.strip_prefix("\0caught:"))
+        .unwrap_or(s);
     s.split_once(": ")
         .map_or(s, |(_, message)| message)
         .to_owned()
+}
+fn numeric_token(value: &Value) -> Option<&str> {
+    value["__native_integer"]
+        .as_str()
+        .or_else(|| value["__native_float"].as_str())
+}
+fn canonical_number(token: &str) -> String {
+    let normalized = token.trim().replace('_', "");
+    match normalized.to_ascii_lowercase().as_str() {
+        "nan" | "+nan" | "-nan" => "NaN".into(),
+        "inf" | "infinity" | "+inf" | "+infinity" => "Infinity".into(),
+        "-inf" | "-infinity" => "-Infinity".into(),
+        _ => normalized,
+    }
+}
+fn argument_number(value: &Value) -> Option<f64> {
+    value
+        .as_f64()
+        .or_else(|| numeric_token(value)?.trim().replace('_', "").parse().ok())
+}
+fn number_display(value: &Value) -> String {
+    numeric_token(value).map_or_else(|| value.to_string(), str::to_owned)
+}
+fn utf8_error(points: &[u32]) -> Option<String> {
+    let start = points
+        .iter()
+        .position(|point| (0xd800..=0xdfff).contains(point))?;
+    let end = start
+        + points[start..]
+            .iter()
+            .take_while(|point| (0xd800..=0xdfff).contains(*point))
+            .count();
+    Some(crate::executor_text::encode_error(
+        "utf-8",
+        points,
+        start,
+        end,
+        "surrogates not allowed",
+    ))
+}
+fn direct_insert(
+    registry: &JobRegistry,
+    record: &Value,
+    args: &Value,
+    root: &Path,
+    db: &Path,
+) -> Result<()> {
+    if args["timeout"].get("__native_integer").is_some() {
+        return Err("OverflowError: Python int too large to convert to SQLite INTEGER".into());
+    }
+    for name in ["change_id", "family"] {
+        if let Some(points) = argument_codepoints(args, name)
+            && let Some(error) = utf8_error(&points)
+        {
+            return Err(error);
+        }
+    }
+    if let Some(error) = utf8_error(&crate::executor_text::os_points(root.as_os_str())) {
+        return Err(error);
+    }
+    registry
+        .insert(record)
+        .map_err(|error| crate::executor_text::registry_error(error, db))
 }
 fn fail_job(registry: &JobRegistry, id: &str, error: &str) -> Result<()> {
     registry
@@ -685,18 +958,28 @@ fn fail_job(registry: &JobRegistry, id: &str, error: &str) -> Result<()> {
             "failed",
             &json!({"exit_code":1,"stderr":error,"completed_at":utc_now()}),
         )
-        .map_err(|e| format!("{e:?}"))
+        .map_err(|error| crate::executor_text::registry_error(error, Path::new("")))
 }
 pub(crate) fn resolve_args(args: &Value, cwd: &Path, local: &LocalConfig) -> Result<Vec<String>> {
     if !args["codex_args_file"].is_null() {
         let file = value_path(&args["codex_args_file"], cwd);
-        let metadata = fs::metadata(&file).map_err(|e| format!("OSError: {e}"))?;
+        let raw = args["codex_args_file"]["value"]
+            .as_str()
+            .map(Path::new)
+            .unwrap_or(&file);
+        let metadata =
+            fs::metadata(&file).map_err(|error| crate::executor_text::io_error(error, raw))?;
         local
             .validate_input_size(metadata.len())
             .map_err(|e| e.to_string())?;
-        return fs::read_to_string(&file)
-            .map(|s| vec![s.replace("\r\n", "\n").replace('\r', "\n")])
-            .map_err(|e| format!("OSError: {e}"));
+        let bytes = fs::read(&file).map_err(|error| crate::executor_text::io_error(error, raw))?;
+        let text = String::from_utf8(bytes).map_err(|error| {
+            format!(
+                "UnicodeDecodeError: {}",
+                crate::executor_local::Error::Unicode(error)
+            )
+        })?;
+        return Ok(vec![text.replace("\r\n", "\n").replace('\r', "\n")]);
     }
     let text = args["codex_args"]
         .as_str()
@@ -818,35 +1101,148 @@ pub(crate) fn prompt(args: &[String]) -> String {
         parts.join(" ").trim().to_owned()
     }
 }
-fn entry<'a>(ledger: &'a Value, change: &str) -> Option<&'a Value> {
-    ledger["changes"]
-        .as_array()
-        .and_then(|items| items.iter().find(|item| item["id"] == change))
-        .or_else(|| ledger.get(change).filter(|v| v.is_object()))
+fn argument_codepoints(args: &Value, name: &str) -> Option<Vec<u32>> {
+    let points = args["__native_arg_codepoints"][name]
+        .as_array()?
+        .iter()
+        .map(|point| point.as_u64().map(|point| point as u32))
+        .collect::<Option<Vec<_>>>()?;
+    (args[name].as_str() == Some(crate::executor_text::points_text(&points).as_str()))
+        .then_some(points)
 }
-pub(crate) fn validate_ledger(file: &Path, change: &str, category: &str) -> Result<Value> {
-    let bytes=fs::read(file).map_err(|e|if e.kind()==io::ErrorKind::NotFound{format!("FileNotFoundError: Ledger not found: {}. Create tasks/tdd.json with a planned entry before calling execute.",file.display())}else{format!("OSError: {e}")})?;
-    let ledger: Value =
-        serde_json::from_slice(&bytes).map_err(|e| format!("JSONDecodeError: {e}"))?;
-    let entry = entry(&ledger, change).ok_or_else(|| {
+fn prompt_codepoints(args: &Value) -> Option<Vec<u32>> {
+    let raw = argument_codepoints(args, "codex_args")?;
+    // Surrogates have no shlex syntax. Substitute only input-absent scalars
+    // while reusing the common shell-word and positional-prompt parsers.
+    let mut replacements = BTreeMap::new();
+    let mut candidates = (0xe000..=0xf8ff).filter(|point| !raw.contains(point));
+    for point in raw
+        .iter()
+        .filter(|point| (0xd800..=0xdfff).contains(*point))
+    {
+        if !replacements.contains_key(point) {
+            replacements.insert(*point, candidates.next()?);
+        }
+    }
+    let text = raw
+        .iter()
+        .map(|point| char::from_u32(*replacements.get(point).unwrap_or(point)))
+        .collect::<Option<String>>()?;
+    let selected = prompt(&shell_words(&text).ok()?);
+    Some(
+        selected
+            .chars()
+            .map(|character| {
+                let point = u32::from(character);
+                replacements
+                    .iter()
+                    .find(|(_, replacement)| **replacement == point)
+                    .map_or(point, |(original, _)| *original)
+            })
+            .collect(),
+    )
+}
+fn ledger_index(ledger: &crate::python_json::Value, change: &str) -> Result<Option<usize>> {
+    if !ledger.is_object() {
+        return Err(format!(
+            "AttributeError: '{}' object has no attribute 'get'",
+            ledger.type_name()
+        ));
+    }
+    if let Some(items) = ledger["changes"].as_array() {
+        for (index, item) in items.iter().enumerate() {
+            if !item.is_object() {
+                return Err(format!(
+                    "AttributeError: '{}' object has no attribute 'get'",
+                    item.type_name()
+                ));
+            }
+            if item["id"].as_str() == Some(change) {
+                return Ok(Some(index));
+            }
+        }
+    }
+    Ok(None)
+}
+pub(crate) fn validate_ledger(
+    file: &Path,
+    change: &str,
+    category: &str,
+) -> Result<crate::python_json::Value> {
+    use crate::python_json::Value as Python;
+    if !file.exists() {
+        return Err(format!(
+            "FileNotFoundError: Ledger not found: {}. Create tasks/tdd.json with a planned entry before calling execute.",
+            file.display()
+        ));
+    }
+    let bytes = fs::read(file).map_err(|error| crate::executor_text::io_error(error, file))?;
+    let text = String::from_utf8(bytes).map_err(|error| {
         format!(
-            "KeyError: {}",
-            repr(&format!(
-                "unknown change_id {} in {}. Add a TDD entry for this id before executing.",
-                repr(change),
-                file.display()
-            ))
+            "UnicodeDecodeError: {}",
+            crate::executor_local::Error::Unicode(error)
         )
     })?;
-    let value=entry["categories"].get(category).ok_or_else(||format!("KeyError: {}",repr(&format!("category {} not in entry {}. Declare the category in tdd.json before updating it (do not silently add).",repr(category),repr(change)))))?;
-    if value["status"] == "not_applicable" {
+    let ledger = crate::python_json::parse(&text.replace("\r\n", "\n").replace('\r', "\n"))
+        .map_err(|error| format!("{}: {error}", error.exception))?;
+    let index = ledger_index(&ledger, change)?;
+    let entry = index
+        .and_then(|index| ledger["changes"].as_array()?.get(index))
+        .or_else(|| ledger.get(change).filter(|value| value.is_object()))
+        .ok_or_else(|| {
+            format!(
+                "KeyError: {}",
+                repr(&format!(
+                    "unknown change_id {} in {}. Add a TDD entry for this id before executing.",
+                    repr(change),
+                    file.display()
+                ))
+            )
+        })?;
+    let categories = entry.get("categories");
+    let contains = match categories {
+        None => false,
+        Some(Python::Object(items)) => items.get(category).is_some(),
+        Some(Python::Array(items)) => items.iter().any(|value| value.as_str() == Some(category)),
+        Some(Python::String(text)) => text.as_str().is_some_and(|text| text.contains(category)),
+        Some(value) => {
+            return Err(format!(
+                "TypeError: argument of type '{}' is not iterable",
+                value.type_name()
+            ));
+        }
+    };
+    if !contains {
+        return Err(format!(
+            "KeyError: {}",
+            repr(&format!(
+                "category {} not in entry {}. Declare the category in tdd.json before updating it (do not silently add).",
+                repr(category),
+                repr(change)
+            ))
+        ));
+    }
+    let value = match categories {
+        Some(Python::Object(items)) => items.get(category).ok_or("KeyError: missing category")?,
+        Some(Python::Array(_)) => {
+            return Err("TypeError: list indices must be integers or slices, not str".into());
+        }
+        Some(Python::String(_)) => {
+            return Err("TypeError: string indices must be integers, not 'str'".into());
+        }
+        _ => return Err("TypeError: invalid categories".into()),
+    };
+    if !value.is_object() {
+        return Err(format!(
+            "AttributeError: '{}' object has no attribute 'get'",
+            value.type_name()
+        ));
+    }
+    if value["status"].as_str() == Some("not_applicable") {
         return Err(format!(
             "ValueError: category {} is marked not_applicable; cannot run executor on it. Edit tdd.json manually if you intend to reclassify.",
             repr(category)
         ));
-    }
-    if !value.is_object() {
-        return Err("TypeError: ledger category must contain an object".into());
     }
     Ok(ledger)
 }
@@ -855,18 +1251,31 @@ fn update_ledger(
     change: &str,
     category: &str,
     result: &Value,
-) -> Result<(Value, &'static str, String)> {
+) -> Result<(crate::python_json::Value, &'static str, String)> {
+    use crate::python_json::{Text, Value as Python};
     let mut ledger = validate_ledger(file, change, category)?;
-    let original = fs::read_to_string(file).map_err(|e| format!("OSError: {e}"))?;
-    let value = if let Some(index) = ledger["changes"]
-        .as_array()
-        .and_then(|items| items.iter().position(|item| item["id"] == change))
-    {
-        &mut ledger["changes"][index]["categories"][category]
-    } else {
-        &mut ledger[change]["categories"][category]
+    let index = ledger_index(&ledger, change)?;
+    let Python::Object(root) = &mut ledger else {
+        return Err("TypeError: invalid ledger".into());
     };
-    let previous = value["status"].clone();
+    let entry = if let Some(index) = index {
+        let Some(Python::Array(items)) = root.get_mut("changes") else {
+            return Err("TypeError: invalid changes".into());
+        };
+        items.get_mut(index)
+    } else {
+        root.get_mut(change)
+    };
+    let Some(Python::Object(entry)) = entry else {
+        return Err("TypeError: invalid ledger entry".into());
+    };
+    let Some(Python::Object(categories)) = entry.get_mut("categories") else {
+        return Err("TypeError: invalid categories".into());
+    };
+    let Some(Python::Object(value)) = categories.get_mut(category) else {
+        return Err("TypeError: invalid category".into());
+    };
+    let previous = value.get("status").cloned().unwrap_or(Python::Null);
     let status = if result["exit_code"] == 0 {
         "pass"
     } else {
@@ -882,39 +1291,163 @@ fn update_ledger(
             200
         ))
     );
-    value["status"] = json!(status);
-    value["executed_argv"] = result["command"].clone();
-    value["notes"] = json!(notes);
-    let parent = file.parent().ok_or("OSError: ledger parent missing")?;
-    let temp = parent.join(format!(".mir-executor-{}.tmp", unique_id()));
-    let written = (|| -> Result<()> {
-        let mut out = fs::OpenOptions::new()
-            .create_new(true)
-            .write(true)
-            .open(&temp)
-            .map_err(|e| format!("OSError: {e}"))?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            out.set_permissions(fs::Permissions::from_mode(0o600))
-                .map_err(|e| format!("OSError: {e}"))?;
-        }
-        let rendered = crate::executor_ledger_json::render(&original, &ledger)?;
-        #[cfg(windows)]
-        let rendered = rendered.replace('\n', "\r\n");
-        out.write_all(rendered.as_bytes())
-            .map_err(|e| format!("OSError: {e}"))?;
-        drop(out);
-        atomic_replace(&temp, file)
-    })();
-    if written.is_err() {
-        let _ = fs::remove_file(&temp);
-    }
-    written?;
+    let string = |text: &str| Python::String(Text::new(text.chars().map(u32::from).collect()));
+    value.insert(
+        Text::new("status".chars().map(u32::from).collect()),
+        string(status),
+    );
+    let command = if let Some(items) = result["__native_command_codepoints"].as_array() {
+        Python::Array(
+            items
+                .iter()
+                .map(|item| {
+                    Python::String(Text::new(
+                        item.as_array()
+                            .into_iter()
+                            .flatten()
+                            .filter_map(Value::as_u64)
+                            .map(|point| point as u32)
+                            .collect(),
+                    ))
+                })
+                .collect(),
+        )
+    } else {
+        crate::python_json::parse(&result["command"].to_string())
+            .map_err(|error| format!("{}: {error}", error.exception))?
+    };
+    value.insert(
+        Text::new("executed_argv".chars().map(u32::from).collect()),
+        command,
+    );
+    value.insert(
+        Text::new("notes".chars().map(u32::from).collect()),
+        string(&notes),
+    );
+    let rendered = crate::executor_ledger_json::render_python(&ledger)?;
+    write_ledger(file, &rendered)?;
     Ok((previous, status, notes))
 }
-fn atomic_replace(source: &Path, target: &Path) -> Result<()> {
-    fs::rename(source, target).map_err(|e| format!("OSError: {e}"))
+
+#[cfg(test)]
+thread_local! {
+    static LEDGER_TEMP_NAMES: std::cell::RefCell<Vec<OsString>> = const { std::cell::RefCell::new(Vec::new()) };
+    static LEDGER_TEMP_LIMIT: std::cell::Cell<Option<usize>> = const { std::cell::Cell::new(None) };
+    static BEFORE_LEDGER_REPLACE: std::cell::RefCell<Option<Box<dyn FnOnce()>>> =
+        std::cell::RefCell::new(None);
+}
+
+fn ledger_temp_name() -> OsString {
+    #[cfg(test)]
+    if let Some(name) = LEDGER_TEMP_NAMES.with(|names| names.borrow_mut().pop()) {
+        return name;
+    }
+    OsString::from(format!(".mir-executor-{}.tmp", unique_id()))
+}
+
+#[cfg(test)]
+#[path = "executor_ledger_temp_tests.rs"]
+mod ledger_temp_tests;
+
+// CPython 3.12 Lib/tempfile.py: TMP_MAX = os.TMP_MAX (fallback 10000),
+// _mkstemp_inner retries only FileExistsError and raises without a filename.
+fn ledger_temp_limit() -> usize {
+    #[cfg(test)]
+    if let Some(limit) = LEDGER_TEMP_LIMIT.with(|limit| limit.get()) {
+        return limit;
+    }
+    libc::TMP_MAX as usize
+}
+
+fn create_ledger_temp(
+    parent: &Path,
+    mut create: impl FnMut(&std::ffi::OsStr) -> io::Result<fs::File>,
+) -> Result<(OsString, fs::File)> {
+    for _ in 0..ledger_temp_limit() {
+        let name = ledger_temp_name();
+        match create(&name) {
+            Ok(output) => return Ok((name, output)),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(crate::executor_text::io_error(error, &parent.join(name))),
+        }
+    }
+    Err("FileExistsError: [Errno 17] No usable temporary file name found".into())
+}
+
+fn write_ledger(file: &Path, rendered: &str) -> Result<()> {
+    #[cfg(windows)]
+    let rendered = rendered.replace('\n', "\r\n");
+    let parent = file.parent().ok_or("OSError: ledger parent missing")?;
+    #[cfg(unix)]
+    {
+        // mkstemp(dir=ledger.parent) follows directory symlinks. Resolve only
+        // the parent: os.replace replaces a leaf symlink, not its referent.
+        let resolved_parent =
+            fs::canonicalize(parent).map_err(|e| crate::executor_text::io_error(e, parent))?;
+        let resolved_file = resolved_parent.join(file.file_name().unwrap_or_default());
+        let pinned = crate::adoption_fs::parent(&resolved_parent, &resolved_file)
+            .map_err(|e| crate::executor_text::io_error(e, parent))?;
+        let (name, mut output) = create_ledger_temp(parent, |name| pinned.create(name, 0o600))?;
+        let source = parent.join(&name);
+        let written = (|| -> Result<()> {
+            output
+                .write_all(rendered.as_bytes())
+                .map_err(|e| crate::executor_text::io_error(e, &source))?;
+            let replacement = crate::adoption_fs::Move::prepare(
+                &resolved_parent,
+                &resolved_parent.join(&name),
+                &resolved_file,
+            )
+            .map_err(|e| crate::executor_text::io_error(e, file))?;
+            #[cfg(test)]
+            BEFORE_LEDGER_REPLACE.with(|hook| {
+                if let Some(hook) = hook.borrow_mut().take() {
+                    hook();
+                }
+            });
+            if !crate::adoption_fs::owns_file(&pinned, &name, &output) {
+                return Err("OSError: ledger temporary file identity changed".into());
+            }
+            replacement
+                .rename()
+                .map_err(|e| crate::executor_text::io_error(e, file))
+        })();
+        // Keep the creation fd open: a substituted entry must never acquire
+        // the original inode through reuse while cleanup checks its identity.
+        if written.is_err() && crate::adoption_fs::owns_file(&pinned, &name, &output) {
+            let _ = pinned.unlink(&name, false);
+        }
+        written
+    }
+    #[cfg(not(unix))]
+    {
+        let (name, mut output) = create_ledger_temp(parent, |name| {
+            fs::OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .open(parent.join(name))
+        })?;
+        let source = parent.join(name);
+        let written = (|| -> Result<()> {
+            output
+                .write_all(rendered.as_bytes())
+                .map_err(|e| crate::executor_text::io_error(e, &source))?;
+            #[cfg(test)]
+            BEFORE_LEDGER_REPLACE.with(|hook| {
+                if let Some(hook) = hook.borrow_mut().take() {
+                    hook();
+                }
+            });
+            if !crate::adoption_fs::owns_file(&source, &output) {
+                return Err("OSError: ledger temporary file identity changed".into());
+            }
+            fs::rename(&source, file).map_err(|e| crate::executor_text::io_error(e, file))
+        })();
+        if written.is_err() && crate::adoption_fs::owns_file(&source, &output) {
+            let _ = fs::remove_file(&source);
+        }
+        written
+    }
 }
 // Keep provider inputs explicit at this single adapter seam; no new state owner.
 #[allow(clippy::too_many_arguments)]
@@ -949,9 +1482,11 @@ fn provider(
             return Err("RuntimeError: Delegated Codex refused in the main worktree per ADR-60 section 16 D3. Delegated execution must go through `mir_executor execute --background --dispatch`, which uses an R4 worktree, or set MIR_CODEX_MAIN=1 for the main process itself, such as loop_driver.".into());
         }
     }
-    let binary = crate::codex_binary::resolve(environment);
+    let binary_os = crate::codex_binary::resolve_os(environment);
+    let binary = crate::executor_text::os_text(&binary_os);
+    let binary_points = crate::executor_text::os_points(&binary_os);
     let start = Instant::now();
-    let mut command = Command::new(&binary);
+    let mut command = Command::new(&binary_os);
     command.arg("app-server").current_dir(cwd).env_clear();
     const KEYS: &[&str] = &[
         "CODEX_BIN",
@@ -989,16 +1524,39 @@ fn provider(
             command.env(k, v);
         }
     }
-    let timeout = args["timeout"]
-        .as_f64()
-        .map(|n| Duration::try_from_secs_f64(n.max(0.0)).map_err(|e| format!("ValueError: {e}")))
-        .transpose()?;
-    let mut options = CallOptions::new(prompt, cwd.to_str().ok_or("ValueError: non UTF-8 cwd")?);
+    let timeout_number = argument_number(&args["timeout"]);
+    let timeout_error = timeout_number.and_then(|number| {
+        if number.is_infinite() {
+            Some("OverflowError: int too large to convert to float")
+        } else if number > 9_223_372_036.0 {
+            Some("OverflowError: timestamp out of range for platform time_t")
+        } else {
+            None
+        }
+    });
+    let timeout = timeout_number
+        .filter(|_| timeout_error.is_none())
+        .map(|number| Duration::from_secs_f64(number.max(0.0)));
+    let mut options = CallOptions::new(prompt, crate::executor_text::os_text(cwd.as_os_str()));
+    if cwd.to_str().is_none() {
+        options
+            .string_codepoints
+            .insert("cwd", crate::executor_text::os_points(cwd.as_os_str()));
+    }
+    for (name, key) in [
+        ("model", "model"),
+        ("reasoning_effort", "model_reasoning_effort"),
+    ] {
+        if let Some(points) = argument_codepoints(args, name) {
+            options.string_codepoints.insert(key, points);
+        }
+    }
+    if let Some(points) = prompt_codepoints(args) {
+        options.string_codepoints.insert("prompt", points);
+    }
     options.timeout = timeout;
-    options.stall_timeout = args["stall_timeout"]
-        .as_f64()
-        .map(|n| Duration::try_from_secs_f64(n.max(0.0)).map_err(|e| format!("ValueError: {e}")))
-        .transpose()?;
+    options.wait_error = timeout_error.filter(|error| error.contains("timestamp out of range"));
+    options.stall_timeout_float = argument_number(&args["stall_timeout"]);
     options.sandbox = local
         .raw()
         .get("codex_sandbox_default")
@@ -1014,11 +1572,16 @@ fn provider(
     options.config = Some(config);
     let raw = (|| {
         let mut client = Client::spawn(command, Duration::from_secs(10), Duration::from_secs(2))?;
+        if let Some(error) = timeout_error.filter(|error| error.contains("int too large")) {
+            client.close();
+            return Err(TransportError::Encoding(error.into()));
+        }
         let result = client.call(options, &mut |_, _| Ok(()));
         client.close();
         result
     })();
     let (mut result, metadata) = match raw {
+        Err(TransportError::Encoding(error)) => return Err(error),
         Ok(raw) => {
             let usage = raw.token_usage.as_ref().unwrap_or(&raw.raw_result["usage"]);
             let usage = usage
@@ -1050,15 +1613,17 @@ fn provider(
                 json!({"prompt_sha256":crate::digest::sha256(prompt.as_bytes()),"model":raw.model_id.as_deref().or_else(||raw.raw_result["model"].as_str()).or(model),"reasoning_effort":effort,"tool_version":raw.tool_version.as_deref().or_else(||raw.raw_result["tool_version"].as_str()),"attempt":1,"elapsed_seconds":duration,"token_usage":if tokens.is_empty(){Value::Null}else{Value::Object(tokens)}}),
             )
         }
-        Err(TransportError::Timeout(_)) if timeout.is_some() => {
-            return Err(if args["use_async"] == true {
-                format!("async timeout after {}s", args["timeout"])
+        Err(TransportError::Timeout(error)) if timeout.is_some() => {
+            return Err(if args["background"] == true {
+                format!("tools.mir_executor.codex_mcp_client.CodexMcpTimeoutError: {error}")
+            } else if args["use_async"] == true {
+                format!("async timeout after {}s", number_display(&args["timeout"]))
             } else {
                 format!(
-                    "Codex timeout after {}s: Command '{}' timed out after {} seconds",
-                    args["timeout"],
-                    list_repr(&[binary, "app-server".into()]),
-                    args["timeout"]
+                    "Codex timeout after {}s: Command '[{}, 'app-server']' timed out after {} seconds",
+                    number_display(&args["timeout"]),
+                    repr_codepoints(&binary_points),
+                    number_display(&args["timeout"])
                 )
             });
         }
@@ -1068,8 +1633,15 @@ fn provider(
         }) => {
             return Err(format!(
                 "FileNotFoundError: Codex binary not found: {}. Set CODEX_BIN to the full path of the codex executable.",
-                repr(&binary)
+                repr_codepoints(&binary_points)
             ));
+        }
+        Err(TransportError::Spawn {
+            kind, raw_os_error, ..
+        }) => {
+            let error =
+                raw_os_error.map_or_else(|| io::Error::from(kind), io::Error::from_raw_os_error);
+            return Err(crate::executor_text::io_error(error, Path::new(&binary_os)));
         }
         Err(error) => {
             let duration = start.elapsed().as_secs_f64();
@@ -1087,12 +1659,19 @@ fn provider(
             metadata,
         ],
     )?;
-    if !replacement.is_null() {
+    let replaced = !replacement.is_null();
+    if replaced {
         result = if replacement["$type"] == "subprocess_result" {
             replacement["value"].clone()
         } else {
             replacement
         };
+    }
+    if binary_os.to_str().is_none() && !replaced {
+        result["__native_command_codepoints"] = json!([
+            binary_points,
+            "app-server".chars().map(u32::from).collect::<Vec<_>>()
+        ]);
     }
     if !result["exit_code"].is_i64()
         || !result["stdout"].is_string()
@@ -1159,6 +1738,33 @@ pub fn dispatch(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn direct_ledger_json_error_matches_python() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = directory.path().join("tdd.json");
+        fs::write(&file, "{bad").unwrap();
+        assert_eq!(
+            validate_ledger(&file, "c", "unit").unwrap_err(),
+            "JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+        );
+    }
+
+    #[test]
+    fn direct_ledger_scalar_preserves_attribute_error() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = directory.path().join("tdd.json");
+        for (source, error) in [
+            ("[]", "AttributeError: 'list' object has no attribute 'get'"),
+            (
+                r#"{"c":{"categories":{"unit":4}}}"#,
+                "AttributeError: 'int' object has no attribute 'get'",
+            ),
+        ] {
+            fs::write(&file, source).unwrap();
+            assert_eq!(validate_ledger(&file, "c", "unit").unwrap_err(), error);
+        }
+    }
 
     #[test]
     fn hook_namespace_omits_the_native_brief_cache() {
@@ -1240,6 +1846,128 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn ledger_parent_swap_cannot_replace_an_outside_file() {
+        let scratch = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+            .map(PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir);
+        fs::create_dir_all(&scratch).unwrap();
+        let temporary = tempfile::tempdir_in(&scratch).unwrap();
+        let root = fs::canonicalize(temporary.path()).unwrap();
+        let parent = root.join("tasks");
+        let retained = root.join("retained");
+        let outside = root.join("outside");
+        fs::create_dir_all(&parent).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        fs::write(parent.join("tdd.json"), "original").unwrap();
+        fs::write(outside.join("tdd.json"), "outside").unwrap();
+        let old_parent = parent.clone();
+        let old_retained = retained.clone();
+        let old_outside = outside.clone();
+        BEFORE_LEDGER_REPLACE.with(|hook| {
+            *hook.borrow_mut() = Some(Box::new(move || {
+                let temporary = fs::read_dir(&old_parent)
+                    .unwrap()
+                    .map(|entry| entry.unwrap().file_name())
+                    .find(|name| name.to_string_lossy().starts_with(".mir-executor-"))
+                    .unwrap();
+                fs::write(old_outside.join(temporary), "outside-temp").unwrap();
+                fs::rename(&old_parent, &old_retained).unwrap();
+                std::os::unix::fs::symlink(&old_outside, &old_parent).unwrap();
+            }))
+        });
+        write_ledger(&parent.join("tdd.json"), "updated").unwrap();
+        assert_eq!(
+            fs::read_to_string(outside.join("tdd.json")).unwrap(),
+            "outside"
+        );
+        assert_eq!(
+            fs::read_to_string(retained.join("tdd.json")).unwrap(),
+            "updated"
+        );
+        let outside_temp = fs::read_dir(&outside)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .find(|path| {
+                path.file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with(".mir-executor-")
+            })
+            .unwrap();
+        assert_eq!(fs::read_to_string(outside_temp).unwrap(), "outside-temp");
+        assert_eq!(fs::read_dir(&outside).unwrap().count(), 2);
+        assert_eq!(fs::read_dir(&retained).unwrap().count(), 1);
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn ledger_follows_symlinked_directories() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temporary.path()).unwrap();
+        let real = root.join("real");
+        fs::create_dir_all(real.join("tasks")).unwrap();
+        let alias = root.join("alias");
+        std::os::unix::fs::symlink(&real, &alias).unwrap();
+        // Exercise both a linked immediate parent and a linked ancestor.
+        for parent in [&alias, &alias.join("tasks")] {
+            let ledger = parent.join("tdd.json");
+            fs::write(&ledger, "original").unwrap();
+            let observed_parent = parent.to_path_buf();
+            BEFORE_LEDGER_REPLACE.with(|hook| {
+                *hook.borrow_mut() = Some(Box::new(move || {
+                    let files: Vec<_> = fs::read_dir(&observed_parent)
+                        .unwrap()
+                        .map(|entry| entry.unwrap().path())
+                        .filter(|path| path.is_file())
+                        .collect();
+                    let temporary = files
+                        .iter()
+                        .find(|path| {
+                            path.file_name()
+                                .unwrap()
+                                .to_string_lossy()
+                                .starts_with(".mir-executor-")
+                        })
+                        .unwrap();
+                    assert_eq!(fs::read_to_string(temporary).unwrap(), "updated");
+                    assert_eq!(files.len(), 2);
+                }));
+            });
+            write_ledger(&ledger, "updated").unwrap();
+            assert_eq!(fs::read_to_string(&ledger).unwrap(), "updated");
+            assert_eq!(
+                fs::read_dir(parent)
+                    .unwrap()
+                    .filter(|entry| entry.as_ref().unwrap().path().is_file())
+                    .count(),
+                1
+            );
+        }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn ledger_replaces_leaf_symlink_without_writing_referent() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path();
+        let referent = root.join("referent.json");
+        let ledger = root.join("tdd.json");
+        fs::write(&referent, "original").unwrap();
+        std::os::unix::fs::symlink(&referent, &ledger).unwrap();
+        write_ledger(&ledger, "updated").unwrap();
+        assert!(
+            !fs::symlink_metadata(&ledger)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        assert_eq!(fs::read_to_string(&referent).unwrap(), "original");
+        assert_eq!(fs::read_to_string(&ledger).unwrap(), "updated");
+        assert_eq!(fs::read_dir(root).unwrap().count(), 2);
+    }
+
     #[test]
     fn ledger_replaces_existing_file() {
         let root = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
@@ -1255,7 +1983,7 @@ mod tests {
         .unwrap();
         let result = json!({"exit_code":0,"stderr":"","command":["fake"]});
         let (previous, status, _) = update_ledger(&ledger, "c", "unit", &result).unwrap();
-        assert_eq!(previous, "pending");
+        assert_eq!(previous.as_str(), Some("pending"));
         assert_eq!(status, "pass");
         let updated: Value = serde_json::from_slice(&fs::read(&ledger).unwrap()).unwrap();
         assert_eq!(updated["c"]["categories"]["unit"]["status"], "pass");

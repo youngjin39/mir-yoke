@@ -20,6 +20,12 @@ pub const MAX_JSON_DEPTH: usize = 64;
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 type Result<T> = std::result::Result<T, BridgeError>;
 
+#[derive(Debug)]
+struct HookResponse {
+    value: Value,
+    strings: BTreeMap<Vec<String>, Vec<u32>>,
+}
+
 #[derive(Clone, Debug)]
 pub struct HooksConfig {
     pub executable: String,
@@ -32,7 +38,8 @@ pub struct HooksConfig {
 pub struct HookSession {
     child: Child,
     requests: Option<Sender<Vec<u8>>>,
-    responses: Receiver<Result<Value>>,
+    responses: Receiver<Result<HookResponse>>,
+    response_strings: BTreeMap<Vec<String>, Vec<u32>>,
     worker: Option<JoinHandle<()>>,
     hooks: Vec<String>,
     next_id: u64,
@@ -167,6 +174,7 @@ impl HookSession {
             child,
             requests: Some(requests),
             responses,
+            response_strings: BTreeMap::new(),
             worker: Some(worker),
             hooks: config.hooks.clone(),
             next_id: 1,
@@ -194,6 +202,16 @@ impl HookSession {
     pub fn serves(&self, name: &str) -> bool {
         self.hooks.iter().any(|hook| hook == name)
     }
+    pub(crate) fn response_string(&self, path: &[&str]) -> Option<&[u32]> {
+        self.response_strings
+            .get(
+                &path
+                    .iter()
+                    .map(|part| (*part).to_owned())
+                    .collect::<Vec<_>>(),
+            )
+            .map(Vec::as_slice)
+    }
     /// Preserves the complete reply, including target-owned errors and tokens.
     pub fn call(&mut self, hook: &str, params: Value) -> Result<Value> {
         if self.closed {
@@ -218,7 +236,7 @@ impl HookSession {
             .ok_or(BridgeError::Protocol("request id exhausted"))?;
         let request = json!({"version":PROTOCOL,"id":id,"hook":hook,"params":params});
         validate_value(&request)?;
-        let mut frame = serde_json::to_vec(&request)?;
+        let mut frame = request_frame(&request)?;
         if frame.len() >= MAX_FRAME_BYTES {
             return Err(BridgeError::FrameTooLarge);
         }
@@ -250,7 +268,10 @@ impl HookSession {
         if result.is_err() {
             self.close();
         }
-        result
+        result.map(|response| {
+            self.response_strings = response.strings;
+            response.value
+        })
     }
     pub fn close(&mut self) {
         if self.closed {
@@ -271,6 +292,128 @@ impl HookSession {
             let _ = worker.join();
         }
     }
+}
+
+// Only parser-owned numeric slots and path slots can contain typed scalars.
+// Target-owned dictionaries and strings elsewhere remain ordinary JSON.
+fn request_frame(request: &Value) -> Result<Vec<u8>> {
+    fn append(value: &Value, path: &mut Vec<String>, out: &mut Vec<u32>) -> Result<()> {
+        let numeric = path.len() == 4
+            && path[..3] == ["params", "payload", "args"]
+            && matches!(
+                path[3].as_str(),
+                "timeout" | "stall_timeout" | "max_codex_attempts" | "finalize_lock_timeout"
+            );
+        let path_slot = (path.len() == 2
+            && path[0] == "params"
+            && matches!(path[1].as_str(), "cwd" | "repo_root" | "token"))
+            || (path.len() == 3
+                && path[..2] == ["params", "payload"]
+                && matches!(path[2].as_str(), "repo_root" | "jobs_db"))
+            || (path.len() == 4
+                && path[..3] == ["params", "payload", "args"]
+                && matches!(
+                    path[3].as_str(),
+                    "repo_root"
+                        | "jobs_db"
+                        | "codex_args_file"
+                        | "artifacts_dir"
+                        | "dispatch_brief"
+                ));
+        if let Some(fields) = value.as_object().filter(|fields| fields.len() == 1) {
+            if numeric && fields.contains_key("__native_float") {
+                return Err(BridgeError::Configuration(
+                    "NativeHookError: nonfinite native hook number".into(),
+                ));
+            }
+            if numeric && let Some(raw) = fields.get("__native_integer").and_then(Value::as_str) {
+                let valid = crate::python_json::parse(raw).is_ok_and(|value| matches!(value, crate::python_json::Value::Number(number) if number.is_integer()));
+                if !valid {
+                    return Err(BridgeError::Protocol("invalid native hook integer"));
+                }
+                out.extend(raw.chars().map(u32::from));
+                return Ok(());
+            }
+            if path_slot && let Some(raw) = fields.get("__native_string").and_then(Value::as_array)
+            {
+                let points = raw
+                    .iter()
+                    .map(|point| {
+                        point
+                            .as_u64()
+                            .and_then(|point| u32::try_from(point).ok())
+                            .filter(|point| *point <= 0x10ffff)
+                    })
+                    .collect::<Option<Vec<_>>>()
+                    .ok_or(BridgeError::Protocol("invalid native hook string"))?;
+                out.extend(crate::executor_text::json_quote_points(&points));
+                return Ok(());
+            }
+        }
+        match value {
+            Value::Object(fields) => {
+                out.push(123);
+                let mut fields = fields.iter().collect::<Vec<_>>();
+                fields.sort_by_key(|(key, _)| *key);
+                for (index, (key, value)) in fields.into_iter().enumerate() {
+                    if index > 0 {
+                        out.push(44);
+                    }
+                    out.extend(crate::executor_text::json_quote_points(
+                        &key.chars().map(u32::from).collect::<Vec<_>>(),
+                    ));
+                    out.push(58);
+                    path.push(key.clone());
+                    append(value, path, out)?;
+                    path.pop();
+                }
+                out.push(125);
+            }
+            Value::Array(items) => {
+                out.push(91);
+                for (index, value) in items.iter().enumerate() {
+                    if index > 0 {
+                        out.push(44);
+                    }
+                    path.push(index.to_string());
+                    append(value, path, out)?;
+                    path.pop();
+                }
+                out.push(93);
+            }
+            Value::String(text) => out.extend(crate::executor_text::json_quote_points(
+                &text.chars().map(u32::from).collect::<Vec<_>>(),
+            )),
+            _ => out.extend(value.to_string().chars().map(u32::from)),
+        }
+        Ok(())
+    }
+    let mut points = vec![];
+    append(request, &mut vec![], &mut points)?;
+    if let Some(start) = points
+        .iter()
+        .position(|point| (0xd800..=0xdfff).contains(point))
+    {
+        let end = start
+            + points[start..]
+                .iter()
+                .take_while(|point| (0xd800..=0xdfff).contains(*point))
+                .count();
+        return Err(BridgeError::Configuration(
+            crate::executor_text::encode_error(
+                "utf-8",
+                &points,
+                start,
+                end,
+                "surrogates not allowed",
+            ),
+        ));
+    }
+    Ok(points
+        .into_iter()
+        .filter_map(char::from_u32)
+        .collect::<String>()
+        .into_bytes())
 }
 impl Drop for HookSession {
     fn drop(&mut self) {
@@ -323,12 +466,12 @@ fn validate_value(value: &Value) -> Result<()> {
     }
     Ok(())
 }
-fn send_frame(reader: &mut impl BufRead, outgoing: &Sender<Result<Value>>) -> bool {
+fn send_frame(reader: &mut impl BufRead, outgoing: &Sender<Result<HookResponse>>) -> bool {
     let result = read_frame(reader);
     let keep_reading = result.is_ok();
     outgoing.send(result).is_ok() && keep_reading
 }
-fn read_frame(reader: &mut impl BufRead) -> Result<Value> {
+fn read_frame(reader: &mut impl BufRead) -> Result<HookResponse> {
     let mut frame = Vec::new();
     loop {
         let available = reader.fill_buf()?;
@@ -373,7 +516,128 @@ fn read_frame(reader: &mut impl BufRead) -> Result<Value> {
             }
         }
     }
-    let value = serde_json::from_slice(&frame)?;
-    validate_value(&value)?;
-    Ok(value)
+    match serde_json::from_slice(&frame) {
+        Ok(value) => {
+            validate_value(&value)?;
+            Ok(HookResponse {
+                value,
+                strings: BTreeMap::new(),
+            })
+        }
+        Err(error)
+            if [
+                "number out of range",
+                "lone leading surrogate in hex escape",
+                "unexpected end of hex escape",
+                "invalid unicode code point",
+            ]
+            .iter()
+            .any(|message| error.to_string().starts_with(message)) =>
+        {
+            numeric_response(&frame, error)
+        }
+        Err(error) => Err(error.into()),
+    }
 }
+
+// A direct hook consumes envelope fields and writer tokens, while numeric result
+// extras stay opaque. Preserve oversized integers without coercing them into an
+// envelope id or interpreting a target-owned dictionary as an internal scalar.
+fn numeric_response(frame: &[u8], original: serde_json::Error) -> Result<HookResponse> {
+    use crate::python_json::Value as Python;
+    let Ok(text) = std::str::from_utf8(frame) else {
+        return Err(original.into());
+    };
+    let value = crate::python_json::parse(text)
+        .map_err(|error| BridgeError::Configuration(format!("NativeHookError: {error}")))?;
+    let mut pending = vec![(&value, 0)];
+    while let Some((item, depth)) = pending.pop() {
+        if depth > MAX_JSON_DEPTH
+            || (depth >= MAX_JSON_DEPTH && matches!(item, Python::Object(_) | Python::Array(_)))
+        {
+            return Err(BridgeError::Protocol(
+                "native hook JSON depth exceeds limit",
+            ));
+        }
+        match item {
+            Python::Object(fields) => {
+                for (_, value) in fields.iter() {
+                    pending.push((value, depth + 1));
+                }
+            }
+            Python::Array(items) => pending.extend(items.iter().map(|item| (item, depth + 1))),
+            Python::Number(number)
+                if !number.is_integer()
+                    && number
+                        .token
+                        .parse::<f64>()
+                        .is_ok_and(|number| !number.is_finite()) =>
+            {
+                return Err(BridgeError::Configuration(
+                    "NativeHookError: nonfinite native hook number".into(),
+                ));
+            }
+            _ => (),
+        }
+    }
+    fn convert(
+        value: Python,
+        path: &mut Vec<String>,
+        strings: &mut BTreeMap<Vec<String>, Vec<u32>>,
+    ) -> Result<Value> {
+        Ok(match value {
+            Python::Null => Value::Null,
+            Python::Bool(value) => Value::Bool(value),
+            Python::String(text) => {
+                if text.has_surrogates() {
+                    strings.insert(path.clone(), text.codepoints.clone());
+                }
+                Value::String(text.py_str())
+            }
+            Python::Number(number)
+                if number.is_integer()
+                    && number.token.parse::<i64>().is_err()
+                    && number.token.parse::<u64>().is_err() =>
+            {
+                json!({"__native_hook_integer":number.token})
+            }
+            Python::Number(number) => Value::Number(number.token.parse()?),
+            Python::Array(items) => Value::Array(
+                items
+                    .into_iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        path.push(index.to_string());
+                        let value = convert(value, path, strings);
+                        path.pop();
+                        value
+                    })
+                    .collect::<Result<_>>()?,
+            ),
+            Python::Object(fields) => Value::Object(
+                fields
+                    .into_entries()
+                    .into_iter()
+                    .map(|(key, value)| {
+                        let key = key.py_str();
+                        path.push(key.clone());
+                        let value = convert(value, path, strings);
+                        path.pop();
+                        Ok((key, value?))
+                    })
+                    .collect::<Result<_>>()?,
+            ),
+        })
+    }
+    let mut strings = BTreeMap::new();
+    let value = convert(value, &mut vec![], &mut strings)?;
+    Ok(HookResponse { value, strings })
+}
+
+#[cfg(test)]
+#[path = "executor_hooks_numeric_tests.rs"]
+mod numeric_tests;
+
+#[cfg(test)]
+#[path = "executor_hooks_surrogate_tests.rs"]
+mod surrogate_tests;

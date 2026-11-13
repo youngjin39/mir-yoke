@@ -649,9 +649,7 @@ fn cli_error(message: &str) -> Output {
         stderr: format!("{USAGE}relations_query.py: error: {message}\n"),
     }
 }
-// Shared CPython decimal digit table; no change to the existing binary module.
-#[path = "../python_decimal.rs"]
-mod python_decimal;
+use crate::python_decimal;
 pub(crate) fn cli_integer(text: &str) -> Option<i64> {
     let text = text.trim();
     let digits = text.strip_prefix(['+', '-']).unwrap_or(text);

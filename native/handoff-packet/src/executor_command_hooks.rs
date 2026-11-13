@@ -36,6 +36,8 @@ pub struct CommandHooks {
     hello: Value,
     context: Value,
     token: Option<String>,
+    token_points: Option<Vec<u32>>,
+    error_points: Option<Vec<u32>>,
     outcome: TeardownOutcome,
     brief_profile: Option<crate::executor_brief_profile::BriefProfile>,
     job_identity: Option<crate::executor_job_identity::JobIdentity>,
@@ -95,9 +97,11 @@ impl CommandHooks {
             job_identity,
             instruction: None,
             hello,
-            context: json!({"repo_root":config.target_root,"cwd":cwd,
+            context: json!({"repo_root":crate::executor_text::path_scalar(&config.target_root),"cwd":crate::executor_text::path_scalar(cwd),
                 "invocation_id":crate::executor_execute::unique_id(),"job_id":null,"attempt_id":null}),
             token: None,
+            token_points: None,
+            error_points: None,
             outcome: TeardownOutcome::Uncertain,
         }))
     }
@@ -175,6 +179,9 @@ impl CommandHooks {
     pub fn teardown_outcome(&mut self, outcome: TeardownOutcome) {
         self.outcome = outcome;
     }
+    pub(crate) fn take_error_points(&mut self) -> Option<Vec<u32>> {
+        self.error_points.take()
+    }
     pub fn call(
         &mut self,
         name: &str,
@@ -186,6 +193,7 @@ impl CommandHooks {
 }
 impl HookClient for CommandHooks {
     fn call(&mut self, name: &str, args: Vec<Value>, options: Value) -> Result<Value, BridgeError> {
+        self.error_points = None;
         if name == "bridge.target_agent" && self.brief_profile.as_ref().is_some_and(|p| p.packet())
         {
             let target = args
@@ -336,6 +344,11 @@ impl HookClient for CommandHooks {
                             return Err(BridgeError::Protocol("writer already entered"));
                         }
                         let reply = native.call("writer_enter", self.context.clone())?;
+                        if reply["ok"] == false {
+                            self.error_points = native
+                                .response_string(&["error", "message"])
+                                .map(<[u32]>::to_vec);
+                        }
                         if reply["ok"] == true {
                             let token = reply["result"]["token"]
                                 .as_str()
@@ -344,6 +357,9 @@ impl HookClient for CommandHooks {
                                     "writer_enter requires opaque token",
                                 ))?;
                             self.token = Some(token.to_owned());
+                            self.token_points = native
+                                .response_string(&["result", "token"])
+                                .map(<[u32]>::to_vec);
                         }
                         return Ok(reply);
                     }
@@ -353,8 +369,17 @@ impl HookClient for CommandHooks {
                         };
                         let mut params = self.context.clone();
                         params["token"] = json!(token);
+                        if let Some(points) = self.token_points.take() {
+                            params["token"] = json!({"__native_string":points});
+                        }
                         params["outcome"] = json!(self.outcome.as_str());
-                        return native.call("writer_exit", params);
+                        let reply = native.call("writer_exit", params)?;
+                        if reply["ok"] == false {
+                            self.error_points = native
+                                .response_string(&["error", "message"])
+                                .map(<[u32]>::to_vec);
+                        }
+                        return Ok(reply);
                     }
                     _ => (),
                 }
@@ -373,7 +398,13 @@ impl HookClient for CommandHooks {
                 params["payload"] = native_value(payload);
                 params["job_id"] = payload["job_id"].clone();
                 params["attempt_id"] = payload["dispatch_id"].clone();
-                return native.call(name, params);
+                let reply = native.call(name, params)?;
+                if reply["ok"] == false {
+                    self.error_points = native
+                        .response_string(&["error", "message"])
+                        .map(<[u32]>::to_vec);
+                }
+                return Ok(reply);
             }
         }
         if let Some(python) = self.python.as_mut() {
@@ -393,6 +424,12 @@ impl Drop for CommandHooks {
 
 // Native messages contain plain JSON, never Python path/namespace wrappers.
 fn native_value(value: &Value) -> Value {
+    if value["$type"] == "path"
+        && value.get("__native_os_bytes").is_some()
+        && let Some(path) = crate::executor_admission::from_path_value(value)
+    {
+        return crate::executor_text::path_scalar(&path);
+    }
     if matches!(value["$type"].as_str(), Some("path" | "namespace")) {
         return native_value(&value["value"]);
     }
@@ -411,6 +448,18 @@ fn native_value(value: &Value) -> Value {
 #[cfg(test)]
 mod execution_tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn direct_native_hook_paths_keep_surrogate_codepoints_without_path_serde() {
+        use std::os::unix::ffi::OsStringExt;
+        let raw =
+            std::path::PathBuf::from(std::ffi::OsString::from_vec(b"/synthetic/\xff".to_vec()));
+        let context = json!({"repo_root":crate::executor_text::path_scalar(&raw),"cwd":crate::executor_text::path_scalar(&raw)});
+        assert_eq!(context["repo_root"]["__native_string"][11], json!(0xdcff));
+        let wrapped = crate::executor_execute::path(&raw);
+        assert_eq!(native_value(&wrapped), context["repo_root"]);
+    }
 
     #[test]
     fn instruction_is_consumed_once_and_null_does_not_consume() {
@@ -432,6 +481,8 @@ mod execution_tests {
             hello: json!({}),
             context: json!({}),
             token: None,
+            token_points: None,
+            error_points: None,
             outcome: TeardownOutcome::Clean,
             brief_profile: Some(profile),
             job_identity: None,
@@ -462,3 +513,7 @@ mod execution_tests {
         assert_ne!(first["result"], second["result"]);
     }
 }
+
+#[cfg(test)]
+#[path = "executor_command_hooks_surrogate_tests.rs"]
+mod surrogate_tests;

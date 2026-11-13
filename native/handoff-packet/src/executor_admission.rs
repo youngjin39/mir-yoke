@@ -67,8 +67,40 @@ pub(crate) fn resolved(path: &Path, cwd: &Path) -> io::Result<PathBuf> {
         Err(e) => Err(e),
     }
 }
-fn path_value(path: &Path) -> Option<Value> {
+pub(crate) fn lexical(path: &Path) -> PathBuf {
+    let result = path.components().collect::<PathBuf>();
+    if result.as_os_str().is_empty() {
+        PathBuf::from(".")
+    } else {
+        result
+    }
+}
+pub(crate) fn path_value(path: &Path) -> Option<Value> {
+    #[cfg(unix)]
+    if path.to_str().is_none() {
+        use std::os::unix::ffi::OsStrExt;
+        return Some(
+            json!({"$type":"path","value":crate::executor_text::os_text(path.as_os_str()),
+            "__native_os_bytes":path.as_os_str().as_bytes()}),
+        );
+    }
     Some(json!({"$type":"path","value":path.to_str()?}))
+}
+pub(crate) fn from_path_value(value: &Value) -> Option<PathBuf> {
+    #[cfg(unix)]
+    if let Some(bytes) = value.get("__native_os_bytes").and_then(Value::as_array) {
+        use std::os::unix::ffi::OsStringExt;
+        let bytes = bytes
+            .iter()
+            .map(|byte| u8::try_from(byte.as_u64()?).ok())
+            .collect::<Option<Vec<_>>>()?;
+        return Some(PathBuf::from(OsString::from_vec(bytes)));
+    }
+    value
+        .get("value")
+        .and_then(Value::as_str)
+        .or_else(|| value.as_str())
+        .map(PathBuf::from)
 }
 fn git(request: &Request<'_>, root: &Path, flag: &str) -> io::Result<std::process::Output> {
     Command::new("git")
@@ -122,14 +154,25 @@ impl Drop for WriterLease {
 /// Malformed/unknown argv is left untouched for Python's argparse diagnostics.
 /// Target imports occur only after the first home authorization.
 pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
-    admit_inner(request, false)
+    admit_inner(request, false, None)
 }
 /// Enter the command's writer lease before preparation, matching the Python CLI.
 pub fn admit_execute(request: Request<'_>) -> Result<Admission, BridgeError> {
-    admit_inner(request, true)
+    admit_inner(request, true, None)
 }
 
-fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, BridgeError> {
+pub(crate) fn admit_execute_args(
+    request: Request<'_>,
+    args: Value,
+) -> Result<Admission, BridgeError> {
+    admit_inner(request, true, Some(args))
+}
+
+fn admit_inner(
+    request: Request<'_>,
+    command_scope: bool,
+    parsed: Option<Value>,
+) -> Result<Admission, BridgeError> {
     let Some(command) = request.argv.first() else {
         return Ok(decline("help"));
     };
@@ -142,115 +185,132 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
     let Some(options) = schema[command].as_array() else {
         return Ok(decline("unsupported command"));
     };
-    let mut args = json!({"subcommand":command, "jobs_db":null});
-    for option in options {
-        if option["default"] != "==SUPPRESS==" {
-            args[option["dest"].as_str().unwrap_or("")] = if option["default"]["value"] == "$cwd" {
-                let Some(value) = path_value(request.cwd) else {
-                    return Ok(decline("non UTF-8 path"));
-                };
-                value
-            } else {
-                option["default"].clone()
+    let parsed = if parsed.is_none()
+        && command == "execute"
+        && !request.argv.iter().any(|arg| arg == "--dispatch")
+    {
+        let raw = request.argv.iter().map(OsString::from).collect::<Vec<_>>();
+        match crate::executor_execute_parser::parse(&raw, request.cwd) {
+            crate::executor_execute_parser::Parsed::Args(args) => Some(args),
+            crate::executor_execute_parser::Parsed::Output { .. } => {
+                return Ok(decline("execute parser"));
+            }
+        }
+    } else {
+        parsed
+    };
+    let mut args = if let Some(args) = parsed {
+        args
+    } else {
+        let mut args = json!({"subcommand":command, "jobs_db":null});
+        for option in options {
+            if option["default"] != "==SUPPRESS==" {
+                args[option["dest"].as_str().unwrap_or("")] =
+                    if option["default"]["value"] == "$cwd" {
+                        let Some(value) = path_value(request.cwd) else {
+                            return Ok(decline("non UTF-8 path"));
+                        };
+                        value
+                    } else {
+                        option["default"].clone()
+                    };
+            }
+        }
+        let mut index = 1;
+        while index < request.argv.len() {
+            let token = &request.argv[index];
+            let (flag, inline) = token
+                .split_once('=')
+                .map(|(a, b)| (a, Some(b)))
+                .unwrap_or((token.as_str(), None));
+            let Some(option) = options.iter().find(|o| {
+                o["flags"]
+                    .as_array()
+                    .is_some_and(|f| f.iter().any(|v| v == flag))
+            }) else {
+                return Ok(decline("unknown option"));
             };
-        }
-    }
-    let mut index = 1;
-    while index < request.argv.len() {
-        let token = &request.argv[index];
-        let (flag, inline) = token
-            .split_once('=')
-            .map(|(a, b)| (a, Some(b)))
-            .unwrap_or((token.as_str(), None));
-        let Some(option) = options.iter().find(|o| {
-            o["flags"]
-                .as_array()
-                .is_some_and(|f| f.iter().any(|v| v == flag))
-        }) else {
-            return Ok(decline("unknown option"));
-        };
-        let Some(dest) = option["dest"].as_str() else {
-            return Ok(decline("unknown destination"));
-        };
-        let value = match option["kind"].as_str() {
-            Some("_StoreTrueAction" | "BooleanOptionalAction") => {
-                if inline.is_some() {
-                    return Ok(decline("boolean value"));
-                };
-                json!(!flag.starts_with("--no-"))
-            }
-            Some("_StoreAction" | "_AppendAction") => {
-                let raw = if let Some(raw) = inline {
-                    raw
-                } else {
-                    index += 1;
-                    let Some(raw) = request.argv.get(index) else {
-                        return Ok(decline("missing option value"));
+            let Some(dest) = option["dest"].as_str() else {
+                return Ok(decline("unknown destination"));
+            };
+            let value = match option["kind"].as_str() {
+                Some("_StoreTrueAction" | "BooleanOptionalAction") => {
+                    if inline.is_some() {
+                        return Ok(decline("boolean value"));
                     };
-                    if raw.starts_with('-') {
-                        return Ok(decline("ambiguous option value"));
-                    };
-                    raw
-                };
-                match option["type"].as_str() {
-                    Some("Path") => json!({"$type":"path","value":raw}),
-                    Some("int" | "_positive_int" | "_nonnegative_int") => {
-                        let Ok(n) = raw.parse::<i64>() else {
-                            return Ok(decline("integer syntax"));
-                        };
-                        if (option["type"] == "_positive_int" && n < 1)
-                            || (option["type"] == "_nonnegative_int" && n < 0)
-                        {
-                            return Ok(decline("integer bounds"));
-                        };
-                        json!(n)
-                    }
-                    Some("float") => {
-                        let Ok(n) = raw.parse::<f64>() else {
-                            return Ok(decline("float syntax"));
-                        };
-                        if !n.is_finite() {
-                            return Ok(decline("nonfinite float"));
-                        };
-                        json!(n)
-                    }
-                    _ => json!(raw),
+                    json!(!flag.starts_with("--no-"))
                 }
+                Some("_StoreAction" | "_AppendAction") => {
+                    let raw = if let Some(raw) = inline {
+                        raw
+                    } else {
+                        index += 1;
+                        let Some(raw) = request.argv.get(index) else {
+                            return Ok(decline("missing option value"));
+                        };
+                        if raw.starts_with('-') {
+                            return Ok(decline("ambiguous option value"));
+                        };
+                        raw
+                    };
+                    match option["type"].as_str() {
+                        Some("Path") => json!({"$type":"path","value":raw}),
+                        Some("int" | "_positive_int" | "_nonnegative_int") => {
+                            let Ok(n) = raw.parse::<i64>() else {
+                                return Ok(decline("integer syntax"));
+                            };
+                            if (option["type"] == "_positive_int" && n < 1)
+                                || (option["type"] == "_nonnegative_int" && n < 0)
+                            {
+                                return Ok(decline("integer bounds"));
+                            };
+                            json!(n)
+                        }
+                        Some("float") => {
+                            let Ok(n) = raw.parse::<f64>() else {
+                                return Ok(decline("float syntax"));
+                            };
+                            if !n.is_finite() {
+                                return Ok(decline("nonfinite float"));
+                            };
+                            json!(n)
+                        }
+                        _ => json!(raw),
+                    }
+                }
+                _ => return Ok(decline("unsupported action")),
+            };
+            if let Some(choices) = option["choices"].as_array()
+                && !choices.contains(&value)
+            {
+                return Ok(decline("invalid choice"));
+            };
+            if option["kind"] == "_AppendAction" {
+                if args.get(dest).is_none() {
+                    args[dest] = json!([])
+                }
+                if let Some(values) = args[dest].as_array_mut() {
+                    values.push(value)
+                }
+            } else {
+                args[dest] = value
             }
-            _ => return Ok(decline("unsupported action")),
-        };
-        if let Some(choices) = option["choices"].as_array()
-            && !choices.contains(&value)
-        {
-            return Ok(decline("invalid choice"));
-        };
-        if option["kind"] == "_AppendAction" {
-            if args.get(dest).is_none() {
-                args[dest] = json!([])
-            }
-            if let Some(values) = args[dest].as_array_mut() {
-                values.push(value)
-            }
-        } else {
-            args[dest] = value
+            index += 1;
         }
-        index += 1;
-    }
-    for option in options {
-        if option["required"] == true && args[option["dest"].as_str().unwrap_or("")].is_null() {
-            return Ok(decline("missing required option"));
+        for option in options {
+            if option["required"] == true && args[option["dest"].as_str().unwrap_or("")].is_null() {
+                return Ok(decline("missing required option"));
+            }
         }
-    }
-    if !args["codex_args"].is_null() && !args["codex_args_file"].is_null() {
-        return Ok(decline("mutually exclusive options"));
-    }
-    let root_arg = args["repo_root"]["value"]
-        .as_str()
-        .map(Path::new)
-        .unwrap_or(request.cwd);
-    let mut root = resolved(root_arg, request.cwd)?;
+        if !args["codex_args"].is_null() && !args["codex_args_file"].is_null() {
+            return Ok(decline("mutually exclusive options"));
+        }
+        args
+    };
+    let root_arg = from_path_value(&args["repo_root"]).unwrap_or_else(|| request.cwd.to_owned());
+    let mut root = resolved(&root_arg, request.cwd)?;
     let home = resolved(request.invoking_home, request.cwd)?;
-    if root.to_str().is_none() || home.to_str().is_none() {
+    if !command_scope && (root.to_str().is_none() || home.to_str().is_none()) {
         return Ok(decline("non UTF-8 path"));
     }
     let initial_root = root.clone();
@@ -430,11 +490,9 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
                 ));
             }
         }
-        let redirected = args["repo_root"]["value"]
-            .as_str()
-            .or_else(|| args["repo_root"].as_str())
+        let redirected = from_path_value(&args["repo_root"])
             .ok_or(BridgeError::Protocol("invalid post-hook repo_root"))?;
-        let redirected = resolved(Path::new(redirected), request.cwd)?;
+        let redirected = resolved(&redirected, request.cwd)?;
         if redirected != root {
             let guard: &mut Option<LocalBridge> = if root == home {
                 &mut bridge
@@ -643,7 +701,14 @@ pub(crate) fn native_policy(root: &Path) -> Result<Option<NativePolicy>, String>
     crate::executor_local::python_local_hooks_disabled(root)?;
     let bytes = match fs::read(root.join("config").join("mir-executor.local.json")) {
         Ok(bytes) => bytes,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+            ) =>
+        {
+            return Ok(None);
+        }
         Err(error) => return Err(format!("native local policy configuration error: {error}")),
     };
     // Only the new section is eager. Legacy malformed data must still fail at

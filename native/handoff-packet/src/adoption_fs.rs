@@ -346,6 +346,68 @@ impl Parent {
         ))
     }
 }
+#[cfg(unix)]
+pub(crate) fn owns_file(pinned: &Parent, name: &std::ffi::OsStr, output: &File) -> bool {
+    use std::os::{
+        fd::AsRawFd,
+        unix::{ffi::OsStrExt, fs::MetadataExt},
+    };
+    let Ok(created) = output.metadata() else {
+        return false;
+    };
+    let Ok(name) = std::ffi::CString::new(name.as_bytes()) else {
+        return false;
+    };
+    let mut current = std::mem::MaybeUninit::<libc::stat>::uninit();
+    // SAFETY: the pinned directory fd, NUL-terminated basename and writable stat
+    // allocation stay live. NOFOLLOW compares the entry itself, never its target.
+    if unsafe {
+        libc::fstatat(
+            pinned.directory.as_raw_fd(),
+            name.as_ptr(),
+            current.as_mut_ptr(),
+            libc::AT_SYMLINK_NOFOLLOW,
+        )
+    } != 0
+    {
+        return false;
+    }
+    // SAFETY: successful fstatat initialized the complete record.
+    let current = unsafe { current.assume_init() };
+    i128::from(created.dev()) == i128::from(current.st_dev)
+        && i128::from(created.ino()) == i128::from(current.st_ino)
+}
+
+#[cfg(windows)]
+pub(crate) fn owns_file(source: &Path, output: &File) -> bool {
+    use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
+    use windows_sys::Win32::Storage::FileSystem::{
+        BY_HANDLE_FILE_INFORMATION, FILE_FLAG_OPEN_REPARSE_POINT, GetFileInformationByHandle,
+    };
+    fn identity(file: &File) -> Option<(u32, u32, u32)> {
+        let mut info = std::mem::MaybeUninit::<BY_HANDLE_FILE_INFORMATION>::uninit();
+        // SAFETY: live file handle and writable information allocation.
+        if unsafe { GetFileInformationByHandle(file.as_raw_handle(), info.as_mut_ptr()) } == 0 {
+            return None;
+        }
+        // SAFETY: successful API call initialized the complete record.
+        let info = unsafe { info.assume_init() };
+        Some((
+            info.dwVolumeSerialNumber,
+            info.nFileIndexHigh,
+            info.nFileIndexLow,
+        ))
+    }
+    let Ok(current) = std::fs::OpenOptions::new()
+        .access_mode(0)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+        .open(source)
+    else {
+        return false;
+    };
+    identity(output).is_some_and(|created| identity(&current) == Some(created))
+}
+
 pub(crate) fn mkdir(root: &Path, path: &Path, mode: u32) -> io::Result<()> {
     let parent = parent(root, path)?;
     #[cfg(unix)]

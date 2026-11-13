@@ -4,13 +4,10 @@
 use super::main_host::abspath;
 use super::{Error, Host, authored};
 use crate::adoption_fs as confined;
+use crate::python_decimal;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use std::{collections::BTreeMap, collections::BTreeSet, fs};
-// Reuse the shared table; its existing library module is private outside this slice.
-#[allow(clippy::duplicate_mod)]
-#[path = "../python_decimal.rs"]
-mod python_decimal;
 
 fn outside_subset() -> Error {
     Error::new(

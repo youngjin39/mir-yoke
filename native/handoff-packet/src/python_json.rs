@@ -13,7 +13,7 @@ pub struct Text {
     text: Option<String>,
 }
 impl Text {
-    fn new(codepoints: Vec<u32>) -> Self {
+    pub(crate) fn new(codepoints: Vec<u32>) -> Self {
         let text = codepoints.iter().map(|c| char::from_u32(*c)).collect();
         Self { codepoints, text }
     }
@@ -130,7 +130,13 @@ impl Object {
     pub fn len(&self) -> usize {
         self.0.len()
     }
-    fn insert(&mut self, key: Text, value: Value) {
+    pub(crate) fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
+        self.0
+            .iter_mut()
+            .find(|(name, _)| name.as_str() == Some(key))
+            .map(|(_, value)| value)
+    }
+    pub(crate) fn insert(&mut self, key: Text, value: Value) {
         if let Some((_, v)) = self.0.iter_mut().find(|(k, _)| *k == key) {
             *v = value;
         } else {

@@ -705,6 +705,25 @@ fn main() {
     }
     if raw.first().is_some_and(|value| value == "--home-root")
         && let Some(home) = raw.get(1)
+        && handoff_packet::executor_execute::owns(&raw[2..])
+    {
+        #[cfg(unix)]
+        handoff_packet::executor_process_unix::install_interrupts();
+        let code = match std::env::current_dir() {
+            Ok(cwd) => handoff_packet::executor_execute::run(&raw[2..], &cwd, Path::new(home)),
+            Err(error) => executor_status::cwd_failure(error),
+        };
+        #[cfg(unix)]
+        {
+            let number = handoff_packet::executor_process_unix::interruption();
+            if number != 0 {
+                std::process::exit(128 + number);
+            }
+        }
+        std::process::exit(code);
+    }
+    if raw.first().is_some_and(|value| value == "--home-root")
+        && let Some(home) = raw.get(1)
     {
         let command = match raw.get(2).and_then(|s| s.to_str()) {
             Some("--jobs-db") => raw.get(4),

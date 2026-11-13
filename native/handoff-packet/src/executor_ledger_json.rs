@@ -1,6 +1,94 @@
 //! Preserve Python dictionary insertion order when rendering a ledger update.
 use serde_json::Value;
 
+/// json.dumps(indent=2, ensure_ascii=False), followed by a strict UTF-8 file write.
+/// Keep Python-only scalars until rendering, rather than coercing through serde.
+pub(crate) fn render_python(value: &crate::python_json::Value) -> Result<String, String> {
+    use crate::python_json::Value as Python;
+    enum Work<'a> {
+        Value(&'a Python, usize),
+        Text(String),
+        String(&'a [u32]),
+    }
+    let mut work = vec![Work::Text("\n".into()), Work::Value(value, 0)];
+    let mut points = Vec::new();
+    while let Some(item) = work.pop() {
+        // The pinned console CLI's indent=2 generator accepts 991 nested
+        // arrays in a root field and raises on the 992nd. This is distinct
+        // from json.loads' much larger C decoder nesting allowance.
+        if matches!(&item, Work::Value(crate::python_json::Value::Object(_) | crate::python_json::Value::Array(_), level) if *level >= 992)
+        {
+            return Err("RecursionError: maximum recursion depth exceeded".into());
+        }
+        match item {
+            Work::Text(text) => points.extend(text.chars().map(u32::from)),
+            Work::String(text) => {
+                points.extend(crate::executor_text::json_quote_points(text));
+            }
+            Work::Value(Python::Object(object), level) if !object.is_empty() => {
+                points.extend("{\n".chars().map(u32::from));
+                work.push(Work::Text(format!("\n{}}}", "  ".repeat(level))));
+                let entries = object.iter().collect::<Vec<_>>();
+                for (index, (key, value)) in entries.iter().enumerate().rev() {
+                    if index + 1 < entries.len() {
+                        work.push(Work::Text(",\n".into()));
+                    }
+                    work.push(Work::Value(value, level + 1));
+                    work.push(Work::Text(": ".into()));
+                    work.push(Work::String(&key.codepoints));
+                    work.push(Work::Text("  ".repeat(level + 1)));
+                }
+            }
+            Work::Value(Python::Array(array), level) if !array.is_empty() => {
+                points.extend("[\n".chars().map(u32::from));
+                work.push(Work::Text(format!("\n{}]", "  ".repeat(level))));
+                for (index, value) in array.iter().enumerate().rev() {
+                    if index + 1 < array.len() {
+                        work.push(Work::Text(",\n".into()));
+                    }
+                    work.push(Work::Value(value, level + 1));
+                    work.push(Work::Text("  ".repeat(level + 1)));
+                }
+            }
+            Work::Value(Python::String(text), _) => work.push(Work::String(&text.codepoints)),
+            Work::Value(value, _) => {
+                let text = match value {
+                    Python::Null => "null".into(),
+                    Python::Bool(value) => value.to_string(),
+                    Python::Array(_) => "[]".into(),
+                    Python::Object(_) => "{}".into(),
+                    Python::Number(number) => match number.py_str().as_str() {
+                        "nan" => "NaN".into(),
+                        "inf" => "Infinity".into(),
+                        "-inf" => "-Infinity".into(),
+                        other => other.to_owned(),
+                    },
+                    Python::String(_) => unreachable!(),
+                };
+                points.extend(text.chars().map(u32::from));
+            }
+        }
+    }
+    if let Some(start) = points
+        .iter()
+        .position(|point| (0xd800..=0xdfff).contains(point))
+    {
+        let end = start
+            + points[start..]
+                .iter()
+                .take_while(|point| (0xd800..=0xdfff).contains(*point))
+                .count();
+        return Err(crate::executor_text::encode_error(
+            "utf-8",
+            &points,
+            start,
+            end,
+            "surrogates not allowed",
+        ));
+    }
+    Ok(points.into_iter().filter_map(char::from_u32).collect())
+}
+
 enum Layout {
     Object(Vec<(String, Layout)>),
     Array(Vec<Layout>),
@@ -176,10 +264,35 @@ pub(crate) fn render(original: &str, updated: &Value) -> Result<String, String> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+
     #[test]
-    fn preserves_nested_order_and_appends_execution_fields() {
-        let original = r#"{"z":{"verifier":"keep","status":"planned"},"a":[]}"#;
-        assert_eq!(render(original, &json!({"z":{"verifier":"keep","status":"pass","notes":"ok","executed_argv":["fake"]},"a":[]})).unwrap(), "{\n  \"z\": {\n    \"verifier\": \"keep\",\n    \"status\": \"pass\",\n    \"executed_argv\": [\n      \"fake\"\n    ],\n    \"notes\": \"ok\"\n  },\n  \"a\": []\n}\n");
+    fn preserves_nested_order_and_python_scalars() {
+        let original = r#"{"z":{"verifier":"keep","status":"pass","executed_argv":["fake"],"notes":"ok"},"a":[],"n":NaN,"f":1e400,"big":123456789012345678901234567890}"#;
+        let parsed = crate::python_json::parse(original).unwrap();
+        let rendered = render_python(&parsed).unwrap();
+        assert!(
+            rendered.starts_with(
+                "{\n  \"z\": {\n    \"verifier\": \"keep\",\n    \"status\": \"pass\","
+            )
+        );
+        assert!(rendered.ends_with(
+            "  \"n\": NaN,\n  \"f\": Infinity,\n  \"big\": 123456789012345678901234567890\n}\n"
+        ));
+    }
+
+    #[test]
+    fn direct_ledger_dump_matches_pinned_console_recursion_boundary() {
+        for (depth, fails) in [(991, false), (992, true)] {
+            let source = format!("{{\"extra\": {}0{}}}", "[".repeat(depth), "]".repeat(depth));
+            let parsed = crate::python_json::parse(&source).unwrap();
+            let result = render_python(&parsed);
+            assert_eq!(result.is_err(), fails, "depth={depth}");
+            if fails {
+                assert_eq!(
+                    result.unwrap_err(),
+                    "RecursionError: maximum recursion depth exceeded"
+                );
+            }
+        }
     }
 }

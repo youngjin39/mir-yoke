@@ -109,7 +109,15 @@ def binary():
 
 @pytest.mark.parametrize('case', SUPPORT['CASES'])
 def test_execute_fixture_matches_python(tmp_path, case):
-    assert SUPPORT['run_case'](tmp_path / 'python home', case) == GOLDEN[case], trace_details()
+    root = tmp_path / 'python home'
+    launcher = SUPPORT['seed'](root, case)
+    completed = subprocess.run(
+        [sys.executable, '-c', 'from tools.mir_executor.cli import main; main()',
+         *SUPPORT['argv'](case)], cwd=root,
+        env=SUPPORT['environment'](root, case, launcher), capture_output=True,
+        timeout=45, check=False,
+    )
+    assert SUPPORT['snapshot'](root, launcher, completed) == GOLDEN[case], trace_details()
 
 
 @pytest.mark.parametrize('case', SUPPORT['CASES'])
@@ -122,7 +130,7 @@ def test_execute_native_matches_python_fixture(binary, tmp_path, case):
 @pytest.mark.parametrize('arguments', [
     ['execute', '--unknown'], ['execute', '--backend', 'claude'],
 ])
-def test_execute_declines_unsupported_command_before_effects(binary, tmp_path, arguments):
+def test_execute_owns_unsupported_command_before_effects(binary, tmp_path, arguments):
     root = tmp_path / 'decline home'
     launcher = SUPPORT['seed'](root, 'success')
     (root / 'tools/mir_executor/local.py').write_text(
@@ -136,9 +144,9 @@ def test_execute_declines_unsupported_command_before_effects(binary, tmp_path, a
     completed = subprocess.run([str(binary), '--home-root', str(root), *arguments],
                                cwd=root, env=SUPPORT['environment'](root, 'success', launcher),
                                capture_output=True, timeout=45, check=False)
-    assert (completed.stdout, completed.stderr, completed.returncode) == (b'', b'', 64), (
-        trace_details()
-    )
+    assert completed.returncode == 2, (completed.stderr, trace_details())
+    assert completed.stdout == b'', trace_details()
+    assert b'error: unrecognized arguments:' in completed.stderr, trace_details()
     assert (root / 'tasks/tdd.json').read_bytes() == before, trace_details()
     assert not (root / 'tasks/jobs.db').exists(), trace_details()
     assert not (root / 'provider-started').exists(), trace_details()
@@ -213,35 +221,40 @@ def test_execute_effectful_local_failure_is_final(binary, tmp_path, effect):
 
 @pytest.mark.parametrize('case', ['cross_target', 'malformed_json', 'NaN', 'Infinity',
                                   '-Infinity', '1e400'])
-def test_execute_declines_unsupported_root_or_ledger_before_import(binary, tmp_path, case):
-    root = tmp_path / 'preflight home'
-    launcher = SUPPORT['seed'](root, 'success')
-    (root / 'tools/mir_executor/local.py').write_text(
-        'from pathlib import Path\n'
-        "root = Path(__file__).resolve().parents[2]\n"
-        "(root / 'unexpected-import').touch()\n", encoding='utf-8')
-    ledger = root / 'tasks/tdd.json'
-    arguments = SUPPORT['argv']('success')
-    if case == 'cross_target':
-        target = tmp_path / 'other target'
-        target.mkdir()
-        arguments += ['--repo-root', str(target)]
-    elif case == 'malformed_json':
-        ledger.write_text('{broken json', encoding='utf-8')
-    else:
-        original = ledger.read_text(encoding='utf-8')
-        ledger.write_text(original.rstrip()[:-1] + ', "extended_number": ' + case + '}\n',
-                          encoding='utf-8')
-    before = ledger.read_bytes()
-    completed = subprocess.run([str(binary), '--home-root', str(root), *arguments], cwd=root,
-                               env=SUPPORT['environment'](root, 'success', launcher),
-                               capture_output=True, timeout=45, check=False)
-    assert (completed.stdout, completed.stderr, completed.returncode) == (b'', b'', 64), (
-        trace_details()
-    )
-    assert ledger.read_bytes() == before, trace_details()
-    for path in ('unexpected-import', 'provider-started', 'tasks/jobs.db'):
-        assert not (root / path).exists(), trace_details()
+def test_execute_owns_roots_and_extended_ledgers(binary, tmp_path, case):
+    snapshots = []
+    for implementation in ('python', 'native'):
+        base = tmp_path / implementation
+        root = base / 'preflight home'
+        launcher = SUPPORT['seed'](root, 'success')
+        (root / 'tools/mir_executor/local.py').write_text(
+            'from pathlib import Path\n'
+            "root = Path(__file__).resolve().parents[2]\n"
+            "(root / 'unexpected-import').touch()\n", encoding='utf-8')
+        ledger = root / 'tasks/tdd.json'
+        arguments = SUPPORT['argv']('success')
+        if case == 'cross_target':
+            target = base / 'other target'
+            target.mkdir()
+            arguments += ['--repo-root', str(target)]
+        elif case == 'malformed_json':
+            ledger.write_text('{broken json', encoding='utf-8')
+        else:
+            original = ledger.read_text(encoding='utf-8')
+            ledger.write_text(original.rstrip()[:-1] + ', "extended_number": ' + case + '}\n',
+                              encoding='utf-8')
+        before = ledger.read_bytes()
+        command = ([str(binary), '--home-root', str(root)] if implementation == 'native' else
+                   [sys.executable, '-c', 'from tools.mir_executor.cli import main; main()'])
+        completed = subprocess.run(command + arguments, cwd=root,
+                                   env=SUPPORT['environment'](root, 'success', launcher),
+                                   capture_output=True, timeout=45, check=False)
+        snapshot = SUPPORT['snapshot'](root, launcher, completed)
+        snapshot['stderr'] = snapshot['stderr'].replace(str(base), '<fixture>')
+        snapshot['imported'] = (root / 'unexpected-import').exists()
+        snapshot['ledger_unchanged'] = ledger.read_bytes() == before
+        snapshots.append(snapshot)
+    assert snapshots[0] == snapshots[1], trace_details()
 
 
 @pytest.mark.parametrize('implementation', ['python', 'native'])
@@ -250,7 +263,7 @@ def test_background_id_is_flushed_before_provider_completion(request, tmp_path, 
     root = tmp_path / 'background home'
     launcher = SUPPORT['seed'](root, 'background_success')
     command = ([str(binary), '--home-root', str(root)] if implementation == 'native' else
-               [sys.executable, '-m', 'tools.mir_executor'])
+               [sys.executable, '-c', 'from tools.mir_executor.cli import main; main()'])
     environment = SUPPORT['environment'](root, 'background_success', launcher)
     environment['EXECUTE_FIXTURE_GATE'] = '1'
     output = root / 'stdout'
@@ -413,9 +426,9 @@ def test_pinned_execute_routes_before_python_import(binary, tmp_path, selector):
     if selector:
         environment[selector] = '0' if selector == 'MIR_NATIVE_HOOKS' else 'python'
     result = invoke_pinned(root, environment, SUPPORT['argv']('success'), capture_output=True)
-    assert result.returncode == (1 if selector else 0), (result.stderr, trace_details())
-    assert (b'python route selected' in result.stderr) == bool(selector), trace_details()
-    assert (root / 'provider-started').exists() == (selector is None), trace_details()
+    assert result.returncode == 0, (result.stderr, trace_details())
+    assert b'python route selected' not in result.stderr, trace_details()
+    assert (root / 'provider-started').exists(), trace_details()
 
 
 def test_pinned_execute_declines_dynamic_options(binary, tmp_path):
@@ -455,8 +468,10 @@ def test_pinned_older_binary_declines_to_python(older_binary, tmp_path, command)
                  'sweep': ['sweep', '--repo-root', str(root)]}[command]
     result = invoke_pinned(root, environment, arguments, capture_output=True)
     if command == 'execute':
-        assert SUPPORT['snapshot'](root, launcher, result) == GOLDEN['success'], trace_details()
-        assert (root / 'provider-started').exists(), trace_details()
+        assert (result.returncode, result.stdout, result.stderr) == (
+            2, b'', b'[mir_executor] pinned native execute unavailable or incompatible; '
+            b'Python execute is retired\n'), trace_details()
+        assert not (root / 'provider-started').exists(), trace_details()
     else:
         reference_environment = dict(environment, MIR_EXECUTOR_IMPL='python')
         reference = invoke_pinned(root, reference_environment, arguments, capture_output=True)
@@ -568,8 +583,11 @@ def test_pinned_execute_interrupt_preserves_python_job_state(
     environment['EXECUTE_FIXTURE_GATE'] = '1'
     output = root / 'interrupted-output'
     with output.open('wb') as stream:
-        process = subprocess.Popen([sys.executable, '-m', 'tools.mir_executor',
-                                    *SUPPORT['argv']('background_success')], cwd=root,
+        command = ([sys.executable, '-c',
+                    'from tools.mir_executor.cli import main; main()']
+                   if implementation == 'python' else
+                   [sys.executable, '-m', 'tools.mir_executor'])
+        process = subprocess.Popen([*command, *SUPPORT['argv']('background_success')], cwd=root,
                                    env=environment, stdout=stream, stderr=stream,
                                    # A background shell can pass SIG_IGN for SIGINT.
                                    preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_DFL),
@@ -643,7 +661,19 @@ def test_pinned_mutation_routes_keep_admission_guards(binary, tmp_path, guard, c
         'cancel', '--job-id', 'missing']
     before = CANCEL_SNAPSHOT(root)
     result = invoke_pinned(root, environment, arguments, capture_output=True)
-    if command == 'cancel':
+    if command in {'cancel', 'execute'}:
+        if guard == 'encoding' and command == 'execute':
+            assert result.returncode == 1, (result.stderr, trace_details())
+            direct = json.loads((ROOT / 'tests/fixtures/executor_direct.json').read_text())
+            expected = next(case['expected'] for case in direct['cases']
+                            if case['name'] == 'codec-ascii-strict')
+            launcher = root / ('fake-codex.cmd' if os.name == 'nt' else 'fake-codex')
+            assert SUPPORT['normalize'](result.stdout.decode('ascii'), root, launcher) == (
+                bytes.fromhex(expected['stdout_hex']).decode('ascii')), trace_details()
+            assert result.stderr == (b"UnicodeEncodeError: 'ascii' codec can't encode character "
+                                     b"'\\u2713' in position 27: ordinal not in range(128)\n")
+            assert (root / 'provider-started').exists(), trace_details()
+            return
         if guard == 'encoding':
             # ASCII is inside the native codec family. Poisoned cli.py proves
             # the same missing-job response is served without Python fallback.
@@ -653,12 +683,9 @@ def test_pinned_mutation_routes_keep_admission_guards(binary, tmp_path, guard, c
                 **before, 'tasks/jobs.db': CANCEL_MISSING_DB}, trace_details()
         else:
             assert (result.returncode, result.stdout, result.stderr) == (
-                2, b'', b'[mir_executor] pinned native cancel unavailable or incompatible; '
-                b'Python cancel is retired\n'), trace_details()
+                2, b'', (f'[mir_executor] pinned native {command} unavailable or incompatible; '
+                          f'Python {command} is retired\n').encode()), trace_details()
             assert CANCEL_SNAPSHOT(root) == before, trace_details()
-    else:
-        assert result.returncode == 1, trace_details()
-        assert b'python guard fallback' in result.stderr, trace_details()
     assert not (root / 'provider-started').exists(), trace_details()
 
 
@@ -736,9 +763,8 @@ def test_pinned_bridge_uses_caller_venv(binary, tmp_path, caller_venv, command, 
                      ['sweep', '--repo-root', str(root)])
         caller = caller_venv
         if override and implementation == 'native':
-            # A different caller proves the explicit interpreter is not overwritten.
             environment['MIR_EXECUTOR_PYTHON'] = str(caller_venv)
-            if command != 'cancel':
+            if command == 'sweep':
                 caller = sys.executable
         result = subprocess.run(
             [str(caller), '-m', 'tools.mir_executor', *arguments],
@@ -746,8 +772,8 @@ def test_pinned_bridge_uses_caller_venv(binary, tmp_path, caller_venv, command, 
         assert result.returncode == 0, (result.stdout, result.stderr)
         executable, isolated, value = json.loads((root / 'bridge-environment').read_text())
         assert executable == str(caller_venv)
-        # Cancel deliberately declines when local.py exists; Python owns its hooks.
-        assert isolated == (1 if implementation == 'native' and command != 'cancel' else 0)
+        # Cancel/direct execute use the caller's legacy compatibility route.
+        assert isolated == (1 if implementation == 'native' and command == 'sweep' else 0)
         assert value == 'venv-only'
         snapshots.append(SUPPORT['snapshot'](root, launcher, result))
     assert len(set(map(repr, snapshots))) == 1

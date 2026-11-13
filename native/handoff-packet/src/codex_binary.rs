@@ -54,3 +54,30 @@ pub fn resolve(environment: &BTreeMap<OsString, OsString>) -> String {
         "codex".into()
     }
 }
+
+/// Preserve an explicit executable's operating-system bytes on POSIX.
+pub fn resolve_os(environment: &BTreeMap<OsString, OsString>) -> OsString {
+    environment
+        .iter()
+        .find(|(key, value)| {
+            !value.is_empty()
+                && key.to_str().is_some_and(|key| {
+                    key == "CODEX_BIN" || cfg!(windows) && key.eq_ignore_ascii_case("CODEX_BIN")
+                })
+        })
+        .map(|(_, value)| value.clone())
+        .unwrap_or_else(|| resolve(environment).into())
+}
+
+#[cfg(all(test, unix))]
+mod os_tests {
+    use super::*;
+    use std::os::unix::ffi::OsStringExt;
+
+    #[test]
+    fn explicit_non_utf8_binary_is_not_replaced_by_path_lookup() {
+        let binary = OsString::from_vec(b"synthetic-\xff".to_vec());
+        let environment = BTreeMap::from([(OsString::from("CODEX_BIN"), binary.clone())]);
+        assert_eq!(resolve_os(&environment), binary);
+    }
+}

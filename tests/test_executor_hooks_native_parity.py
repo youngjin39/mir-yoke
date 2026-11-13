@@ -349,7 +349,9 @@ def test_cross_root_selected_native_hook_owns_only_its_target(
 
 
 @pytest.mark.parametrize('failure', ['writer_enter', 'job_inserted'])
-def test_pinned_entrypoint_keeps_hook_failure_final(binary, hook_fixture, tmp_path, failure):
+@pytest.mark.parametrize('route', ['native', 'legacy_compatibility'])
+def test_pinned_entrypoint_keeps_hook_failure_final(binary, hook_fixture, tmp_path, failure,
+                                                   route):
     root = tmp_path / 'pinned'
     launcher, environment, arguments = seed(root, 'execute', failure)
     configure(root, hook_fixture, False)
@@ -364,18 +366,139 @@ def test_pinned_entrypoint_keeps_hook_failure_final(binary, hook_fixture, tmp_pa
         stream.write("\nassert Path(os.environ['MIR_EXECUTOR_OWNED_RECEIPT']).read_bytes() "
                      "== b'owned'\n(ROOT / 'receipt-observed').touch()\n")
     (root / 'tools/mir_executor/cli.py').write_text(
-        "raise RuntimeError('unexpected Python fallback after hook effect')\n", encoding='utf-8')
+        'from pathlib import Path\n'
+        'root = Path(__file__).resolve().parents[2]\n'
+        "with (root / 'compatibility-imports').open('a') as stream:\n"
+        "    stream.write('import\\n')\n"
+        "message = 'unexpected Python fallback after hook effect'\n"
+        'raise RuntimeError(message)\n', encoding='utf-8')
     environment.pop('MIR_EXECUTOR_EXECUTE_IMPL', None)
-    result = PARITY['PARITY']['invoke_pinned'](root, environment, arguments, capture_output=True)
+    if route == 'native':
+        environment['MIR_EXECUTOR_OWNED_RECEIPT'] = str(root / 'owned-receipt')
+        result = subprocess.run([str(binary), '--home-root', str(root), *arguments],
+                                cwd=root, env=environment, capture_output=True, timeout=45,
+                                check=False)
+    else:
+        environment.pop('MIR_EXECUTOR_OWNED_RECEIPT', None)
+        result = PARITY['PARITY']['invoke_pinned'](root, environment, arguments,
+                                                capture_output=True)
     assert result.returncode == 1
-    context = b'RuntimeError' if failure == 'writer_enter' else b'background insert failed'
-    # Admission refusal writes its bytes directly; post-insert diagnostics use
-    # the executor's platform text writer. Compare each exact wire spelling.
-    newline = b'\n' if failure == 'writer_enter' else os.linesep.encode()
-    assert result.stderr == b'[mir_executor] ' + context + b': offline hook refusal' + newline
-    assert (root / 'receipt-observed').exists()
+    if route == 'native':
+        context = b'RuntimeError' if failure == 'writer_enter' else b'background insert failed'
+        newline = b'\n' if failure == 'writer_enter' else os.linesep.encode()
+        assert result.stderr == b'[mir_executor] ' + context + b': offline hook refusal' + newline
+        assert (root / 'owned-receipt').read_bytes() == b'owned'
+        assert (root / 'receipt-observed').exists()
+        assert not (root / 'compatibility-imports').exists()
+    else:
+        # Enabled local.py deliberately selects Python compatibility before
+        # native ownership. This poisoned import proves the route runs once.
+        message = b'RuntimeError: unexpected Python fallback after hook effect'
+        assert result.stdout == b''
+        assert result.stderr.startswith(b'Traceback (most recent call last):')
+        assert result.stderr.count(b'Traceback (most recent call last):') == 1
+        assert result.stderr.splitlines()[-1] == message
+        assert result.stderr.count(message) == 1
+        assert (root / 'compatibility-imports').read_text() == 'import\n'
+        assert not (root / 'receipt-observed').exists()
+        assert not (root / 'owned-receipt').exists()
     assert not (root / 'provider-methods').exists()
     assert not (root / 'lease').exists()
-    assert [r['hook'] for r in requests(root)] == (
-        ['writer_enter'] if failure == 'writer_enter' else
-        ['writer_enter', 'on_job_event', 'writer_exit'])
+    expected = (['writer_enter'] if failure == 'writer_enter' else
+                ['writer_enter', 'on_job_event', 'writer_exit'])
+    assert [r['hook'] for r in requests(root)] == (expected if route == 'native' else [])
+
+
+def test_surrogate_job_inserted_error_preserves_running_row(binary, tmp_path):
+    """Equivalent legacy/native adapters fail at SQLite binding after insertion."""
+    import io
+    import sqlite3
+    import sys
+    import tarfile
+
+    frozen = json.loads((ROOT / 'native/handoff-packet/tests/fixtures/'
+                        'executor_hook_numeric_responses_reference.json').read_text())
+    expected = frozen['background_stage']
+    reference = tmp_path / 'pinned-source'
+    archive = subprocess.run(
+        ['git', 'archive', frozen['reference'], 'tools/mir_executor'],
+        cwd=ROOT, capture_output=True, check=True).stdout
+    with tarfile.open(fileobj=io.BytesIO(archive)) as stream:
+        stream.extractall(reference, filter='data')
+    for route in ('reference', 'native'):
+        root = tmp_path / route
+        launcher = SUPPORT['seed'](root, 'success')
+        environment = SUPPORT['environment'](root, 'success', launcher)
+        environment.update(HOME=str(root), USERPROFILE=str(root),
+                           PYTHONIOENCODING='utf-8:strict')
+        for selector in ('MIR_EXECUTOR_EXECUTE_IMPL', 'MIR_EXECUTOR_QUERY_IMPL',
+                         'MIR_EXECUTOR_DISPATCH_IMPL'):
+            environment.pop(selector, None)
+        config = root / 'config/mir-executor.local.json'
+        config.parent.mkdir(exist_ok=True)
+        if route == 'reference':
+            shutil.copytree(reference / 'tools', root / 'tools', dirs_exist_ok=True)
+            # Pinned CLI refuses native_policy before effects. Its legacy hook
+            # invokes the same pinned require_success exception constructor.
+            (root / 'tools/mir_executor/local.py').write_text(
+                'import json\nfrom pathlib import Path\n'
+                'from tools.mir_executor.native_hooks import require_success\n'
+                'ROOT = Path(__file__).resolve().parents[2]\n'
+                'def on_job_event(event, payload):\n'
+                "    with (ROOT / 'wire.jsonl').open('a') as stream:\n"
+                "        stream.write(json.dumps({'hook':'on_job_event','event':event}) + '\\n')\n"
+                "    require_success({'ok':False,'error':"
+                "{'type':'Refusal','message':chr(0xd800)}})\n",
+                encoding='utf-8')
+            config.write_text(json.dumps({'python_local_hooks': True}), encoding='utf-8')
+            command = [sys.executable, '-c',
+                       'from tools.mir_executor.cli import main; main()']
+        else:
+            (root / 'tools/mir_executor/local.py').write_text(
+                '# Synthetic disabled Python hook.\n', encoding='utf-8')
+            script = root / 'surrogate-hook.py'
+            script.write_text(
+                '#!/usr/bin/env python3\nimport json, sys, threading\nfrom pathlib import Path\n'
+                'ROOT = Path(__file__).resolve().parent\n'
+                "print(json.dumps({'version':'mir-executor.hooks@1',"
+                "'hooks':['on_job_event']}), flush=True)\n"
+                'for line in sys.stdin:\n'
+                '    request = json.loads(line)\n'
+                "    with (ROOT / 'wire.jsonl').open('a') as stream:\n"
+                "        stream.write(json.dumps(request) + '\\n')\n"
+                "    print(json.dumps({'version':'mir-executor.hooks@1',"
+                "'id':request['id'],'ok':False,'error':{'type':'Refusal',"
+                "'message':chr(0xd800)}}), flush=True)\n"
+                'threading.Event().wait()\n', encoding='utf-8')
+            if os.name == 'nt':
+                host = root / 'surrogate-hook.cmd'
+                host.write_text(f'@"{sys.executable}" "{script}" %*\n', encoding='utf-8')
+            else:
+                host = script
+            host.chmod(0o700)
+            config.write_text(json.dumps({
+                'python_local_hooks': False,
+                'native_policy': {'version': 1, 'hooks': {
+                    'executable': host.name, 'argv': [],
+                    'sha256': hashlib.sha256(host.read_bytes()).hexdigest(),
+                    'hooks': ['on_job_event']}}}), encoding='utf-8')
+            command = [str(binary), '--home-root', str(root)]
+        completed = subprocess.run(
+            [*command, *SUPPORT['argv']('background_success')], cwd=root,
+            env=environment, capture_output=True, timeout=45, check=False)
+        stdout, stderr = completed.stdout, completed.stderr
+        if b'Traceback (most recent call last):' in stderr:
+            stdout, stderr = b'', stderr.splitlines()[-1] + b'\n'
+        assert completed.returncode == expected['exit'], (route, completed.stderr)
+        assert stdout.hex() == expected['stdout_hex'], route
+        assert stderr.hex() == expected['stderr_hex'], (route, stderr)
+        with sqlite3.connect(root / 'tasks/jobs.db') as connection:
+            rows = connection.execute(
+                'SELECT status,exit_code,stderr,completed_at FROM jobs').fetchall()
+        assert [list(row) for row in rows] == expected['job_rows'], route
+        wire = requests(root)
+        assert len(wire) == expected['hook_calls'] == 1, (route, wire)
+        assert wire[0]['hook'] == 'on_job_event'
+        event = wire[0].get('event', wire[0].get('params', {}).get('event'))
+        assert event == 'job_inserted', (route, wire)
+        assert (root / 'provider-methods').exists() == expected['provider_started'] is False
