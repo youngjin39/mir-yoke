@@ -681,7 +681,6 @@ pub fn dispatch(
             // it after the original failure so brief/cap refusals keep precedence.
             if let executor_dispatch::Error::Worktree(crate::executor_worktree::Error::Git {
                 code,
-                command: None,
                 ..
             }) = &e
                 && Command::new("git")

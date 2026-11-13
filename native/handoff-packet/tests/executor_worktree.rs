@@ -595,10 +595,20 @@ fn artifact_existing_file_preserves_write_permission_contract() {
 
 #[test]
 fn selected_alias_errors_preserve_caller_spelling() {
+    for nested in [false, true] {
+        selected_alias_errors_preserve_caller_spelling_case(nested);
+    }
+}
+
+fn selected_alias_errors_preserve_caller_spelling_case(nested: bool) {
     let fixture = Fixture::new();
     let real = fixture.0.join("real");
     fs::create_dir(&real).unwrap();
-    let alias = fixture.0.join("alias");
+    let alias = if nested {
+        fixture.0.join("real/alias")
+    } else {
+        fixture.0.join("alias")
+    };
     if !directory_link(&fs::canonicalize(&real).unwrap(), &alias) {
         return;
     }
@@ -633,10 +643,20 @@ fn selected_alias_errors_preserve_caller_spelling() {
 
 #[test]
 fn git_refusal_uses_caller_alias_in_command() {
+    for nested in [false, true] {
+        git_refusal_uses_caller_alias_in_command_case(nested);
+    }
+}
+
+fn git_refusal_uses_caller_alias_in_command_case(nested: bool) {
     let fixture = Fixture::new();
     let real = fixture.0.join("real");
     let repo = fixture.repo("real/repo", &json!({"code":"keep"}));
-    let alias = fixture.0.join("alias");
+    let alias = if nested {
+        fixture.0.join("real/alias")
+    } else {
+        fixture.0.join("alias")
+    };
     if !directory_link(&fs::canonicalize(&real).unwrap(), &alias) {
         return;
     }
@@ -689,12 +709,22 @@ fn git_refusal_uses_caller_alias_in_command() {
 
 #[test]
 fn alias_status_inspection_and_event_errors_keep_spelling() {
+    for nested in [false, true] {
+        alias_status_inspection_and_event_errors_keep_spelling_case(nested);
+    }
+}
+
+fn alias_status_inspection_and_event_errors_keep_spelling_case(nested: bool) {
     use handoff_packet::executor_dispatch::{
         CodexAttempt, DispatchContext, DispatchOptions, run_dispatch,
     };
     let fixture = Fixture::new();
     let repo = fixture.repo("real/repo", &json!({"code":"keep"}));
-    let alias = fixture.0.join("alias");
+    let alias = if nested {
+        fixture.0.join("real/alias")
+    } else {
+        fixture.0.join("alias")
+    };
     if !directory_link(&fs::canonicalize(fixture.0.join("real")).unwrap(), &alias) {
         return;
     }
@@ -758,4 +788,37 @@ fn alias_status_inspection_and_event_errors_keep_spelling() {
             "{mode}"
         );
     }
+}
+
+#[test]
+fn nested_alias_cleanup_and_merge_errors_keep_spelling() {
+    let fixture = Fixture::new();
+    let repo = fixture.repo("repo", &json!({"code":"keep"}));
+    let alias = repo.join("alias");
+    if !directory_link(&fs::canonicalize(&repo).unwrap(), &alias) {
+        return;
+    }
+    let trees = alias.join("trees");
+    let wt = create_dispatch_worktree(&alias, "locked", "HEAD", "", Some(&trees)).unwrap();
+    git(&repo, &["worktree", "lock", wt.path.to_str().unwrap()]);
+    let error = cleanup_worktree(&wt, false).unwrap_err();
+    assert_eq!(error.kind(), "CalledProcessError");
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "Command '['git', '-C', '{}', 'worktree', 'remove', '--force', '{}']' returned non-zero exit status 128.",
+            alias.display(),
+            trees.join("locked").display()
+        )
+    );
+    let error = merge_result(&wt, Some("missing-ref"), None, false).unwrap_err();
+    assert_eq!(error.kind(), "CalledProcessError");
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "Command '['git', '-C', '{}', 'diff', '--no-renames', '--name-only', '-z', '{}', 'missing-ref']' returned non-zero exit status 128.",
+            alias.display(),
+            wt.base_commit
+        )
+    );
 }

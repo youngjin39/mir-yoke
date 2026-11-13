@@ -516,7 +516,9 @@ fn run_verifier(
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    let mut child = command.spawn()?;
+    let mut child = command
+        .spawn()
+        .map_err(|e| Error::Worktree(crate::executor_worktree::path_io(e, Path::new(program))))?;
     let started = Instant::now();
     let Some(stdout) = child.stdout.take() else {
         let _ = child.kill();
