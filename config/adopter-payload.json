@@ -626,6 +626,12 @@
       "sha256": "61f7651e42d1b67b0d8b67862d6ef5eb6c162a0badc9376d469a14f4d802cd2a"
     },
     {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "config/python-allowlist.json",
+      "sha256": "5a13ee31b9c6701a054d122ca1cf866408a65a11090705052a0f4acc3174f589"
+    },
+    {
       "classification": "reference",
       "disposition": "remove",
       "path": "config/repo-agent-management.json",
@@ -665,7 +671,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/template-assets.json",
-      "sha256": "25c42eb74d33fa3ea2cab2ab2be9e6f8e7d5ec55daa086594d19f7ca7a387cca"
+      "sha256": "44e2c0d04152f23f2a30dbc4e83c570ca016075dc45f8c0e31552ab539371a7b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -8040,6 +8046,12 @@
       "disposition": "remove",
       "path": "tests/test_public_template_surface.py",
       "sha256": "eefb8b7f0310aa14c35d2eaa7c203011c96e32e57677dde84fd51a37b4d042e0"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_python_file_guard.py",
+      "sha256": "fd43a82b8d122912f2b4fc9e37b8f6c3ea325ccad376ce09b1eeceb6d726beb5"
     },
     {
       "classification": "template-maintainer-tool",

@@ -252,6 +252,7 @@
         "config/harness-consistency.json",
         "config/harness-consistency.schema.json",
         "config/model-routing.lock.json",
+        "config/python-allowlist.json",
         "config/mir-executor-common.json",
         "config/mir-executor.local.json",
         "config/project-hooks.json",
