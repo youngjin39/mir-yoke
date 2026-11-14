@@ -30,20 +30,36 @@ fn sync(message: String) -> Error {
     }
 }
 fn io(path: &Path, error: std::io::Error) -> Error {
-    if error.raw_os_error() == Some(libc::ENOTEMPTY) {
+    io_context(Some(path), error)
+}
+fn io_context(path: Option<&Path>, error: std::io::Error) -> Error {
+    if error.raw_os_error().is_none() {
+        let error = crate::mir_cli::bootstrap_adoption::io_error(
+            path.unwrap_or_else(|| Path::new("")),
+            error,
+        );
         return Error {
-            class: "OSError",
-            message: format!(
-                "[Errno {}] Directory not empty: {}",
-                libc::ENOTEMPTY,
-                crate::executor_text::repr(&crate::executor_text::os_text(path.as_os_str()))
-            ),
+            class: error.class(),
+            message: error.to_string(),
         };
     }
-    let error = crate::mir_cli::bootstrap_adoption::io_error(path, error);
+    let rendered = crate::executor_text::io_error(error, path.unwrap_or_else(|| Path::new("")));
+    let (class, message) = rendered.split_once(": ").unwrap_or(("OSError", &rendered));
+    let mut message = message.to_owned();
+    if path.is_none() {
+        let suffix = format!(": {}", crate::executor_text::repr(""));
+        message.truncate(message.len() - suffix.len());
+    }
     Error {
-        class: error.class(),
-        message: error.to_string(),
+        class: match class {
+            "FileNotFoundError" => "FileNotFoundError",
+            "FileExistsError" => "FileExistsError",
+            "PermissionError" => "PermissionError",
+            "IsADirectoryError" => "IsADirectoryError",
+            "NotADirectoryError" => "NotADirectoryError",
+            _ => "OSError",
+        },
+        message,
     }
 }
 fn read(identity: &HomeIdentity, relative: &Path) -> Result<Option<Vec<u8>>, Error> {
@@ -69,10 +85,30 @@ fn write(identity: &HomeIdentity, relative: &Path, bytes: &[u8]) -> Result<(), E
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)
     );
-    let pending = PendingWrite::prepare(&identity.path, &path, name.as_ref(), bytes)
-        .map_err(|e| io(&path, e))?;
+    let pending =
+        PendingWrite::prepare_mapped(&identity.path, &path, name.as_ref(), bytes, io_context)?;
     verified_target(identity, relative)?;
-    pending.publish_with(|_| Ok(())).map_err(|e| io(&path, e))
+    pending.publish_with(|_| Ok(())).map_err(|e| {
+        let mut error = io(pending.temporary_path(), e);
+        if error.message.starts_with("[Errno ") {
+            error.message.push_str(&format!(
+                " -> {}",
+                crate::executor_text::repr(&crate::executor_text::os_text(path.as_os_str()))
+            ));
+        }
+        error
+    })
+}
+fn ordered_desired(desired: BTreeMap<PathBuf, Option<Vec<u8>>>) -> Vec<(PathBuf, Option<Vec<u8>>)> {
+    let mut items: Vec<_> = desired.into_iter().collect();
+    // 0754c36 install_user_runtime_agents.py:402: sorted(desired.items()).
+    // pathlib compares component strings, including surrogateescaped bytes.
+    items.sort_by_cached_key(|(path, _)| {
+        path.components()
+            .map(|part| crate::executor_text::os_points(part.as_os_str()))
+            .collect::<Vec<_>>()
+    });
+    items
 }
 fn snapshot(plan: &RuntimePlan) -> Result<Vec<Snapshot>, Error> {
     let mut desired = BTreeMap::new();
@@ -83,7 +119,7 @@ fn snapshot(plan: &RuntimePlan) -> Result<Vec<Snapshot>, Error> {
         desired.insert(item.target_relative.clone(), None);
     }
     desired.insert(RECEIPT_NAME.into(), Some(plan.receipt.clone()));
-    desired
+    ordered_desired(desired)
         .into_iter()
         .map(|(relative, after)| {
             Ok(Snapshot {

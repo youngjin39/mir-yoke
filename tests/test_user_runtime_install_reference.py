@@ -13,6 +13,20 @@ MUTANTS = ["parent-path", "symlink-ancestor", "nonregular-source", "receipt-sort
            "receipt-newline", "claude-required", "codex-required"]
 
 
+@pytest.mark.parametrize("flag,filename", [
+    ("--transactions", "transactions.json"),
+    ("--transaction-fixes", "transaction-fixes.json"),
+])
+def test_frozen_transaction_corpus(tmp_path, flag, filename):
+    scratch = tmp_path.resolve()
+    output = scratch / "actual.json"
+    subprocess.run([sys.executable, "-I", str(FIXTURES / "capture_admission_receipts.py"),
+                    "--scratch", str(scratch), "--output", str(output), flag],
+                   check=True, timeout=20, cwd=scratch,
+                   env={**os.environ, "HOME": str(scratch), "TMPDIR": str(scratch)})
+    assert output.read_bytes() == (FIXTURES / filename).read_bytes()
+
+
 def test_cli_record_program_name():
     corpus = json.loads((FIXTURES / "admission-receipts.json").read_text())
     for name, record in corpus["records"].items():

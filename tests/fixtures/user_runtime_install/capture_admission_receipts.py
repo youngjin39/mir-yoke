@@ -161,7 +161,139 @@ def acquire_transactions(module, base):
     return {"pin": PIN, "source": SOURCE, "records": records}
 
 
-def acquire(scratch, mutant=None, transactions=False):
+def acquire_transaction_fixes(module, base):
+    """Actual denied syscalls, plus Python Path ordering across surrogateescape."""
+    os.umask(0o022)
+    records = {}
+    original = {name: getattr(module, name) for name in (
+        "snapshot_plan", "atomic_write", "remove_stale_file", "restore_snapshot",
+        "remove_created_home")}
+    for operation in ("snapshot", "payload", "stale", "receipt", "restore"):
+        for home in range(2):
+            root = base / f"{operation}-{home}"
+            plans = []
+            for i in range(2):
+                path = root / "homes" / str(i)
+                (path / "agents").mkdir(parents=True)
+                names = ["agents/a.md", "agents/stale.md", module.RECEIPT_NAME]
+                for name in names:
+                    (path / name).write_bytes(b"old")
+                    (path / name).chmod(0o600)
+                files = tuple(module.ManagedFile(name, Path(name), b"new",
+                              module.sha256_bytes(b"new")) for name in names
+                              if name != "agents/stale.md" and name != module.RECEIPT_NAME)
+                plans.append(module.RuntimePlan(module.capture_home_identity(path), files,
+                    (module.StaleFile("stale", Path("agents/stale.md"),
+                     module.sha256_bytes(b"old")),), b"receipt", False))
+            trace = []
+            changed = False
+
+            def hook(op, identity, operation=operation, home=home, trace=trace):
+                nonlocal changed
+                i = int(identity.path.name)
+                trace.append(f"{op}:{i}")
+                if op == operation and i == home and not changed:
+                    changed = True
+                    target = identity.path / ("agents/a.md" if op == "snapshot" else
+                                               "" if op == "receipt" else "agents")
+                    target.chmod(0 if op == "snapshot" else 0o555)
+                if operation == "restore" and op == "receipt" and i == home:
+                    raise OSError("injected")
+
+            def snapshot(plan, hook=hook):
+                hook("snapshot", plan.identity)
+                return original["snapshot_plan"](plan)
+
+            def write(identity, relative, content, hook=hook):
+                hook("receipt" if relative == Path(module.RECEIPT_NAME) else "payload", identity)
+                return original["atomic_write"](identity, relative, content)
+
+            def stale(identity, item, hook=hook):
+                hook("stale", identity)
+                return original["remove_stale_file"](identity, item)
+
+            def restore(identity, item, hook=hook):
+                hook("restore", identity)
+                with patch.object(module, "atomic_write", original["atomic_write"]):
+                    return original["restore_snapshot"](identity, item)
+
+            # Pin only the random basename; os.open itself still fails with real EACCES.
+            def mkstemp(prefix, dir):
+                path = Path(dir) / ".temporary"
+                return os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600), str(path)
+
+            def cleanup(plan, snapshots, hook=hook):
+                hook("cleanup", plan.identity)
+                return original["remove_created_home"](plan, snapshots)
+
+            error = None
+            with patch.object(module, "snapshot_plan", snapshot), patch.object(
+                    module, "atomic_write", write), patch.object(
+                        module, "remove_stale_file", stale), \
+                    patch.object(module, "restore_snapshot", restore), patch.object(
+                        tempfile, "mkstemp", mkstemp), patch.object(
+                            module, "remove_created_home", cleanup):
+                try:
+                    module.apply_transaction(tuple(plans))
+                except BaseException as exc:
+                    error = {"class": type(exc).__name__,
+                             "message": str(exc).replace(str(root), "{ROOT}")}
+            assert error is not None, "syscall fault did not fire (privileged host?)"
+            tree = []
+            for i in range(2):
+                path = root / "homes" / str(i)
+                for entry in sorted(path.rglob("*"), key=lambda p: os.fsencode(p)):
+                    mode = stat.S_IMODE(entry.stat().st_mode)
+                    if mode == 0:
+                        entry.chmod(0o600)  # Read bytes only after recording the failed-read mode.
+                    tree.append([i, os.fsencode(entry.relative_to(path)).hex(), mode,
+                                 None if entry.is_dir() else entry.read_bytes().hex()])
+            records[f"{operation}-{home}"] = {"operation": operation, "home": home,
+                "home_modes": [stat.S_IMODE(p.identity.path.stat().st_mode) for p in plans],
+                "trace": trace, "error": error, "tree": tree}
+    # macOS rejects surrogateescaped basenames with EPERM. Freeze the pinned
+    # transaction on an in-memory filesystem for the ordering-only case.
+    path = base / "ordering"
+    path.mkdir()
+    names = [Path("agents/\udcff.md"), Path("agents/\ue000.md")]
+    files = tuple(module.ManagedFile(str(p), p, b"new", module.sha256_bytes(b"new")) for p in names)
+    plan = module.RuntimePlan(module.capture_home_identity(path), files, (), b"receipt", False)
+    disk = {p: b"old" for p in names}
+    disk[Path(module.RECEIPT_NAME)] = b"old"
+    restored = []
+
+    def virtual_write(identity, relative, content):
+        if relative == Path(module.RECEIPT_NAME):
+            raise OSError("injected")
+        disk[relative] = content
+
+    def virtual_restore(identity, item):
+        if not restored:
+            disk[names[1]] = b"foreign"
+        restored.append(str(item.relative))
+        return original["restore_snapshot"](identity, item)
+
+    with patch.object(module, "target_bytes", lambda identity, p: disk.get(p)), patch.object(
+            module, "atomic_write", virtual_write), patch.object(
+                module, "restore_snapshot", virtual_restore):
+        try:
+            module.apply_transaction((plan,))
+        except module.SyncError as exc:
+            error = {"class": type(exc).__name__, "message": str(exc).replace(str(path), "{ROOT}")}
+    records["ordering"] = {"restore_order": restored, "error": error,
+                           "snapshot_order": [os.fsencode(p).hex() for p in sorted(disk)],
+                           "tree": {os.fsencode(p).hex(): content.hex()
+                                    for p, content in disk.items()}}
+    descriptor = os.open(path, os.O_RDONLY)
+    os.close(descriptor)
+    try:
+        os.fsync(descriptor)
+    except OSError as exc:
+        records["fsync-errno"] = {"class": type(exc).__name__, "message": str(exc)}
+    return {"pin": PIN, "source": SOURCE, "records": records}
+
+
+def acquire(scratch, mutant=None, transactions=False, transaction_fixes=False):
     assert sys.flags.isolated, "oracle must run with python -I"
     scratch = scratch.resolve(strict=True)
     source = subprocess.check_output(["git", "show", f"{PIN}:{SOURCE}"], cwd=REPO).decode()
@@ -191,6 +323,9 @@ def acquire(scratch, mutant=None, transactions=False):
             assert location and Path(location).resolve().is_relative_to(base), name
         module.ROOT = base
         module.CONFIG_PATH = base / "config/capability-sources.json"
+
+        if transaction_fixes:
+            return acquire_transaction_fixes(module, base)
 
         if transactions:
             return acquire_transactions(module, base)
@@ -521,9 +656,10 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--mutant", choices=MUTANTS)
     parser.add_argument("--transactions", action="store_true")
+    parser.add_argument("--transaction-fixes", action="store_true")
     args = parser.parse_args()
     output = args.output.resolve()
-    result = acquire(args.scratch, args.mutant, args.transactions)
+    result = acquire(args.scratch, args.mutant, args.transactions, args.transaction_fixes)
     # One compact record per line keeps the corpus reviewable within the slice budget.
     output.write_text('{"pin": ' + json.dumps(result["pin"]) + ', "source": ' +
                       json.dumps(SOURCE) + ', "records": {\n' + ',\n'.join(

@@ -19,14 +19,27 @@ impl PendingWrite {
         temporary: &OsStr,
         content: &[u8],
     ) -> io::Result<Self> {
+        Self::prepare_mapped(root, target, temporary, content, |_, e| e)
+    }
+    /// Preserve the filename context of the failing syscall.
+    pub(crate) fn prepare_mapped<E>(
+        root: &Path,
+        target: &Path,
+        temporary: &OsStr,
+        content: &[u8],
+        error: impl Fn(Option<&Path>, io::Error) -> E,
+    ) -> Result<Self, E> {
         if !matches!(Path::new(temporary).components().next(), Some(Component::Normal(name)) if name == temporary)
         {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "temporary must be one basename",
+            return Err(error(
+                Some(target),
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "temporary must be one basename",
+                ),
             ));
         }
-        let relative = adoption_fs::relative(root, target)?;
+        let relative = adoption_fs::relative(root, target).map_err(|e| error(Some(target), e))?;
         let mut directory = root.to_owned();
         let mut parts = relative.components().peekable();
         while let Some(part) = parts.next() {
@@ -37,32 +50,40 @@ impl PendingWrite {
             match adoption_fs::mkdir(root, &directory, 0o777) {
                 Ok(()) => (),
                 Err(e) if e.kind() == io::ErrorKind::AlreadyExists => (),
-                Err(e) => return Err(e),
+                Err(e) => return Err(error(Some(&directory), e)),
             }
         }
         let path = target.with_file_name(temporary);
         if path == target {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "temporary must differ from target",
+            return Err(error(
+                Some(target),
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "temporary must differ from target",
+                ),
             ));
         }
-        let mut staged = StagedFile::create_with_parent_check(root, &path, true, |_| Ok(()))?;
-        staged.file.write_all(content)?;
-        staged.file.flush()?;
-        staged.file.sync_all()?;
+        let mut staged = StagedFile::create_with_parent_check(root, &path, true, |_| Ok(()))
+            .map_err(|e| error(Some(&path), e))?;
+        staged.file.write_all(content).map_err(|e| error(None, e))?;
+        staged.file.flush().map_err(|e| error(None, e))?;
+        staged.file.sync_all().map_err(|e| error(None, e))?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
             staged
                 .file
-                .set_permissions(std::fs::Permissions::from_mode(0o644))?;
+                .set_permissions(std::fs::Permissions::from_mode(0o644))
+                .map_err(|e| error(Some(&path), e))?;
         }
         Ok(Self {
             staged,
             root: root.to_owned(),
             target: target.to_owned(),
         })
+    }
+    pub(crate) fn temporary_path(&self) -> &Path {
+        &self.staged.path
     }
     /// Create, replace and snapshot restoration share atomic replacement semantics.
     pub fn publish_with(&self, before: impl FnOnce(&Path) -> io::Result<()>) -> io::Result<()> {

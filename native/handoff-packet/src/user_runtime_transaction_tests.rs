@@ -6,6 +6,59 @@ use std::{
     os::unix::fs::{PermissionsExt, symlink},
     path::PathBuf,
 };
+
+#[test]
+#[rustfmt::skip]
+fn frozen_syscall_transactions() {
+    let corpus:J=serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/transaction-fixes.json")).unwrap();
+    for (name, record) in corpus["records"].as_object().unwrap() {
+        if name=="ordering" {continue;}
+        if name=="fsync-errno" {
+            use std::io::Write;
+            let file=tempfile::NamedTempFile::new().unwrap();
+            let error=fs::File::open(file.path()).unwrap().write_all(b"x").unwrap_err();
+            assert_eq!(error.raw_os_error(),Some(libc::EBADF));
+            let error=io_context(None,error);
+            assert_eq!(json!({"class":error.class,"message":error.message}),*record);continue;
+        }
+        let tmp=tempfile::tempdir().unwrap();let root=tmp.path().canonicalize().unwrap();
+        let mut plans=plans(&root,false);
+        for p in &mut plans {p.receipt=b"receipt".to_vec();for file in [&p.files[0].target_relative,&p.stale[0].target_relative,&PathBuf::from(RECEIPT_NAME)] {fs::write(p.identity.path.join(file),b"old").unwrap();}p.stale[0].sha256=sha256_bytes(b"old");}
+        let mut trace=vec![];let mut changed=false;let operation=record["operation"].as_str().unwrap();let home=record["home"].as_u64().unwrap() as usize;
+        let result=transaction_with(&plans,|op,i,_| {
+            trace.push(format!("{op}:{i}"));
+            if op==operation && i==home && !changed {changed=true;let target=plans[i].identity.path.join(if op=="snapshot" {"agents/a.md"} else if op=="receipt" {""} else {"agents"});fs::set_permissions(target,fs::Permissions::from_mode(if op=="snapshot" {0} else {0o555})).unwrap();}
+            if operation=="restore" && op=="receipt" && i==home {return Err(Error {class:"OSError",message:"injected".into()});}Ok(())
+        });
+        let mut error=result.unwrap_err();
+        // Normalize only the random basename, keeping the syscall directory.
+        while let Some(start)=error.message.find(".mir-install-") {let end=start+error.message[start..].find(char::from(39)).unwrap();error.message.replace_range(start..end,".temporary");}
+        let mut rows=vec![];
+        fn walk(home:usize, base:&Path, path:&Path, rows:&mut Vec<J>) {let mut entries:Vec<_>=fs::read_dir(path).unwrap().map(|e|e.unwrap().path()).collect();entries.sort();for p in entries {let m=fs::metadata(&p).unwrap();let mode=m.permissions().mode()&0o777;if mode==0 {fs::set_permissions(&p,fs::Permissions::from_mode(0o600)).unwrap();}let hex=|b:&[u8]|b.iter().map(|b|format!("{b:02x}")).collect::<String>();rows.push(json!([home,hex(p.strip_prefix(base).unwrap().as_os_str().as_encoded_bytes()),mode,if m.is_dir(){None}else{Some(hex(&fs::read(&p).unwrap()))}]));if m.is_dir(){walk(home,base,&p,rows);}}}
+        for (i,p) in plans.iter().enumerate(){walk(i,&p.identity.path,&p.identity.path,&mut rows);}
+        let home_modes:Vec<_>=plans.iter().map(|p|fs::metadata(&p.identity.path).unwrap().permissions().mode()&0o777).collect();
+        let actual=json!({"home_modes":home_modes,"trace":trace,"error":{"class":error.class,"message":error.message.replace(root.to_str().unwrap(),"{ROOT}")},"tree":rows});
+        for p in &plans {for dir in [&p.identity.path,&p.identity.path.join("agents")] {fs::set_permissions(dir,fs::Permissions::from_mode(0o755)).unwrap();}}
+        assert_eq!(actual,json!({"home_modes":record["home_modes"],"trace":record["trace"],"error":record["error"],"tree":record["tree"]}),"{name}");
+    }
+}
+
+#[test]
+#[rustfmt::skip]
+fn frozen_surrogate_restore_order() {
+    use std::os::unix::ffi::OsStringExt;
+    let corpus:J=serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/transaction-fixes.json")).unwrap();let record=&corpus["records"]["ordering"];
+    let tmp=tempfile::tempdir().unwrap();let root=tmp.path().canonicalize().unwrap();let mut plans=plans(&root,false);let plan=&mut plans[0];
+    fs::write(plan.identity.path.join(RECEIPT_NAME),b"old").unwrap();
+    let surrogate=PathBuf::from(std::ffi::OsString::from_vec(b"agents/\xff.md".to_vec()));let unicode=PathBuf::from("agents/\u{e000}.md");fs::write(plan.identity.path.join(&unicode),b"foreign").unwrap();
+    let desired=BTreeMap::from([(surrogate,Some(b"new".to_vec())),(unicode,Some(b"new".to_vec())),(RECEIPT_NAME.into(),Some(b"receipt".to_vec()))]);
+    let snapshots:Vec<_>=ordered_desired(desired).into_iter().map(|(relative,after)|Snapshot {relative,before:Some(b"old".to_vec()),after}).collect();let mut restored=vec![];let mut error=None;
+    for snap in snapshots.iter().rev() {restored.push(crate::executor_text::os_text(snap.relative.as_os_str()));if let Err(e)=restore(plan,snap){error=Some(sync(format!("apply failed; rollback incomplete: injected; {e}")));break;}}
+    let hex=|bytes:&[u8]|bytes.iter().map(|b|format!("{b:02x}")).collect::<String>();
+    let order:Vec<_>=snapshots.iter().map(|s|hex(s.relative.as_os_str().as_encoded_bytes())).collect();
+    let tree:serde_json::Map<String,J>=snapshots.iter().map(|s| {let bytes=if s.relative.as_os_str().as_encoded_bytes().contains(&255) {s.after.clone().unwrap()} else {fs::read(plan.identity.path.join(&s.relative)).unwrap()};(hex(s.relative.as_os_str().as_encoded_bytes()),json!(hex(&bytes)))}).collect();
+    let e=error.unwrap();assert_eq!(json!({"restore_order":restored,"error":{"class":e.class,"message":e.message.replace(plan.identity.path.to_str().unwrap(),"{ROOT}")},"snapshot_order":order,"tree":tree}),*record);
+}
 #[rustfmt::skip]
 fn plans(root: &Path, created: bool) -> Vec<RuntimePlan> {
     (0..2).map(|i| {
