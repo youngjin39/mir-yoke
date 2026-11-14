@@ -24,4 +24,19 @@ for prefix in ('a=', 'bad = ', '[table]\na=', 'unicode="한글"\na=', 'a=[['):
                 tomllib.loads(text)
             except tomllib.TOMLDecodeError as exc:
                 cases.append({'text': text, 'error': str(exc)})
+# Six quotes leave an extra quote after the maximum five-quote terminator.
+for quote in ('"', "'"):
+    for count in (3, 4, 5, 6):
+        value = quote * 3 + 'x' + quote * count
+        for prefix, tails in (('a=[', (']', ',', ', ', ',# eof', ',\n# eof\n')),
+                              ('a={b=', ('}', ', c=1}', ',')),
+                              ('a=', ('', '\n'))):
+            for tail in tails:
+                text = prefix + value + tail
+                record = {'text': text, 'closing_quotes': count, 'quote': quote}
+                try:
+                    record['value'] = tomllib.loads(text)
+                except tomllib.TOMLDecodeError as exc:
+                    record['error'] = str(exc)
+                cases.append(record)
 a.output.write_text(json.dumps(cases, ensure_ascii=True, indent=2) + '\n')

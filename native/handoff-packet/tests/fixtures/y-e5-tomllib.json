@@ -3778,5 +3778,587 @@
   {
     "text": "a=[[[\"#\",\n# eof\n",
     "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"]",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": [
+        "x"
+      ]
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\",",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\", ",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\",# eof",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\",\n# eof\n",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"}",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x"
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\", c=1}",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\",",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": "x"
+    }
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\n",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": "x"
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"]",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": [
+        "x\""
+      ]
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\",",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\", ",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\",# eof",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\",\n# eof\n",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"}",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x\""
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\", c=1}",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x\"",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\",",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": "x\""
+    }
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\n",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": "x\""
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"]",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": [
+        "x\"\""
+      ]
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\",",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\", ",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\",# eof",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\",\n# eof\n",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\"}",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x\"\""
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\", c=1}",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x\"\"",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\",",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\"",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": "x\"\""
+    }
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\"\n",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": "x\"\""
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\"]",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\",",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\", ",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\",# eof",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\",\n# eof\n",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\"\"}",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\"\", c=1}",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\"\",",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\"\"",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Expected newline or end of document after a statement (at line 1, column 12)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\"\"\n",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Expected newline or end of document after a statement (at line 1, column 12)"
+  },
+  {
+    "text": "a=['''x''']",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": [
+        "x"
+      ]
+    }
+  },
+  {
+    "text": "a=['''x''',",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''', ",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''',# eof",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''',\n# eof\n",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b='''x'''}",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x"
+      }
+    }
+  },
+  {
+    "text": "a={b='''x''', c=1}",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b='''x''',",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a='''x'''",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": "x"
+    }
+  },
+  {
+    "text": "a='''x'''\n",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": "x"
+    }
+  },
+  {
+    "text": "a=['''x'''']",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": [
+        "x'"
+      ]
+    }
+  },
+  {
+    "text": "a=['''x'''',",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x'''', ",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x'''',# eof",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x'''',\n# eof\n",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b='''x''''}",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x'"
+      }
+    }
+  },
+  {
+    "text": "a={b='''x'''', c=1}",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x'",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b='''x'''',",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a='''x''''",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": "x'"
+    }
+  },
+  {
+    "text": "a='''x''''\n",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": "x'"
+    }
+  },
+  {
+    "text": "a=['''x''''']",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": [
+        "x''"
+      ]
+    }
+  },
+  {
+    "text": "a=['''x''''',",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''''', ",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''''',# eof",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''''',\n# eof\n",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b='''x'''''}",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x''"
+      }
+    }
+  },
+  {
+    "text": "a={b='''x''''', c=1}",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x''",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b='''x''''',",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a='''x'''''",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": "x''"
+    }
+  },
+  {
+    "text": "a='''x'''''\n",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": "x''"
+    }
+  },
+  {
+    "text": "a=['''x'''''']",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=['''x'''''',",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=['''x'''''', ",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=['''x'''''',# eof",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=['''x'''''',\n# eof\n",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a={b='''x''''''}",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a={b='''x'''''', c=1}",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a={b='''x'''''',",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a='''x''''''",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Expected newline or end of document after a statement (at line 1, column 12)"
+  },
+  {
+    "text": "a='''x''''''\n",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Expected newline or end of document after a statement (at line 1, column 12)"
   }
 ]

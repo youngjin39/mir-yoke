@@ -46,6 +46,15 @@ fn array_expects_value(text: &str) -> bool {
             } else if b == q && (!triple || bytes.get(i..i + 3) == Some(&[q, q, q])) {
                 if triple {
                     i += 2;
+                    // Python consumes up to two extra quotes as string content
+                    // before closing, rather than opening another string.
+                    for _ in 0..2 {
+                        if bytes.get(i + 1) == Some(&q) {
+                            i += 1;
+                        } else {
+                            break;
+                        }
+                    }
                 }
                 quote = None;
                 last = q;
@@ -74,16 +83,31 @@ mod tests {
         let records: Vec<serde_json::Value> =
             serde_json::from_str(include_str!("../../tests/fixtures/y-e5-tomllib.json")).unwrap();
         let mut matched = 0;
+        let (mut closing_cases, mut closing_diagnostics) = (0, 0);
         for r in records {
+            let closing_case = r.get("closing_quotes").is_some();
+            closing_cases += usize::from(closing_case);
             let text = r["text"].as_str().unwrap();
-            let error = toml::from_str::<toml::Value>(text).unwrap_err();
+            let result = toml::from_str::<toml::Value>(text);
+            if let Some(value) = r.get("value") {
+                assert_eq!(
+                    serde_json::to_value(result.unwrap()).unwrap(),
+                    *value,
+                    "{text:?}"
+                );
+                continue;
+            }
+            let error = result.unwrap_err();
             if error.message().contains("invalid array")
                 && error.span().is_some_and(|s| s.start >= text.len())
             {
                 matched += 1;
+                closing_diagnostics += usize::from(closing_case);
                 assert_eq!(super::tomllib_error(&error, text), r["error"], "{text:?}");
             }
         }
         assert!(matched > 100);
+        assert_eq!(closing_cases, 80);
+        assert_eq!(closing_diagnostics, 24);
     }
 }
