@@ -107,6 +107,33 @@ for pattern in ['localhost', 'LOCALHOST', '.localhost', 'example.com', '.example
                                 capture_output=True, check=True)
         proxy_records.append(dict(pattern=pattern, host=host,
                                   applies=json.loads(result.stdout)))
+# IDNA is deliberately OPEN natively; freeze httpx's selection without dialing.
+for host, pattern in [
+    ('xn--bcher-kva.test', 'xn--bcher-kva.test'),
+    ('XN--BCHER-KVA.test', 'XN--BCHER-KVA.test'),
+    ('child.xn--bcher-kva.test', '.xn--bcher-kva.test'),
+    ('bücher.test', 'example.com'),
+    ('example.com', 'bücher.test'),
+    ('example.com', 'example.com,xn--bcher-kva.test'),
+    ('example.com', '*,xn--bcher-kva.test'),
+    ('xn--bcher-kva.test', '*'),
+    ('example.com', '*,bücher.test'),
+    ('bücher.test', '*'),
+    ('example.com', '\u00a0example.com'),
+]:
+    env = {'HOME': str(root), 'PATH': os.defpath,
+           'HTTP_PROXY': 'http://127.0.0.1:1', 'NO_PROXY': pattern}
+    result = subprocess.run([sys.executable, '-I', str(wrapper), 'proxy',
+                             f'http://{host}:12345/'], cwd=root, env=env,
+                            capture_output=True)
+    record = dict(pattern=pattern, host=host, native_open=True)
+    if result.returncode:
+        error = result.stderr.decode().splitlines()[-1]
+        assert error.startswith('httpx.InvalidURL:'), error
+        record['error'] = error
+    else:
+        record['applies'] = json.loads(result.stdout)
+    proxy_records.append(record)
 a.proxy_output.write_text(json.dumps(proxy_records, separators=(',', ':')) + '\n')
 records = []
 for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "status",

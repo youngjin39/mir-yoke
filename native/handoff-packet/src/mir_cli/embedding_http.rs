@@ -46,6 +46,20 @@ fn proxy_applies(host: &str) -> Result<bool, HttpError> {
     Ok(!no_proxy_bypasses(host, &env("NO_PROXY"))?)
 }
 fn no_proxy_bypasses(host: &str, patterns: &str) -> Result<bool, HttpError> {
+    let idna = |value: &str| {
+        !value.is_ascii()
+            || value
+                .split('.')
+                .any(|label| label.to_ascii_lowercase().starts_with("xn--"))
+    };
+    if idna(host)
+        || !patterns.is_ascii()
+        || patterns
+            .split(',')
+            .any(|p| idna(crate::python_json::python_strip(p)))
+    {
+        return Err(unsupported("IDNA proxy matching is not supported"));
+    }
     // httpx._utils.get_environment_proxies: '*' overrides every other mount.
     let strip = crate::python_json::python_strip;
     if patterns.split(',').any(|p| strip(p) == "*") {
@@ -298,6 +312,13 @@ mod tests {
             serde_json::from_str(include_str!("../../tests/fixtures/y-e6-proxy.json")).unwrap();
         for r in records.as_array().unwrap() {
             let host = r["host"].as_str().unwrap();
+            if r["native_open"].as_bool() == Some(true) {
+                let error = no_proxy_bypasses(host, r["pattern"].as_str().unwrap())
+                    .expect_err(&format!("IDNA must be explicitly refused: {r}"));
+                assert_eq!(error.class, "UnsupportedProtocol");
+                assert!(error.message.contains("IDNA"));
+                continue;
+            }
             assert_eq!(
                 no_proxy_bypasses(host, r["pattern"].as_str().unwrap()).unwrap(),
                 !r["applies"].as_bool().unwrap(),
@@ -322,7 +343,12 @@ mod tests {
                     .class,
                 "UnsupportedProtocol"
             );
-            assert!(no_proxy_bypasses("localhost", &format!("{pattern},*")).unwrap());
+            let star = no_proxy_bypasses("localhost", &format!("{pattern},*"));
+            if pattern.is_ascii() {
+                assert!(star.unwrap());
+            } else {
+                assert_eq!(star.unwrap_err().class, "UnsupportedProtocol");
+            }
         }
     }
     #[test]

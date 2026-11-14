@@ -3335,7 +3335,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/embedding_http.rs",
-      "sha256": "b347965fb5b24e472088ff45f2364c6efc8ea4c99341a8690153a2ad07787ac6"
+      "sha256": "e9d5386c20ed933db79897aaae71ec8c1bb32f5422df9e92f7df7872639bb6c0"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4439,7 +4439,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e6.py",
-      "sha256": "bcbc762fbb9ba4845141f333dc0de961ec752309dc894011ce77f82d1d4f47e0"
+      "sha256": "e7b925b521141b7c04afdb30277bfb4ab10ac4f802dfe81a059aad1afc77b3f9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4841,7 +4841,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e6-proxy.json",
-      "sha256": "f68471247b576a770669ba514d9f6cd9d2f96bb2c1e4d62597c6190f26422ddc"
+      "sha256": "deb6f0337499f6d7c1b1e428f50ff1fd22d863da1dfc71065854635b96fb462c"
     },
     {
       "classification": "template-maintainer-tool",
