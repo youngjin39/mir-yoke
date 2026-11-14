@@ -605,6 +605,7 @@ fn json_facts(facts: &[Value]) -> String {
 
 #[derive(Clone, Copy)]
 enum Action {
+    Help,
     History,
     Json,
     K,
@@ -619,6 +620,11 @@ struct OptionSpec {
     action: Action,
 }
 const OPTIONS: &[OptionSpec] = &[
+    OptionSpec {
+        name: "--help",
+        value: false,
+        action: Action::Help,
+    },
     OptionSpec {
         name: "--history",
         value: false,
@@ -658,69 +664,170 @@ const OPTIONS: &[OptionSpec] = &[
 /// Library boundary: all relative paths use cwd; no caller or environment discovery.
 /// Retrieval consumes no wall clock; profile freshness uses the existing Git helper.
 pub fn main(argv: &[&str], cwd: &Path, embedding: EmbeddingState) -> Result<Output> {
-    main_inner(argv, cwd, Some(embedding))
+    main_inner(argv, cwd, Some(embedding), &Path::to_path_buf)
 }
-pub fn console(argv: &[&str], cwd: &Path) -> Result<Output> {
-    main_inner(argv, cwd, None)
+pub fn console(
+    argv: &[&str],
+    cwd: &Path,
+    path: &dyn Fn(&Path) -> std::path::PathBuf,
+) -> Result<Output> {
+    main_inner(argv, cwd, None, path)
 }
-fn main_inner(argv: &[&str], cwd: &Path, embedding: Option<EmbeddingState>) -> Result<Output> {
+const PULL_USAGE: &str = "usage: mir context pull [-h] [--history] [--json] [--k K]\n                        [--path TARGET_PATHS] [--risk {low,normal,high}]\n                        [--db DB] [--project-root PROJECT_ROOT]\n                        query\n";
+const PULL_HELP: &str = "\npositional arguments:\n  query                 search query\n\noptions:\n  -h, --help            show this help message and exit\n  --history             include expired/archived docs and facts\n  --json                machine-readable JSON output\n  --k K                 number of results (default: 8)\n  --path TARGET_PATHS   repository-relative task target (repeatable)\n  --risk {low,normal,high}\n                        main-agent task risk classification (default: normal)\n  --db DB\n  --project-root PROJECT_ROOT\n";
+fn main_inner(
+    argv: &[&str],
+    cwd: &Path,
+    embedding: Option<EmbeddingState>,
+    path: &dyn Fn(&Path) -> std::path::PathBuf,
+) -> Result<Output> {
     let (mut query, mut history, mut json_output, mut k) = (None, false, false, 8i64);
+    let mut k_overflow = false;
     let (mut paths, mut risk, mut db, mut root) = (Vec::new(), "normal", None, None);
     let fail = |message: &str| {
         (
             2,
             Vec::new(),
-            format!("mir context pull: error: {message}\n").into_bytes(),
+            format!("{PULL_USAGE}mir context pull: error: {message}\n").into_bytes(),
         )
     };
     if argv.first() != Some(&"pull") {
         return Ok(fail("expected pull"));
     }
-    let mut i = 1;
+    let (mut i, mut unknown, mut positional_only) = (1, Vec::new(), false);
     while i < argv.len() {
-        let (name, inline) = argv[i]
+        let token = argv[i];
+        i += 1;
+        if !positional_only && token == "--" {
+            positional_only = true;
+            if query.is_some() {
+                unknown.push(token);
+            }
+            continue;
+        }
+        if positional_only || !super::context_sync::option_like(token) {
+            if query.is_none() {
+                query = Some(token);
+            } else {
+                unknown.push(token);
+            }
+            continue;
+        }
+        let (name, inline) = token
             .split_once('=')
-            .map_or((argv[i], None), |(a, b)| (a, Some(b)));
-        if let Some(opt) = OPTIONS.iter().find(|s| s.name == name) {
+            .map_or((token, None), |(a, b)| (a, Some(b)));
+        let name = if name.starts_with("-h") && !name.starts_with("--") {
+            "--help"
+        } else {
+            name
+        };
+        let matches: Vec<_> = OPTIONS
+            .iter()
+            .filter(|o| o.name == name || (name.starts_with("--") && o.name.starts_with(name)))
+            .collect();
+        if matches.len() > 1 {
+            return Ok(fail(&format!(
+                "ambiguous option: {name} could match {}",
+                matches
+                    .iter()
+                    .map(|o| o.name)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )));
+        }
+        if let Some(opt) = matches.first() {
+            let label = if matches!(opt.action, Action::Help) {
+                "-h/--help"
+            } else {
+                opt.name
+            };
             let value = if opt.value {
                 if let Some(v) = inline {
                     v
                 } else {
-                    i += 1;
-                    let Some(v) = argv.get(i) else {
-                        return Ok(fail("expected one argument"));
+                    let Some(v) = argv.get(i).filter(|v| !super::context_sync::option_like(v))
+                    else {
+                        return Ok(fail(&format!("argument {label}: expected one argument")));
                     };
+                    i += 1;
                     v
                 }
             } else {
+                if let Some(v) = inline {
+                    return Ok(fail(&format!(
+                        "argument {label}: ignored explicit argument {}",
+                        crate::executor_execute::repr(v)
+                    )));
+                }
                 ""
             };
             match opt.action {
+                Action::Help => {
+                    return Ok((
+                        0,
+                        format!("{PULL_USAGE}{PULL_HELP}").into_bytes(),
+                        Vec::new(),
+                    ));
+                }
                 Action::History => history = true,
                 Action::Json => json_output = true,
-                Action::K => match value.parse() {
-                    Ok(v) => k = v,
-                    Err(_) => return Ok(fail("invalid int value")),
+                Action::K => match python_k(value) {
+                    Some(Some(v)) => {
+                        k = v;
+                        k_overflow = false;
+                    }
+                    Some(None) => k_overflow = true,
+                    None => {
+                        return Ok(fail(&format!(
+                            "argument --k: invalid int value: {}",
+                            crate::executor_execute::repr(value)
+                        )));
+                    }
                 },
                 Action::Path => paths.push(value),
-                Action::Risk => risk = value,
-                Action::Db => db = Some(cwd.join(value)),
-                Action::Root => root = Some(cwd.join(value)),
+                Action::Risk => {
+                    if !["low", "normal", "high"].contains(&value) {
+                        return Ok(fail(&format!(
+                            "argument --risk: invalid choice: {} (choose from low, normal, high)",
+                            crate::executor_execute::repr(value)
+                        )));
+                    }
+                    risk = value;
+                }
+                Action::Db => db = Some(super::context_sync::python_path(&path(Path::new(value)))),
+                Action::Root => {
+                    root = Some(super::context_sync::python_path(&path(Path::new(value))))
+                }
             }
-        } else if !name.starts_with('-') && query.is_none() {
-            query = Some(argv[i]);
         } else {
-            return Ok(fail("unrecognized arguments"));
+            unknown.push(token);
         }
-        i += 1;
     }
     let Some(query) = query else {
         return Ok(fail("the following arguments are required: query"));
     };
-    if !["low", "normal", "high"].contains(&risk) {
-        return Ok(fail("invalid choice"));
+    if !unknown.is_empty() {
+        return Ok((2, Vec::new(), format!("usage: mir context [-h] {{pull,sync}} ...\nmir context: error: unrecognized arguments: {}\n", unknown.join(" ")).into_bytes()));
     }
-    let db = db.unwrap_or_else(|| cwd.join(".mir/memory.db"));
+    let actual_cwd;
+    let cwd = if embedding.is_none() {
+        actual_cwd = match std::env::current_dir() {
+            Ok(p) => p,
+            Err(e) => {
+                return Ok((
+                    1,
+                    Vec::new(),
+                    super::context_sync::cwd_error(e).into_bytes(),
+                ));
+            }
+        };
+        actual_cwd.as_path()
+    } else {
+        cwd
+    };
+    let db = db
+        .map(|p| if embedding.is_some() { cwd.join(p) } else { p })
+        .unwrap_or_else(|| cwd.join(".mir/memory.db"));
     let root = root.unwrap_or_else(|| {
         let parent = db.parent().unwrap_or(cwd);
         if db.file_name().is_some_and(|n| n == "memory.db")
@@ -731,21 +838,25 @@ fn main_inner(argv: &[&str], cwd: &Path, embedding: Option<EmbeddingState>) -> R
             parent.to_owned()
         }
     });
+    let home = std::env::var_os("HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| cwd.to_owned());
+    let root = loader::resolve_path(
+        cwd,
+        &crate::executor_text::os_text(cwd.join(root).as_os_str()),
+        &home,
+    )?;
     if !db.is_file() {
         return Ok((
             2,
             format!(
-                "no memory.db at {} \u{2014} run 'mir migrate up' first\n",
-                db.display()
+                "no memory.db at {} — run 'mir migrate up' first\n",
+                crate::executor_text::os_text(db.as_os_str())
             )
             .into_bytes(),
             Vec::new(),
         ));
     }
-    let root = root.canonicalize()?;
-    let home = std::env::var_os("HOME")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| cwd.to_owned());
     let cfg = match loader::load_config(
         Some(&root),
         if embedding.is_none() { &home } else { cwd },
@@ -796,6 +907,13 @@ fn main_inner(argv: &[&str], cwd: &Path, embedding: Option<EmbeddingState>) -> R
                 message: e.message,
             })
     };
+    if k_overflow {
+        return Ok((
+            1,
+            Vec::new(),
+            b"OverflowError: Python int too large to convert to SQLite INTEGER\n".to_vec(),
+        ));
+    }
     let (facts, blocked) = search_fact_rows(c, query, k, history)?;
     if !blocked.is_empty() {
         notices.push(format!(
@@ -974,4 +1092,35 @@ fn indented_len(s: &str) -> usize {
     } else {
         lines.iter().map(|s| s.len() + 2).sum::<usize>() + lines.len() - 1
     }
+}
+
+fn python_k(value: &str) -> Option<Option<i64>> {
+    let value = value.trim_matches(char::is_whitespace);
+    let (negative, value) = if let Some(v) = value.strip_prefix('-') {
+        (true, v)
+    } else {
+        (false, value.strip_prefix('+').unwrap_or(value))
+    };
+    let mut text = String::new();
+    let mut digit = false;
+    for c in value.chars() {
+        if c == '_' {
+            if !digit {
+                return None;
+            }
+            digit = false;
+        } else {
+            text.push(char::from(
+                b'0' + crate::python_decimal::decimal_digit(c)? as u8,
+            ));
+            digit = true;
+        }
+    }
+    if !digit {
+        return None;
+    }
+    if negative {
+        text.insert(0, '-');
+    }
+    Some(text.parse::<i64>().ok())
 }

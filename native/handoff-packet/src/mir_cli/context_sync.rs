@@ -39,7 +39,7 @@ fn help(sync: bool) -> Output {
         String::new(),
     )
 }
-fn python_path(raw: &Path) -> PathBuf {
+pub(super) fn python_path(raw: &Path) -> PathBuf {
     let normalized: PathBuf = raw
         .components()
         .filter(|c| *c != std::path::Component::CurDir)
@@ -56,7 +56,7 @@ fn python_path(raw: &Path) -> PathBuf {
         normalized
     }
 }
-fn option_like(s: &str) -> bool {
+pub(super) fn option_like(s: &str) -> bool {
     // CPython argparse: ^-\d+$|^-\d*\.\d+$ (including its final-newline anchor).
     let negative = s.strip_suffix('\n').unwrap_or(s);
     let negative = negative.strip_prefix('-').is_some_and(|n| {
@@ -89,22 +89,31 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
     };
     let mut sync = false;
     if action == "pull" {
-        return match std::env::current_dir()
-            .map_err(|e| e.to_string())
-            .and_then(|cwd| super::context::console(argv, &cwd).map_err(|e| e.to_string()))
-        {
+        return match super::context::console(argv, Path::new("."), &path) {
             Ok((code, out, err)) => (
                 code,
                 String::from_utf8_lossy(&out).into(),
                 String::from_utf8_lossy(&err).into(),
             ),
-            Err(e) => (1, String::new(), format!("{e}\n")),
+            Err(e) => {
+                let message = if let Some(error) = e.downcast_ref::<store::Error>() {
+                    format!("{}: {error}\n", error.python_class())
+                } else {
+                    format!("{e}\n")
+                };
+                (1, String::new(), message)
+            }
         };
     }
     let (mut db, mut root, mut reindex) = (None, None, false);
     let (mut unknown, mut i) = (Vec::new(), 0);
     while let Some(&token) = argv.get(i) {
         i += 1;
+        if !sync && token == "pull" {
+            let mut args = argv[i - 1..].to_vec();
+            args.extend(unknown);
+            return console(&args, path);
+        }
         if !sync && token == "sync" {
             sync = true;
             continue;
@@ -201,7 +210,8 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         return diag(false, "the following arguments are required: action");
     }
     let result = (|| -> Result<Output, String> {
-        let cwd = std::env::current_dir().map_err(|e| format!("OSError: {e}"))?;
+        let cwd =
+            std::env::current_dir().map_err(|e| cwd_error(e).trim_end_matches('\n').to_owned())?;
         let home = std::env::var_os("HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|| cwd.clone());
@@ -288,6 +298,14 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         }
     })();
     result.unwrap_or_else(|e| (1, String::new(), format!("{e}\n")))
+}
+
+pub(super) fn cwd_error(e: std::io::Error) -> String {
+    if e.kind() == std::io::ErrorKind::NotFound {
+        "FileNotFoundError: [Errno 2] No such file or directory\n".into()
+    } else {
+        format!("OSError: {e}\n")
+    }
 }
 
 pub(super) fn backend(
