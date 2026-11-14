@@ -122,3 +122,33 @@ fn transaction_swapped_home_stays_contained() {
         for (p,bytes) in before {assert_eq!(fs::read(outside.join(p)).unwrap(),bytes,"{phase} escaped root");}
     }
 }
+
+#[test]
+fn rename_error_surrogate_destination() {
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    // Derived from Python OSError.filename/filename2 representation at
+    // 0754c36 scripts/install_user_runtime_agents.py:380 (os.replace).
+    // Model ENOENT: macOS refuses surrogateescaped basenames on disk.
+    for home in 0..2 {
+        let source = PathBuf::from(format!("homes/{home}/agents/.temporary"));
+        let target = PathBuf::from(OsString::from_vec(
+            format!("homes/{home}/agents/")
+                .into_bytes()
+                .into_iter()
+                .chain(b"\xff.md".iter().copied())
+                .collect(),
+        ));
+        let error = rename_error(
+            &source,
+            &target,
+            std::io::Error::from_raw_os_error(libc::ENOENT),
+        );
+        assert_eq!(error.class, "FileNotFoundError");
+        assert_eq!(
+            error.message,
+            format!(
+                "[Errno 2] No such file or directory: 'homes/{home}/agents/.temporary' -> 'homes/{home}/agents/\\udcff.md'"
+            )
+        );
+    }
+}

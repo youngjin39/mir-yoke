@@ -3851,13 +3851,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_transaction.rs",
-      "sha256": "dc1d7fe591b70abf805c2a22968668da10276a9db1ae4bef46fe5fa1a58a1727"
+      "sha256": "e773e40cc13c5a3389e066540227f9917970f7673aa27fcc14bcb78289e74305"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_transaction_tests.rs",
-      "sha256": "14f6465235e3d4f26688a547f5b72156916ca8c9fba68fa34ecfbde1c9e729ea"
+      "sha256": "69798a263cc492d165a8463985d05d36ebf11da0be6f11141b3429f654712e41"
     },
     {
       "classification": "template-maintainer-tool",

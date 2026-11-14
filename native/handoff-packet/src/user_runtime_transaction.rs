@@ -88,17 +88,23 @@ fn write(identity: &HomeIdentity, relative: &Path, bytes: &[u8]) -> Result<(), E
     let pending =
         PendingWrite::prepare_mapped(&identity.path, &path, name.as_ref(), bytes, io_context)?;
     verified_target(identity, relative)?;
-    pending.publish_with(|_| Ok(())).map_err(|e| {
-        let mut error = io(pending.temporary_path(), e);
-        if error.message.starts_with("[Errno ") {
-            error.message.push_str(&format!(
-                " -> {}",
-                crate::executor_text::repr(&crate::executor_text::os_text(path.as_os_str()))
-            ));
-        }
-        error
-    })
+    pending
+        .publish_with(|_| Ok(()))
+        .map_err(|e| rename_error(pending.temporary_path(), &path, e))
 }
+// Match os.replace at 0754c36 scripts/install_user_runtime_agents.py:380.
+// executor_text::io_error renders the source with the same codepoint repr.
+fn rename_error(temporary: &Path, path: &Path, e: std::io::Error) -> Error {
+    let mut error = io(temporary, e);
+    if error.message.starts_with("[Errno ") {
+        error.message.push_str(&format!(
+            " -> {}",
+            crate::executor_text::repr_points(&crate::executor_text::os_points(path.as_os_str()))
+        ));
+    }
+    error
+}
+
 fn ordered_desired(desired: BTreeMap<PathBuf, Option<Vec<u8>>>) -> Vec<(PathBuf, Option<Vec<u8>>)> {
     let mut items: Vec<_> = desired.into_iter().collect();
     // 0754c36 install_user_runtime_agents.py:402: sorted(desired.items()).
