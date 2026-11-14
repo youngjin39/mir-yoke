@@ -1,0 +1,148 @@
+//! Native console root. Caller/package switching belongs to the closing slice.
+use handoff_packet::{executor_text, mir_cli, mir_front};
+use std::{ffi::OsString, io::Write};
+
+fn run(argv: &[OsString]) -> (i32, String, String) {
+    if let Some((code, out, err)) = mir_front::root(argv) {
+        return (
+            code,
+            String::from_utf8_lossy(&out).into(),
+            String::from_utf8_lossy(&err).into(),
+        );
+    }
+    if argv[0] == "loop" {
+        let cwd = match std::env::current_dir() {
+            Ok(path) => path,
+            Err(error) => return (1, String::new(), format!("OSError: {error}\n")),
+        };
+        // Collision-free scalar tokens carry typed OS surrogates through the scalar library.
+        let mut token = "MIR_ARG_SURROGATE".to_owned();
+        let needs_plan = argv[1..].iter().any(|a| a.to_str().is_none())
+            && argv.get(1).is_some_and(|a| a == "mark")
+            && !argv[1..].iter().any(|a| a == "--help" || a == "-h");
+        let plan = if needs_plan
+            && std::fs::metadata(cwd.join("tasks/plan.md")).is_ok_and(|m| m.is_file())
+        {
+            std::fs::read_to_string(cwd.join("tasks/plan.md")).unwrap_or_default()
+        } else {
+            String::new()
+        };
+        while plan.contains(&token) || argv.iter().any(|a| a.to_string_lossy().contains(&token)) {
+            token.push('_');
+        }
+        let mut replacements = Vec::new();
+        let args: Vec<String> = argv[1..]
+            .iter()
+            .map(|a| {
+                executor_text::os_points(a)
+                    .into_iter()
+                    .map(|p| {
+                        char::from_u32(p).map(|c| c.to_string()).unwrap_or_else(|| {
+                            let marker = format!("{token}{}END", replacements.len());
+                            replacements.push((marker.clone(), p));
+                            marker
+                        })
+                    })
+                    .collect()
+            })
+            .collect();
+        let refs: Vec<_> = args.iter().map(String::as_str).collect();
+        let restore = |mut text: String| {
+            for (marker, point) in &replacements {
+                text = text.replace(marker, &format!("\\u{point:04x}"));
+            }
+            text
+        };
+        let result = mir_cli::r#loop::main_with_write(&refs, &cwd, |path, text| {
+            let mut points = Vec::new();
+            let mut rest = text;
+            while !rest.is_empty() {
+                if let Some((marker, point)) =
+                    replacements.iter().find(|(m, _)| rest.starts_with(m))
+                {
+                    points.push(*point);
+                    rest = &rest[marker.len()..];
+                } else if let Some(c) = rest.chars().next() {
+                    points.push(c as u32);
+                    rest = &rest[c.len_utf8()..];
+                }
+            }
+            if let Some(start) = points.iter().position(|p| (0xd800..=0xdfff).contains(p)) {
+                let end = start
+                    + points[start..]
+                        .iter()
+                        .take_while(|p| (0xd800..=0xdfff).contains(*p))
+                        .count();
+                let message = executor_text::encode_error(
+                    "utf-8",
+                    &points,
+                    start,
+                    end,
+                    "surrogates not allowed",
+                );
+                return Err(
+                    handoff_packet::mir_core::conductor::dispatch_brief::Error::named(
+                        "UnicodeEncodeError",
+                        message.trim_start_matches("UnicodeEncodeError: "),
+                    ),
+                );
+            }
+            handoff_packet::mir_core::conductor::dispatch_brief::atomic_write(path, text, |_, _| {
+                Ok(())
+            })
+        });
+        return match result {
+            Ok(result) => {
+                let code = result
+                    .status
+                    .as_i64()
+                    .or_else(|| result.status.get(1)?.as_i64())
+                    .unwrap_or(1);
+                (code as i32, restore(result.stdout), restore(result.stderr))
+            }
+            Err(error) => (
+                1,
+                String::new(),
+                restore(format!("{}: {}\n", error.class, error.message)),
+            ),
+        };
+    }
+    // shortcut: remaining families bind in later entry slices; never forward to Python.
+    (
+        64,
+        String::new(),
+        format!(
+            "mir: native route unavailable: {} (pending entry closure)\n",
+            argv[0].to_string_lossy()
+        ),
+    )
+}
+
+fn main() {
+    if let Err(message) = executor_text::encode_console(" ", false) {
+        let _ = writeln!(std::io::stderr(), "{message}");
+        std::process::exit(1);
+    }
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    let (mut code, out, mut err) = run(&args);
+    match executor_text::encode_console(&out, false) {
+        Ok(bytes) => {
+            if std::io::stdout().write_all(&bytes).is_err() {
+                code = 1;
+            }
+        }
+        Err(message) => {
+            code = 1;
+            err = format!("{message}\n");
+        }
+    }
+    match executor_text::encode_console(&err, true) {
+        Ok(bytes) => {
+            if std::io::stderr().write_all(&bytes).is_err() {
+                code = 1;
+            }
+        }
+        Err(_) => code = 1,
+    }
+    std::process::exit(code);
+}

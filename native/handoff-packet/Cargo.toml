@@ -7,6 +7,10 @@ description = "Native lifecycle handoff hook paths (proof of concept)."
 license = "MIT"
 
 [[bin]]
+name = "mir"
+path = "src/mir.rs"
+
+[[bin]]
 name = "handoff-packet"
 path = "src/main.rs"
 

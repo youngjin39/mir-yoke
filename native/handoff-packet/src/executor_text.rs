@@ -275,6 +275,15 @@ fn escaped(n: u32) -> String {
     }
 }
 pub fn encode(text: &str, error: bool, bom: bool) -> Result<Vec<u8>> {
+    encode_stream(text, error, bom, true)
+}
+/// Console streams ignore the executor test adapter's private overrides.
+pub fn encode_console(text: &str, error: bool) -> Result<Vec<u8>> {
+    #[cfg(windows)]
+    let text = &text.replace('\n', "\r\n");
+    encode_stream(text, error, true, false)
+}
+fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<Vec<u8>> {
     if text.is_empty() {
         return Ok(Vec::new());
     }
@@ -288,8 +297,12 @@ pub fn encode(text: &str, error: bool, bom: bool) -> Result<Vec<u8>> {
     } else {
         "MIR_EXECUTOR_STDOUT"
     };
-    let encoding_override = std::env::var(format!("{prefix}_ENCODING")).ok();
-    let errors_override = std::env::var(format!("{prefix}_ERRORS")).ok();
+    let encoding_override = overrides
+        .then(|| std::env::var(format!("{prefix}_ENCODING")).ok())
+        .flatten();
+    let errors_override = overrides
+        .then(|| std::env::var(format!("{prefix}_ERRORS")).ok())
+        .flatten();
     let encoding = encoding_override.as_deref().unwrap_or(default_encoding);
     let handler = errors_override.as_deref().unwrap_or(default_handler);
     let normalized = encoding.to_ascii_lowercase().replace(['-', ' ', '_'], "");

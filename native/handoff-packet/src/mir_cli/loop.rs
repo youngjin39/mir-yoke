@@ -216,6 +216,17 @@ pub fn rewrite_step_line(
     Ok((updated, changed))
 }
 pub fn mark_step(id: u64, status: &str, reason: Option<&str>, path: &Path) -> Result<Value, Error> {
+    mark_step_with(id, status, reason, path, |path, text| {
+        atomic_write(path, text, |_, _| Ok(()))
+    })
+}
+fn mark_step_with(
+    id: u64,
+    status: &str,
+    reason: Option<&str>,
+    path: &Path,
+    write: impl FnOnce(&Path, &str) -> Result<(), Error>,
+) -> Result<Value, Error> {
     if !MARK_STATUSES.contains(&status) {
         return Err(Error::named(
             "LoopError",
@@ -234,7 +245,7 @@ pub fn mark_step(id: u64, status: &str, reason: Option<&str>, path: &Path) -> Re
         let (updated, changed) = rewrite_step_line(&lines[index], status, reason)?;
         if changed {
             lines[index] = updated;
-            atomic_write(path, &lines.concat(), |_, _| Ok(()))?;
+            write(path, &lines.concat())?;
         }
         return Ok(
             json!({"status":"OK", "step_id":id, "previous_status":step.status,
@@ -257,7 +268,7 @@ pub fn json_text(value: &Value) -> String {
             "[{}]",
             items.iter().map(json_text).collect::<Vec<_>>().join(", ")
         ),
-        _ => value.to_string(),
+        _ => crate::executor_policy_query::ascii_json_text(&value.to_string()),
     }
 }
 pub fn print_next(result: &NextResult, as_json: bool) -> String {
@@ -317,6 +328,16 @@ fn parser_error(mark: bool, message: &str) -> CliResult {
 }
 /// Explicit cwd replaces process-wide chdir so concurrent tests are safe.
 pub fn main(argv: &[&str], cwd: &Path) -> Result<CliResult, Error> {
+    main_with_write(argv, cwd, |path, text| {
+        atomic_write(path, text, |_, _| Ok(()))
+    })
+}
+/// Console adapter validates typed argv surrogates at the Python UTF-8 write boundary.
+pub fn main_with_write(
+    argv: &[&str],
+    cwd: &Path,
+    write: impl FnOnce(&Path, &str) -> Result<(), Error>,
+) -> Result<CliResult, Error> {
     let command = argv.first().copied().unwrap_or("");
     if matches!(command, "--help" | "-h") {
         return Ok(CliResult {
@@ -425,7 +446,7 @@ pub fn main(argv: &[&str], cwd: &Path) -> Result<CliResult, Error> {
     }
     let path = cwd.join(PLAN_PATH);
     let output = if mark {
-        mark_step(id.unwrap_or(0), status.unwrap_or(""), reason, &path)
+        mark_step_with(id.unwrap_or(0), status.unwrap_or(""), reason, &path, write)
             .map(|v| json_text(&v) + "\n")
     } else {
         next_step(&path).map(|r| print_next(&r, as_json))

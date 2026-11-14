@@ -1,6 +1,5 @@
-//! Library-only root classification for POSIX argv, before subcommand dispatch.
-#![cfg(unix)]
-use std::{ffi::OsString, os::unix::ffi::OsStrExt};
+//! Root classification before subcommand dispatch.
+use std::ffi::OsString;
 
 pub const SUBCOMMANDS: [&str; 13] = [
     "bootstrap",
@@ -37,32 +36,9 @@ pub fn root(argv: &[OsString]) -> Option<(i32, Vec<u8>, Vec<u8>)> {
     if command.to_str().is_some_and(|s| SUBCOMMANDS.contains(&s)) {
         return None;
     }
-    let message = format!("unknown subcommand: {}\n", argv_repr(command.as_bytes()));
+    let message = format!(
+        "unknown subcommand: {}\n",
+        crate::executor_text::repr_points(&crate::executor_text::os_points(command))
+    );
     Some((2, vec![], message.into_bytes()))
-}
-
-fn argv_repr(mut bytes: &[u8]) -> String {
-    let mut points = Vec::new();
-    while !bytes.is_empty() {
-        match std::str::from_utf8(bytes) {
-            Ok(s) => {
-                points.extend(s.chars().map(u32::from));
-                break;
-            }
-            Err(error) => {
-                let (valid, rest) = bytes.split_at(error.valid_up_to());
-                // valid_up_to is guaranteed to delimit valid UTF-8.
-                points.extend(
-                    std::str::from_utf8(valid)
-                        .unwrap_or("")
-                        .chars()
-                        .map(u32::from),
-                );
-                let length = error.error_len().unwrap_or(rest.len());
-                points.extend(rest[..length].iter().map(|b| 0xdc00 + u32::from(*b)));
-                bytes = &rest[length..];
-            }
-        }
-    }
-    crate::executor_execute::repr_codepoints(&points)
 }
