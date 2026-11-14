@@ -2987,7 +2987,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_command_hooks_surrogate_tests.rs",
-      "sha256": "5b690e3f98e02cfaae0d12fb7c1cf403098464509888d5d14bb276c929adc77a"
+      "sha256": "0404d9314a2f7ba4e677c959ece38fcd75d7006dfdeb3e093c87858c33944ced"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3047,13 +3047,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_hooks_numeric_tests.rs",
-      "sha256": "cb33660d0066a0fa7e20299eaaa17fd3b39c6389c72cdfd50f0c19dba2a3ec4a"
+      "sha256": "ecac378a0bae4e9905f0fa031c2fe4ddf1bfcd13098a2d2587b931b7cbe72737"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_hooks_surrogate_tests.rs",
-      "sha256": "839c8d9bdd2192e0cbf4de2ea8338ee9c6eded1ecb6b70c454e1b7261794ef47"
+      "sha256": "1257fa2413ed354f35411f8abd5b63ee5292585afebc8453fe6bd65767073500"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3191,7 +3191,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_transport.rs",
-      "sha256": "2c784ca6e2f5ab14b9e06a74279d86fbd0fc2981970bdb5861b99c87ce812d43"
+      "sha256": "7566304a033c0fd71f09cecdfd07b5f50b2448e046be2d3aa02282401af17276"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3383,7 +3383,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/project_hooks.rs",
-      "sha256": "ffe337c085b702d2dd24404ee53460535c78834be9cb5f950dfdce9839e5524c"
+      "sha256": "802e7e8f8ebdb962931025ba532b8c7c76a6f50c561300e7e96705ed47f9f118"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3887,7 +3887,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_mutation.rs",
-      "sha256": "47776c0c2637a8ea90e83be35b9f4f7292fa95daa71cd4f5ac04617d3281990e"
+      "sha256": "78017f393e904ea53f7add0a289f1eb51a640451d3dd097059bc860d155f53f4"
     },
     {
       "classification": "template-maintainer-tool",

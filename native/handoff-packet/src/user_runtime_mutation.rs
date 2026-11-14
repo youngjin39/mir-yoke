@@ -82,6 +82,7 @@ impl PendingWrite {
             target: target.to_owned(),
         })
     }
+    #[cfg(unix)]
     pub(crate) fn temporary_path(&self) -> &Path {
         &self.staged.path
     }
