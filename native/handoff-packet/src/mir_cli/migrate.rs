@@ -1,7 +1,7 @@
 //! Argparse-compatible migrate CLI, library only; no live dispatch.
 use super::memory::Output;
 use crate::{executor_execute::repr, mir_core::memory::store};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const TOP: &str = "usage: mir migrate [-h] {up,status} ...\n";
 // Same option-table pattern as mir_cli::relations.
@@ -35,7 +35,24 @@ fn help(action: &str) -> Output {
     (0, (usage(action) + body).into_bytes(), vec![])
 }
 fn option_like(s: &str) -> bool {
-    s.len() > 1 && s.starts_with('-') && s[1..].parse::<f64>().is_err()
+    // CPython argparse: ^-\d+$|^-\d*\.\d+$ (including its final-newline anchor).
+    let negative = s.strip_suffix('\n').unwrap_or(s);
+    let negative = negative.strip_prefix('-').is_some_and(|n| {
+        let digits = |v: &str| {
+            !v.is_empty()
+                && v.chars().all(|c| {
+                    // The pinned Python 3.12 regex uses Unicode 15, not 16.
+                    crate::python_decimal::decimal_digit(c).is_some()
+                        && !matches!(c as u32, 0x10d40..=0x10d49 | 0x116d0..=0x116e3
+                                | 0x11bf0..=0x11bf9 | 0x16130..=0x16139 | 0x16d70..=0x16d79
+                                | 0x1ccf0..=0x1ccf9 | 0x1e5f1..=0x1e5fa)
+                })
+        };
+        digits(n)
+            || n.split_once('.')
+                .is_some_and(|(a, b)| (a.is_empty() || digits(a)) && digits(b))
+    });
+    s.len() > 1 && s.starts_with('-') && !negative
 }
 /// `cwd` supplies default_db_path's only ambient input: cwd/.mir/memory.db.
 /// `connect` supplies store.connect, including extension availability/reason.
@@ -47,10 +64,19 @@ pub fn main(
     connect: impl FnOnce(&Path) -> Result<store::Connection, store::Error>,
     failure: impl FnOnce(store::Error),
 ) -> Output {
+    main_with_cwd(argv, || Ok(cwd.to_owned()), connect, failure)
+}
+/// Resolve cwd only for the default DB, after argparse's help/refusal paths.
+pub fn main_with_cwd(
+    argv: &[&str],
+    cwd: impl FnOnce() -> Result<PathBuf, store::Error>,
+    connect: impl FnOnce(&Path) -> Result<store::Connection, store::Error>,
+    failure: impl FnOnce(store::Error),
+) -> Output {
     let Some(&action) = argv.first() else {
         return diag("", "the following arguments are required: action");
     };
-    if matches!(action, "--help" | "-h") {
+    if action.starts_with("-h") && !action.starts_with("-h=") || action == "--help" {
         return help("");
     }
     if !matches!(action, "up" | "status") {
@@ -74,6 +100,10 @@ pub fn main(
             options = false;
             unknown.push(token);
             continue;
+        }
+        // argparse processes a concatenated short help option before its tail.
+        if token.starts_with("-h") && !token.starts_with("-h=") {
+            return help(action);
         }
         let (name, explicit) = token
             .split_once('=')
@@ -126,12 +156,15 @@ pub fn main(
             &format!("unrecognized arguments: {}", unknown.join(" ")),
         );
     }
-    let default = cwd.join(".mir/memory.db");
-    let path = db.map_or(default.as_path(), |s| {
-        Path::new(if s.is_empty() { "." } else { s })
-    });
     let mut stderr = vec![];
     let result = (|| -> Result<String, store::Error> {
+        let default;
+        let path = if let Some(s) = db {
+            Path::new(if s.is_empty() { "." } else { s })
+        } else {
+            default = cwd()?.join(".mir/memory.db");
+            &default
+        };
         let c = connect(path)?;
         if !c.vec_available {
             stderr =

@@ -22,6 +22,11 @@ impl Error {
         match self {
             Self::Sql(rusqlite::Error::MultipleStatement) => "ProgrammingError",
             Self::Sql(rusqlite::Error::SqliteFailure(e, _))
+                if e.code == rusqlite::ErrorCode::NotADatabase =>
+            {
+                "DatabaseError"
+            }
+            Self::Sql(rusqlite::Error::SqliteFailure(e, _))
                 if e.code == rusqlite::ErrorCode::ConstraintViolation =>
             {
                 "IntegrityError"

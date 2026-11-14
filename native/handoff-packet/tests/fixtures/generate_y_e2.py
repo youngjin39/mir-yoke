@@ -18,6 +18,7 @@ p = argparse.ArgumentParser()
 p.add_argument("--scratch", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--query-bin", type=Path, required=True)
+p.add_argument("--fix", action="store_true")
 a = p.parse_args()
 repo = Path(__file__).resolve().parents[4]
 root = a.scratch.resolve() / "oracle"
@@ -101,6 +102,25 @@ cases = [
     ["run-python", "--project-root", ".", "--", "helper.py"],
     ["migrate", "up", "--db", "helper.py/db.db"],
 ]
+if a.fix:
+    cases = [
+        ["migrate", "\udcff"],
+        ["migrate", "status", "--db", "raw-\udcff.db"],
+        ["migrate", "status", "--db=raw-\udcff.db"],
+        ["migrate", "literal-\\udcff-\udcff"],
+        *[["migrate", "up", "--db", v, "--help"]
+          for v in ["-inf", "-1e3", "-NaN", "-1", "-.5", "-1.", "-١", "-1\n"]],
+        ["migrate", "up", "-hgarbage"],
+        ["migrate", "-hgarbage"],
+        ["migrate", "up", "-h=garbage"],
+        ["migrate", "status", "--db", "helper.py"],
+        ["run-python", "--project-root", ".", "--", "-c",
+         "import sys; print('run-python' in sys.orig_argv); "
+         "print(sys.orig_argv[-1] == sys.argv[1]); print(sys.argv)", "tail"],
+        ["policy", "--help"], ["migrate", "--help"],
+        ["migrate", "up", "--db", "-inf", "--help"],
+        *[["migrate", "up", "--db", v, "--help"] for v in ["-\U00010d40", "-\U00011f50"]],
+    ]
 records = []
 for i, argv in enumerate(cases):
     work = root / f"case-{i}"
@@ -113,7 +133,7 @@ for i, argv in enumerate(cases):
     (work / "runtime/data").write_text("payload\n")
     env = {"HOME": str(work), "PATH": os.defpath, "PYTHONIOENCODING": "utf-8"}
     (work / "helper.py").write_text("print('script extension')\n")
-    setup = i in {18, 19, 20}
+    setup = not a.fix and i in {18, 19, 20}
     if setup:
         seed = (
             ["runtime-manifest", "create", *common]
@@ -127,14 +147,30 @@ for i, argv in enumerate(cases):
             check=True,
             capture_output=True,
         )
+    deleted = a.fix and 17 <= i < 20
+    def remove_cwd(work=work):
+        shutil.rmtree(work)
     result = subprocess.run(
-        [sys.executable, "-I", str(wrapper), *argv], cwd=work, env=env, capture_output=True
+        [sys.executable, "-I", str(wrapper), *argv], cwd=work, env=env, capture_output=True,
+        preexec_fn=remove_cwd if deleted else None,
     )
     out, err = result.stdout.decode(), result.stderr.decode()
     assert result.returncode in {0, 1, 2, 7}, (argv, out, err)
-    if i == 0:
+    if i == 0 and not a.fix:
         assert result.returncode == 2 and not out and err.startswith("usage: mir policy")
     manifest = work / "runtime/manifest.json"
+    if a.fix:
+        if i == 16:
+            assert (result.returncode, out) == (0, "True\nTrue\n['-c', 'tail']\n")
+        if i in {1, 2}:
+            assert result.returncode == 1
+            assert err == "OperationalError: unable to open database file\n"
+            assert not (work / "raw-�.db").exists()
+        records.append(dict(argv=[os.fsencode(v).hex() for v in argv], deleted=deleted,
+                            exit=result.returncode, stdout=result.stdout.hex(),
+                            stderr=result.stderr.hex(),
+                            raw_db=(work / "raw-\udcff.db").is_file()))
+        continue
     records.append(
         dict(
             setup=setup,

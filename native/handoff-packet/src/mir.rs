@@ -19,14 +19,14 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
         return manifest::console(argv[1..].to_vec());
     }
     if argv[0] == "run-python" {
-        python::console(argv[1..].to_vec());
+        python::console(argv.to_vec());
     }
     if argv[0] == "policy" || argv[0] == "migrate" {
-        let cwd = match std::env::current_dir() {
-            Ok(path) => path,
-            Err(error) => return (1, String::new(), format!("OSError: {error}\n")),
-        };
         if argv[0] == "policy" && argv.get(1).is_some_and(|a| a == "resolve") {
+            let cwd = match std::env::current_dir() {
+                Ok(path) => path,
+                Err(error) => return (1, String::new(), format!("OSError: {error}\n")),
+            };
             let raw = std::iter::once(OsString::from("policy-resolve"))
                 .chain(argv[2..].iter().cloned())
                 .collect::<Vec<_>>();
@@ -34,21 +34,20 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
                 return (code, out, err);
             }
         }
-        let args = argv[1..]
-            .iter()
-            .map(|a| a.to_string_lossy())
-            .collect::<Vec<_>>();
-        let refs = args.iter().map(|a| a.as_ref()).collect::<Vec<_>>();
+        let (args, replacements) = scalar_args(&argv[1..], "");
+        let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
         let mut failure = String::new();
         let (code, out, mut err) = if argv[0] == "policy" {
             mir_cli::policy::main(&refs, |_| None)
         } else {
             use handoff_packet::mir_core::memory::store;
             let parent = std::cell::RefCell::new(std::path::PathBuf::new());
-            mir_cli::migrate::main(
+            mir_cli::migrate::main_with_cwd(
                 &refs,
-                &cwd,
+                || std::env::current_dir().map_err(store::Error::Io),
                 |path| {
+                    let path = scalar_path(path, &replacements);
+                    let path = path.as_path();
                     *parent.borrow_mut() = path.parent().unwrap_or(path).to_owned();
                     store::connect(
                         path,
@@ -61,7 +60,13 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
                 |error| {
                     failure = match error {
                         store::Error::Io(e) => {
-                            format!("{}\n", executor_text::io_error(e, &parent.borrow()))
+                            let message = executor_text::io_error(e, &parent.borrow());
+                            let message = if parent.borrow().as_os_str().is_empty() {
+                                message.strip_suffix(": ''").unwrap_or(&message)
+                            } else {
+                                &message
+                            };
+                            format!("{message}\n")
                         }
                         other => format!("{}: {other}\n", other.python_class()),
                     };
@@ -72,13 +77,12 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
         return (
             code,
             String::from_utf8_lossy(&out).into(),
-            String::from_utf8_lossy(&err).into(),
+            restore(String::from_utf8_lossy(&err).into(), &replacements),
         );
     }
     if argv[0] == "loop" {
         let cwd = std::path::PathBuf::from(".");
         // Collision-free scalar tokens carry typed OS surrogates through the scalar library.
-        let mut token = "MIR_ARG_SURROGATE".to_owned();
         let needs_plan = argv[1..].iter().any(|a| a.to_str().is_none())
             && argv.get(1).is_some_and(|a| a == "mark")
             && !argv[1..].iter().any(|a| a == "--help" || a == "-h");
@@ -89,46 +93,10 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
         } else {
             String::new()
         };
-        while plan.contains(&token) || argv.iter().any(|a| a.to_string_lossy().contains(&token)) {
-            token.push('_');
-        }
-        let mut replacements = Vec::new();
-        let args: Vec<String> = argv[1..]
-            .iter()
-            .map(|a| {
-                executor_text::os_points(a)
-                    .into_iter()
-                    .map(|p| {
-                        char::from_u32(p).map(|c| c.to_string()).unwrap_or_else(|| {
-                            let marker = format!("{token}{}END", replacements.len());
-                            replacements.push((marker.clone(), p));
-                            marker
-                        })
-                    })
-                    .collect()
-            })
-            .collect();
+        let (args, replacements) = scalar_args(&argv[1..], &plan);
         let refs: Vec<_> = args.iter().map(String::as_str).collect();
-        let restore = |mut text: String| {
-            for (marker, point) in &replacements {
-                text = text.replace(marker, &format!("\\u{point:04x}"));
-            }
-            text
-        };
         let result = mir_cli::r#loop::main_with_write(&refs, &cwd, |path, text| {
-            let mut points = Vec::new();
-            let mut rest = text;
-            while !rest.is_empty() {
-                if let Some((marker, point)) =
-                    replacements.iter().find(|(m, _)| rest.starts_with(m))
-                {
-                    points.push(*point);
-                    rest = &rest[marker.len()..];
-                } else if let Some(c) = rest.chars().next() {
-                    points.push(c as u32);
-                    rest = &rest[c.len_utf8()..];
-                }
-            }
+            let points = scalar_points(text, &replacements);
             if let Some(start) = points.iter().position(|p| (0xd800..=0xdfff).contains(p)) {
                 let end = start
                     + points[start..]
@@ -160,12 +128,19 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
                     .as_i64()
                     .or_else(|| result.status.get(1)?.as_i64())
                     .unwrap_or(1);
-                (code as i32, restore(result.stdout), restore(result.stderr))
+                (
+                    code as i32,
+                    restore(result.stdout, &replacements),
+                    restore(result.stderr, &replacements),
+                )
             }
             Err(error) => (
                 1,
                 String::new(),
-                restore(format!("{}: {}\n", error.class, error.message)),
+                restore(
+                    format!("{}: {}\n", error.class, error.message),
+                    &replacements,
+                ),
             ),
         };
     }
@@ -178,6 +153,85 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
             argv[0].to_string_lossy()
         ),
     )
+}
+
+// Reuse the loop scalar bridge for argparse; raw paths are restored before I/O.
+fn scalar_args(argv: &[OsString], plan: &str) -> (Vec<String>, Vec<(String, u32)>) {
+    let mut token = "MIR_ARG_SURROGATE".to_owned();
+    while plan.contains(&token) || argv.iter().any(|a| a.to_string_lossy().contains(&token)) {
+        token.push('_');
+    }
+    let mut replacements = Vec::new();
+    let args: Vec<String> = argv
+        .iter()
+        .map(|a| {
+            executor_text::os_points(a)
+                .into_iter()
+                .map(|p| {
+                    char::from_u32(p).map(|c| c.to_string()).unwrap_or_else(|| {
+                        let marker = format!("{token}{}END", replacements.len());
+                        replacements.push((marker.clone(), p));
+                        marker
+                    })
+                })
+                .collect()
+        })
+        .collect();
+    (args, replacements)
+}
+fn restore(mut text: String, replacements: &[(String, u32)]) -> String {
+    for (marker, point) in replacements {
+        text = text.replace(marker, &format!("\\u{point:04x}"));
+    }
+    text
+}
+fn scalar_points(text: &str, replacements: &[(String, u32)]) -> Vec<u32> {
+    let mut points = Vec::new();
+    let mut rest = text;
+    while !rest.is_empty() {
+        if let Some((marker, point)) = replacements.iter().find(|(m, _)| rest.starts_with(m)) {
+            points.push(*point);
+            rest = &rest[marker.len()..];
+        } else if let Some(c) = rest.chars().next() {
+            points.push(c as u32);
+            rest = &rest[c.len_utf8()..];
+        }
+    }
+    points
+}
+fn scalar_path(path: &std::path::Path, replacements: &[(String, u32)]) -> std::path::PathBuf {
+    if path.to_str().is_none() || replacements.is_empty() {
+        return path.to_owned();
+    }
+    let points = scalar_points(&executor_text::os_text(path.as_os_str()), replacements);
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStringExt;
+        let mut bytes = Vec::new();
+        for point in points {
+            if let Some(c) = char::from_u32(point) {
+                bytes.extend(c.to_string().as_bytes());
+            } else {
+                bytes.push((point - 0xdc00) as u8);
+            }
+        }
+        OsString::from_vec(bytes).into()
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::ffi::OsStringExt;
+        let mut wide = Vec::new();
+        for point in points {
+            if let Some(c) = char::from_u32(point) {
+                wide.extend(c.encode_utf16(&mut [0; 2]).iter().copied());
+            } else {
+                wide.push(point as u16);
+            }
+        }
+        OsString::from_wide(&wide).into()
+    }
+    #[cfg(not(any(unix, windows)))]
+    executor_text::points_text(&points).into()
 }
 
 fn stdout_error(error: std::io::Error) -> String {

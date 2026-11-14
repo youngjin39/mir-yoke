@@ -77,8 +77,11 @@ def main():
 # Restore the caller-visible argv that the installed console command supplies.
 sys.argv[0] = sys.argv.pop(1)
 console_directory = sys.argv.pop(1)
+root_console = int(sys.argv.pop(1))
 __file__ = os.path.abspath(sys.argv[0])
 sys.orig_argv[:] = [sys.orig_argv[0], *sys.argv]
+if root_console:
+    del sys.argv[1]
 if sys.path and not sys.flags.safe_path:
     sys.path[0] = console_directory
 try:
@@ -356,12 +359,13 @@ fn main() {
     dispatch(
         std::env::args_os().skip(1).collect(),
         env!("CARGO_BIN_NAME") == "run-python",
+        false,
     );
 }
 pub fn console(args: Vec<OsString>) -> ! {
-    dispatch(args, true)
+    dispatch(args, true, true)
 }
-fn dispatch(args: Vec<OsString>, installed_console: bool) -> ! {
+fn dispatch(args: Vec<OsString>, installed_console: bool, root_console: bool) -> ! {
     if installed_console {
         // Installed Python console scripts bind to their own environment. Do
         // not silently switch dependencies to a project or host interpreter.
@@ -385,6 +389,7 @@ fn dispatch(args: Vec<OsString>, installed_console: bool) -> ! {
             .arg(BOOTSTRAP)
             .arg(std::env::args_os().next().unwrap_or_default())
             .arg(console_directory)
+            .arg(if root_console { "1" } else { "0" })
             .args(args);
         launch(command, None);
     }
