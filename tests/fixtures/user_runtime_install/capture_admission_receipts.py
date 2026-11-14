@@ -328,6 +328,49 @@ def acquire(scratch, mutant=None):
             records[key]["input"] = inputs
             if "unreadable" in inputs:
                 unreadable.chmod(0o600)
+        identity_home = base / "identity"
+        (identity_home / "nested").mkdir(parents=True)
+        (base / "identity-other").mkdir()
+        (base / "identity-link").symlink_to(identity_home)
+        def capture(path):
+            identity = module.capture_home_identity(path)
+            details = path.lstat()
+            return [identity.path, identity.canonical_path,
+                    identity.device == details.st_dev, identity.inode == details.st_ino]
+        for name in ("identity", "missing", "regular", "identity-link", "identity-link/nested",
+                     "null\x00"):
+            record("identity-capture-" + name.replace("\x00", "null"), capture, base / name)
+        for name, path in [("double", Path("/" + str(identity_home))),
+                           ("relative", Path("."))]:
+            record("identity-capture-" + name, capture, path)
+        def wire_identity(function, *args):
+            try:
+                return function(*args)
+            except Exception as error:
+                return {"error": type(error).__name__, "message": str(error).replace(
+                    str(base), "{ROOT}").encode(
+                    "utf-8", "backslashreplace").decode()}
+        bad = base / "bad-\udcff"
+        record("identity-bytes-missing", wire_identity, module.capture_home_identity, bad)
+        bad_identity = module.HomeIdentity(bad, bad, 0, 0)
+        record("identity-bytes-changed", wire_identity, module.verified_target,
+               bad_identity, Path("new.md"))
+        identity = module.capture_home_identity(identity_home)
+        for name in ("identity", "identity/nested", "identity-other"):
+            other = module.capture_home_identity(base / name)
+            record("identity-overlap-" + name, module.runtime_homes_overlap, identity, other)
+            record("identity-overlap-reverse-" + name, module.runtime_homes_overlap,
+                   other, identity)
+        for relative in ("agents/new.md", ".", "../regular"):
+            record("identity-verified-" + relative, module.verified_target,
+                   identity, Path(relative))
+        identity_home.rename(base / "identity-moved")
+        record("identity-verified-missing", module.verified_target, identity, Path("new.md"))
+        identity_home.mkdir()
+        record("identity-verified-replaced", module.verified_target, identity, Path("new.md"))
+        identity_home.rmdir()
+        identity_home.symlink_to(base / "identity-moved")
+        record("identity-verified-symlink", module.verified_target, identity, Path("new.md"))
         valid = ["--claude-home", str(home), "--codex-home", str(base / "codex")]
         # argparse derives its program name from the reference invocation's argv[0].
         sys.argv[0] = str(script)

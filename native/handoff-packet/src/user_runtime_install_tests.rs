@@ -68,7 +68,7 @@ fn frozen_admission() {
     fs::write(&config_path,config.to_string()).unwrap();fs::remove_file(root.join(".codex/agents/z.toml")).unwrap();check("sources-missing-codex",load_sources(root).map(files_json));
     fs::remove_file(config_path).unwrap();check("sources-missing-config",load_sources(root).map(files_json)); check("hash-empty",Ok(json!(sha256_bytes(b""))));check("hash-binary",Ok(json!(sha256_bytes(&(0..=255).collect::<Vec<u8>>()))));
     assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
-    for name in corpus["records"].as_object().unwrap().keys().filter(|s| !s.starts_with("cli-") && !s.starts_with("receipt-")) {assert!(seen.contains(name),"unreplayed {name}");}
+    for name in corpus["records"].as_object().unwrap().keys().filter(|s| !s.starts_with("cli-") && !s.starts_with("receipt-") && !s.starts_with("identity-")) {assert!(seen.contains(name),"unreplayed {name}");}
 }
 fn files_json(files: (Vec<ManagedFile>, Vec<ManagedFile>)) -> J {
     let convert = |files: Vec<ManagedFile>| {

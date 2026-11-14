@@ -626,3 +626,61 @@ pub fn validate_targets(
         stale_files(home, runtime, receipt.as_ref(), files)?,
     ))
 }
+
+#[cfg(all(test, unix))]
+#[path = "user_runtime_identity_tests.rs"]
+mod identity_tests;
+
+#[derive(Debug)]
+pub struct HomeIdentity {
+    pub path: PathBuf,
+    pub canonical_path: PathBuf,
+    pub device: u64,
+    pub inode: u64,
+}
+#[cfg(unix)]
+#[rustfmt::skip]
+pub fn capture_home_identity(home: &Path) -> Result<HomeIdentity, Error> {
+    use std::os::unix::fs::MetadataExt;
+    if home.as_os_str().as_encoded_bytes().contains(&0) {
+        return Err(Error { class:"ValueError", message:"stat: embedded null character in path".into() });
+    }
+    let details=fs::symlink_metadata(home).map_err(|_|sync(format!("cannot inspect runtime home: {}",crate::executor_text::os_text(home.as_os_str()))))?;
+    if !details.is_dir() || details.is_symlink() { return Err(sync(format!("runtime home is not a real directory: {}",crate::executor_text::os_text(home.as_os_str())))); }
+    let canonical_path=fs::canonicalize(home).map_err(|e|input_error(json_input::io_error(home,e)))?;
+    if canonical_path != home || double_anchor(home) { return Err(sync(format!("symlinked target path is not allowed: {}",crate::executor_text::os_text(home.as_os_str())))); }
+    Ok(HomeIdentity {path:home.into(),canonical_path,device:details.dev(),inode:details.ino()})
+}
+#[cfg(unix)]
+#[rustfmt::skip]
+pub fn runtime_homes_overlap(claude_home: &HomeIdentity, codex_home: &HomeIdentity) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    if (claude_home.device,claude_home.inode)==(codex_home.device,codex_home.inode) { return true; }
+    for (child,ancestor) in [(claude_home,codex_home),(codex_home,claude_home)] {
+        for parent in child.path.ancestors().skip(1) {
+            if let Ok(details)=fs::symlink_metadata(parent)
+                && (details.dev(),details.ino())==(ancestor.device,ancestor.inode) { return true; }
+        }
+    }
+    false
+}
+#[cfg(unix)]
+#[rustfmt::skip]
+pub fn verified_target(identity: &HomeIdentity, relative: &Path) -> Result<PathBuf, Error> {
+    use std::os::unix::fs::MetadataExt;
+    if identity.path.as_os_str().as_encoded_bytes().contains(&0) {
+        return Err(Error { class:"ValueError", message:"stat: embedded null character in path".into() });
+    }
+    let changed=||sync(format!("runtime home changed during apply: {}",crate::executor_text::os_text(identity.path.as_os_str())));
+    let details=fs::symlink_metadata(&identity.path).map_err(|_|changed())?;
+    let canonical=fs::canonicalize(&identity.path).map_err(|_|changed())?;
+    if !details.is_dir() || details.is_symlink() || canonical!=identity.canonical_path || details.dev()!=identity.device || details.ino()!=identity.inode { return Err(changed()); }
+    safe_target(&identity.path,relative)
+}
+#[cfg(not(unix))]
+pub fn capture_home_identity(_home: &Path) -> Result<HomeIdentity, Error> {
+    Err(Error {
+        class: "Unsupported",
+        message: "runtime home identity requires Unix".into(),
+    })
+}

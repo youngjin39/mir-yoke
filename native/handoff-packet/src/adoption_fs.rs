@@ -68,15 +68,14 @@ pub(crate) fn monotonic_seconds() -> io::Result<f64> {
     Ok((i128::from(time.tv_sec) * 1_000_000_000 + i128::from(time.tv_nsec)) as f64 / 1e9)
 }
 
-pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
+pub(crate) fn relative<'a>(root: &Path, path: &'a Path) -> io::Result<&'a Path> {
     let relative = path.strip_prefix(root).map_err(|_| {
         io::Error::new(
             io::ErrorKind::InvalidInput,
             "mutation path must be below its root",
         )
     })?;
-    let mut parts = relative.components().peekable();
-    if parts.peek().is_none()
+    if relative.components().next().is_none()
         || relative
             .components()
             .any(|p| !matches!(p, Component::Normal(_)))
@@ -86,6 +85,12 @@ pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
             "mutation path must be below its root",
         ));
     }
+    Ok(relative)
+}
+
+pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
+    let relative = relative(root, path)?;
+    let mut parts = relative.components().peekable();
     #[cfg(unix)]
     {
         #[cfg(target_vendor = "apple")]
@@ -147,6 +152,23 @@ pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
     ))
 }
 impl Parent {
+    /// Refuse effects through an old descriptor when its visible parent changed.
+    /// Descriptor APIs cannot exclude a rename after this final identity check.
+    pub(crate) fn verify_parent(&self, root: &Path, path: &Path) -> io::Result<()> {
+        let current = parent(root, path)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            let old = self.directory.metadata()?;
+            let new = current.directory.metadata()?;
+            if old.dev() == new.dev() && old.ino() == new.ino() {
+                return Ok(());
+            }
+        }
+        #[cfg(not(unix))]
+        let _ = current;
+        Err(io::Error::other("mutation parent changed"))
+    }
     pub(crate) fn open_file(&self) -> io::Result<File> {
         self.open(false, false)
     }
@@ -506,11 +528,12 @@ impl Move {
 }
 
 /// An exclusive destination-directory temporary; one descriptor for byte work.
-/// Drop only uses pinned parents, even if the visible directory layout changes.
+/// Drop checks visible parent identity before using its pinned descriptor.
 pub(crate) struct StagedFile {
     pub(crate) file: File,
     pub(crate) path: std::path::PathBuf,
     source: Parent,
+    root: std::path::PathBuf,
     cleanup_disabled: std::cell::Cell<bool>,
 }
 impl StagedFile {
@@ -524,12 +547,14 @@ impl StagedFile {
     ) -> io::Result<Self> {
         let source = parent(root, path)?;
         before(path)?;
+        source.verify_parent(root, path)?;
         // Failure to create gives no ownership and must never trigger cleanup.
         let file = source.create(&source.name, 0o600)?;
         Ok(Self {
             file,
             path: path.to_path_buf(),
             source,
+            root: root.to_owned(),
             cleanup_disabled: std::cell::Cell::new(false),
         })
     }
@@ -561,7 +586,7 @@ impl StagedFile {
         {
             // Reject changed visible ancestors before effects, then use only the
             // staged source fd. Compare against the verified descriptor, not a reopen.
-            let _ = parent(root, &self.path)?;
+            self.source.verify_parent(root, &self.path)?;
             let destination = parent(root, destination)?;
             let expected = self.identity()?;
             if !self.source.matches(&expected)? {
@@ -597,6 +622,7 @@ impl StagedFile {
         }
         #[cfg(unix)]
         {
+            self.source.verify_parent(&self.root, &self.path)?;
             let expected = self.identity()?;
             match self.source.identity() {
                 Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),

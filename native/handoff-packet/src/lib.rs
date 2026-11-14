@@ -735,3 +735,6 @@ pub mod tools;
 
 #[forbid(unsafe_code)]
 pub mod user_runtime_install;
+
+#[forbid(unsafe_code)]
+pub mod user_runtime_mutation;
