@@ -117,7 +117,7 @@ fn preserves_missing_and_wrong_type_os_errors() {
     assert_eq!(fs::read(root.join("file")).unwrap(), b"unchanged");
 }
 
-fn junction(link: &Path, target: &Path) {
+pub(super) fn junction(link: &Path, target: &Path) {
     let plain = |path: &Path| {
         let units: Vec<_> = path.as_os_str().encode_wide().collect();
         assert!(units.starts_with(&[92, 92, 63, 92]));
@@ -178,7 +178,7 @@ fn refuses_junctions_above_and_inside_root_and_keeps_pinned_parent() {
     assert_eq!(fs::read_dir(saved.join("moved")).unwrap().count(), 0);
 }
 
-fn file_id(file: &File) -> (u64, [u8; 16]) {
+pub(super) fn file_id(file: &File) -> (u64, [u8; 16]) {
     use windows_sys::Win32::Storage::FileSystem::{
         FILE_ID_INFO, FileIdInfo, GetFileInformationByHandleEx,
     };

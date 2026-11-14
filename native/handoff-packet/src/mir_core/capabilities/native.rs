@@ -490,7 +490,7 @@ fn remove(
     parent: &crate::adoption_fs::Parent,
     path: &Path,
     directory: bool,
-    identity: (u64, u64),
+    identity: crate::adoption_fs::Identity,
     site: PlacementMutation,
     host: &mut impl ArtifactHost,
 ) -> Result<(), String> {

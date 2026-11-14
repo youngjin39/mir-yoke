@@ -2,6 +2,8 @@
 #[cfg(windows)]
 mod windows;
 #[cfg(all(test, windows))]
+mod windows_entry_tests;
+#[cfg(all(test, windows))]
 mod windows_parent_tests;
 #[cfg(unix)]
 use std::ffi::CString;
@@ -20,6 +22,29 @@ use std::{
 pub(crate) struct Parent {
     pub(crate) directory: File,
     pub(crate) name: OsString,
+}
+
+/// Volume and complete object ID; Windows IDs must never be truncated to inode size.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Identity {
+    volume: u64,
+    id: [u8; 16],
+}
+#[cfg(unix)]
+fn unix_identity(volume: u64, inode: u64) -> Identity {
+    let mut id = [0; 16];
+    id[..8].copy_from_slice(&inode.to_le_bytes());
+    Identity { volume, id }
+}
+fn file_identity(file: &File) -> io::Result<Identity> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let metadata = file.metadata()?;
+        Ok(unix_identity(metadata.dev(), metadata.ino()))
+    }
+    #[cfg(windows)]
+    windows::file_identity(file)
 }
 
 #[cfg(unix)]
@@ -164,17 +189,9 @@ impl Parent {
     /// Descriptor APIs cannot exclude a rename after this final identity check.
     pub(crate) fn verify_parent(&self, root: &Path, path: &Path) -> io::Result<()> {
         let current = parent(root, path)?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::MetadataExt;
-            let old = self.directory.metadata()?;
-            let new = current.directory.metadata()?;
-            if old.dev() == new.dev() && old.ino() == new.ino() {
-                return Ok(());
-            }
+        if file_identity(&self.directory)? == file_identity(&current.directory)? {
+            return Ok(());
         }
-        #[cfg(not(unix))]
-        let _ = current;
         Err(io::Error::other("mutation parent changed"))
     }
     pub(crate) fn open_file(&self) -> io::Result<File> {
@@ -206,14 +223,8 @@ impl Parent {
                 )
             })
         }
-        #[cfg(not(unix))]
-        {
-            let _ = (write, append);
-            Err(io::Error::new(
-                io::ErrorKind::Unsupported,
-                "descriptor-relative adoption requires Unix",
-            ))
-        }
+        #[cfg(windows)]
+        windows::open(self, write, append)
     }
 
     pub(crate) fn directory_empty(&self) -> io::Result<bool> {
@@ -281,7 +292,11 @@ impl Parent {
                 }
             }
         }
-        #[cfg(not(any(target_vendor = "apple", target_os = "linux")))]
+        #[cfg(windows)]
+        {
+            windows::directory_empty(self)
+        }
+        #[cfg(not(any(windows, target_vendor = "apple", target_os = "linux")))]
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
             "descriptor-relative directory listing requires macOS or Linux",
@@ -302,8 +317,8 @@ impl Parent {
                 )
             })
         }
-        #[cfg(not(unix))]
-        self.directory.try_clone()
+        #[cfg(windows)]
+        windows::sync_file(&self.directory)
     }
     pub(crate) fn create(&self, name: &OsStr, mode: u32) -> io::Result<File> {
         #[cfg(unix)]
@@ -324,16 +339,13 @@ impl Parent {
                 )
             })
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::create(self, name, mode)
     }
-    pub(crate) fn identity(&self) -> io::Result<Option<(u64, u64)>> {
+    pub(crate) fn identity(&self) -> io::Result<Option<Identity>> {
         self.object_identity(false)
     }
-    pub(crate) fn object_identity(&self, directory: bool) -> io::Result<Option<(u64, u64)>> {
+    pub(crate) fn object_identity(&self, directory: bool) -> io::Result<Option<Identity>> {
         #[cfg(unix)]
         {
             let name = c_name(&self.name)?;
@@ -358,15 +370,12 @@ impl Parent {
                 } else {
                     libc::S_IFREG
                 })
-            .then_some((metadata.st_dev as u64, metadata.st_ino)))
+            .then_some(unix_identity(metadata.st_dev as u64, metadata.st_ino)))
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::object_identity(self, &self.name, directory)
     }
-    fn matches(&self, expected: &(u64, u64)) -> io::Result<bool> {
+    fn matches(&self, expected: &Identity) -> io::Result<bool> {
         Ok(self.identity()?.as_ref() == Some(expected))
     }
     pub(crate) fn unlink(&self, name: &OsStr, directory: bool) -> io::Result<()> {
@@ -427,33 +436,10 @@ pub(crate) fn owns_file(pinned: &Parent, name: &std::ffi::OsStr, output: &File) 
 }
 
 #[cfg(windows)]
-pub(crate) fn owns_file(source: &Path, output: &File) -> bool {
-    use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
-    use windows_sys::Win32::Storage::FileSystem::{
-        BY_HANDLE_FILE_INFORMATION, FILE_FLAG_OPEN_REPARSE_POINT, GetFileInformationByHandle,
-    };
-    fn identity(file: &File) -> Option<(u32, u32, u32)> {
-        let mut info = std::mem::MaybeUninit::<BY_HANDLE_FILE_INFORMATION>::uninit();
-        // SAFETY: live file handle and writable information allocation.
-        if unsafe { GetFileInformationByHandle(file.as_raw_handle(), info.as_mut_ptr()) } == 0 {
-            return None;
-        }
-        // SAFETY: successful API call initialized the complete record.
-        let info = unsafe { info.assume_init() };
-        Some((
-            info.dwVolumeSerialNumber,
-            info.nFileIndexHigh,
-            info.nFileIndexLow,
-        ))
-    }
-    let Ok(current) = std::fs::OpenOptions::new()
-        .access_mode(0)
-        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
-        .open(source)
-    else {
-        return false;
-    };
-    identity(output).is_some_and(|created| identity(&current) == Some(created))
+pub(crate) fn owns_file(pinned: &Parent, name: &OsStr, output: &File) -> bool {
+    file_identity(output).is_ok_and(|created| {
+        windows::object_identity(pinned, name, false).is_ok_and(|current| current == Some(created))
+    })
 }
 
 pub(crate) fn mkdir(root: &Path, path: &Path, mode: u32) -> io::Result<()> {
@@ -475,11 +461,8 @@ pub(crate) fn mkdir(root: &Path, path: &Path, mode: u32) -> io::Result<()> {
         }
         Err(io::Error::last_os_error())
     }
-    #[cfg(not(unix))]
-    Err(io::Error::new(
-        io::ErrorKind::Unsupported,
-        "descriptor-relative adoption requires Unix",
-    ))
+    #[cfg(windows)]
+    windows::mkdir(&parent, mode)
 }
 pub(crate) struct Move {
     source: Parent,
@@ -578,18 +561,8 @@ impl StagedFile {
             requires_visible_parent,
         })
     }
-    pub(crate) fn identity(&self) -> io::Result<(u64, u64)> {
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::MetadataExt;
-            let metadata = self.file.metadata()?;
-            Ok((metadata.dev(), metadata.ino()))
-        }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+    pub(crate) fn identity(&self) -> io::Result<Identity> {
+        file_identity(&self.file)
     }
     pub(crate) fn contents(&mut self, limit: usize) -> io::Result<Vec<u8>> {
         use std::io::{Read, Seek};

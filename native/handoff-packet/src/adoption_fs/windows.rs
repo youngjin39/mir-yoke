@@ -1,7 +1,7 @@
 //! Owned handle boundary. Only a validated volume/share anchor is opened by path.
 use super::*;
 use std::{
-    mem::size_of,
+    mem::{size_of, size_of_val},
     os::windows::{
         ffi::OsStrExt,
         io::{AsRawHandle, FromRawHandle},
@@ -13,8 +13,8 @@ use windows_sys::{
     Wdk::{
         Foundation::OBJECT_ATTRIBUTES,
         Storage::FileSystem::{
-            FILE_DIRECTORY_FILE, FILE_OPEN, FILE_OPEN_REPARSE_POINT, FILE_SYNCHRONOUS_IO_NONALERT,
-            NtCreateFile,
+            FILE_CREATE, FILE_DIRECTORY_FILE, FILE_NON_DIRECTORY_FILE, FILE_OPEN, FILE_OPEN_IF,
+            FILE_OPEN_REPARSE_POINT, FILE_SYNCHRONOUS_IO_NONALERT, NtCreateFile,
         },
     },
     Win32::{
@@ -202,9 +202,24 @@ fn directory(file: File) -> io::Result<File> {
     Ok(file)
 }
 
-fn open_directory(parent: &File, value: &OsStr) -> io::Result<File> {
-    let mut units = name(value)?;
-    let length = (units.len() * 2) as u16; // name checked counted byte-length overflow.
+fn open_relative(
+    parent: &File,
+    value: &OsStr,
+    access: u32,
+    disposition: u32,
+    options: u32,
+) -> io::Result<File> {
+    open_counted(parent, &mut name(value)?, access, disposition, options)
+}
+
+fn open_counted(
+    parent: &File,
+    units: &mut [u16],
+    access: u32,
+    disposition: u32,
+    options: u32,
+) -> io::Result<File> {
+    let length = (units.len() * 2) as u16; // name checked length; empty reopens parent.
     let string = UNICODE_STRING {
         Length: length,
         MaximumLength: length,
@@ -225,19 +240,19 @@ fn open_directory(parent: &File, value: &OsStr) -> io::Result<File> {
     let mut handle = null_mut();
     let mut status_block = IO_STATUS_BLOCK::default();
     // SAFETY: all pointers live through this synchronous call; a validated
-    // single component is relative to a live, no-reparse directory handle.
+    // single component (or empty self-open) is relative to a live, no-reparse directory.
     // Attributes excludes OBJ_INHERIT; no asynchronous completion is possible.
     let status = unsafe {
         NtCreateFile(
             &mut handle,
-            FILE_TRAVERSE | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+            access | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
             &attributes,
             &mut status_block,
             null(),
             0,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            FILE_OPEN,
-            FILE_DIRECTORY_FILE | FILE_OPEN_REPARSE_POINT | FILE_SYNCHRONOUS_IO_NONALERT,
+            disposition,
+            options | FILE_OPEN_REPARSE_POINT | FILE_SYNCHRONOUS_IO_NONALERT,
             null(),
             0,
         )
@@ -250,7 +265,17 @@ fn open_directory(parent: &File, value: &OsStr) -> io::Result<File> {
     }
     // SAFETY: successful NtCreateFile returned one new owned, non-inheritable
     // handle. File closes it on every path, including validation failure.
-    directory(unsafe { File::from_raw_handle(handle) })
+    Ok(unsafe { File::from_raw_handle(handle) })
+}
+
+fn open_directory(parent: &File, value: &OsStr) -> io::Result<File> {
+    directory(open_relative(
+        parent,
+        value,
+        FILE_TRAVERSE,
+        FILE_OPEN,
+        FILE_DIRECTORY_FILE,
+    )?)
 }
 
 pub(super) fn parent(root: &Path, relative: &Path) -> io::Result<Parent> {
@@ -296,4 +321,160 @@ pub(super) fn parent(root: &Path, relative: &Path) -> io::Result<Parent> {
         directory,
         name: leaf,
     })
+}
+
+pub(super) fn file_identity(file: &File) -> io::Result<Identity> {
+    let info: FILE_ID_INFO = information(file, FileIdInfo)?;
+    Ok(Identity {
+        volume: info.VolumeSerialNumber,
+        id: info.FileId.Identifier,
+    })
+}
+
+pub(super) fn object_identity(
+    parent: &Parent,
+    name: &OsStr,
+    directory: bool,
+) -> io::Result<Option<Identity>> {
+    let file = open_relative(&parent.directory, name, 0, FILE_OPEN, 0)?;
+    let info: FILE_ATTRIBUTE_TAG_INFO = information(&file, FileAttributeTagInfo)?;
+    // SAFETY: borrowed live handle; the call does not transfer ownership.
+    if unsafe { GetFileType(file.as_raw_handle()) } != FILE_TYPE_DISK
+        || info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT != 0
+        || (info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY != 0) != directory
+    {
+        return Ok(None);
+    }
+    file_identity(&file).map(Some)
+}
+
+fn regular(file: File) -> io::Result<File> {
+    let info: FILE_ATTRIBUTE_TAG_INFO = information(&file, FileAttributeTagInfo)?;
+    // SAFETY: borrowed live handle; no ownership transfer.
+    if unsafe { GetFileType(file.as_raw_handle()) } != FILE_TYPE_DISK
+        || info.FileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT) != 0
+    {
+        return Err(io::Error::other("mutation leaf is not a regular disk file"));
+    }
+    Ok(file)
+}
+
+pub(super) fn open(parent: &Parent, write: bool, append: bool) -> io::Result<File> {
+    let access = if !write {
+        FILE_READ_DATA
+    } else if append {
+        FILE_APPEND_DATA
+    } else {
+        FILE_WRITE_DATA
+    };
+    // No truncation before validation; append deliberately omits WRITE_DATA.
+    regular(open_relative(
+        &parent.directory,
+        &parent.name,
+        access,
+        if write { FILE_OPEN_IF } else { FILE_OPEN },
+        FILE_NON_DIRECTORY_FILE,
+    )?)
+}
+
+pub(super) fn create(parent: &Parent, name: &OsStr, _mode: u32) -> io::Result<File> {
+    // CPython 3.12 Windows create modes inherit DACLs; no POSIX confidentiality claim.
+    regular(open_relative(
+        &parent.directory,
+        name,
+        FILE_READ_DATA | FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | DELETE,
+        FILE_CREATE,
+        FILE_NON_DIRECTORY_FILE,
+    )?)
+}
+
+pub(super) fn mkdir(parent: &Parent, _mode: u32) -> io::Result<()> {
+    directory(open_relative(
+        &parent.directory,
+        &parent.name,
+        FILE_TRAVERSE,
+        FILE_CREATE,
+        FILE_DIRECTORY_FILE,
+    )?)
+    .map(drop)
+}
+
+pub(super) fn sync_file(parent: &File) -> io::Result<File> {
+    // Reopen the pinned directory by empty NT name with write access for FlushFileBuffers.
+    directory(open_counted(
+        parent,
+        &mut [],
+        FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+        FILE_OPEN,
+        FILE_DIRECTORY_FILE,
+    )?)
+}
+
+pub(super) fn directory_empty(parent: &Parent) -> io::Result<bool> {
+    let file = directory(open_relative(
+        &parent.directory,
+        &parent.name,
+        FILE_LIST_DIRECTORY,
+        FILE_OPEN,
+        FILE_DIRECTORY_FILE,
+    )?)?;
+    // u64 allocation provides FILE_FULL_DIR_INFO alignment; names are counted UTF-16.
+    let mut buffer = [0u64; 8192];
+    loop {
+        // SAFETY: live list-capable handle and aligned writable buffer of stated size.
+        if unsafe {
+            GetFileInformationByHandleEx(
+                file.as_raw_handle(),
+                FileFullDirectoryInfo,
+                buffer.as_mut_ptr().cast(),
+                size_of_val(&buffer) as u32,
+            )
+        } == 0
+        {
+            let error = io::Error::last_os_error();
+            return if error.raw_os_error()
+                == Some(windows_sys::Win32::Foundation::ERROR_NO_MORE_FILES as i32)
+            {
+                Ok(true)
+            } else {
+                Err(error)
+            };
+        }
+        let mut offset = 0;
+        let base = buffer.as_ptr().cast::<u8>();
+        loop {
+            let start = std::mem::offset_of!(FILE_FULL_DIR_INFO, FileName);
+            if offset + size_of::<FILE_FULL_DIR_INFO>() > size_of_val(&buffer) {
+                return Err(io::Error::other("invalid directory information"));
+            }
+            // SAFETY: the checked record fits; unaligned reads also handle later offsets.
+            let info = unsafe {
+                base.add(offset)
+                    .cast::<FILE_FULL_DIR_INFO>()
+                    .read_unaligned()
+            };
+            let length = info.FileNameLength as usize;
+            if !length.is_multiple_of(2) || offset + start + length > size_of_val(&buffer) {
+                return Err(io::Error::other("invalid directory name length"));
+            }
+            // SAFETY: only the first one/two UTF-16 units are read, after length checks.
+            let dot = unsafe {
+                let name = base.add(offset + start).cast::<u16>();
+                (length == 2 && name.read_unaligned() == 46)
+                    || (length == 4
+                        && name.read_unaligned() == 46
+                        && name.add(1).read_unaligned() == 46)
+            };
+            if !dot {
+                return Ok(false);
+            }
+            if info.NextEntryOffset == 0 {
+                break;
+            }
+            if (info.NextEntryOffset as usize) < start + length {
+                return Err(io::Error::other("invalid directory entry offset"));
+            }
+            offset += info.NextEntryOffset as usize;
+        }
+    }
 }

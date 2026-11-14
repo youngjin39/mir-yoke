@@ -1471,13 +1471,21 @@ fn write_ledger(file: &Path, rendered: &str) -> Result<()> {
     }
     #[cfg(not(unix))]
     {
+        // Keep the ledger's create/rename policy; pin only ownership lookup.
+        let resolved =
+            fs::canonicalize(parent).map_err(|e| crate::executor_text::io_error(e, parent))?;
+        let pinned = crate::adoption_fs::parent(
+            &resolved,
+            &resolved.join(file.file_name().unwrap_or_default()),
+        )
+        .map_err(|e| crate::executor_text::io_error(e, parent))?;
         let (name, mut output) = create_ledger_temp(parent, |name| {
             fs::OpenOptions::new()
                 .create_new(true)
                 .write(true)
                 .open(parent.join(name))
         })?;
-        let source = parent.join(name);
+        let source = parent.join(&name);
         let written = (|| -> Result<()> {
             output
                 .write_all(rendered.as_bytes())
@@ -1488,12 +1496,12 @@ fn write_ledger(file: &Path, rendered: &str) -> Result<()> {
                     hook();
                 }
             });
-            if !crate::adoption_fs::owns_file(&source, &output) {
+            if !crate::adoption_fs::owns_file(&pinned, &name, &output) {
                 return Err("OSError: ledger temporary file identity changed".into());
             }
             fs::rename(&source, file).map_err(|e| crate::executor_text::io_error(e, file))
         })();
-        if written.is_err() && crate::adoption_fs::owns_file(&source, &output) {
+        if written.is_err() && crate::adoption_fs::owns_file(&pinned, &name, &output) {
             let _ = fs::remove_file(&source);
         }
         written
