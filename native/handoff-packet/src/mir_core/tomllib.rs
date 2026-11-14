@@ -3,7 +3,12 @@ pub(crate) fn tomllib_error(error: &toml::de::Error, text: &str) -> String {
     if error.message().contains("invalid array")
         && error.span().is_some_and(|s| s.start >= text.len())
     {
-        return "Invalid value (at end of document)".into();
+        return if !array_expects_value(text) {
+            "Unclosed array (at end of document)"
+        } else {
+            "Invalid value (at end of document)"
+        }
+        .into();
     }
     if text.trim_end() == "[" {
         return "Invalid initial character for a key part (at end of document)".into();
@@ -21,5 +26,64 @@ pub(crate) fn tomllib_error(error: &toml::de::Error, text: &str) -> String {
         format!("Expected ']' at the end of a table declaration (at {location})")
     } else {
         "unmapped TOML parse error".into()
+    }
+}
+
+// At EOF Python distinguishes a missing element from a missing closing bracket.
+// Ignore TOML comments and whitespace, keeping quoted '#' characters as values.
+fn array_expects_value(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    let (mut i, mut last) = (0, 0);
+    let mut quote: Option<(u8, bool)> = None;
+    let mut comment = false;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if comment {
+            comment = b != b'\n';
+        } else if let Some((q, triple)) = quote {
+            if q == b'"' && b == b'\\' {
+                i += 1;
+            } else if b == q && (!triple || bytes.get(i..i + 3) == Some(&[q, q, q])) {
+                if triple {
+                    i += 2;
+                }
+                quote = None;
+                last = q;
+            }
+        } else if b == b'#' {
+            comment = true;
+        } else if matches!(b, b'"' | b'\'') {
+            let triple = bytes.get(i..i + 3) == Some(&[b, b, b]);
+            quote = Some((b, triple));
+            last = b;
+            if triple {
+                i += 2;
+            }
+        } else if !matches!(b, b' ' | b'\t' | b'\n' | b'\r') {
+            last = b;
+        }
+        i += 1;
+    }
+    matches!(last, b'[' | b',')
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn y_e5_eof_array_python_parity() {
+        let records: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../../tests/fixtures/y-e5-tomllib.json")).unwrap();
+        let mut matched = 0;
+        for r in records {
+            let text = r["text"].as_str().unwrap();
+            let error = toml::from_str::<toml::Value>(text).unwrap_err();
+            if error.message().contains("invalid array")
+                && error.span().is_some_and(|s| s.start >= text.len())
+            {
+                matched += 1;
+                assert_eq!(super::tomllib_error(&error, text), r["error"], "{text:?}");
+            }
+        }
+        assert!(matched > 100);
     }
 }

@@ -39,12 +39,55 @@ fn help(sync: bool) -> Output {
         String::new(),
     )
 }
+fn python_path(raw: &Path) -> PathBuf {
+    let normalized: PathBuf = raw
+        .components()
+        .filter(|c| *c != std::path::Component::CurDir)
+        .collect();
+    let bytes = raw.as_os_str().as_encoded_bytes();
+    if bytes.starts_with(b"//") && !bytes.starts_with(b"///") {
+        let mut spelling = std::ffi::OsString::from("/");
+        spelling.push(normalized);
+        return PathBuf::from(spelling);
+    }
+    if normalized.as_os_str().is_empty() {
+        PathBuf::from(".")
+    } else {
+        normalized
+    }
+}
+fn option_like(s: &str) -> bool {
+    // CPython argparse: ^-\d+$|^-\d*\.\d+$ (including its final-newline anchor).
+    let negative = s.strip_suffix('\n').unwrap_or(s);
+    let negative = negative.strip_prefix('-').is_some_and(|n| {
+        let digits = |v: &str| {
+            !v.is_empty()
+                && v.chars().all(|c| {
+                    // The pinned Python 3.12 regex uses Unicode 15, not 16.
+                    crate::python_decimal::decimal_digit(c).is_some()
+                        && !matches!(c as u32, 0x10d40..=0x10d49 | 0x116d0..=0x116e3
+                                | 0x11bf0..=0x11bf9 | 0x16130..=0x16139 | 0x16d70..=0x16d79
+                                | 0x1ccf0..=0x1ccf9 | 0x1e5f1..=0x1e5fa)
+                })
+        };
+        digits(n)
+            || n.split_once('.')
+                .is_some_and(|(a, b)| (a.is_empty() || digits(a)) && digits(b))
+    });
+    // Known options and prefixes precede the space fallback in _parse_optional.
+    let name = s.split_once('=').map_or(s, |(name, _)| name);
+    let known = s.starts_with("-h")
+        || OPTIONS
+            .iter()
+            .any(|o| name.starts_with("--") && o.starts_with(name));
+    s.len() > 1 && s.starts_with('-') && (known || (!negative && !s.contains(' ')))
+}
 /// Raw OS paths are restored by the root's shared scalar bridge before I/O.
 pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
     let Some(&action) = argv.first() else {
         return diag(false, "the following arguments are required: action");
     };
-    let sync = action == "sync";
+    let mut sync = false;
     if action == "pull" {
         return (
             64,
@@ -53,14 +96,27 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         );
     }
     let (mut db, mut root, mut reindex) = (None, None, false);
-    let (mut unknown, mut i) = (Vec::new(), usize::from(sync));
+    let (mut unknown, mut i) = (Vec::new(), 0);
     while let Some(&token) = argv.get(i) {
         i += 1;
+        if !sync && token == "sync" {
+            sync = true;
+            continue;
+        }
         if token == "--" {
             unknown.extend_from_slice(&argv[i - 1..]);
             break;
         }
         if token.starts_with("-h") && !token.starts_with("-h=") {
+            if let Some((_, value)) = token.split_once('=') {
+                return diag(
+                    sync,
+                    &format!(
+                        "argument -h/--help: ignored explicit argument {}",
+                        repr(value)
+                    ),
+                );
+            }
             return help(sync);
         }
         let (name, explicit) = token
@@ -117,7 +173,7 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         let value = if let Some(v) = explicit {
             v
         } else {
-            let Some(&v) = argv.get(i).filter(|v| !super::migrate::option_like(v)) else {
+            let Some(&v) = argv.get(i).filter(|v| !option_like(v)) else {
                 return diag(sync, &format!("argument {option}: expected one argument"));
             };
             i += 1;
@@ -144,7 +200,7 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
             .map(PathBuf::from)
             .unwrap_or_else(|| cwd.clone());
         let db = db
-            .map(|s| path(Path::new(if s.is_empty() { "." } else { s })))
+            .map(|s| python_path(&path(Path::new(s))))
             .unwrap_or_else(|| cwd.join(".mir/memory.db"));
         let parent = db.parent().unwrap_or(Path::new("."));
         let inferred = if db.file_name().is_some_and(|n| n == "memory.db")

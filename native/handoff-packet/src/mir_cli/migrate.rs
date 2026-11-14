@@ -34,7 +34,7 @@ fn help(action: &str) -> Output {
     };
     (0, (usage(action) + body).into_bytes(), vec![])
 }
-pub(super) fn option_like(s: &str) -> bool {
+fn option_like(s: &str) -> bool {
     // CPython argparse: ^-\d+$|^-\d*\.\d+$ (including its final-newline anchor).
     let negative = s.strip_suffix('\n').unwrap_or(s);
     let negative = negative.strip_prefix('-').is_some_and(|n| {
