@@ -9,6 +9,17 @@ use std::{
 
 #[test]
 fn context_embedding_provider_binding() {
+    provider_binding(None);
+}
+#[test]
+fn no_body_204_keep_alive() {
+    provider_binding(Some("required-204"));
+}
+#[test]
+fn no_body_304_keep_alive() {
+    provider_binding(Some("required-304"));
+}
+fn provider_binding(only: Option<&str>) {
     let mut records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e6.json")).unwrap();
     for (mode, error) in [
         ("tls", "HTTPS embedding transport is not supported"),
@@ -27,6 +38,9 @@ fn context_embedding_provider_binding() {
         records.push(r);
     }
     for r in records {
+        if only.is_some_and(|mode| r["mode"] != mode) {
+            continue;
+        }
         let temp = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(temp.path()).unwrap();
         fs::create_dir(root.join("notes")).unwrap();
@@ -113,7 +127,19 @@ fn context_embedding_provider_binding() {
                         if mode == "required-disconnect" || mode == "required-timeout" {
                             return Some((header, String::from_utf8(input).unwrap()));
                         }
-                        if mode == "required-garbage" {
+                        if matches!(mode.as_str(), "required-204" | "required-304") {
+                            let reason = if status == 204 {
+                                "No Content"
+                            } else {
+                                "Not Modified"
+                            };
+                            write!(
+                                stream,
+                                "HTTP/1.1 {status} {reason}\r\nConnection: keep-alive\r\n\r\n"
+                            )
+                            .unwrap();
+                            thread::sleep(std::time::Duration::from_secs(3));
+                        } else if mode == "required-garbage" {
                             stream.write_all(b"garbage\r\n\r\n").unwrap();
                         } else if mode == "required-short" {
                             write!(

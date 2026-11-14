@@ -39,18 +39,50 @@ fn env(name: &str) -> String {
         .or_else(|_| std::env::var(name))
         .unwrap_or_default()
 }
-fn proxy_applies(host: &str, authority: &str) -> bool {
+fn proxy_applies(host: &str) -> Result<bool, HttpError> {
     if env("HTTP_PROXY").is_empty() && env("ALL_PROXY").is_empty() {
-        return false;
+        return Ok(false);
     }
-    !env("NO_PROXY").split(',').any(|pattern| {
-        let pattern = pattern.trim().to_ascii_lowercase();
+    Ok(!no_proxy_bypasses(host, &env("NO_PROXY"))?)
+}
+fn no_proxy_bypasses(host: &str, patterns: &str) -> Result<bool, HttpError> {
+    // httpx._utils.get_environment_proxies: '*' overrides every other mount.
+    let strip = crate::python_json::python_strip;
+    if patterns.split(',').any(|p| strip(p) == "*") {
+        return Ok(true);
+    }
+    let mut bypass = false;
+    for pattern in patterns.split(',') {
+        let pattern = strip(pattern).to_ascii_lowercase();
+        if pattern.is_empty() {
+            continue;
+        }
         let domain = pattern.trim_start_matches('.');
-        pattern == "*"
-            || (!domain.is_empty()
-                && ((!pattern.starts_with('.') && (host == domain || authority == domain))
-                    || host.ends_with(&format!(".{domain}"))))
-    })
+        if pattern.starts_with("..")
+            || domain.split('.').any(|label| {
+                label.is_empty()
+                    || !label
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+            })
+        {
+            return Err(unsupported(format!(
+                "NO_PROXY pattern {pattern:?} is not supported"
+            )));
+        }
+        // httpx treats bare localhost and IPv4 as exact mounts, other bare
+        // domains as *domain, and leading-dot domains as *.domain.
+        let exact = pattern == "localhost" || pattern.parse::<std::net::Ipv4Addr>().is_ok();
+        bypass |= if exact {
+            host == pattern
+        } else {
+            (!pattern.starts_with('.') && host == domain)
+                || host
+                    .strip_suffix(&format!(".{domain}"))
+                    .is_some_and(|prefix| !prefix.is_empty())
+        };
+    }
+    Ok(bypass)
 }
 fn line(reader: &mut impl BufRead) -> Result<Vec<u8>, HttpError> {
     let mut bytes = Vec::new();
@@ -84,7 +116,7 @@ impl Transport for HttpTransport {
         } else {
             authority.rsplit_once(':').unwrap_or((authority, "80"))
         };
-        if proxy_applies(&host.to_ascii_lowercase(), &authority.to_ascii_lowercase()) {
+        if proxy_applies(&host.to_ascii_lowercase())? {
             return Err(unsupported(
                 "Environment proxy embedding transport is not supported",
             ));
@@ -184,7 +216,10 @@ impl Transport for HttpTransport {
                 )));
             }
             let mut body = Vec::new();
-            if headers
+            if no_response_body(&request.method, status) {
+                // h11/httpx framing: these responses have no message body,
+                // even when Content-Length or Transfer-Encoding is present.
+            } else if headers
                 .get("transfer-encoding")
                 .is_some_and(|s| s.eq_ignore_ascii_case("chunked"))
             {
@@ -242,9 +277,54 @@ impl Transport for HttpTransport {
     }
 }
 
+fn no_response_body(method: &str, status: u16) -> bool {
+    method == "HEAD" || matches!(status, 204 | 304)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn no_body_framing_rules() {
+        assert!(no_response_body("HEAD", 200));
+        assert!(no_response_body("POST", 204));
+        assert!(no_response_body("POST", 304));
+        assert!(!no_response_body("POST", 200));
+        assert!(!no_response_body("POST", 205));
+    }
+    #[test]
+    fn frozen_no_proxy_matching() {
+        let records: serde_json::Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/y-e6-proxy.json")).unwrap();
+        for r in records.as_array().unwrap() {
+            let host = r["host"].as_str().unwrap();
+            assert_eq!(
+                no_proxy_bypasses(host, r["pattern"].as_str().unwrap()).unwrap(),
+                !r["applies"].as_bool().unwrap(),
+                "{r}"
+            );
+        }
+    }
+    #[test]
+    fn unsupported_no_proxy_patterns_fail_closed() {
+        for pattern in [
+            "http://localhost",
+            "localhost:80",
+            "::1",
+            "*.example.com",
+            "127.0.0.0/8",
+            "é.test",
+            "..example.com",
+        ] {
+            assert_eq!(
+                no_proxy_bypasses("localhost", &format!("localhost,{pattern}"))
+                    .unwrap_err()
+                    .class,
+                "UnsupportedProtocol"
+            );
+            assert!(no_proxy_bypasses("localhost", &format!("{pattern},*")).unwrap());
+        }
+    }
     #[test]
     fn real_socket_write_failures() {
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();

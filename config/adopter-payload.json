@@ -3335,7 +3335,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/embedding_http.rs",
-      "sha256": "51ed9b1f0fedeb0c81d715587a0fe5f993761403ed8fd6d129c6818600f9cfdc"
+      "sha256": "b347965fb5b24e472088ff45f2364c6efc8ea4c99341a8690153a2ad07787ac6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3533,7 +3533,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_core/memory/backends/omlx_http.rs",
-      "sha256": "98376a9368b49917fbb1f05b024d2438efc334f7e8039cf9294f6f41f39088f4"
+      "sha256": "39dcf4eb2c6a5caaa9e2a0c74c9c696efc4f0ed72929ff8d840dffde7e203d9c"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4439,7 +4439,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e6.py",
-      "sha256": "418cfa5f3c630fe266c7454dd8bad215c247bb60bd16500dc2ff974912f1365e"
+      "sha256": "bcbc762fbb9ba4845141f333dc0de961ec752309dc894011ce77f82d1d4f47e0"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4840,8 +4840,14 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e6-proxy.json",
+      "sha256": "f68471247b576a770669ba514d9f6cd9d2f96bb2c1e4d62597c6190f26422ddc"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e6.json",
-      "sha256": "ce818a9b177fc35a69f016e4e0ef8c4690efbd94f20c19ea99b85e4ae3daf8ce"
+      "sha256": "c992264791f484e067f587aa70ddaebaf009350bd10a33a55a5ebd8386017f83"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5099,7 +5105,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e6.rs",
-      "sha256": "87467758555fcca74f6d62a14228a5ae6861b90bb65cea91a50e23df03d8eb46"
+      "sha256": "e3b1509e1ef8cd47337052b367777a044bee60590f9f48f0080e082661cd0c74"
     },
     {
       "classification": "template-maintainer-tool",

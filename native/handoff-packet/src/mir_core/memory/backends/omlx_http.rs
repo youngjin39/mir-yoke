@@ -281,7 +281,9 @@ fn parse_response(raw: &[u8]) -> Result<Value, HttpError> {
         i += 1;
     }
     serde_json::from_slice(&out).map_err(|e| {
-        let reason = if e.to_string().starts_with("EOF while parsing an object") {
+        let reason = if raw.is_empty() {
+            "Expecting value".to_owned()
+        } else if e.to_string().starts_with("EOF while parsing an object") {
             "Expecting property name enclosed in double quotes".to_owned()
         } else {
             e.to_string()

@@ -22,6 +22,7 @@ PIN = "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
 p = argparse.ArgumentParser()
 p.add_argument('--scratch', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
+p.add_argument('--proxy-output', type=Path, required=True)
 a = p.parse_args()
 repo = Path(__file__).resolve().parents[4]
 root = a.scratch.resolve() / 'oracle'
@@ -76,6 +77,12 @@ for name, module in list(sys.modules.items()):
     if name.split('.')[0] in SET:
         paths = [module.__file__] if module.__file__ else module.__path__
         assert all(pathlib.Path(p).resolve().is_relative_to(root) for p in paths), name
+if sys.argv[1] == 'proxy':
+    import httpx, json
+    with httpx.Client() as client:
+        selected = client._transport_for_url(httpx.URL(sys.argv[2]))
+        print(json.dumps(selected is not client._transport))
+    raise SystemExit(0)
 if sys.argv[1] == 'seed':
     c = store.connect(pathlib.Path(sys.argv[2]))
     store.apply_migrations(c.conn)
@@ -88,12 +95,26 @@ except Exception as exc:
     raise SystemExit(1)
 '''.replace('SET', repr(set(['mir', *packages]))))
 
+proxy_records = []
+for pattern in ['localhost', 'LOCALHOST', '.localhost', 'example.com', '.example.com',
+                '127.0.0.1', '*', '', ' localhost , example.com ', 'unrelated.test']:
+    for host in ['localhost', 'child.localhost', 'example.com', 'child.example.com',
+                 'badexample.com', '127.0.0.1', 'child.127.0.0.1']:
+        env = {'HOME': str(root), 'PATH': os.defpath,
+               'HTTP_PROXY': 'http://127.0.0.1:1', 'NO_PROXY': pattern}
+        result = subprocess.run([sys.executable, '-I', str(wrapper), 'proxy',
+                                 f'http://{host}:12345/'], cwd=root, env=env,
+                                capture_output=True, check=True)
+        proxy_records.append(dict(pattern=pattern, host=host,
+                                  applies=json.loads(result.stdout)))
+a.proxy_output.write_text(json.dumps(proxy_records, separators=(',', ':')) + '\n')
 records = []
 for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "status",
              "required-shape", "required-norm", "required-missing-data",
              "required-bad-json", "required-status", "reindex", "reindex-shape",
              "required-disconnect", "required-timeout", "fragment", "query", "chunked", "close",
-             "required-refused", "required-garbage", "required-short", "required-gzip", "unicode"]:
+             "required-refused", "required-garbage", "required-short", "required-gzip", "unicode",
+             "required-204", "required-304"]:
     work = root / mode
     work.mkdir(exist_ok=True)
     (work / "notes").mkdir(exist_ok=True)
@@ -108,6 +129,8 @@ for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "st
     if mode.endswith("bad-json"):
         body = b"{"
     status = 503 if mode.endswith("status") else 200
+    if mode in {'required-204', 'required-304'}:
+        status = int(mode.split('-')[1])
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_POST(self, requests=requests, status=status, body=body, mode=mode):
@@ -121,6 +144,13 @@ for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "st
                 time.sleep(3)
             if mode in {'required-timeout', 'required-disconnect'}:
                 self.close_connection = True
+                return
+            if mode in {'required-204', 'required-304'}:
+                reason = 'No Content' if status == 204 else 'Not Modified'
+                self.wfile.write(
+                    f'HTTP/1.1 {status} {reason}\r\nConnection: keep-alive\r\n\r\n'.encode())
+                self.wfile.flush()
+                time.sleep(3)
                 return
             if mode == 'required-garbage':
                 self.wfile.write(b"garbage\r\n\r\n")
