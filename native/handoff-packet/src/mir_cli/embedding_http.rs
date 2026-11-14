@@ -128,6 +128,93 @@ fn bytearray(bytes: &[u8]) -> String {
     }
     format!("{out}{quote})")
 }
+fn header_lines(reader: &mut impl BufRead) -> Result<Vec<Vec<u8>>, HttpError> {
+    let mut lines = Vec::new();
+    let mut total = 0;
+    loop {
+        let raw = line(reader)?;
+        total += raw.len();
+        if raw == b"\r\n" || raw == b"\n" {
+            return Ok(lines);
+        }
+        if total > 102400 {
+            return Err(protocol("Receive buffer too long"));
+        }
+        if raw.is_empty() {
+            return Err(protocol("Server disconnected without sending a response."));
+        }
+        let raw = raw.strip_suffix(b"\n").unwrap_or(&raw);
+        lines.push(raw.strip_suffix(b"\r").unwrap_or(raw).to_vec());
+    }
+}
+fn headers(lines: Vec<Vec<u8>>) -> Result<std::collections::BTreeMap<String, String>, HttpError> {
+    let mut folded: Vec<Vec<u8>> = Vec::new();
+    for line in lines {
+        if line.first().is_some_and(|b| matches!(b, b' ' | b'\t')) {
+            let previous = folded
+                .last_mut()
+                .ok_or_else(|| protocol("continuation line at start of headers"))?;
+            previous.push(b' ');
+            previous.extend(line.iter().skip_while(|b| matches!(b, b' ' | b'\t')));
+        } else {
+            folded.push(line);
+        }
+    }
+    let mut result = std::collections::BTreeMap::new();
+    for raw in folded {
+        let colon = raw.iter().position(|b| *b == b':').unwrap_or(0);
+        let token = |b: &u8| b.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(b);
+        if colon == 0
+            || !raw[..colon].iter().all(token)
+            || raw[colon + 1..]
+                .iter()
+                .any(|b| matches!(b, 0..=8 | 10..=31 | 127))
+        {
+            return Err(protocol(format!(
+                "illegal header line: {}",
+                bytearray(&raw)
+            )));
+        }
+        let name = String::from_utf8_lossy(&raw[..colon]).to_ascii_lowercase();
+        let mut value = String::from_utf8_lossy(&raw[colon + 1..])
+            .trim_matches([' ', '\t'])
+            .to_owned();
+        if name == "content-length" {
+            let lengths: std::collections::BTreeSet<_> = value
+                .split(',')
+                .map(|v| v.trim_matches([' ', '\t']))
+                .collect();
+            if lengths.len() != 1 {
+                return Err(protocol("conflicting Content-Length headers"));
+            }
+            value = lengths
+                .first()
+                .ok_or_else(|| protocol("bad Content-Length"))?
+                .to_string();
+            if value.is_empty() || value.len() > 20 || !value.bytes().all(|b| b.is_ascii_digit()) {
+                return Err(protocol("bad Content-Length"));
+            }
+            if result.get(&name).is_some_and(|old| old != &value) {
+                return Err(protocol("conflicting Content-Length headers"));
+            }
+        } else if name == "transfer-encoding" {
+            if result.contains_key(&name) {
+                return Err(protocol("multiple Transfer-Encoding headers"));
+            }
+            value.make_ascii_lowercase();
+            if value != "chunked" {
+                return Err(protocol("Only Transfer-Encoding: chunked is supported"));
+            }
+        }
+        result.insert(name, value);
+    }
+    Ok(result)
+}
+fn incomplete_chunk() -> HttpError {
+    protocol(
+        "peer closed connection without sending complete message body (incomplete chunked read)",
+    )
+}
 impl Transport for HttpTransport {
     fn send(&mut self, request: HttpRequest) -> Result<HttpResponse, HttpError> {
         let url = request.url.split('#').next().unwrap_or("");
@@ -217,6 +304,11 @@ impl Transport for HttpTransport {
             if raw.is_empty() {
                 return Err(protocol("Server disconnected without sending a response."));
             }
+            let block = if matches!(raw.as_slice(), b"\r\n" | b"\n") {
+                Vec::new()
+            } else {
+                header_lines(&mut reader)?
+            };
             let status_line = raw.strip_suffix(b"\n").unwrap_or(&raw);
             let status_line = status_line.strip_suffix(b"\r").unwrap_or(status_line);
             if status_line.is_empty() {
@@ -248,18 +340,7 @@ impl Transport for HttpTransport {
                 .get(2)
                 .map(|s| String::from_utf8_lossy(s).into_owned())
                 .unwrap_or_default();
-            let mut headers = std::collections::BTreeMap::new();
-            loop {
-                let raw = line(&mut reader)?;
-                if raw == b"\r\n" || raw == b"\n" {
-                    break;
-                }
-                let header = String::from_utf8_lossy(&raw);
-                let (name, value) = header
-                    .split_once(':')
-                    .ok_or_else(|| protocol("illegal header line"))?;
-                headers.insert(name.to_ascii_lowercase(), value.trim().to_owned());
-            }
+            let response_headers = headers(block)?;
             if status < 100 {
                 return Err(protocol(format!(
                     "InformationalResponse status_code should be in range [100, 200), not {status}"
@@ -273,7 +354,7 @@ impl Transport for HttpTransport {
             if status < 200 {
                 continue;
             }
-            if let Some(encoding) = headers.get("content-encoding")
+            if let Some(encoding) = response_headers.get("content-encoding")
                 && !encoding.eq_ignore_ascii_case("identity")
             {
                 return Err(unsupported(format!(
@@ -284,26 +365,34 @@ impl Transport for HttpTransport {
             if no_response_body(&request.method, status) {
                 // h11/httpx framing: these responses have no message body,
                 // even when Content-Length or Transfer-Encoding is present.
-            } else if headers
+            } else if response_headers
                 .get("transfer-encoding")
                 .is_some_and(|s| s.eq_ignore_ascii_case("chunked"))
             {
                 loop {
                     let raw = line(&mut reader)?;
+                    if raw.is_empty() {
+                        return Err(incomplete_chunk());
+                    }
                     let text = String::from_utf8_lossy(&raw);
-                    let size =
-                        usize::from_str_radix(text.split(';').next().unwrap_or("").trim(), 16)
-                            .map_err(|_| protocol("illegal chunk header"))?;
+                    let digits = text
+                        .split(';')
+                        .next()
+                        .unwrap_or("")
+                        .trim_end_matches(['\r', '\n', ' ', '\t']);
+                    let size = usize::from_str_radix(digits, 16)
+                        .ok()
+                        .filter(|_| {
+                            !digits.is_empty()
+                                && digits.len() <= 20
+                                && digits.bytes().all(|b| b.is_ascii_hexdigit())
+                                && raw.ends_with(b"\r\n")
+                        })
+                        .ok_or_else(|| {
+                            protocol(format!("illegal chunk header: {}", bytearray(&raw)))
+                        })?;
                     if size == 0 {
-                        loop {
-                            let trailer = line(&mut reader)?;
-                            if trailer.is_empty() {
-                                return Err(protocol("incomplete chunked read"));
-                            }
-                            if matches!(trailer.as_slice(), b"\r\n" | b"\n") {
-                                break;
-                            }
-                        }
+                        headers(header_lines(&mut reader)?)?;
                         break;
                     }
                     let start = body.len();
@@ -312,11 +401,26 @@ impl Transport for HttpTransport {
                         .take(size as u64)
                         .read_to_end(&mut body)
                         .map_err(|e| io_error(e, "Read"))?;
-                    if body.len() - start != size || line(&mut reader)? != b"\r\n" {
-                        return Err(protocol("incomplete chunked read"));
+                    if body.len() - start != size {
+                        return Err(incomplete_chunk());
+                    }
+                    let mut footer = Vec::new();
+                    reader
+                        .by_ref()
+                        .take(2)
+                        .read_to_end(&mut footer)
+                        .map_err(|e| io_error(e, "Read"))?;
+                    if !b"\r\n".starts_with(&footer) {
+                        return Err(protocol(format!(
+                            "malformed chunk footer: {} (expected b'\\r\\n')",
+                            bytearray(&footer)
+                        )));
+                    }
+                    if footer.len() != 2 {
+                        return Err(incomplete_chunk());
                     }
                 }
-            } else if let Some(size) = headers.get("content-length") {
+            } else if let Some(size) = response_headers.get("content-length") {
                 let size: u64 = size.parse().map_err(|_| protocol("bad Content-Length"))?;
                 reader
                     .take(size)

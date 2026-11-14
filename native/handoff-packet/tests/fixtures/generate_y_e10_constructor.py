@@ -39,7 +39,14 @@ for action, archives, enabled, required, reindex in [
                           ('http://127.0.0.1', 'ü', {}),
                           ('http://127.0.0.1', '', {'SSL_CERT_FILE':'absent.pem'}),
                           ('http://127.0.0.1', '', {'SSL_CERT_FILE':'notes'}),
-                          ('http://[fe80::1%25lo0]/', '', {})]:
+                          ('http://[fe80::1%25lo0]/', '', {}),
+                          ('http://127.0.0.1', 'üéx', {}),
+                          ('http://127.0.0.1', 'xüé', {}),
+                          ('http://127.0.0.1', 'xüxé', {}),
+                          ('http://127.0.0.1', b'x\xff\xfe', {}),
+                          ('http://999.1.1.1', '', {}),
+                          ('http://[bad', '', {}),
+                          ('http://127.0.0.1/'+'a'*65536, '', {})]:
         work = root / ('constructor-' + str(len(records)))
         work.mkdir(exist_ok=True)
         (work/'notes').mkdir(exist_ok=True)
@@ -56,7 +63,9 @@ for action, archives, enabled, required, reindex in [
             (work/('memory.db'+suffix)).unlink(missing_ok=True)
         result = subprocess.run([sys.executable,'-I',str(wrapper),json.dumps(argv)],cwd=work,
                                 env=dict(HOME=str(work),PATH=os.defpath,FAKE_KEY=key,**env),capture_output=True)
-        records.append(dict(argv=argv,config=config,key=key,env=env,exit=result.returncode,
+        records.append(dict(argv=argv,config=config,key=key if isinstance(key, str) else '',
+                            key_bytes=list(key) if isinstance(key, bytes) else None,
+                            env=env,exit=result.returncode,
                             stdout=result.stdout.decode(),stderr=result.stderr.decode()))
 assert records[0]['stdout'].startswith('[degraded] embedding unavailable'), records[0]
 a.output.write_text(json.dumps(records,separators=(',',':'))+'\n')

@@ -694,6 +694,8 @@ fn main_inner(
     if argv.first() != Some(&"pull") {
         return Ok(fail("expected pull"));
     }
+    let option_names: Vec<_> = OPTIONS.iter().map(|o| o.name).collect();
+    let option_like = |s: &str| super::context_sync::option_like_with(s, &option_names);
     let (mut i, mut unknown, mut positional_only) = (1, Vec::new(), false);
     while i < argv.len() {
         let token = argv[i];
@@ -705,7 +707,7 @@ fn main_inner(
             }
             continue;
         }
-        if positional_only || !super::context_sync::option_like(token) {
+        if positional_only || !option_like(token) {
             if query.is_none() {
                 query = Some(token);
             } else {
@@ -746,8 +748,7 @@ fn main_inner(
                 if let Some(v) = inline {
                     v
                 } else {
-                    let Some(v) = argv.get(i).filter(|v| !super::context_sync::option_like(v))
-                    else {
+                    let Some(v) = argv.get(i).filter(|v| !option_like(v)) else {
                         return Ok(fail(&format!("argument {label}: expected one argument")));
                     };
                     i += 1;
@@ -781,7 +782,7 @@ fn main_inner(
                     None => {
                         return Ok(fail(&format!(
                             "argument --k: invalid int value: {}",
-                            crate::executor_execute::repr(value)
+                            python_int_repr(value)
                         )));
                     }
                 },
@@ -1111,6 +1112,18 @@ fn indented_len(s: &str) -> usize {
     }
 }
 
+fn python_int_repr(value: &str) -> String {
+    let mut quoted = crate::executor_execute::repr(value);
+    // Unicode 16 additions were unassigned (and therefore escaped by repr) in Python 3.12.
+    for c in value.chars().filter(|c| {
+        matches!(*c as u32,
+        0x10d40..=0x10d49 | 0x116d0..=0x116e3 | 0x11bf0..=0x11bf9
+        | 0x16130..=0x16139 | 0x16d70..=0x16d79 | 0x1ccf0..=0x1ccf9 | 0x1e5f1..=0x1e5fa)
+    }) {
+        quoted = quoted.replace(c, &format!("\\U{:08x}", c as u32));
+    }
+    quoted
+}
 pub(super) fn python_k(value: &str) -> Option<Option<i64>> {
     let value = value.trim_matches(char::is_whitespace);
     let (negative, value) = if let Some(v) = value.strip_prefix('-') {
@@ -1128,7 +1141,14 @@ pub(super) fn python_k(value: &str) -> Option<Option<i64>> {
             digit = false;
         } else {
             text.push(char::from(
-                b'0' + crate::python_decimal::decimal_digit(c)? as u8,
+                b'0' + if matches!(c as u32, 0x10d40..=0x10d49 | 0x116d0..=0x116e3
+                    | 0x11bf0..=0x11bf9 | 0x16130..=0x16139 | 0x16d70..=0x16d79
+                    | 0x1ccf0..=0x1ccf9 | 0x1e5f1..=0x1e5fa)
+                {
+                    return None;
+                } else {
+                    crate::python_decimal::decimal_digit(c)? as u8
+                },
             ));
             digit = true;
         }

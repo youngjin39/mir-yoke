@@ -14,6 +14,7 @@ assert sys.flags.isolated
 p = argparse.ArgumentParser()
 p.add_argument('--scratch', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
+p.add_argument('--e11', action='store_true')
 p.add_argument('--e10', action='store_true', help='capture remaining parser boundaries')
 a = p.parse_args()
 root = a.scratch.resolve() / 'oracle'
@@ -87,6 +88,11 @@ if a.e10:
               ['--', 'pull', 'q'], ['-1'], ['-1 x'], ['-hfoo=bar'], ['--h']]
     cases += [[action, token] for action in ['pull', 'sync']
               for token in ['-hh=oops', '-hh-h', '-hhh=oops', '-hhfoo=bar']]
+if a.e11:
+    cases = [['pull', 'q', token] for token in [
+        '--path=x y', '--k= 1', '--json=x y', '--risk=low high']]
+    cases += [['pull', 'q', '--k', chr(c)] for c in [
+        0x10d40, 0x116d0, 0x11bf0, 0x16130, 0x16d70, 0x1ccf0, 0x1e5f1]]
 records = []
 for removed, argv in [(False, c) for c in cases] + [(True, c) for c in
         [['pull', '--help'], ['sync', '--help'], ['pull', 'q'], ['sync'],
@@ -108,6 +114,6 @@ for removed, argv in [(False, c) for c in cases] + [(True, c) for c in
 if a.e10:
     assert records[0]['exit'] == 2 and 'no memory.db' in records[0]['stdout'], records[0]
     assert 'invalid int value' in records[1]['stderr'], records[1]
-else:
+elif not a.e11:
     assert 'usage: mir context pull' in records[2]['stdout'], records[2]
 a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n')

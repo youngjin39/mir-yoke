@@ -45,6 +45,19 @@ responses = [b'garbage\r\n\r\n', b'\r\n', b'HTTP/1.1 20 OK\r\n\r\n', b'HTTP/1.1 
              b'HTTP/1.1 200 O\x00K\r\n\r\n',
              b'HTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 103 Early\r\n\r\n'
              b'HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}']
+responses += [
+    b'garbage\r\n', b'HTTP/1.1 200 OK\r\nX: ' + b'x' * 102400,
+    *[b'HTTP/1.1 200 OK\r\n' + h + b'\r\n\r\n' for h in (
+        b'Bad Name: a', b'X: a\x00b', b' continuation',
+        b'X: a\r\n b\r\nContent-Length: 0',
+        b'Content-Length: 0, 0', b'Content-Length: 0, 1',
+        b'Content-Length: 0\r\nContent-Length: 1', b'Content-Length: +0',
+        b'Transfer-Encoding: gzip', b'Transfer-Encoding: chunked\r\nTransfer-Encoding: chunked')],
+    *[b'HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n' + c for c in (
+        b'wat\r\n', b'1\r\nx!!', b'1\r\nx', b'2\r\nx', b'0\r\nBad Name: x\r\n\r\n',
+        b'0\r\nX: y\r\n z\r\n\r\n', b'1;foo=bar\r\nx\r\n0\r\n\r\n')],
+]
+responses += [b'HTTP/1.1 200 OK\r\nContent-Length: \xe2\x80\x830\r\n\r\n']
 records = []
 for response in responses:
     with socket.socket() as listener:

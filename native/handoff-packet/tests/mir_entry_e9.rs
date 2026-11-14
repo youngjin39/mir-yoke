@@ -9,6 +9,8 @@ fn frozen_context_parser_and_removed_cwd() {
     records.extend(
         serde_json::from_str::<Vec<Value>>(include_str!("fixtures/e10_constructor.json")).unwrap(),
     );
+    records
+        .extend(serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e11.json")).unwrap());
     let mut failures = Vec::new();
     for r in records {
         let temp = tempfile::tempdir().unwrap();
@@ -66,6 +68,23 @@ fn frozen_context_parser_and_removed_cwd() {
             .current_dir(&root);
         if let Some(key) = r["key"].as_str() {
             command.env("FAKE_KEY", key);
+        }
+        if let Some(bytes) = r["key_bytes"].as_array() {
+            #[cfg(unix)]
+            {
+                use std::os::unix::ffi::OsStringExt;
+                command.env(
+                    "FAKE_KEY",
+                    std::ffi::OsString::from_vec(
+                        bytes.iter().map(|b| b.as_u64().unwrap() as u8).collect(),
+                    ),
+                );
+            }
+            #[cfg(not(unix))]
+            {
+                let _ = bytes;
+                continue;
+            }
         }
         if let Some(env) = r["env"].as_object() {
             command.envs(env.iter().map(|(k, v)| (k, v.as_str().unwrap())));

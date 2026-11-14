@@ -57,6 +57,9 @@ pub(super) fn python_path(raw: &Path) -> PathBuf {
     }
 }
 pub(super) fn option_like(s: &str) -> bool {
+    option_like_with(s, OPTIONS)
+}
+pub(super) fn option_like_with(s: &str, options: &[&str]) -> bool {
     // CPython argparse: ^-\d+$|^-\d*\.\d+$ (including its final-newline anchor).
     let negative = s.strip_suffix('\n').unwrap_or(s);
     let negative = negative.strip_prefix('-').is_some_and(|n| {
@@ -77,7 +80,7 @@ pub(super) fn option_like(s: &str) -> bool {
     // Known options and prefixes precede the space fallback in _parse_optional.
     let name = s.split_once('=').map_or(s, |(name, _)| name);
     let known = s.starts_with("-h")
-        || OPTIONS
+        || options
             .iter()
             .any(|o| name.starts_with("--") && o.starts_with(name));
     s.len() > 1 && s.starts_with('-') && (known || (!negative && !s.contains(' ')))
@@ -331,6 +334,9 @@ pub(super) fn backend(
 > {
     let error = |kind, message| external_store::HelperError { kind, message };
     let url = emb["base_url"].as_str().unwrap_or_default();
+    if url.chars().count() > 65536 {
+        return Err(error("InvalidURL", "URL too long".into()));
+    }
     if let Some((position, c)) = url.chars().enumerate().find(|(_, c)| c.is_ascii_control()) {
         return Err(error(
             "InvalidURL",
@@ -345,6 +351,19 @@ pub(super) fn backend(
         .map(|(_, s)| s.split(['/', '?', '#']).next().unwrap_or_default());
     if let Some(authority) = authority {
         let host = authority.rsplit('@').next().unwrap_or_default();
+        let hostname = host.split(':').next().unwrap_or_default();
+        let parts: Vec<_> = hostname.split('.').collect();
+        if parts.len() == 4
+            && parts
+                .iter()
+                .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
+            && hostname.parse::<std::net::Ipv4Addr>().is_err()
+        {
+            return Err(error(
+                "InvalidURL",
+                format!("Invalid IPv4 address: {}", repr(hostname)),
+            ));
+        }
         if host.starts_with('[')
             && let Some((address, _)) = host.split_once(']')
         {
@@ -365,23 +384,39 @@ pub(super) fn backend(
             return Err(error("InvalidURL", format!("Invalid port: {}", repr(port))));
         }
     }
-    let key = std::env::var(emb["api_key_env"].as_str().unwrap_or_default()).unwrap_or_default();
-    let header = format!("{} {key}", emb["auth_scheme"].as_str().unwrap_or_default());
+    let key = std::env::var_os(emb["api_key_env"].as_str().unwrap_or_default()).unwrap_or_default();
+    let mut header: Vec<u32> = emb["auth_scheme"]
+        .as_str()
+        .unwrap_or_default()
+        .chars()
+        .map(u32::from)
+        .collect();
+    header.push(32);
+    header.extend(crate::executor_text::os_points(&key));
     if !key.is_empty()
-        && let Some((position, c)) = header.chars().enumerate().find(|(_, c)| !c.is_ascii())
+        && let Some((position, c)) = header.iter().copied().enumerate().find(|(_, c)| *c > 127)
     {
-        let escaped = if (c as u32) < 256 {
-            format!("\\x{:02x}", c as u32)
-        } else if (c as u32) < 65536 {
-            format!("\\u{:04x}", c as u32)
+        let escaped = if c < 256 {
+            format!("\\x{:02x}", c)
+        } else if c < 65536 {
+            format!("\\u{:04x}", c)
         } else {
-            format!("\\U{:08x}", c as u32)
+            format!("\\U{:08x}", c)
+        };
+        let end = position
+            + header
+                .iter()
+                .skip(position)
+                .take_while(|c| **c > 127)
+                .count();
+        let detail = if end == position + 1 {
+            format!("character '{escaped}' in position {position}")
+        } else {
+            format!("characters in position {position}-{}", end - 1)
         };
         return Err(error(
             "UnicodeEncodeError",
-            format!(
-                "'ascii' codec can't encode character '{escaped}' in position {position}: ordinal not in range(128)"
-            ),
+            format!("'ascii' codec can't encode {detail}: ordinal not in range(128)"),
         ));
     }
     if let Some(file) = std::env::var_os("SSL_CERT_FILE").filter(|s| !s.is_empty()) {
