@@ -5,7 +5,7 @@ use std::os::unix::fs::{MetadataExt, symlink};
 #[rustfmt::skip]
 fn frozen_identity() {
     let corpus: J=serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/admission-receipts.json")).unwrap();
-    let tmp=tempfile::tempdir().unwrap(); let root=tmp.path(); let mut seen=BTreeSet::new();
+    let tmp=tempfile::tempdir().unwrap(); let canonical_root=tmp.path().canonicalize().unwrap(); let root=canonical_root.as_path(); let mut seen=BTreeSet::new();
     let mut check=|name:String,result:Result<J,Error>| {
         let actual=match result {
             Ok(value)=>json!({"value":value,"stdout":"","stderr":""}),

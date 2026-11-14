@@ -8,7 +8,7 @@ fn hex(b: &[u8]) -> String {
 #[rustfmt::skip]
 fn frozen_admission() {
     let corpus: J = serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/admission-receipts.json")).unwrap();
-    let tmp = tempfile::tempdir().unwrap(); let root = tmp.path(); let mut seen = std::collections::BTreeSet::new(); let mut mismatches = Vec::new();
+    let tmp = tempfile::tempdir().unwrap(); let canonical_root = tmp.path().canonicalize().unwrap(); let root = canonical_root.as_path(); let mut seen = std::collections::BTreeSet::new(); let mut mismatches = Vec::new();
     let mut check = |name: &str, result: Result<J, Error>| {
         let actual = match result {
             Ok(v) => json!({"value":v,"stdout":"","stderr":""}),
@@ -83,7 +83,7 @@ fn malformed_configs() -> Vec<(&'static str, Vec<u8>)> {
 #[rustfmt::skip]
 fn frozen_receipts() {
     let corpus:J=serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/admission-receipts.json")).unwrap();
-    let tmp=tempfile::tempdir().unwrap(); let root=tmp.path();
+    let tmp=tempfile::tempdir().unwrap(); let canonical_root=tmp.path().canonicalize().unwrap(); let root=canonical_root.as_path();
     let home=root.join("receipt-home"); fs::create_dir_all(home.join("agents")).unwrap();
     let file=|source:&str,target:&str,bytes:&[u8],sha:String| ManagedFile { source_relative:python_json::Text::new(source.chars().map(u32::from).collect()),target_relative:target.into(),content:bytes.to_vec(),sha256:sha };
     for (runtime,files) in [("claude",vec![file(".claude/agents/z.md","agents/z.md",b"agent\r\n",sha256_bytes(b"agent\r\n")),file(".claude/commands/a.md","commands/a.md",b"command\n",sha256_bytes(b"command\n"))]),("codex",vec![]),("unicode",vec![file(".claude/agents/한.md","agents/한.md",b"","0".repeat(64))])] {
@@ -141,10 +141,11 @@ fn receipt_target_posix_separator() {
         "agents/z.md"
     );
     let home = tempfile::tempdir().unwrap();
-    fs::write(home.path().join(RECEIPT_NAME), receipt).unwrap();
-    let target = home.path().join(&item.target_relative);
+    let root = home.path().canonicalize().unwrap();
+    fs::write(root.join(RECEIPT_NAME), receipt).unwrap();
+    let target = root.join(&item.target_relative);
     fs::create_dir(target.parent().unwrap()).unwrap();
     fs::write(&target, b"old").unwrap();
-    let (_, loaded) = load_receipt(home.path(), "claude").unwrap();
+    let (_, loaded) = load_receipt(&root, "claude").unwrap();
     assert!(receipt_allows_update(loaded.as_ref(), &item, &target).unwrap());
 }

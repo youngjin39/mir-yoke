@@ -3815,7 +3815,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_identity_tests.rs",
-      "sha256": "57301351372cbc5790ac5873d285013b64d876f414cb3f0adc041b4371db3df0"
+      "sha256": "16620e07b3ff4553fd2d4fe996d421ab1dfac18eaf7deb7e6829c070a3f91388"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3827,7 +3827,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_install_tests.rs",
-      "sha256": "57244966c76ac26b9da0f464f7a644152fbe25919c5089a8fffac576b81c68c8"
+      "sha256": "0cc5158c90aa6da04d4013dcf4047d92c039371cdbdb2c28c94d804a85d5ed95"
     },
     {
       "classification": "template-maintainer-tool",
