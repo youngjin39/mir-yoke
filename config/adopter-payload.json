@@ -3335,7 +3335,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/embedding_http.rs",
-      "sha256": "93fdd0d128b3a03bf89674756571b200be246956907f1e1e52605fc78d84ae05"
+      "sha256": "51ed9b1f0fedeb0c81d715587a0fe5f993761403ed8fd6d129c6818600f9cfdc"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3533,7 +3533,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_core/memory/backends/omlx_http.rs",
-      "sha256": "7dfa4995ede34206b6b00f9ed3476166ada77216e372f35495471c61fc8f9d6a"
+      "sha256": "98376a9368b49917fbb1f05b024d2438efc334f7e8039cf9294f6f41f39088f4"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4439,7 +4439,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e6.py",
-      "sha256": "6a347d4a34049065bdf1e5a9622d5dcc1c45b4efe401c4745fec76d62ede5a91"
+      "sha256": "418cfa5f3c630fe266c7454dd8bad215c247bb60bd16500dc2ff974912f1365e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4841,7 +4841,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e6.json",
-      "sha256": "6dd1663e343be3fc12aeea0ccb15b2269667c6bae31b45cf5f80b4a6746b35b7"
+      "sha256": "ce818a9b177fc35a69f016e4e0ef8c4690efbd94f20c19ea99b85e4ae3daf8ce"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5099,7 +5099,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e6.rs",
-      "sha256": "2482d2cee3e2734ba5b04effedfa421ba2216c969a5472cad3008954000e248d"
+      "sha256": "87467758555fcca74f6d62a14228a5ae6861b90bb65cea91a50e23df03d8eb46"
     },
     {
       "classification": "template-maintainer-tool",

@@ -9,7 +9,23 @@ use std::{
 
 #[test]
 fn context_embedding_provider_binding() {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e6.json")).unwrap();
+    let mut records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e6.json")).unwrap();
+    for (mode, error) in [
+        ("tls", "HTTPS embedding transport is not supported"),
+        (
+            "proxy",
+            "Environment proxy embedding transport is not supported",
+        ),
+    ] {
+        let mut r = records
+            .iter()
+            .find(|r| r["mode"] == "required-shape")
+            .unwrap()
+            .clone();
+        r["mode"] = mode.into();
+        r["native_error"] = error.into();
+        records.push(r);
+    }
     for r in records {
         let temp = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(temp.path()).unwrap();
@@ -22,13 +38,26 @@ fn context_embedding_provider_binding() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         listener.set_nonblocking(true).unwrap();
         let url = format!("http://{}/v1/", listener.local_addr().unwrap());
-        let config = r["config"].as_str().unwrap().replace("@URL@", &url);
+        let mut config = r["config"].as_str().unwrap().replace("@URL@", &url);
+        if r["mode"] == "tls" {
+            config = config.replace("http://", "https://");
+        }
+        let listener = (!matches!(
+            r["mode"].as_str().unwrap(),
+            "required-refused" | "tls" | "proxy"
+        ))
+        .then_some(listener);
         let run = |argv: Vec<&str>| {
             let mut cmd = Command::new(env!("CARGO_BIN_EXE_mir"));
             cmd.args(argv)
                 .env_clear()
                 .env("HOME", &root)
+                .env("HTTP_PROXY", "http://127.0.0.1:1")
+                .env("NO_PROXY", if r["mode"] == "proxy" { "" } else { "*" })
                 .current_dir(&root);
+            if r["mode"] == "proxy" {
+                cmd.env("HTTP_PROXY", "http://127.0.0.1:1");
+            }
             if r["mode"] != "no-key" {
                 cmd.env("SYNTHETIC_KEY", "fake-only");
             }
@@ -53,6 +82,7 @@ fn context_embedding_provider_binding() {
         let status = r["status"].as_u64().unwrap();
         let mode = r["mode"].as_str().unwrap().to_owned();
         let server = thread::spawn(move || {
+            let listener = listener?;
             let deadline = std::time::Instant::now() + std::time::Duration::from_secs(4);
             loop {
                 match listener.accept() {
@@ -81,13 +111,27 @@ fn context_embedding_provider_binding() {
                             thread::sleep(std::time::Duration::from_secs(3));
                         }
                         if mode == "required-disconnect" || mode == "required-timeout" {
-                            return Some((
-                                header,
-                                serde_json::from_slice::<Value>(&input).unwrap(),
-                            ));
+                            return Some((header, String::from_utf8(input).unwrap()));
                         }
-                        write!(stream, "HTTP/1.1 {status} {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", if status == 200 { "OK" } else { "Service Unavailable" }, body.len()).unwrap();
-                        return Some((header, serde_json::from_slice::<Value>(&input).unwrap()));
+                        if mode == "required-garbage" {
+                            stream.write_all(b"garbage\r\n\r\n").unwrap();
+                        } else if mode == "required-short" {
+                            write!(
+                                stream,
+                                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
+                                body.len() + 1
+                            )
+                            .unwrap();
+                        } else if mode == "chunked" {
+                            write!(stream, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n{:x};fake=yes\r\n{body}\r\n0\r\nX-Fake: yes\r\n\r\n", body.len()).unwrap();
+                        } else if mode == "close" {
+                            write!(stream, "HTTP/1.1 200 OK\r\n\r\n{body}").unwrap();
+                        } else if mode == "required-gzip" {
+                            stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Length: 0\r\n\r\n").unwrap();
+                        } else {
+                            write!(stream, "HTTP/1.1 {status} {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", if status == 200 { "OK" } else { "Service Unavailable" }, body.len()).unwrap();
+                        }
+                        return Some((header, String::from_utf8(input).unwrap()));
                     }
                     Err(e)
                         if e.kind() == std::io::ErrorKind::WouldBlock
@@ -106,6 +150,18 @@ fn context_embedding_provider_binding() {
             .map(|v| v.as_str().unwrap())
             .collect());
         let request = server.join().unwrap();
+        if r["native_error"].is_string() || r["mode"] == "required-gzip" {
+            assert_eq!(out.status.code(), Some(1));
+            assert!(
+                String::from_utf8_lossy(&out.stdout).contains(
+                    r["native_error"]
+                        .as_str()
+                        .unwrap_or("Content-Encoding gzip is not supported")
+                ),
+                "{out:?}"
+            );
+            continue;
+        }
         assert_eq!(
             out.status.code(),
             Some(r["exit"].as_i64().unwrap() as i32),
@@ -127,6 +183,10 @@ fn context_embedding_provider_binding() {
             "{}",
             r["mode"]
         );
+        if r["mode"] == "required-refused" {
+            assert!(request.is_none());
+            continue;
+        }
         let (header, body) = request.expect("provider must send a request");
         let expected = &r["requests"][0];
         assert!(header.starts_with(&format!(
@@ -139,7 +199,20 @@ fn context_embedding_provider_binding() {
                 .then(|| s.split_once(':').unwrap().1.trim())
         });
         assert_eq!(auth, expected["auth"].as_str());
-        assert_eq!(body, expected["body"]);
+        assert_eq!(body, expected["raw_body"].as_str().unwrap());
+        let header = header.to_ascii_lowercase();
+        for (name, value) in expected["headers"].as_object().unwrap() {
+            let value = value.as_str().unwrap().replace(
+                "@PORT@",
+                url.split(':').nth(2).unwrap().split('/').next().unwrap(),
+            );
+            assert!(
+                header.contains(&format!("{name}: {}\r\n", value.to_ascii_lowercase())),
+                "{header}"
+            );
+        }
+        assert!(header.contains("accept-encoding: identity\r\n"));
+        assert!(header.contains("user-agent: mir-native\r\n"));
         let db = handoff_packet::mir_core::memory::store::connect(
             &root.join("memory.db"),
             handoff_packet::mir_core::memory::store::ConnectOptions {

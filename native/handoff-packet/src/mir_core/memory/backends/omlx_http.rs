@@ -139,7 +139,20 @@ impl<T: Transport> OmlxHttpBackend<T> {
                 "Cannot send a request, as the client has been closed.",
             ));
         }
-        let url = format!("{}/embeddings", self.cfg.base_url.trim_end_matches('/'));
+        let (base, fragment) = self
+            .cfg
+            .base_url
+            .split_once('#')
+            .unwrap_or((&self.cfg.base_url, ""));
+        let url = format!(
+            "{base}{}embeddings{}",
+            if base.ends_with('/') { "" } else { "/" },
+            if self.cfg.base_url.contains('#') {
+                format!("#{fragment}")
+            } else {
+                String::new()
+            }
+        );
         let timeout = self.cfg.timeout_sec;
         let response = self.transport.send(HttpRequest {
             url: url.clone(),

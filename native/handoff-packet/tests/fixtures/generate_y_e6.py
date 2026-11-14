@@ -1,5 +1,6 @@
 """Freeze Y-E6 from the pinned console; run with python -I."""
 import argparse
+import gzip
 import http.server
 import importlib
 import io
@@ -45,6 +46,29 @@ wrapper.write_text('''import sys, pathlib, sysconfig
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
 sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+import ipaddress, socket
+lookup, connect = socket.getaddrinfo, socket.socket.connect
+connect_ex = socket.socket.connect_ex
+def local(host):
+    assert ipaddress.ip_address(host).is_loopback, host
+def resolve(host, *args, **kwargs):
+    local(host)
+    return lookup(host, *args, **kwargs)
+def dial(sock, address):
+    local(address[0])
+    return connect(sock, address)
+def dial_ex(sock, address):
+    local(address[0])
+    return connect_ex(sock, address)
+socket.getaddrinfo, socket.socket.connect = resolve, dial
+socket.socket.connect_ex = dial_ex
+addr = ('192.0.2.1', 80)
+for probe in (lambda: resolve(*addr), lambda: dial(None, addr), lambda: dial_ex(None, addr)):
+    try:
+        probe()
+    except AssertionError:
+        continue
+    raise RuntimeError('oracle network guard failed')
 from mir.cli.__main__ import main
 from mir.cli import context
 from mir.core.engine.memory import store
@@ -68,7 +92,8 @@ records = []
 for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "status",
              "required-shape", "required-norm", "required-missing-data",
              "required-bad-json", "required-status", "reindex", "reindex-shape",
-             "required-disconnect", "required-timeout"]:
+             "required-disconnect", "required-timeout", "fragment", "query", "chunked", "close",
+             "required-refused", "required-garbage", "required-short", "required-gzip", "unicode"]:
     work = root / mode
     work.mkdir(exist_ok=True)
     (work / "notes").mkdir(exist_ok=True)
@@ -88,16 +113,32 @@ for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "st
         def do_POST(self, requests=requests, status=status, body=body, mode=mode):
             data = self.rfile.read(int(self.headers['Content-Length']))
             requests.append(dict(path=self.path, auth=self.headers.get('Authorization'),
-                                 body=json.loads(data)))
+                                 body=json.loads(data), raw_body=data.decode(),
+                                 headers={k.lower(): self.headers[k].replace(
+                                     str(self.server.server_port), "@PORT@")
+                                     for k in ["Host", "Content-Type", "Content-Length"]}))
             if mode == 'required-timeout':
                 time.sleep(3)
             if mode in {'required-timeout', 'required-disconnect'}:
                 self.close_connection = True
                 return
+            if mode == 'required-garbage':
+                self.wfile.write(b"garbage\r\n\r\n")
+                return
+            if mode == 'chunked':
+                self.wfile.write(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n")
+                self.wfile.write(f"{len(body):x};fake=yes\r\n".encode() + body
+                                 + b"\r\n0\r\nX-Fake: yes\r\n\r\n")
+                return
             self.send_response(status)
-            self.send_header('Content-Length', str(len(body)))
+            payload = gzip.compress(body) if mode == 'required-gzip' else body
+            if mode == 'required-gzip':
+                self.send_header('Content-Encoding', 'gzip')
+            if mode != 'close':
+                self.send_header('Content-Length', str(len(payload)
+                                 + (1 if mode == 'required-short' else 0)))
             self.end_headers()
-            self.wfile.write(body)
+            self.wfile.write(payload)
 
         def log_message(self, *_):
             pass
@@ -106,6 +147,9 @@ for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "st
     thread = threading.Thread(target=server.serve_forever)
     thread.start()
     url = f'http://127.0.0.1:{server.server_port}/v1/'
+    url += '#part' if mode == 'fragment' else '?x=1#part' if mode == 'query' else ''
+    if mode == 'required-refused':
+        server.server_close()
     config = f"""[memory]
 vector_mode="{'required' if mode.startswith('required-') else 'optional'}"
 [memory.embedding]
@@ -113,7 +157,7 @@ enabled=true
 required={'true' if mode.startswith('required-') else 'false'}
 fingerprint="synthetic-v1"
 base_url="{url}"
-model="synthetic-model"
+model="{'synthetic-모델' if mode == 'unicode' else 'synthetic-model'}"
 api_key_env="SYNTHETIC_KEY"
 auth_scheme="Token"
 timeout_sec=2
@@ -122,7 +166,7 @@ slug="notes"
 root="notes"
 """
     (work / 'harness_a.toml').write_text(config)
-    env = {'HOME': str(work), 'PATH': os.defpath, 'PYTHONIOENCODING': 'utf-8'}
+    env = {'HOME': str(work), 'PATH': os.defpath, 'PYTHONIOENCODING': 'utf-8', 'NO_PROXY': '*'}
     if mode != 'no-key':
         env['SYNTHETIC_KEY'] = 'fake-only'
 
@@ -148,13 +192,14 @@ root="notes"
         server.shutdown()
         thread.join()
         server.server_close()
-    assert requests, (mode, result.stderr)
+    assert requests or mode == 'required-refused', (mode, result.stderr)
     with sqlite3.connect(work / 'memory.db') as db:
         db.enable_load_extension(True)
         sqlite_vec.load(db)
         counts = [db.execute('SELECT count(*) FROM ' + table).fetchone()[0]
                   for table in ['external_documents', 'external_chunks', 'external_chunks_vec']]
-    records.append(dict(mode=mode, config=config.replace(url, '@URL@'), argv=argv,
+    records.append(dict(mode=mode, argv=argv,
+                        config=config.replace(url.split('#')[0].split('?')[0], '@URL@'),
                         body=body.decode(), status=status, requests=requests,
                         exit=result.returncode, stdout=result.stdout.decode().replace(
                             url.rstrip('/'), '@URLBASE@'),
