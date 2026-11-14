@@ -452,6 +452,28 @@ pub(super) fn rename_file(file: &File, destination: &Parent) -> io::Result<()> {
 }
 
 pub(super) fn dispose_file(file: &File) -> io::Result<()> {
+    // POSIX disposition removes the name when the requesting file object closes.
+    // ReOpenFile gives this exact object an independent deletion handle, without
+    // resolving its path. A duplicate would share the creation file object's life.
+    // SAFETY: live file handle, DELETE access and sharing compatible with creation.
+    let handle = unsafe {
+        ReOpenFile(
+            file.as_raw_handle(),
+            DELETE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            0,
+        )
+    };
+    if handle == INVALID_HANDLE_VALUE {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: successful ReOpenFile returns one newly owned handle, closed before
+    // this function returns, while the original stays available for byte work.
+    let deletion = unsafe { File::from_raw_handle(handle) };
+    set_disposition(&deletion)
+}
+
+fn set_disposition(file: &File) -> io::Result<()> {
     let info = FILE_DISPOSITION_INFO_EX {
         Flags: FILE_DISPOSITION_FLAG_DELETE | FILE_DISPOSITION_FLAG_POSIX_SEMANTICS,
     };
@@ -487,7 +509,7 @@ pub(super) fn unlink(parent: &Parent, name: &OsStr, directory: bool) -> io::Resu
             ERROR_ACCESS_DENIED as i32
         }));
     }
-    dispose_file(&file)
+    set_disposition(&file)
 }
 
 pub(super) fn sync_file(parent: &File) -> io::Result<File> {

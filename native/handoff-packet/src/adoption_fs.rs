@@ -687,6 +687,23 @@ mod owned_cleanup_tests {
     use super::*;
     use std::{fs, io::Write};
     #[test]
+    fn removed_temporary_name_can_be_reused_before_drop() {
+        let t = tempfile::tempdir().unwrap();
+        let r = t.path().canonicalize().unwrap();
+        let mut s = StagedFile::create(&r, &r.join("temp")).unwrap();
+        s.file.write_all(b"verified").unwrap();
+        s.remove().unwrap();
+        assert!(!s.path.exists());
+        let mut replacement = StagedFile::create(&r, &s.path).unwrap();
+        replacement.file.write_all(b"foreign").unwrap();
+        assert_eq!(s.contents(8).unwrap(), b"verified");
+        s.remove().unwrap();
+        drop(s);
+        assert_eq!(fs::read(&replacement.path).unwrap(), b"foreign");
+        replacement.remove().unwrap();
+        assert!(!replacement.path.exists());
+    }
+    #[test]
     fn e02_creation_uses_pinned_parent_after_real_directory_replacement() {
         let t = tempfile::tempdir().unwrap();
         let root = t.path().canonicalize().unwrap();

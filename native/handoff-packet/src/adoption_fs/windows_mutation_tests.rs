@@ -188,12 +188,55 @@ fn staged_publish_collision_keep_and_drop_follow_ownership() {
 }
 
 #[test]
+fn removed_temporary_name_can_be_reused_before_drop() {
+    let t = tempfile::tempdir().unwrap();
+    let r = t.path().canonicalize().unwrap();
+    let mut s = StagedFile::create(&r, &r.join("temp")).unwrap();
+    s.file.write_all(b"verified").unwrap();
+    s.remove().unwrap();
+    assert!(!s.path.exists());
+    let mut replacement = StagedFile::create(&r, &s.path).unwrap();
+    replacement.file.write_all(b"foreign").unwrap();
+    assert_eq!(s.contents(8).unwrap(), b"verified");
+    s.remove().unwrap();
+    drop(s);
+    assert_eq!(fs::read(&replacement.path).unwrap(), b"foreign");
+    replacement.remove().unwrap();
+    assert!(!replacement.path.exists());
+}
+
+#[test]
+fn staged_cleanup_does_not_resolve_leaf_after_validation() {
+    let t = tempfile::tempdir().unwrap();
+    let base = t.path().canonicalize().unwrap();
+    let r = base.join("root");
+    let outside = base.join("outside");
+    fs::create_dir(&r).unwrap();
+    let s = StagedFile::create(&r, &r.join("temp")).unwrap();
+    let expected = s.identity().unwrap();
+    assert_eq!(s.source.identity().unwrap(), Some(expected));
+    // Change the leaf after remove's ownership check but before its mutation.
+    fs::rename(&s.path, r.join("saved")).unwrap();
+    fs::create_dir(&outside).unwrap();
+    fs::write(outside.join("sentinel"), b"outside").unwrap();
+    junction(&s.path, &outside);
+    windows::dispose_file(&s.file).unwrap();
+    assert!(!r.join("saved").exists());
+    assert_eq!(fs::read(outside.join("sentinel")).unwrap(), b"outside");
+    assert_eq!(fs::read_dir(&outside).unwrap().count(), 1);
+    assert_ne!(
+        fs::symlink_metadata(&s.path).unwrap().file_attributes()
+            & windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT,
+        0
+    );
+    drop(s);
+    fs::remove_dir(r.join("temp")).unwrap();
+}
+
+#[test]
 fn staged_swapped_leaf_survives_publish_remove_and_drop() {
     let t = tempfile::tempdir().unwrap();
     let r = t.path().canonicalize().unwrap();
-    let s = StagedFile::create(&r, &r.join("temp")).unwrap();
-    s.remove().unwrap(); // RED: the Windows cleanup stub refuses this
-    drop(s);
     for reparse in [false, true] {
         let mut s = StagedFile::create(&r, &r.join("temp")).unwrap();
         s.file.write_all(b"verified").unwrap();
