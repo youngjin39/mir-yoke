@@ -1,4 +1,8 @@
 //! Descriptor-relative adoption mutations; never follow substituted parent symlinks.
+#[cfg(windows)]
+mod windows;
+#[cfg(all(test, windows))]
+mod windows_parent_tests;
 #[cfg(unix)]
 use std::ffi::CString;
 #[cfg(unix)]
@@ -90,6 +94,9 @@ pub(crate) fn relative<'a>(root: &Path, path: &'a Path) -> io::Result<&'a Path> 
 
 pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
     let relative = relative(root, path)?;
+    #[cfg(windows)]
+    return windows::parent(root, relative);
+    #[cfg(not(windows))]
     let mut parts = relative.components().peekable();
     #[cfg(unix)]
     {
@@ -146,6 +153,7 @@ pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
                 opened(unsafe { libc::openat(directory.as_raw_fd(), name.as_ptr(), flags) })?;
         }
     }
+    #[cfg(not(windows))]
     Err(io::Error::new(
         io::ErrorKind::Unsupported,
         "descriptor-relative adoption requires Unix",
