@@ -18,3 +18,5 @@ pub mod bootstrap;
 pub mod bootstrap_adoption;
 pub mod capability;
 pub mod project_hooks;
+
+mod embedding_http;

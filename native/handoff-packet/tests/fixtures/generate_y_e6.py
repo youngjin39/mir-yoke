@@ -1,0 +1,163 @@
+"""Freeze Y-E6 from the pinned console; run with python -I."""
+import argparse
+import http.server
+import importlib
+import io
+import json
+import os
+import shutil
+import sqlite3
+import subprocess
+import sys
+import tarfile
+import threading
+import time
+from pathlib import Path
+
+import sqlite_vec
+
+assert sys.flags.isolated
+PIN = "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+p = argparse.ArgumentParser()
+p.add_argument('--scratch', type=Path, required=True)
+p.add_argument('--output', type=Path, required=True)
+a = p.parse_args()
+repo = Path(__file__).resolve().parents[4]
+root = a.scratch.resolve() / 'oracle'
+root.mkdir(parents=True, exist_ok=True)
+archive = subprocess.check_output(['git', 'archive', PIN, 'src/mir'], cwd=repo)
+with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+    tar.extractall(root, filter='data')
+packages = (
+    'pydantic pydantic_core typing_extensions typing_inspection annotated_types '
+    'httpx httpcore h11 anyio idna certifi yaml sqlite_vec jsonschema attrs attr '
+    'referencing rpds jsonschema_specifications'
+).split()
+for name in packages:
+    module = importlib.import_module(name)
+    path = Path(module.__file__)
+    if path.name == '__init__.py':
+        shutil.copytree(path.parent, root / name, dirs_exist_ok=True)
+    else:
+        shutil.copy2(path, root / path.name)
+wrapper = root / 'console.py'
+wrapper.write_text('''import sys, pathlib, sysconfig
+root = pathlib.Path(__file__).resolve().parent
+stdlib = sysconfig.get_path('stdlib')
+sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+from mir.cli.__main__ import main
+from mir.cli import context
+from mir.core.engine.memory import store
+for name, module in list(sys.modules.items()):
+    if name.split('.')[0] in SET:
+        paths = [module.__file__] if module.__file__ else module.__path__
+        assert all(pathlib.Path(p).resolve().is_relative_to(root) for p in paths), name
+if sys.argv[1] == 'seed':
+    c = store.connect(pathlib.Path(sys.argv[2]))
+    store.apply_migrations(c.conn)
+    c.conn.close()
+    raise SystemExit(0)
+try:
+    raise SystemExit(main())
+except Exception as exc:
+    print(type(exc).__name__ + ': ' + str(exc), file=sys.stderr)
+    raise SystemExit(1)
+'''.replace('SET', repr(set(['mir', *packages]))))
+
+records = []
+for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "status",
+             "required-shape", "required-norm", "required-missing-data",
+             "required-bad-json", "required-status", "reindex", "reindex-shape",
+             "required-disconnect", "required-timeout"]:
+    work = root / mode
+    work.mkdir(exist_ok=True)
+    (work / "notes").mkdir(exist_ok=True)
+    (work / "notes/a.md").write_text("Synthetic archive document.\n")
+    requests = []
+    vector = [1.0] + [0.0] * (1022 if "shape" in mode else 1023)
+    if mode.endswith("norm"):
+        vector[0] = 2.0
+    body = json.dumps({"data": [{"embedding": vector}]}).encode()
+    if mode.endswith("missing-data"):
+        body = b"{}"
+    if mode.endswith("bad-json"):
+        body = b"{"
+    status = 503 if mode.endswith("status") else 200
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self, requests=requests, status=status, body=body, mode=mode):
+            data = self.rfile.read(int(self.headers['Content-Length']))
+            requests.append(dict(path=self.path, auth=self.headers.get('Authorization'),
+                                 body=json.loads(data)))
+            if mode == 'required-timeout':
+                time.sleep(3)
+            if mode in {'required-timeout', 'required-disconnect'}:
+                self.close_connection = True
+                return
+            self.send_response(status)
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *_):
+            pass
+
+    server = http.server.HTTPServer(('127.0.0.1', 0), Handler)
+    thread = threading.Thread(target=server.serve_forever)
+    thread.start()
+    url = f'http://127.0.0.1:{server.server_port}/v1/'
+    config = f"""[memory]
+vector_mode="{'required' if mode.startswith('required-') else 'optional'}"
+[memory.embedding]
+enabled=true
+required={'true' if mode.startswith('required-') else 'false'}
+fingerprint="synthetic-v1"
+base_url="{url}"
+model="synthetic-model"
+api_key_env="SYNTHETIC_KEY"
+auth_scheme="Token"
+timeout_sec=2
+[[memory.external_archives]]
+slug="notes"
+root="notes"
+"""
+    (work / 'harness_a.toml').write_text(config)
+    env = {'HOME': str(work), 'PATH': os.defpath, 'PYTHONIOENCODING': 'utf-8'}
+    if mode != 'no-key':
+        env['SYNTHETIC_KEY'] = 'fake-only'
+
+    def run(args, work=work, env=env):
+        return subprocess.run([sys.executable, '-I', str(wrapper), *args], cwd=work,
+                              env=env, capture_output=True)
+
+    # Re-create only this synthetic database on regeneration.
+    for suffix in ['', '-wal', '-shm']:
+        (work / ('memory.db' + suffix)).unlink(missing_ok=True)
+    assert run(['seed', 'memory.db']).returncode == 0
+    argv = ['context', 'sync', '--db', 'memory.db']
+    if mode.startswith('reindex'):
+        disabled = config.replace('enabled=true', 'enabled=false').replace(
+            'fingerprint="synthetic-v1"', 'fingerprint=""')
+        (work / 'harness_a.toml').write_text(disabled)
+        assert run(argv).returncode == 0
+        (work / 'harness_a.toml').write_text(config)
+        argv.append('--reindex-missing-vectors')
+    try:
+        result = run(argv)
+    finally:
+        server.shutdown()
+        thread.join()
+        server.server_close()
+    assert requests, (mode, result.stderr)
+    with sqlite3.connect(work / 'memory.db') as db:
+        db.enable_load_extension(True)
+        sqlite_vec.load(db)
+        counts = [db.execute('SELECT count(*) FROM ' + table).fetchone()[0]
+                  for table in ['external_documents', 'external_chunks', 'external_chunks_vec']]
+    records.append(dict(mode=mode, config=config.replace(url, '@URL@'), argv=argv,
+                        body=body.decode(), status=status, requests=requests,
+                        exit=result.returncode, stdout=result.stdout.decode().replace(
+                            url.rstrip('/'), '@URLBASE@'),
+                        stderr=result.stderr.decode(), counts=counts))
+assert records[0]['exit'] == 0 and records[0]['requests'][0]['path'] == '/v1/embeddings'
+a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n')

@@ -1,9 +1,9 @@
-//! Console admission for context sync; embedding transport closes in Y-E6.
+//! Console admission for context sync with configured oMLX embedding.
 use crate::{
     executor_execute::repr,
     mir_core::{
         config::loader,
-        memory::{external_store, store},
+        memory::{backends::omlx_http, external_store, store},
     },
 };
 use std::path::{Path, PathBuf};
@@ -92,7 +92,7 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         return (
             64,
             String::new(),
-            "mir: native context pull unavailable (pending Y-E6)\n".into(),
+            "mir: native context pull unavailable (pending Y-E7)\n".into(),
         );
     }
     let (mut db, mut root, mut reindex) = (None, None, false);
@@ -258,28 +258,36 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         let clock = crate::executor_execute::utc_now;
         let es = external_store::ExternalStore::new(&conn, &clock)
             .map_err(|e| format!("{}: {e}", e.kind))?;
+        let emb = &cfg["memory"]["embedding"];
+        let mut backend = omlx_http::from_config(
+            omlx_http::BackendCfg {
+                base_url: emb["base_url"].as_str().unwrap_or_default().into(),
+                model: emb["model"].as_str().unwrap_or_default().into(),
+                dim: emb["dim"].as_i64().unwrap_or_default(),
+                timeout_sec: emb["timeout_sec"].as_i64().unwrap_or_default(),
+                norm_tolerance: emb["norm_tolerance"].as_f64().unwrap_or_default(),
+                api_key_env: emb["api_key_env"].as_str().unwrap_or_default().into(),
+                auth_scheme: emb["auth_scheme"].as_str().unwrap_or_default().into(),
+            },
+            |name| std::env::var(name).unwrap_or_default(),
+            super::embedding_http::HttpTransport,
+        );
+        let mut encode = |texts: &[String]| {
+            backend
+                .encode(texts)
+                .map_err(|e| external_store::HelperError {
+                    kind: "RuntimeError",
+                    message: e.message,
+                })
+        };
         let result =
             super::context::do_sync_with_embedding(&es, &cfg, &root, &home, reindex, || {
-                if cfg["memory"]["embedding"]["enabled"] == true {
-                    Err(external_store::HelperError {
-                        kind: "NativeRouteUnavailable",
-                        message: "native embedding provider pending Y-E6".into(),
-                    })
+                if emb["enabled"] == true {
+                    Ok(Some(&mut encode))
                 } else {
                     Ok(None)
                 }
             });
-        // shortcut: enabled providers remain explicit until Y-E6; never claim FTS success.
-        if result
-            .as_ref()
-            .is_err_and(|e| e.kind == "NativeRouteUnavailable")
-        {
-            return Ok((
-                64,
-                String::new(),
-                "mir: native embedding provider unavailable (pending Y-E6)\n".into(),
-            ));
-        }
         match result {
             Ok((code, out)) => Ok((code, out, stderr)),
             Err(e) => Ok((1, String::new(), format!("{stderr}{}: {e}\n", e.kind))),
