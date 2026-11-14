@@ -263,3 +263,54 @@ fn provider_binding(only: Option<&str>) {
         }
     }
 }
+
+// The unit oracle checks the original host/pattern pair. For the CLI boundary,
+// move that host into NO_PROXY so even a broken guard can only dial loopback.
+#[test]
+fn idna_refusal_cli() {
+    let records: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/y-e6-proxy.json")).unwrap();
+    let wire: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e6.json")).unwrap();
+    let config = wire.iter().find(|r| r["mode"] == "required-shape").unwrap()["config"]
+        .as_str()
+        .unwrap()
+        .replace("@URL@", "http://127.0.0.1:1/v1/");
+    for r in records.iter().filter(|r| r["native_open"] == true) {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        fs::create_dir(root.join("notes")).unwrap();
+        fs::write(root.join("notes/a.md"), "Synthetic archive document.\n").unwrap();
+        fs::write(root.join("harness_a.toml"), &config).unwrap();
+        let c = handoff_packet::mir_core::memory::store::connect(&root.join("memory.db"), None)
+            .unwrap();
+        handoff_packet::mir_core::memory::store::apply_migrations(&c.conn).unwrap();
+        drop(c);
+        let out = Command::new(env!("CARGO_BIN_EXE_mir"))
+            .args(["context", "sync", "--db", "memory.db"])
+            .env_clear()
+            .env("HOME", &root)
+            .env("HTTP_PROXY", "http://127.0.0.1:1")
+            .env(
+                "NO_PROXY",
+                format!(
+                    "{},{}",
+                    r["pattern"].as_str().unwrap(),
+                    r["host"].as_str().unwrap()
+                ),
+            )
+            .env("SYNTHETIC_KEY", "fake-only")
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        assert_eq!(
+            out.status.code(),
+            Some(r["native_exit"].as_i64().unwrap() as i32),
+            "{r}: {out:?}"
+        );
+        assert!(
+            String::from_utf8_lossy(&out.stdout).contains(r["native_message"].as_str().unwrap()),
+            "{r}: {out:?}"
+        );
+        assert!(out.stderr.is_empty(), "{r}: {out:?}");
+    }
+}

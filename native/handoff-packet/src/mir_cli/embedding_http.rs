@@ -49,7 +49,7 @@ fn no_proxy_bypasses(host: &str, patterns: &str) -> Result<bool, HttpError> {
     let idna = |value: &str| {
         !value.is_ascii()
             || value
-                .split('.')
+                .split(['.', '/', ':', '@'])
                 .any(|label| label.to_ascii_lowercase().starts_with("xn--"))
     };
     if idna(host)
@@ -316,7 +316,7 @@ mod tests {
                 let error = no_proxy_bypasses(host, r["pattern"].as_str().unwrap())
                     .expect_err(&format!("IDNA must be explicitly refused: {r}"));
                 assert_eq!(error.class, "UnsupportedProtocol");
-                assert!(error.message.contains("IDNA"));
+                assert_eq!(error.message, r["native_message"].as_str().unwrap());
                 continue;
             }
             assert_eq!(

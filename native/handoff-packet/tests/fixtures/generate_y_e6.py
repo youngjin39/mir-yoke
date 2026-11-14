@@ -120,13 +120,21 @@ for host, pattern in [
     ('example.com', '*,bücher.test'),
     ('bücher.test', '*'),
     ('example.com', '\u00a0example.com'),
+    ('example.com', '*,http://xn--bcher-kva.test'),
+    ('example.com', 'http://xn--bcher-kva.test,*'),
+    ('example.com', '*,HTTP://XN--BCHER-KVA.test'),
+    ('example.com', '*,http://bücher.test'),
 ]:
     env = {'HOME': str(root), 'PATH': os.defpath,
            'HTTP_PROXY': 'http://127.0.0.1:1', 'NO_PROXY': pattern}
     result = subprocess.run([sys.executable, '-I', str(wrapper), 'proxy',
                              f'http://{host}:12345/'], cwd=root, env=env,
                             capture_output=True)
-    record = dict(pattern=pattern, host=host, native_open=True)
+    # Native-only refusal is derived from the FIX4/FIX5 owner decision,
+    # never captured from the native implementation or attributed to Python.
+    record = dict(pattern=pattern, host=host, native_open=True,
+                  native_message='IDNA proxy matching is not supported',
+                  native_exit=1)
     if result.returncode:
         error = result.stderr.decode().splitlines()[-1]
         assert error.startswith('httpx.InvalidURL:'), error
