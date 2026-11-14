@@ -281,7 +281,62 @@ pub fn encode(text: &str, error: bool, bom: bool) -> Result<Vec<u8>> {
 pub fn encode_console(text: &str, error: bool) -> Result<Vec<u8>> {
     #[cfg(windows)]
     let text = &text.replace('\n', "\r\n");
-    encode_stream(text, error, false, false)
+    let setting = std::env::var_os("PYTHONIOENCODING")
+        .map(|s| os_text(&s))
+        .unwrap_or_default();
+    let bom = codec_name(setting.split(':').next().unwrap_or(""))? == "utf-8-sig";
+    encode_stream(text, error, bom, false)
+}
+fn codecs() -> &'static serde_json::Value {
+    static TABLE: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();
+    TABLE.get_or_init(|| {
+        serde_json::from_str(include_str!("console-codecs.json")).unwrap_or_default()
+    })
+}
+fn codec_name(encoding: &str) -> Result<&'static str> {
+    if encoding.is_empty() {
+        return Ok("utf-8"); // Preserve the existing platform default.
+    }
+    let mut normalized = String::new();
+    let mut punctuation = false;
+    for c in encoding.chars() {
+        if c.is_alphanumeric() || c == '.' {
+            if punctuation && !normalized.is_empty() {
+                normalized.push('_');
+            }
+            if c.is_ascii() {
+                normalized.push(c.to_ascii_lowercase());
+            }
+            punctuation = false;
+        } else {
+            punctuation = true;
+        }
+    }
+    if codecs()["startup_unknown"]
+        .as_array()
+        .is_some_and(|v| v.iter().any(|n| n == &normalized))
+    {
+        return Err(format!("LookupError: unknown encoding: {encoding}"));
+    }
+    let name = codecs()["aliases"][normalized]
+        .as_str()
+        .ok_or_else(|| format!("LookupError: unknown encoding: {encoding}"))?;
+    if codecs()["non_text"]
+        .as_array()
+        .is_some_and(|v| v.iter().any(|n| n == name))
+    {
+        return Err(format!(
+            "LookupError: '{encoding}' is not a text encoding; use codecs.open() to handle arbitrary codecs"
+        ));
+    }
+    Ok(name)
+}
+/// Codec lookup at startup is independent of whether output needs a native table.
+pub fn console_encoding() -> Result<()> {
+    let setting = std::env::var_os("PYTHONIOENCODING")
+        .map(|s| os_text(&s))
+        .unwrap_or_default();
+    codec_name(setting.split(':').next().unwrap_or("")).map(|_| ())
 }
 fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<Vec<u8>> {
     if text.is_empty() {
@@ -305,24 +360,39 @@ fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<
         .flatten();
     let encoding = encoding_override.as_deref().unwrap_or(default_encoding);
     let handler = errors_override.as_deref().unwrap_or(default_handler);
-    let normalized = encoding.to_ascii_lowercase().replace(['-', ' ', '_'], "");
-    let name = match normalized.as_str() {
-        "" | "utf8" | "u8" | "utf" | "utf8sig" => "utf-8",
-        "ascii" | "usascii" | "646" | "ansix3.41968" => "ascii",
-        "latin1" | "latin" | "iso88591" | "isoir100" | "l1" => "latin-1",
-        "cp1252" | "windows1252" => "charmap",
-        "utf16" | "utf16le" => "utf-16-le",
-        "utf16be" => "utf-16-be",
-        "utf32" | "utf32le" => "utf-32-le",
-        "utf32be" => "utf-32-be",
-        _ => return Err(format!("LookupError: unknown encoding: {encoding}")),
-    };
     let handler = if error && errors_override.is_none() {
         "backslashreplace"
     } else if handler.is_empty() {
         "strict"
     } else {
         handler
+    };
+    encode_points(&text_points(text), encoding, handler, bom)
+}
+fn encode_points(points: &[u32], encoding: &str, handler: &str, bom: bool) -> Result<Vec<u8>> {
+    let canonical = codec_name(encoding)?;
+    let normalized = canonical.replace('-', "");
+    let name = match canonical {
+        "utf-8-sig" => "utf-8",
+        "iso8859-1" => "latin-1",
+        "cp1252" => "charmap",
+        "utf-16" => "utf-16-le",
+        "utf-32" => "utf-32-le",
+        "utf-8" | "ascii" | "utf-16-le" | "utf-16-be" | "utf-32-le" | "utf-32-be" => canonical,
+        _ => {
+            // shortcut: legacy byte tables await owner scope; ASCII is verified
+            // per codec by the pinned interpreter. Never emit guessed bytes.
+            if codecs()["ascii_compatible"]
+                .as_array()
+                .is_some_and(|v| v.iter().any(|n| n == canonical))
+                && points.iter().all(|&n| n < 128)
+            {
+                return Ok(points.iter().map(|&n| n as u8).collect());
+            }
+            return Err(format!(
+                "LookupError: codec '{canonical}' not natively supported for this output"
+            ));
+        }
     };
     let mut out = Vec::new();
     if bom && normalized == "utf8sig" {
@@ -335,7 +405,6 @@ fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<
         out.extend([0xff, 0xfe, 0, 0]);
     }
     {
-        let points = text_points(text);
         let mut index = 0;
         while index < points.len() {
             let n = points[index];
@@ -363,16 +432,38 @@ fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<
             if invalid {
                 let replacement = match handler {
                     "ignore" => String::new(),
-                    "replace" => {
-                        if name.starts_with("utf") {
-                            "\u{fffd}".into()
-                        } else {
-                            "?".into()
-                        }
-                    }
+                    "replace" => "?".into(),
                     "backslashreplace" => escaped(n),
                     "xmlcharrefreplace" => format!("&#{n};"),
-                    "surrogateescape" if (0xdc80..=0xdcff).contains(&n) => {
+                    "namereplace" => {
+                        if let Some(name) = codecs()["names"][n.to_string()].as_str() {
+                            format!("\\N{{{name}}}")
+                        } else if surrogate
+                            || matches!(n, 0..=31 | 127..=159)
+                            || (0xe000..=0xf8ff).contains(&n)
+                            || (0xf0000..=0x10ffff).contains(&n)
+                        {
+                            escaped(n)
+                        } else {
+                            return Err(format!(
+                                "LookupError: codec '{canonical}': Unicode name U+{n:04X} not natively supported"
+                            ));
+                        }
+                    }
+                    "surrogateescape"
+                        if (0xdc80..=0xdcff).contains(&n)
+                            && !name.starts_with("utf-16")
+                            && !name.starts_with("utf-32")
+                            && (name != "charmap"
+                                || points[index..]
+                                    .iter()
+                                    .take_while(|&&p| {
+                                        !(p <= 127
+                                            || (160..=255).contains(&p)
+                                            || (p > 255 && cp1252.contains(&p)))
+                                    })
+                                    .all(|p| (0xdc80..=0xdcff).contains(p))) =>
+                    {
                         out.push((n - 0xdc00) as u8);
                         index += 1;
                         continue;
@@ -388,14 +479,18 @@ fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<
                                         || (160..=255).contains(&points[end])
                                         || (points[end] > 255 && cp1252.contains(&points[end])))
                                 }
-                                _ => (0xd800..=0xdfff).contains(&points[end]),
+                                _ => name == "utf-8" && (0xd800..=0xdfff).contains(&points[end]),
                             }
                         {
                             end += 1;
                         }
                         return Err(encode_error(
-                            name,
-                            &points,
+                            if matches!(canonical, "utf-16" | "utf-32") {
+                                canonical
+                            } else {
+                                name
+                            },
+                            points,
                             index,
                             end,
                             if name == "ascii" {
@@ -478,4 +573,109 @@ fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<
         }
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod codec_tests {
+    use super::*;
+    #[test]
+    fn pinned_codec_aliases() {
+        let ascii: Vec<u32> = (0..128).collect();
+        for (alias, canonical) in codecs()["aliases"].as_object().unwrap() {
+            let canonical = canonical.as_str().unwrap();
+            if codecs()["startup_unknown"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|n| n == alias)
+            {
+                assert!(codec_name(alias).unwrap_err().contains("unknown encoding"));
+                continue;
+            }
+            if codecs()["non_text"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|n| n == canonical)
+            {
+                assert!(
+                    codec_name(alias)
+                        .unwrap_err()
+                        .contains("not a text encoding")
+                );
+                continue;
+            }
+            assert_eq!(codec_name(alias).unwrap(), canonical, "{alias}");
+            if codecs()["ascii_compatible"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|n| n == canonical)
+            {
+                assert_eq!(
+                    encode_points(&ascii, alias, "strict", false).unwrap(),
+                    (0..128).collect::<Vec<u8>>(),
+                    "{alias}"
+                );
+            }
+        }
+        assert_eq!(codec_name("  UtF - 8 ").unwrap(), "utf-8");
+        assert!(
+            codec_name("unknown-codec")
+                .unwrap_err()
+                .contains("unknown encoding")
+        );
+    }
+    #[test]
+    fn frozen_native_handlers() {
+        let records: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../tests/fixtures/y-e3-codecs.json")).unwrap();
+        let mut failures = Vec::new();
+        for (i, r) in records.iter().enumerate() {
+            let points = r["points"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_u64().unwrap() as u32)
+                .collect::<Vec<_>>();
+            let actual = encode_points(
+                &points,
+                r["codec"].as_str().unwrap(),
+                r["handler"].as_str().unwrap(),
+                r["bom"] == true,
+            );
+            let expected = if let Some(hex) = r["bytes"].as_str() {
+                Ok(hex
+                    .as_bytes()
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
+                    .map(|v| u8::from_str_radix(std::str::from_utf8(v).unwrap(), 16).unwrap())
+                    .collect())
+            } else {
+                Err(format!(
+                    "{}: {}",
+                    r["error"]["type"].as_str().unwrap(),
+                    r["error"]["message"].as_str().unwrap()
+                ))
+            };
+            // U+1FAE8 has no native name table: the permitted boundary is explicit.
+            if r["handler"] == "namereplace"
+                && points == [0x1fae8]
+                && matches!(r["codec"].as_str(), Some("ascii" | "latin-1" | "cp1252"))
+            {
+                assert!(
+                    actual
+                        .unwrap_err()
+                        .contains("Unicode name U+1FAE8 not natively supported")
+                );
+            } else if actual != expected {
+                failures.push(format!(
+                    "{i} {} {}: {actual:?} != {expected:?}",
+                    r["codec"], r["handler"]
+                ));
+            }
+        }
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+    }
 }

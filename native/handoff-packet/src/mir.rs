@@ -243,10 +243,15 @@ fn stdout_error(error: std::io::Error) -> String {
 }
 
 fn main() {
-    if let Err(message) = executor_text::encode_console(" ", false) {
+    if let Err(message) = executor_text::console_encoding() {
+        let stage = if message.starts_with("LookupError: unknown encoding:") {
+            "init_stdio_encoding: failed to get the Python codec name of the stdio encoding"
+        } else {
+            "init_sys_streams: can't initialize sys standard streams"
+        };
         let _ = write!(
             std::io::stderr(),
-            "Fatal Python error: init_stdio_encoding: failed to get the Python codec name of the stdio encoding\nPython runtime state: core initialized\n{message}\n\nCurrent thread <ADDRESS> (most recent call first):\n  <no Python frame>\n"
+            "Fatal Python error: {stage}\nPython runtime state: core initialized\n{message}\n\nCurrent thread <ADDRESS> (most recent call first):\n  <no Python frame>\n"
         );
         std::process::exit(1);
     }
@@ -307,7 +312,11 @@ fn main() {
                 code = 1;
             }
         }
-        Err(_) => code = 1,
+        Err(message) => {
+            // Even a codec without native diagnostic bytes must fail visibly.
+            let _ = writeln!(std::io::stderr(), "{message}");
+            code = 1;
+        }
     }
     std::process::exit(code);
 }

@@ -52,7 +52,13 @@ fn option_like(s: &str) -> bool {
             || n.split_once('.')
                 .is_some_and(|(a, b)| (a.is_empty() || digits(a)) && digits(b))
     });
-    s.len() > 1 && s.starts_with('-') && !negative
+    // Known options and prefixes precede the space fallback in _parse_optional.
+    let name = s.split_once('=').map_or(s, |(name, _)| name);
+    let known = s.starts_with("-h")
+        || OPTIONS
+            .iter()
+            .any(|o| name.starts_with("--") && o.0.starts_with(name));
+    s.len() > 1 && s.starts_with('-') && (known || (!negative && !s.contains(' ')))
 }
 /// `cwd` supplies default_db_path's only ambient input: cwd/.mir/memory.db.
 /// `connect` supplies store.connect, including extension availability/reason.
@@ -76,6 +82,17 @@ pub fn main_with_cwd(
     let Some(&action) = argv.first() else {
         return diag("", "the following arguments are required: action");
     };
+    if let Some((name, value)) = action.split_once('=')
+        && (name == "-h" || (name.starts_with("--") && "--help".starts_with(name)))
+    {
+        return diag(
+            "",
+            &format!(
+                "argument -h/--help: ignored explicit argument {}",
+                repr(value)
+            ),
+        );
+    }
     if action.starts_with("-h") && !action.starts_with("-h=") || action == "--help" {
         return help("");
     }

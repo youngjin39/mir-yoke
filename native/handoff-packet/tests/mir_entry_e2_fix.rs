@@ -96,3 +96,12 @@ fn original_argv() {
 fn cwd_only_when_needed() {
     check(&[17, 18, 19]);
 }
+
+#[test]
+fn migrate_space_value() {
+    check(&[22, 23, 24]);
+}
+#[test]
+fn migrate_explicit_top_help() {
+    check(&[25, 26]);
+}

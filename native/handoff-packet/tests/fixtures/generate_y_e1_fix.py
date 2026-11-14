@@ -68,6 +68,11 @@ cases = [
     (["loop", "next"], "utf-8", "write-closed"),
     (["loop", "next"], "utf-8", "large-closed"),
     (["--help"], "utf-8", "badfd"),
+    (["--help"], "utf-8-sig", "normal"),
+    (["é"], "utf-8-sig", "normal"),
+    (["--help"], "bz2", "startup"),
+    (["--help"], "hex", "startup"),
+    (["--help"], "is not a text encoding", "startup"),
 ]
 records = []
 for index, (argv, encoding, mode) in enumerate(cases):

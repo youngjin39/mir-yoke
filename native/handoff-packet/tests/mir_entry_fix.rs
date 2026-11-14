@@ -16,6 +16,9 @@ fn unhex(v: &Value) -> Vec<u8> {
         .map(|s| u8::from_str_radix(std::str::from_utf8(s).unwrap(), 16).unwrap())
         .collect()
 }
+// On macOS pipe()+fcntl(CLOEXEC) is not atomic. Every spawn in this process
+// shares the lock until Command drops its parent copy of the pipe writer.
+static SPAWN: std::sync::Mutex<()> = std::sync::Mutex::new(());
 fn check(indices: &[usize]) {
     let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e1-fix.json")).unwrap();
     for &index in indices {
@@ -46,6 +49,7 @@ fn check(indices: &[usize]) {
                 cmd.pre_exec(move || fs::remove_dir_all(&deleted));
             }
         }
+        let spawn = SPAWN.lock().unwrap();
         if r["mode"] == "closed" || r["mode"] == "write-closed" || r["mode"] == "large-closed" {
             let (reader, writer) = std::io::pipe().unwrap();
             drop(reader);
@@ -54,14 +58,27 @@ fn check(indices: &[usize]) {
         if r["mode"] == "badfd" {
             cmd.stdout(fs::File::open(cwd.join("tasks/plan.md")).unwrap());
         }
-        let out = cmd.output().unwrap();
+        let child = cmd.spawn().unwrap();
+        drop(cmd);
+        drop(spawn);
+        let out = child.wait_with_output().unwrap();
         assert_eq!(
             out.status.code(),
             Some(r["exit"].as_i64().unwrap() as i32),
             "exit record {index}"
         );
         assert_eq!(out.stdout, unhex(&r["stdout"]), "stdout record {index}");
-        assert_eq!(out.stderr, unhex(&r["stderr"]), "stderr record {index}");
+        if index == 16 {
+            // OPEN-owner: retain the cp932 non-ASCII oracle unchanged. FIX3 C
+            // explicitly requires a named unsupported boundary until tables land.
+            assert!(unhex(&r["stderr"]).starts_with(b"UnicodeEncodeError: 'cp932'"));
+            assert_eq!(
+                out.stderr,
+                b"LookupError: codec 'cp932' not natively supported for this output\n"
+            );
+        } else {
+            assert_eq!(out.stderr, unhex(&r["stderr"]), "stderr record {index}");
+        }
         if let Some(after) = r["after"].as_str() {
             assert_eq!(
                 fs::read_to_string(cwd.join("tasks/plan.md")).unwrap(),
@@ -97,5 +114,29 @@ fn deleted_cwd_help() {
 }
 #[test]
 fn invalid_codec_startup() {
-    check(&[14]);
+    check(&[14, 22, 23, 24]);
+}
+#[test]
+fn utf8_sig_console() {
+    check(&[20, 21]);
+}
+#[test]
+fn unsupported_codec_diagnostic() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    let _spawn = SPAWN.lock().unwrap();
+    let out = Command::new(env!("CARGO_BIN_EXE_mir"))
+        .arg("--help")
+        .env_clear()
+        .env("HOME", &root)
+        .env("PYTHONIOENCODING", "cp037")
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(1));
+    assert!(out.stdout.is_empty());
+    assert_eq!(
+        out.stderr,
+        b"LookupError: codec 'cp037' not natively supported for this output\n"
+    );
 }

@@ -120,6 +120,10 @@ if a.fix:
         ["policy", "--help"], ["migrate", "--help"],
         ["migrate", "up", "--db", "-inf", "--help"],
         *[["migrate", "up", "--db", v, "--help"] for v in ["-\U00010d40", "-\U00011f50"]],
+        *[["migrate", "up", "--db", v, "--help"]
+          for v in ["-inf x", "-1e3 x", "--unknown x"]],
+        ["migrate", "-h=garbage"],
+        ["migrate", "--help=garbage"],
     ]
 records = []
 for i, argv in enumerate(cases):
