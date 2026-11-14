@@ -15,6 +15,17 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
             String::from_utf8_lossy(&err).into(),
         );
     }
+    if argv[0] == "context" {
+        let (args, replacements) = scalar_args(&argv[1..], "");
+        let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
+        let (code, out, err) =
+            mir_cli::context_sync::console(&refs, |p| scalar_path(p, &replacements));
+        return (
+            code,
+            restore(out, &replacements),
+            restore(err, &replacements),
+        );
+    }
     if argv[0] == "runtime-manifest" {
         return manifest::console(argv[1..].to_vec());
     }

@@ -55,7 +55,7 @@ fn unbound_families_are_explicit() {
     for name in handoff_packet::mir_front::SUBCOMMANDS {
         if matches!(
             name,
-            "loop" | "policy" | "runtime-manifest" | "run-python" | "migrate"
+            "context" | "loop" | "policy" | "runtime-manifest" | "run-python" | "migrate"
         ) {
             continue;
         }

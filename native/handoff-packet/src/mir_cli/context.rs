@@ -1,4 +1,4 @@
-//! Library-only FTS context pull and profile headers; no live caller.
+//! FTS context pull/profile helpers and sync; sync admission lives in context_sync.
 #![forbid(unsafe_code)]
 use crate::mir_core::context::profile_task_context::{
     ProfileTaskContext, ordered_python_str, python_str, string_list,
@@ -225,6 +225,7 @@ pub fn do_sync_with_embedding<'e>(
     }
     let mut embed_fn = match build_embed_fn() {
         Ok(backend) => backend,
+        Err(e) if e.kind == "NativeRouteUnavailable" => return Err(e),
         Err(e) if reindex_missing_vectors => {
             return Ok((
                 1,

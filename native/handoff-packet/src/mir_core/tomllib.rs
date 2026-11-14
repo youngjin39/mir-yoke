@@ -1,5 +1,10 @@
 //! Shared, bounded tomllib diagnostic compatibility.
 pub(crate) fn tomllib_error(error: &toml::de::Error, text: &str) -> String {
+    if error.message().contains("invalid array")
+        && error.span().is_some_and(|s| s.start >= text.len())
+    {
+        return "Invalid value (at end of document)".into();
+    }
     if text.trim_end() == "[" {
         return "Invalid initial character for a key part (at end of document)".into();
     }
