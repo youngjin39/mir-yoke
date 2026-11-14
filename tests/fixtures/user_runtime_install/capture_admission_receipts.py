@@ -651,6 +651,12 @@ def acquire(scratch, mutant=None, transactions=False, transaction_fixes=False):
 
 
 if __name__ == "__main__":
+    if "--cli" in sys.argv:
+        import runpy
+
+        sys.argv.remove("--cli")
+        runpy.run_path(str(Path(__file__).with_name("capture_cli.py")), run_name="__main__")
+        sys.exit(0)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scratch", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)

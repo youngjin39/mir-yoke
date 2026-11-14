@@ -2801,7 +2801,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/Cargo.toml",
-      "sha256": "8429c50b2f2f40be770263997131f151bd2dc216754127ec1b47c9d17f2ad2d1"
+      "sha256": "01a525aa63b3a62c2eeab79ec30282a6d7d5710feae4989a8118356e78a705df"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3179,7 +3179,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/lib.rs",
-      "sha256": "12a07ccd3b0e5ac996a5c03c7097b149088d9d87604165f8132913c5473a4f00"
+      "sha256": "96cb8b1efec4302bcbf1f4b10f2e0432f2dd83b75594f6b606fb48acee2664f6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3814,6 +3814,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_cli.rs",
+      "sha256": "e03da0e56329ab15145e2cab9582d3b5f2bceebe66e1f23b669fa9ec2f25d7f7"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_identity_tests.rs",
       "sha256": "16620e07b3ff4553fd2d4fe996d421ab1dfac18eaf7deb7e6829c070a3f91388"
     },
@@ -3821,7 +3827,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_install.rs",
-      "sha256": "8fb4476d848e206b6b26dd0ee921c93accdd08143b550f7429b981e986615a9d"
+      "sha256": "4a334e06ee9a951d0a08eacbdef7bbfd032f39fd7ab997243b2abc3151621af6"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_install_main.rs",
+      "sha256": "069e97b3992e1dddb6a6c6c453cdf348977a27dc49f7d1e14d9bf8be01ef016c"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5064,6 +5076,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/tdd_ledger.rs",
       "sha256": "cd80e0cf88764f5f39f1dc2c2a73a37d83f22f117bf6ca132980b3e0ddaee69a"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/user_runtime_cli.rs",
+      "sha256": "abf6a8c7d97f9401a5b38cc15313d26f5752d09794f6f983a7194515a86f4959"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7325,7 +7343,19 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/user_runtime_install/capture_admission_receipts.py",
-      "sha256": "645859740298bd3fbb17bc08f959bf85ee67ce14d27a166b2e607ac2e6e0341d"
+      "sha256": "611ded993f0b112e64f692d5334aac2d98ad70c61e13c17f9a93b4c9bcd8b066"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/capture_cli.py",
+      "sha256": "87c46ea82f88b6694fdd8199d68b18b6faf8cf14abc92290e4f106ad37987a24"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/cli.json",
+      "sha256": "2bfa3f64de0fdd535347601bd468ce5b5c99bf47c5b6f6956f2bac0a90968089"
     },
     {
       "classification": "template-maintainer-tool",

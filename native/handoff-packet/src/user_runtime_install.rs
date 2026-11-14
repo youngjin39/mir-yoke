@@ -367,7 +367,7 @@ pub struct StaleFile {
     pub target_relative: PathBuf,
     pub sha256: String,
 }
-fn quoted(points: &[u32]) -> String {
+pub(crate) fn quoted(points: &[u32]) -> String {
     let mut out = String::from("\"");
     for &cp in points {
         match cp {

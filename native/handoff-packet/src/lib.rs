@@ -741,3 +741,6 @@ pub mod user_runtime_mutation;
 
 #[cfg(unix)]
 pub mod user_runtime_transaction;
+
+#[cfg(unix)]
+pub mod user_runtime_cli;
