@@ -1,4 +1,12 @@
 //! Descriptor-relative adoption mutations; never follow substituted parent symlinks.
+#[cfg(windows)]
+mod windows;
+#[cfg(all(test, windows))]
+mod windows_entry_tests;
+#[cfg(all(test, windows))]
+mod windows_mutation_tests;
+#[cfg(all(test, windows))]
+mod windows_parent_tests;
 #[cfg(unix)]
 use std::ffi::CString;
 #[cfg(unix)]
@@ -16,6 +24,29 @@ use std::{
 pub(crate) struct Parent {
     pub(crate) directory: File,
     pub(crate) name: OsString,
+}
+
+/// Volume and complete object ID; Windows IDs must never be truncated to inode size.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Identity {
+    volume: u64,
+    id: [u8; 16],
+}
+#[cfg(unix)]
+fn unix_identity(volume: u64, inode: u64) -> Identity {
+    let mut id = [0; 16];
+    id[..8].copy_from_slice(&inode.to_le_bytes());
+    Identity { volume, id }
+}
+fn file_identity(file: &File) -> io::Result<Identity> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let metadata = file.metadata()?;
+        Ok(unix_identity(metadata.dev(), metadata.ino()))
+    }
+    #[cfg(windows)]
+    windows::file_identity(file)
 }
 
 #[cfg(unix)]
@@ -90,6 +121,9 @@ pub(crate) fn relative<'a>(root: &Path, path: &'a Path) -> io::Result<&'a Path> 
 
 pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
     let relative = relative(root, path)?;
+    #[cfg(windows)]
+    return windows::parent(root, relative);
+    #[cfg(not(windows))]
     let mut parts = relative.components().peekable();
     #[cfg(unix)]
     {
@@ -146,6 +180,7 @@ pub(crate) fn parent(root: &Path, path: &Path) -> io::Result<Parent> {
                 opened(unsafe { libc::openat(directory.as_raw_fd(), name.as_ptr(), flags) })?;
         }
     }
+    #[cfg(not(windows))]
     Err(io::Error::new(
         io::ErrorKind::Unsupported,
         "descriptor-relative adoption requires Unix",
@@ -156,23 +191,18 @@ impl Parent {
     /// Descriptor APIs cannot exclude a rename after this final identity check.
     pub(crate) fn verify_parent(&self, root: &Path, path: &Path) -> io::Result<()> {
         let current = parent(root, path)?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::MetadataExt;
-            let old = self.directory.metadata()?;
-            let new = current.directory.metadata()?;
-            if old.dev() == new.dev() && old.ino() == new.ino() {
-                return Ok(());
-            }
+        if file_identity(&self.directory)? == file_identity(&current.directory)? {
+            return Ok(());
         }
-        #[cfg(not(unix))]
-        let _ = current;
         Err(io::Error::other("mutation parent changed"))
     }
     pub(crate) fn open_file(&self) -> io::Result<File> {
         self.open(false, false)
     }
 
+    // Current production callers are Unix-only; Windows exercises the primitive
+    // in entry tests until its callers migrate to the shared filesystem layer.
+    #[cfg(any(unix, test))]
     pub(crate) fn open_private(&self, append: bool) -> io::Result<File> {
         self.open(true, append)
     }
@@ -198,14 +228,8 @@ impl Parent {
                 )
             })
         }
-        #[cfg(not(unix))]
-        {
-            let _ = (write, append);
-            Err(io::Error::new(
-                io::ErrorKind::Unsupported,
-                "descriptor-relative adoption requires Unix",
-            ))
-        }
+        #[cfg(windows)]
+        windows::open(self, write, append)
     }
 
     pub(crate) fn directory_empty(&self) -> io::Result<bool> {
@@ -273,7 +297,11 @@ impl Parent {
                 }
             }
         }
-        #[cfg(not(any(target_vendor = "apple", target_os = "linux")))]
+        #[cfg(windows)]
+        {
+            windows::directory_empty(self)
+        }
+        #[cfg(not(any(windows, target_vendor = "apple", target_os = "linux")))]
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
             "descriptor-relative directory listing requires macOS or Linux",
@@ -294,8 +322,8 @@ impl Parent {
                 )
             })
         }
-        #[cfg(not(unix))]
-        self.directory.try_clone()
+        #[cfg(windows)]
+        windows::sync_file(&self.directory)
     }
     pub(crate) fn create(&self, name: &OsStr, mode: u32) -> io::Result<File> {
         #[cfg(unix)]
@@ -316,16 +344,13 @@ impl Parent {
                 )
             })
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::create(self, name, mode)
     }
-    pub(crate) fn identity(&self) -> io::Result<Option<(u64, u64)>> {
+    pub(crate) fn identity(&self) -> io::Result<Option<Identity>> {
         self.object_identity(false)
     }
-    pub(crate) fn object_identity(&self, directory: bool) -> io::Result<Option<(u64, u64)>> {
+    pub(crate) fn object_identity(&self, directory: bool) -> io::Result<Option<Identity>> {
         #[cfg(unix)]
         {
             let name = c_name(&self.name)?;
@@ -350,15 +375,12 @@ impl Parent {
                 } else {
                     libc::S_IFREG
                 })
-            .then_some((metadata.st_dev as u64, metadata.st_ino)))
+            .then_some(unix_identity(metadata.st_dev as u64, metadata.st_ino)))
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::object_identity(self, &self.name, directory)
     }
-    fn matches(&self, expected: &(u64, u64)) -> io::Result<bool> {
+    fn matches(&self, expected: &Identity) -> io::Result<bool> {
         Ok(self.identity()?.as_ref() == Some(expected))
     }
     pub(crate) fn unlink(&self, name: &OsStr, directory: bool) -> io::Result<()> {
@@ -379,11 +401,8 @@ impl Parent {
             }
             Err(io::Error::last_os_error())
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::unlink(self, name, directory)
     }
 }
 #[cfg(unix)]
@@ -419,33 +438,10 @@ pub(crate) fn owns_file(pinned: &Parent, name: &std::ffi::OsStr, output: &File) 
 }
 
 #[cfg(windows)]
-pub(crate) fn owns_file(source: &Path, output: &File) -> bool {
-    use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
-    use windows_sys::Win32::Storage::FileSystem::{
-        BY_HANDLE_FILE_INFORMATION, FILE_FLAG_OPEN_REPARSE_POINT, GetFileInformationByHandle,
-    };
-    fn identity(file: &File) -> Option<(u32, u32, u32)> {
-        let mut info = std::mem::MaybeUninit::<BY_HANDLE_FILE_INFORMATION>::uninit();
-        // SAFETY: live file handle and writable information allocation.
-        if unsafe { GetFileInformationByHandle(file.as_raw_handle(), info.as_mut_ptr()) } == 0 {
-            return None;
-        }
-        // SAFETY: successful API call initialized the complete record.
-        let info = unsafe { info.assume_init() };
-        Some((
-            info.dwVolumeSerialNumber,
-            info.nFileIndexHigh,
-            info.nFileIndexLow,
-        ))
-    }
-    let Ok(current) = std::fs::OpenOptions::new()
-        .access_mode(0)
-        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
-        .open(source)
-    else {
-        return false;
-    };
-    identity(output).is_some_and(|created| identity(&current) == Some(created))
+pub(crate) fn owns_file(pinned: &Parent, name: &OsStr, output: &File) -> bool {
+    file_identity(output).is_ok_and(|created| {
+        windows::object_identity(pinned, name, false).is_ok_and(|current| current == Some(created))
+    })
 }
 
 pub(crate) fn mkdir(root: &Path, path: &Path, mode: u32) -> io::Result<()> {
@@ -467,11 +463,8 @@ pub(crate) fn mkdir(root: &Path, path: &Path, mode: u32) -> io::Result<()> {
         }
         Err(io::Error::last_os_error())
     }
-    #[cfg(not(unix))]
-    Err(io::Error::new(
-        io::ErrorKind::Unsupported,
-        "descriptor-relative adoption requires Unix",
-    ))
+    #[cfg(windows)]
+    windows::mkdir(&parent, mode)
 }
 pub(crate) struct Move {
     source: Parent,
@@ -481,23 +474,15 @@ impl Move {
     pub(crate) fn prepare(root: &Path, source: &Path, destination: &Path) -> io::Result<Self> {
         let source = parent(root, source)?;
         let destination = parent(root, destination)?;
-        #[cfg(unix)]
-        {
-            // Generic moves also support unreadable files. Artifact publication
-            // supplies identity from its still-open verified descriptor instead.
-            source
-                .identity()?
-                .ok_or_else(|| io::Error::other("source is not a regular file"))?;
-            Ok(Self {
-                source,
-                destination,
-            })
-        }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        // Generic moves also support unreadable files. Artifact publication
+        // supplies identity from its still-open verified descriptor instead.
+        source
+            .identity()?
+            .ok_or_else(|| io::Error::other("source is not a regular file"))?;
+        Ok(Self {
+            source,
+            destination,
+        })
     }
     pub(crate) fn rename(&self) -> io::Result<()> {
         #[cfg(unix)]
@@ -519,11 +504,8 @@ impl Move {
             }
             Ok(())
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::rename(&self.source, &self.destination)
     }
 }
 
@@ -538,6 +520,9 @@ pub(crate) struct StagedFile {
     requires_visible_parent: bool,
 }
 impl StagedFile {
+    // Current production callers use this wrapper only on Unix; Windows uses
+    // create_with/create_with_parent_check, with this convenience API in tests.
+    #[cfg(any(unix, test))]
     pub(crate) fn create(root: &Path, path: &Path) -> io::Result<Self> {
         Self::create_with(root, path, |_| Ok(()))
     }
@@ -570,18 +555,8 @@ impl StagedFile {
             requires_visible_parent,
         })
     }
-    pub(crate) fn identity(&self) -> io::Result<(u64, u64)> {
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::MetadataExt;
-            let metadata = self.file.metadata()?;
-            Ok((metadata.dev(), metadata.ino()))
-        }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+    pub(crate) fn identity(&self) -> io::Result<Identity> {
+        file_identity(&self.file)
     }
     pub(crate) fn contents(&mut self, limit: usize) -> io::Result<Vec<u8>> {
         use std::io::{Read, Seek};
@@ -594,20 +569,20 @@ impl StagedFile {
         Ok(bytes)
     }
     pub(crate) fn publish(&self, root: &Path, destination: &Path) -> io::Result<Parent> {
+        // Reject changed visible ancestors before effects. Compare the named
+        // source against the verified descriptor, never a replacement reopen.
+        if self.requires_visible_parent {
+            self.source.verify_parent(root, &self.path)?;
+        } else {
+            let _ = parent(root, &self.path)?;
+        }
+        let destination = parent(root, destination)?;
+        let expected = self.identity()?;
+        if !self.source.matches(&expected)? {
+            return Err(io::Error::other("source changed during publication"));
+        }
         #[cfg(unix)]
         {
-            // Reject changed visible ancestors before effects, then use only the
-            // staged source fd. Compare against the verified descriptor, not a reopen.
-            if self.requires_visible_parent {
-                self.source.verify_parent(root, &self.path)?;
-            } else {
-                let _ = parent(root, &self.path)?;
-            }
-            let destination = parent(root, destination)?;
-            let expected = self.identity()?;
-            if !self.source.matches(&expected)? {
-                return Err(io::Error::other("source changed during publication"));
-            }
             let movement = Move {
                 source: Parent {
                     directory: self.source.directory.try_clone()?,
@@ -619,14 +594,11 @@ impl StagedFile {
                 },
             };
             movement.rename()?;
-            self.cleanup_disabled.set(true);
-            Ok(destination)
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::rename_file(&self.file, &destination)?;
+        self.cleanup_disabled.set(true);
+        Ok(destination)
     }
     // An explicit cleanup failure must not be retried by Drop.
     pub(crate) fn keep(&self) {
@@ -636,27 +608,22 @@ impl StagedFile {
         if self.cleanup_disabled.get() {
             return Ok(());
         }
-        #[cfg(unix)]
-        {
-            if self.requires_visible_parent {
-                self.source.verify_parent(&self.root, &self.path)?;
-            }
-            let expected = self.identity()?;
-            match self.source.identity() {
-                Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
-                Err(error) => return Err(error),
-                Ok(Some(identity)) if identity == expected => (),
-                _ => return Err(io::Error::other("source changed during cleanup")),
-            }
-            self.source.unlink(&self.source.name, false)?;
-            self.cleanup_disabled.set(true);
-            Ok(())
+        if self.requires_visible_parent {
+            self.source.verify_parent(&self.root, &self.path)?;
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        let expected = self.identity()?;
+        match self.source.identity() {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+            Err(error) => return Err(error),
+            Ok(Some(identity)) if identity == expected => (),
+            _ => return Err(io::Error::other("source changed during cleanup")),
+        }
+        #[cfg(unix)]
+        self.source.unlink(&self.source.name, false)?;
+        #[cfg(windows)]
+        windows::dispose_file(&self.file)?;
+        self.cleanup_disabled.set(true);
+        Ok(())
     }
 }
 impl Drop for StagedFile {
