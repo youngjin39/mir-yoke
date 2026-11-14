@@ -6,6 +6,47 @@ use std::{
 };
 
 #[test]
+fn dispose_reopen_sharing_denial_preserves_original_handle_and_file() {
+    use std::io::{Seek, SeekFrom};
+    use windows_sys::Win32::{
+        Foundation::ERROR_SHARING_VIOLATION,
+        Storage::FileSystem::{FILE_SHARE_READ, FILE_SHARE_WRITE},
+    };
+
+    let t = tempfile::tempdir().unwrap();
+    let r = t.path().canonicalize().unwrap();
+    let path = r.join("blocked-delete");
+    fs::write(&path, b"original").unwrap();
+    // ReOpenFile's desired access must be compatible with every existing
+    // handle's sharing mode. This live handle omits FILE_SHARE_DELETE, so the
+    // DELETE reopen fails in the OS before any disposition can be requested.
+    // https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-reopenfile
+    let mut original = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+        .open(&path)
+        .unwrap();
+    let id = file_identity(&original).unwrap();
+    let error = windows::dispose_file(&original).unwrap_err();
+    assert_eq!(error.raw_os_error(), Some(ERROR_SHARING_VIOLATION as i32));
+    assert_eq!(file_identity(&original).unwrap(), id);
+    assert_eq!(parent(&r, &path).unwrap().identity().unwrap(), Some(id));
+    assert_eq!(fs::read(&path).unwrap(), b"original");
+    // The failure must neither close nor poison the caller's borrowed handle.
+    let mut bytes = Vec::new();
+    original.read_to_end(&mut bytes).unwrap();
+    assert_eq!(bytes, b"original");
+    original.seek(SeekFrom::Start(0)).unwrap();
+    original.write_all(b"retained").unwrap();
+    assert_eq!(fs::read(&path).unwrap(), b"retained");
+    drop(original);
+    assert_eq!(fs::read(&path).unwrap(), b"retained");
+    fs::remove_file(&path).unwrap();
+    assert!(!path.exists());
+}
+
+#[test]
 fn rename_counted_utf16_tails_preserve_identity_for_moves_and_stages() {
     use std::os::windows::ffi::OsStringExt;
     let t = tempfile::tempdir().unwrap();
