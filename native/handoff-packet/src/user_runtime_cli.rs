@@ -151,8 +151,41 @@ fn diag(message: String) -> Output {
         ),
     )
 }
+const OPTIONS: [&str; 5] = ["-h", "--help", "--claude-home", "--codex-home", "--apply"];
+fn option_like(value: &str) -> bool {
+    // CPython 3.12.13 argparse.py:2320-2408 (_parse_optional/_get_option_tuples):
+    // exact, single character, '=' exact, prefix tuples, negative number, space.
+    if !value.starts_with('-') {
+        return false;
+    }
+    if OPTIONS.contains(&value) {
+        return true;
+    }
+    if value == "-" {
+        return false;
+    }
+    let (prefix, explicit) = value
+        .split_once('=')
+        .map_or((value, false), |(name, _)| (name, true));
+    if explicit && OPTIONS.contains(&prefix) {
+        return true;
+    }
+    let short: String = value.chars().take(2).collect();
+    let prefix_match = OPTIONS.iter().any(|option| {
+        if value.starts_with("--") {
+            option.starts_with(prefix)
+        } else {
+            *option == short || option.starts_with(prefix)
+        }
+    });
+    if prefix_match {
+        return true;
+    }
+    // Reuse the executor's Python-compatible Unicode negative-number matcher.
+    !crate::executor_execute_parser::value_token(value) && !value.contains(' ')
+}
 fn parse(raw: &[OsString]) -> Result<(PathBuf, PathBuf, bool), Output> {
-    let options = ["--help", "--claude-home", "--codex-home", "--apply"];
+    let options = &OPTIONS[1..];
     let (mut homes, mut apply, mut unknown, mut i) = ([None, None], false, Vec::new(), 0);
     while i < raw.len() {
         let arg = text::os_text(&raw[i]);
@@ -221,13 +254,7 @@ fn parse(raw: &[OsString]) -> Result<(PathBuf, PathBuf, bool), Output> {
                     .to_vec(),
             )
         } else {
-            // argparse 3.12 _parse_optional checks short-option tuples before
-            // its space-containing positional fallback: "-h x" is still -h.
-            if i == raw.len()
-                || (!crate::executor_execute_parser::value_token(&text::os_text(&raw[i]))
-                    && !(text::os_text(&raw[i]).contains(' ')
-                        && !text::os_text(&raw[i]).starts_with("-h")))
-            {
+            if i == raw.len() || option_like(&text::os_text(&raw[i])) {
                 return Err(diag(format!("argument {option}: expected one argument")));
             }
             let v = raw[i].clone();

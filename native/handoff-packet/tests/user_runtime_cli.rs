@@ -13,7 +13,8 @@ fn frozen_processes(group: &str) {
     let temporary = tempfile::tempdir().unwrap(); // Gate supplies synthetic TMPDIR.
     for record in records {
         let name = record["name"].as_str().unwrap();
-        let actual_group = if name.starts_with("fix-value-") { "values" }
+        let actual_group = if name.starts_with("fix2_") { name }
+            else if name.starts_with("fix-value-") { "values" }
             else if name.ends_with("readonly-stdout") { "stdout" } else { "original" };
         if actual_group != group { continue; }
         let root = temporary.path().join(name);
@@ -120,3 +121,18 @@ fn user_runtime_cli_requires_provider() {
     assert!(output.stdout.is_empty());
     assert!(!output.stderr.is_empty());
 }
+
+macro_rules! fix2_case {
+    ($($name:ident),+ $(,)?) => { $(
+        #[test]
+        fn $name() { frozen_processes(stringify!($name)); }
+    )+ };
+}
+fix2_case!(
+    fix2_help,
+    fix2_claude,
+    fix2_codex,
+    fix2_short,
+    fix2_unknown,
+    fix2_prefix
+);

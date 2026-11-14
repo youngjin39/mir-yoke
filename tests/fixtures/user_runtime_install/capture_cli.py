@@ -66,6 +66,10 @@ for prefix in ("", "buffered-"):
     for route, argv in (("help", ["--help"]), ("dry-run", VALID), ("apply", VALID + ["--apply"])):
         CASES[prefix + "fix-" + route + "-readonly-stdout"] = argv
 
+for name, value in (("help", "--help= x"), ("claude", "--cl= x"), ("codex", "--codex= x"),
+                    ("short", "-hx y"), ("unknown", "--nope= x"), ("prefix", "--= x")):
+    CASES["fix2_" + name] = ["--claude-home", value, "--codex-home", "relative"]
+
 
 def main():
     parser = argparse.ArgumentParser()
