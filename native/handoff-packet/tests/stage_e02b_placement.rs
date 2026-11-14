@@ -276,7 +276,6 @@ fn warm_verification_does_not_follow_a_linked_parent() {
 }
 
 #[test]
-#[rustfmt::skip]
 fn every_placement_and_rollback_mutation_stays_in_the_pinned_root() {
     use PlacementMutation::*;
     for site in [

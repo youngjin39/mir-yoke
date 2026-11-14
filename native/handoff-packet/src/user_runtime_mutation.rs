@@ -47,8 +47,7 @@ impl PendingWrite {
                 "temporary must differ from target",
             ));
         }
-        let mut staged = StagedFile::create(root, &path)?;
-        staged.require_visible_cleanup_parent();
+        let mut staged = StagedFile::create_with_parent_check(root, &path, true, |_| Ok(()))?;
         staged.file.write_all(content)?;
         staged.file.flush()?;
         staged.file.sync_all()?;
@@ -230,13 +229,31 @@ mod tests {
         }
     }
     #[test]
+    fn replaced_parent_before_installer_publication_is_rejected() {
+        let temp = tempfile::tempdir().unwrap(); let base = temp.path().canonicalize().unwrap();
+        let root = base.join("root"); let dir = root.join("agents"); let outside = base.join("outside");
+        fs::create_dir_all(&dir).unwrap(); fs::create_dir(&outside).unwrap();
+        let pending = PendingWrite::prepare(&root, &dir.join("agent.md"), OsStr::new("temporary"), b"after").unwrap();
+        let mut expected = vec![];
+        let result = pending.publish_with(|_| {
+            fs::rename(&dir, outside.join("moved"))?;
+            fs::create_dir(&dir)?;
+            expected = snapshot(&outside);
+            Ok(())
+        });
+        assert_eq!(result.unwrap_err().to_string(), "mutation parent changed");
+        drop(pending);
+        assert_eq!(snapshot(&outside), expected);
+        assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
+    }
+    #[test]
     fn moved_parent_before_temporary_creation_is_rejected() {
         for replacement_directory in [false, true] {
             let temp = tempfile::tempdir().unwrap(); let base = temp.path().canonicalize().unwrap();
             let root = base.join("root"); let dir = root.join("agents"); let outside = base.join("outside");
             fs::create_dir_all(&dir).unwrap(); fs::create_dir(&outside).unwrap();
             let mut expected = vec![];
-            let result = StagedFile::create_with(&root, &dir.join("temporary"), |_| {
+            let result = StagedFile::create_with_parent_check(&root, &dir.join("temporary"), true, |_| {
                 fs::rename(&dir, outside.join("moved"))?;
                 if replacement_directory { fs::create_dir(&dir)?; } else { symlink(outside.join("moved"), &dir)?; }
                 expected = snapshot(&outside); Ok(())

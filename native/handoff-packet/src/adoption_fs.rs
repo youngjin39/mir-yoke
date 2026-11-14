@@ -535,7 +535,7 @@ pub(crate) struct StagedFile {
     source: Parent,
     root: std::path::PathBuf,
     cleanup_disabled: std::cell::Cell<bool>,
-    cleanup_requires_visible_parent: bool,
+    requires_visible_parent: bool,
 }
 impl StagedFile {
     pub(crate) fn create(root: &Path, path: &Path) -> io::Result<Self> {
@@ -546,9 +546,19 @@ impl StagedFile {
         path: &Path,
         before: impl FnOnce(&Path) -> io::Result<()>,
     ) -> io::Result<Self> {
+        Self::create_with_parent_check(root, path, false, before)
+    }
+    pub(crate) fn create_with_parent_check(
+        root: &Path,
+        path: &Path,
+        requires_visible_parent: bool,
+        before: impl FnOnce(&Path) -> io::Result<()>,
+    ) -> io::Result<Self> {
         let source = parent(root, path)?;
         before(path)?;
-        source.verify_parent(root, path)?;
+        if requires_visible_parent {
+            source.verify_parent(root, path)?;
+        }
         // Failure to create gives no ownership and must never trigger cleanup.
         let file = source.create(&source.name, 0o600)?;
         Ok(Self {
@@ -557,12 +567,8 @@ impl StagedFile {
             source,
             root: root.to_owned(),
             cleanup_disabled: std::cell::Cell::new(false),
-            cleanup_requires_visible_parent: false,
+            requires_visible_parent,
         })
-    }
-    // Installer temporaries must remain inside the visible runtime root, even on Drop.
-    pub(crate) fn require_visible_cleanup_parent(&mut self) {
-        self.cleanup_requires_visible_parent = true;
     }
     pub(crate) fn identity(&self) -> io::Result<(u64, u64)> {
         #[cfg(unix)]
@@ -592,7 +598,11 @@ impl StagedFile {
         {
             // Reject changed visible ancestors before effects, then use only the
             // staged source fd. Compare against the verified descriptor, not a reopen.
-            self.source.verify_parent(root, &self.path)?;
+            if self.requires_visible_parent {
+                self.source.verify_parent(root, &self.path)?;
+            } else {
+                let _ = parent(root, &self.path)?;
+            }
             let destination = parent(root, destination)?;
             let expected = self.identity()?;
             if !self.source.matches(&expected)? {
@@ -628,7 +638,7 @@ impl StagedFile {
         }
         #[cfg(unix)]
         {
-            if self.cleanup_requires_visible_parent {
+            if self.requires_visible_parent {
                 self.source.verify_parent(&self.root, &self.path)?;
             }
             let expected = self.identity()?;
@@ -709,6 +719,41 @@ mod tests {
 mod owned_cleanup_tests {
     use super::*;
     use std::{fs, io::Write};
+    #[test]
+    fn e02_creation_uses_pinned_parent_after_real_directory_replacement() {
+        let t = tempfile::tempdir().unwrap();
+        let root = t.path().canonicalize().unwrap();
+        let parent = root.join("agents");
+        let moved = root.join("moved");
+        fs::create_dir(&parent).unwrap();
+        let staged = StagedFile::create_with(&root, &parent.join("temp"), |_| {
+            fs::rename(&parent, &moved)?;
+            fs::create_dir(&parent)
+        })
+        .expect("E02 creates through the pinned parent");
+        assert!(moved.join("temp").is_file());
+        assert!(!parent.join("temp").exists());
+        drop(staged);
+        assert!(!moved.join("temp").exists());
+    }
+    #[test]
+    fn e02_publication_uses_pinned_parent_after_real_directory_replacement() {
+        let t = tempfile::tempdir().unwrap();
+        let root = t.path().canonicalize().unwrap();
+        let parent = root.join("agents");
+        let moved = root.join("moved");
+        fs::create_dir(&parent).unwrap();
+        let mut staged = StagedFile::create(&root, &parent.join("temp")).unwrap();
+        staged.file.write_all(b"verified").unwrap();
+        fs::rename(&parent, &moved).unwrap();
+        fs::create_dir(&parent).unwrap();
+        staged
+            .publish(&root, &parent.join("dest"))
+            .expect("E02 publishes from the pinned parent");
+        drop(staged);
+        assert_eq!(fs::read(parent.join("dest")).unwrap(), b"verified");
+        assert_eq!(fs::read_dir(&moved).unwrap().count(), 0);
+    }
     #[test]
     fn contents_and_chmod_use_the_verified_descriptor() {
         use std::os::unix::fs::PermissionsExt;
