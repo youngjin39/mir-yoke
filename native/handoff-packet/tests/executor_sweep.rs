@@ -21,18 +21,7 @@ impl Fixture {
                 NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
             ));
         fs::create_dir_all(&root).unwrap();
-        // Resolve filesystem aliases before setup, including macOS firmlinks
-        // that pathlib.resolve does not collapse. Keep ordinary Windows paths.
-        let out = Command::new(python())
-            .args([
-                "-c",
-                "from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())",
-            ])
-            .arg(fs::canonicalize(root).unwrap())
-            .output()
-            .unwrap();
-        assert!(out.status.success());
-        Self(PathBuf::from(String::from_utf8(out.stdout).unwrap().trim()))
+        Self(reference_path(&root))
     }
 }
 impl Drop for Fixture {
@@ -53,6 +42,22 @@ fn python() -> PathBuf {
                 .then(|| PathBuf::from(String::from_utf8(out.stdout).unwrap().trim()))
         })
         .expect("Python is required for fixture setup and observation")
+}
+// Match fixture setup: collapse filesystem aliases, then use the reference's
+// pathlib spelling. In particular, Data/private and Data/Volumes aliases need
+// not canonicalize to the same spelling on macOS.
+fn reference_path(path: &Path) -> PathBuf {
+    let out = Command::new(python())
+        .args([
+            "-I",
+            "-c",
+            "from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())",
+        ])
+        .arg(fs::canonicalize(path).unwrap())
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    PathBuf::from(String::from_utf8(out.stdout).unwrap().trim())
 }
 fn reference(mode: &str, root: &Path, case: &str, args: &[&str]) -> Value {
     let out = Command::new(python())
@@ -306,11 +311,17 @@ fn registered_firmlink_removes_clean_and_finished_worktrees() {
             .unwrap()
             .contains(alias.to_str().unwrap())
     );
-    let result = run_native(&fixture.0, "run-mixed", true);
-    assert_eq!(
-        result["removed_worktrees"],
-        json!(["$ROOT/wt-clean", "$ROOT/wt-finished"])
+    // Resolve while the trees still exist; removal must report their inspected
+    // spelling, which can differ from the fixture root's spelling.
+    let expected = normalize(
+        json!([
+            reference_path(&alias.join("wt-clean")),
+            reference_path(&alias.join("wt-finished"))
+        ]),
+        &fixture.0,
     );
+    let result = run_native(&fixture.0, "run-mixed", true);
+    assert_eq!(result["removed_worktrees"], expected);
     assert!(!fixture.0.join("wt-clean").exists());
     assert!(!fixture.0.join("wt-finished").exists());
 }
@@ -354,6 +365,7 @@ fn registered_spelling_retarget_before_remove_is_refused() {
         )
         .unwrap();
     }
+    let expected_finished = reference_path(&unchanged.join("wt-finished"));
     let result = executor_sweep::sweep_run_state_with_observer(
         &fixture.0.join("repo"),
         &fixture.0.join("jobs.db"),
@@ -371,10 +383,7 @@ fn registered_spelling_retarget_before_remove_is_refused() {
     .unwrap();
     // A stable registered alias must still be removed while the retargeted one is refused.
     assert!(!fixture.0.join("wt-finished").exists());
-    assert_eq!(
-        result["removed_worktrees"],
-        json!([fixture.0.join("wt-finished")])
-    );
+    assert_eq!(result["removed_worktrees"], json!([expected_finished]));
     assert!(fixture.0.join("wt-clean/tracked.txt").is_file());
     assert_eq!(
         fs::read_to_string(outside.join("wt-clean/tracked.txt")).unwrap(),
