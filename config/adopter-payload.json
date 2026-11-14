@@ -2849,13 +2849,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/adoption_fs.rs",
-      "sha256": "5906ab9a4adbad56a78f6e369261254aafd4dadc51a6f67f8e59bbd8fb7ae34c"
+      "sha256": "5aded07bbdaac3fac151b62ed72ad7bda900c8307597e5b14d81af2b9ba685e2"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/adoption_fs/windows.rs",
-      "sha256": "eb3da9159d4ad34bc33331613ec2cc0feb4c693907c04bba250ea6e645fde0f5"
+      "sha256": "14a280b72f871f6e3de2c5770f9d4758162efc0233c54e5401cdd019851675c8"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2867,7 +2867,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/adoption_fs/windows_mutation_tests.rs",
-      "sha256": "b3e00cea7d6b0e58f08755f2935c2cd8088651e0af55736915175cab006d7d51"
+      "sha256": "b41f77288b4bee8735f4866be5d9ef19296397220e16e5e0450002c687998db4"
     },
     {
       "classification": "template-maintainer-tool",
