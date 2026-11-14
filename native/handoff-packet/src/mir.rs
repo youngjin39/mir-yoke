@@ -242,6 +242,45 @@ fn stdout_error(error: std::io::Error) -> String {
     message.strip_suffix(": ''").unwrap_or(&message).to_owned()
 }
 
+#[cfg(all(test, unix))]
+mod tests {
+    #[test]
+    fn injected_stdout_dup_child() {
+        if std::env::var_os("MIR_TEST_STDOUT_DUP_EMFILE").is_some() {
+            super::main();
+        }
+    }
+
+    #[test]
+    fn stdout_dup_failure() {
+        let r: serde_json::Value =
+            serde_json::from_str(include_str!("../tests/fixtures/y-e4.json")).unwrap();
+        // The pinned console succeeds under RLIMIT_NOFILE=3; only os.dup fails.
+        assert_eq!(r["no_dup_console"]["exit"], 0);
+        let temp = tempfile::tempdir().unwrap();
+        let out = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "tests::injected_stdout_dup_child",
+                "--nocapture",
+                "--quiet",
+            ])
+            .env_clear()
+            .env("HOME", temp.path())
+            .env("MIR_TEST_STDOUT_DUP_EMFILE", "1")
+            .current_dir(temp.path())
+            .output()
+            .unwrap();
+        assert_eq!(out.status.code(), Some(1));
+        // The harness prints its preamble before entering the test.
+        assert_eq!(out.stdout, b"\nrunning 1 test\n");
+        assert_eq!(
+            out.stderr,
+            format!("{}\n", r["no_dup_console"]["dup_error"].as_str().unwrap()).as_bytes()
+        );
+    }
+}
+
 fn main() {
     if let Err(message) = executor_text::console_encoding() {
         let stage = if message.starts_with("LookupError: unknown encoding:") {
@@ -277,7 +316,16 @@ fn main() {
             #[cfg(unix)]
             let writer = {
                 use std::os::fd::AsFd;
-                match stdout.as_fd().try_clone_to_owned() {
+                let cloned = stdout.as_fd().try_clone_to_owned();
+                // Only the unit-test binary admits fault injection; release and
+                // integration-test console binaries have no environment seam.
+                #[cfg(test)]
+                let cloned = if std::env::var_os("MIR_TEST_STDOUT_DUP_EMFILE").is_some() {
+                    Err(std::io::Error::from_raw_os_error(libc::EMFILE))
+                } else {
+                    cloned
+                };
+                match cloned {
                     Ok(fd) => std::fs::File::from(fd),
                     Err(error) => {
                         let _ = writeln!(std::io::stderr(), "{}", stdout_error(error));

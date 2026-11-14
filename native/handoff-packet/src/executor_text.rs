@@ -326,7 +326,7 @@ fn codec_name(encoding: &str) -> Result<&'static str> {
         .is_some_and(|v| v.iter().any(|n| n == name))
     {
         return Err(format!(
-            "LookupError: '{encoding}' is not a text encoding; use codecs.open() to handle arbitrary codecs"
+            "LookupError: '{name}' is not a text encoding; use codecs.open() to handle arbitrary codecs"
         ));
     }
     Ok(name)
