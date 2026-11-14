@@ -1428,84 +1428,44 @@ fn write_ledger(file: &Path, rendered: &str) -> Result<()> {
     #[cfg(windows)]
     let rendered = rendered.replace('\n', "\r\n");
     let parent = file.parent().ok_or("OSError: ledger parent missing")?;
-    #[cfg(unix)]
-    {
-        // mkstemp(dir=ledger.parent) follows directory symlinks. Resolve only
-        // the parent: os.replace replaces a leaf symlink, not its referent.
-        let resolved_parent =
-            fs::canonicalize(parent).map_err(|e| crate::executor_text::io_error(e, parent))?;
-        let resolved_file = resolved_parent.join(file.file_name().unwrap_or_default());
-        let pinned = crate::adoption_fs::parent(&resolved_parent, &resolved_file)
-            .map_err(|e| crate::executor_text::io_error(e, parent))?;
-        let (name, mut output) = create_ledger_temp(parent, |name| pinned.create(name, 0o600))?;
-        let source = parent.join(&name);
-        let written = (|| -> Result<()> {
-            output
-                .write_all(rendered.as_bytes())
-                .map_err(|e| crate::executor_text::io_error(e, &source))?;
-            let replacement = crate::adoption_fs::Move::prepare(
-                &resolved_parent,
-                &resolved_parent.join(&name),
-                &resolved_file,
-            )
-            .map_err(|e| crate::executor_text::io_error(e, file))?;
-            #[cfg(test)]
-            BEFORE_LEDGER_REPLACE.with(|hook| {
-                if let Some(hook) = hook.borrow_mut().take() {
-                    hook();
-                }
-            });
-            if !crate::adoption_fs::owns_file(&pinned, &name, &output) {
-                return Err("OSError: ledger temporary file identity changed".into());
-            }
-            replacement
-                .rename()
-                .map_err(|e| crate::executor_text::io_error(e, file))
-        })();
-        // Keep the creation fd open: a substituted entry must never acquire
-        // the original inode through reuse while cleanup checks its identity.
-        if written.is_err() && crate::adoption_fs::owns_file(&pinned, &name, &output) {
-            let _ = pinned.unlink(&name, false);
-        }
-        written
-    }
-    #[cfg(not(unix))]
-    {
-        // Keep the ledger's create/rename policy; pin only ownership lookup.
-        let resolved =
-            fs::canonicalize(parent).map_err(|e| crate::executor_text::io_error(e, parent))?;
-        let pinned = crate::adoption_fs::parent(
-            &resolved,
-            &resolved.join(file.file_name().unwrap_or_default()),
-        )
+    // mkstemp(dir=ledger.parent) follows directory symlinks. Resolve only
+    // the parent: os.replace replaces a leaf symlink, not its referent.
+    let resolved_parent =
+        fs::canonicalize(parent).map_err(|e| crate::executor_text::io_error(e, parent))?;
+    let resolved_file = resolved_parent.join(file.file_name().unwrap_or_default());
+    let pinned = crate::adoption_fs::parent(&resolved_parent, &resolved_file)
         .map_err(|e| crate::executor_text::io_error(e, parent))?;
-        let (name, mut output) = create_ledger_temp(parent, |name| {
-            fs::OpenOptions::new()
-                .create_new(true)
-                .write(true)
-                .open(parent.join(name))
-        })?;
-        let source = parent.join(&name);
-        let written = (|| -> Result<()> {
-            output
-                .write_all(rendered.as_bytes())
-                .map_err(|e| crate::executor_text::io_error(e, &source))?;
-            #[cfg(test)]
-            BEFORE_LEDGER_REPLACE.with(|hook| {
-                if let Some(hook) = hook.borrow_mut().take() {
-                    hook();
-                }
-            });
-            if !crate::adoption_fs::owns_file(&pinned, &name, &output) {
-                return Err("OSError: ledger temporary file identity changed".into());
+    let (name, mut output) = create_ledger_temp(parent, |name| pinned.create(name, 0o600))?;
+    let source = parent.join(&name);
+    let written = (|| -> Result<()> {
+        output
+            .write_all(rendered.as_bytes())
+            .map_err(|e| crate::executor_text::io_error(e, &source))?;
+        let replacement = crate::adoption_fs::Move::prepare(
+            &resolved_parent,
+            &resolved_parent.join(&name),
+            &resolved_file,
+        )
+        .map_err(|e| crate::executor_text::io_error(e, file))?;
+        #[cfg(test)]
+        BEFORE_LEDGER_REPLACE.with(|hook| {
+            if let Some(hook) = hook.borrow_mut().take() {
+                hook();
             }
-            fs::rename(&source, file).map_err(|e| crate::executor_text::io_error(e, file))
-        })();
-        if written.is_err() && crate::adoption_fs::owns_file(&pinned, &name, &output) {
-            let _ = fs::remove_file(&source);
+        });
+        if !crate::adoption_fs::owns_file(&pinned, &name, &output) {
+            return Err("OSError: ledger temporary file identity changed".into());
         }
-        written
+        replacement
+            .rename()
+            .map_err(|e| crate::executor_text::io_error(e, file))
+    })();
+    // Keep the creation fd open: a substituted entry must never acquire
+    // the original inode through reuse while cleanup checks its identity.
+    if written.is_err() && crate::adoption_fs::owns_file(&pinned, &name, &output) {
+        let _ = pinned.unlink(&name, false);
     }
+    written
 }
 // Keep provider inputs explicit at this single adapter seam; no new state owner.
 #[allow(clippy::too_many_arguments)]

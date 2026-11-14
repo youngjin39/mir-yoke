@@ -144,3 +144,108 @@ fn pinned_entry_operations_do_not_follow_a_replaced_parent() {
     assert_eq!(fs::read_dir(r.join("outside")).unwrap().count(), 1);
     fs::remove_dir(r.join("inside")).unwrap();
 }
+
+#[test]
+fn sync_reopen_does_not_require_directory_listing() {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::{
+        Foundation::LocalFree,
+        Security::{
+            Authorization::{
+                ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
+            },
+            DACL_SECURITY_INFORMATION, GetFileSecurityW, PROTECTED_DACL_SECURITY_INFORMATION,
+            SetFileSecurityW,
+        },
+    };
+    struct RestoreDacl(Vec<u16>, Vec<u32>);
+    impl Drop for RestoreDacl {
+        fn drop(&mut self) {
+            // SAFETY: original self-relative descriptor and terminated scratch path.
+            assert_ne!(
+                unsafe {
+                    SetFileSecurityW(
+                        self.0.as_ptr(),
+                        DACL_SECURITY_INFORMATION,
+                        self.1.as_mut_ptr().cast(),
+                    )
+                },
+                0,
+                "DACL restore: {}",
+                io::Error::last_os_error()
+            );
+        }
+    }
+    let t = tempfile::tempdir().unwrap();
+    let r = t.path().canonicalize().unwrap();
+    let dir = r.join("restricted");
+    fs::create_dir(&dir).unwrap();
+    let path: Vec<_> = dir.as_os_str().encode_wide().chain(Some(0)).collect();
+    let mut needed = 0;
+    // SAFETY: size query followed by aligned storage of the advertised byte length.
+    unsafe {
+        GetFileSecurityW(
+            path.as_ptr(),
+            DACL_SECURITY_INFORMATION,
+            std::ptr::null_mut(),
+            0,
+            &mut needed,
+        )
+    };
+    assert!(needed > 0);
+    let mut original = vec![0u32; (needed as usize).div_ceil(4)];
+    assert_ne!(
+        unsafe {
+            GetFileSecurityW(
+                path.as_ptr(),
+                DACL_SECURITY_INFORMATION,
+                original.as_mut_ptr().cast(),
+                needed,
+                &mut needed,
+            )
+        },
+        0
+    );
+    let restore = RestoreDacl(path, original);
+    // Deny only FILE_LIST_DIRECTORY (bit 1); allow write/attribute/traverse and
+    // cleanup rights. No inheritance: the synthetic directory alone is affected.
+    let sddl: Vec<_> = "D:P(D;;0x1;;;WD)(A;;FA;;;WD)"
+        .encode_utf16()
+        .chain(Some(0))
+        .collect();
+    let mut descriptor = std::ptr::null_mut();
+    // SAFETY: terminated SDDL; API allocates descriptor, freed after SetFileSecurityW.
+    assert_ne!(
+        unsafe {
+            ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                sddl.as_ptr(),
+                SDDL_REVISION_1,
+                &mut descriptor,
+                std::ptr::null_mut(),
+            )
+        },
+        0
+    );
+    let changed = unsafe {
+        SetFileSecurityW(
+            restore.0.as_ptr(),
+            DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+            descriptor,
+        )
+    };
+    unsafe { LocalFree(descriptor) };
+    assert_ne!(changed, 0);
+    let p = parent(&r, &dir.join("file")).unwrap();
+    let entry = parent(&r, &dir).unwrap();
+    assert_eq!(entry.directory_empty().unwrap_err().raw_os_error(), Some(5));
+    let mut file = p.create(&p.name, 0o600).unwrap();
+    file.write_all(b"allowed").unwrap();
+    assert!(p.identity().unwrap().is_some());
+    let sync = p.sync_file().unwrap(); // baseline incorrectly asks for LIST_DIRECTORY
+    assert_eq!(raw_id(&sync), raw_id(&p.directory));
+    // Flush support is filesystem-dependent; reopening must not require listing.
+    if let Err(error) = sync.sync_all() {
+        assert!(error.raw_os_error().is_some(), "{error}");
+    }
+    drop(restore);
+}

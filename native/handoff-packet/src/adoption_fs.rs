@@ -4,6 +4,8 @@ mod windows;
 #[cfg(all(test, windows))]
 mod windows_entry_tests;
 #[cfg(all(test, windows))]
+mod windows_mutation_tests;
+#[cfg(all(test, windows))]
 mod windows_parent_tests;
 #[cfg(unix)]
 use std::ffi::CString;
@@ -198,6 +200,9 @@ impl Parent {
         self.open(false, false)
     }
 
+    // Current production callers are Unix-only; Windows exercises the primitive
+    // in entry tests until its callers migrate to the shared filesystem layer.
+    #[cfg(any(unix, test))]
     pub(crate) fn open_private(&self, append: bool) -> io::Result<File> {
         self.open(true, append)
     }
@@ -396,11 +401,8 @@ impl Parent {
             }
             Err(io::Error::last_os_error())
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::unlink(self, name, directory)
     }
 }
 #[cfg(unix)]
@@ -472,23 +474,15 @@ impl Move {
     pub(crate) fn prepare(root: &Path, source: &Path, destination: &Path) -> io::Result<Self> {
         let source = parent(root, source)?;
         let destination = parent(root, destination)?;
-        #[cfg(unix)]
-        {
-            // Generic moves also support unreadable files. Artifact publication
-            // supplies identity from its still-open verified descriptor instead.
-            source
-                .identity()?
-                .ok_or_else(|| io::Error::other("source is not a regular file"))?;
-            Ok(Self {
-                source,
-                destination,
-            })
-        }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        // Generic moves also support unreadable files. Artifact publication
+        // supplies identity from its still-open verified descriptor instead.
+        source
+            .identity()?
+            .ok_or_else(|| io::Error::other("source is not a regular file"))?;
+        Ok(Self {
+            source,
+            destination,
+        })
     }
     pub(crate) fn rename(&self) -> io::Result<()> {
         #[cfg(unix)]
@@ -510,11 +504,8 @@ impl Move {
             }
             Ok(())
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::rename(&self.source, &self.destination)
     }
 }
 
@@ -529,6 +520,9 @@ pub(crate) struct StagedFile {
     requires_visible_parent: bool,
 }
 impl StagedFile {
+    // Current production callers use this wrapper only on Unix; Windows uses
+    // create_with/create_with_parent_check, with this convenience API in tests.
+    #[cfg(any(unix, test))]
     pub(crate) fn create(root: &Path, path: &Path) -> io::Result<Self> {
         Self::create_with(root, path, |_| Ok(()))
     }
@@ -575,20 +569,20 @@ impl StagedFile {
         Ok(bytes)
     }
     pub(crate) fn publish(&self, root: &Path, destination: &Path) -> io::Result<Parent> {
+        // Reject changed visible ancestors before effects. Compare the named
+        // source against the verified descriptor, never a replacement reopen.
+        if self.requires_visible_parent {
+            self.source.verify_parent(root, &self.path)?;
+        } else {
+            let _ = parent(root, &self.path)?;
+        }
+        let destination = parent(root, destination)?;
+        let expected = self.identity()?;
+        if !self.source.matches(&expected)? {
+            return Err(io::Error::other("source changed during publication"));
+        }
         #[cfg(unix)]
         {
-            // Reject changed visible ancestors before effects, then use only the
-            // staged source fd. Compare against the verified descriptor, not a reopen.
-            if self.requires_visible_parent {
-                self.source.verify_parent(root, &self.path)?;
-            } else {
-                let _ = parent(root, &self.path)?;
-            }
-            let destination = parent(root, destination)?;
-            let expected = self.identity()?;
-            if !self.source.matches(&expected)? {
-                return Err(io::Error::other("source changed during publication"));
-            }
             let movement = Move {
                 source: Parent {
                     directory: self.source.directory.try_clone()?,
@@ -600,14 +594,11 @@ impl StagedFile {
                 },
             };
             movement.rename()?;
-            self.cleanup_disabled.set(true);
-            Ok(destination)
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        #[cfg(windows)]
+        windows::rename_file(&self.file, &destination)?;
+        self.cleanup_disabled.set(true);
+        Ok(destination)
     }
     // An explicit cleanup failure must not be retried by Drop.
     pub(crate) fn keep(&self) {
@@ -617,27 +608,22 @@ impl StagedFile {
         if self.cleanup_disabled.get() {
             return Ok(());
         }
-        #[cfg(unix)]
-        {
-            if self.requires_visible_parent {
-                self.source.verify_parent(&self.root, &self.path)?;
-            }
-            let expected = self.identity()?;
-            match self.source.identity() {
-                Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
-                Err(error) => return Err(error),
-                Ok(Some(identity)) if identity == expected => (),
-                _ => return Err(io::Error::other("source changed during cleanup")),
-            }
-            self.source.unlink(&self.source.name, false)?;
-            self.cleanup_disabled.set(true);
-            Ok(())
+        if self.requires_visible_parent {
+            self.source.verify_parent(&self.root, &self.path)?;
         }
-        #[cfg(not(unix))]
-        Err(io::Error::new(
-            io::ErrorKind::Unsupported,
-            "descriptor-relative adoption requires Unix",
-        ))
+        let expected = self.identity()?;
+        match self.source.identity() {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+            Err(error) => return Err(error),
+            Ok(Some(identity)) if identity == expected => (),
+            _ => return Err(io::Error::other("source changed during cleanup")),
+        }
+        #[cfg(unix)]
+        self.source.unlink(&self.source.name, false)?;
+        #[cfg(windows)]
+        windows::dispose_file(&self.file)?;
+        self.cleanup_disabled.set(true);
+        Ok(())
     }
 }
 impl Drop for StagedFile {

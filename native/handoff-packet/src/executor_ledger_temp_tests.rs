@@ -96,3 +96,90 @@ fn ledger_temp_failure_cleans_its_own_file() {
     assert!(!root.path().join("candidate.tmp").exists());
     assert!(ledger.is_dir());
 }
+
+fn directory_alias(link: &Path, target: &Path) {
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(target, link).unwrap();
+    #[cfg(windows)]
+    {
+        // canonicalize() supplies extended drive paths; cmd's mklink needs plain paths.
+        use std::os::windows::ffi::{OsStrExt, OsStringExt};
+        let plain = |p: &Path| {
+            let units: Vec<_> = p.as_os_str().encode_wide().collect();
+            assert!(units.starts_with(&[92, 92, 63, 92]));
+            OsString::from_wide(&units[4..])
+        };
+        let result = Command::new("cmd.exe")
+            .args(["/D", "/C", "mklink", "/J"])
+            .arg(plain(link))
+            .arg(plain(target))
+            .output()
+            .unwrap();
+        assert!(result.status.success(), "junction precondition: {result:?}");
+    }
+}
+
+fn ledger_alias_swap(fail_replace: bool) {
+    let t = tempfile::tempdir().unwrap();
+    let root = t.path().canonicalize().unwrap();
+    let inside = root.join("inside");
+    let outside = root.join("outside");
+    let alias = root.join("alias");
+    fs::create_dir(&inside).unwrap();
+    fs::create_dir(&outside).unwrap();
+    if fail_replace {
+        fs::create_dir(inside.join("tdd.json")).unwrap();
+        fs::create_dir(outside.join("tdd.json")).unwrap();
+    } else {
+        fs::write(inside.join("tdd.json"), "original").unwrap();
+        fs::write(outside.join("tdd.json"), "outside-ledger").unwrap();
+    }
+    fs::write(outside.join("candidate.tmp"), "outside-temp").unwrap();
+    directory_alias(&alias, &inside);
+    names(&["candidate.tmp"]);
+    let swapped_alias = alias.clone();
+    let swapped_target = outside.clone();
+    BEFORE_LEDGER_REPLACE.with(|hook| {
+        *hook.borrow_mut() = Some(Box::new(move || {
+            // Swap only the alias, not the pinned real directory: Windows subtree
+            // handle rename restrictions must not mask pathname redirection.
+            #[cfg(unix)]
+            fs::remove_file(&swapped_alias).unwrap();
+            #[cfg(windows)]
+            fs::remove_dir(&swapped_alias).unwrap();
+            directory_alias(&swapped_alias, &swapped_target);
+        }));
+    });
+    let result = write_ledger(&alias.join("tdd.json"), "updated");
+    assert_eq!(result.is_err(), fail_replace, "{result:?}");
+    assert_eq!(
+        fs::read(outside.join("candidate.tmp")).unwrap(),
+        b"outside-temp"
+    );
+    if fail_replace {
+        assert!(inside.join("tdd.json").is_dir());
+        assert!(outside.join("tdd.json").is_dir());
+    } else {
+        assert_eq!(fs::read(inside.join("tdd.json")).unwrap(), b"updated");
+        assert_eq!(
+            fs::read(outside.join("tdd.json")).unwrap(),
+            b"outside-ledger"
+        );
+    }
+    assert!(!inside.join("candidate.tmp").exists());
+    assert_eq!(fs::read_dir(&outside).unwrap().count(), 2);
+    #[cfg(unix)]
+    fs::remove_file(alias).unwrap();
+    #[cfg(windows)]
+    fs::remove_dir(alias).unwrap();
+}
+
+#[test]
+fn ledger_parent_alias_swap_keeps_rename_inside() {
+    ledger_alias_swap(false);
+}
+
+#[test]
+fn ledger_parent_alias_swap_keeps_failure_cleanup_inside() {
+    ledger_alias_swap(true);
+}

@@ -14,7 +14,9 @@ use windows_sys::{
         Foundation::OBJECT_ATTRIBUTES,
         Storage::FileSystem::{
             FILE_CREATE, FILE_DIRECTORY_FILE, FILE_NON_DIRECTORY_FILE, FILE_OPEN, FILE_OPEN_IF,
-            FILE_OPEN_REPARSE_POINT, FILE_SYNCHRONOUS_IO_NONALERT, NtCreateFile,
+            FILE_OPEN_REPARSE_POINT, FILE_RENAME_INFORMATION, FILE_RENAME_POSIX_SEMANTICS,
+            FILE_RENAME_REPLACE_IF_EXISTS, FILE_SYNCHRONOUS_IO_NONALERT, FileRenameInformationEx,
+            NtCreateFile, NtSetInformationFile,
         },
     },
     Win32::{
@@ -399,12 +401,102 @@ pub(super) fn mkdir(parent: &Parent, _mode: u32) -> io::Result<()> {
     .map(drop)
 }
 
+pub(super) fn rename(source: &Parent, destination: &Parent) -> io::Result<()> {
+    // Generic rename uses the current entry, including a substituted reparse
+    // entry. OPEN_REPARSE_POINT prevents following it; no READ_DATA is needed.
+    let file = open_relative(&source.directory, &source.name, DELETE, FILE_OPEN, 0)?;
+    rename_file(&file, destination)
+}
+
+pub(super) fn rename_file(file: &File, destination: &Parent) -> io::Result<()> {
+    let units = name(&destination.name)?;
+    let start = std::mem::offset_of!(FILE_RENAME_INFORMATION, FileName);
+    // NT needs at least the full record, including its trailing padding for
+    // short names (x64: FileName offset 20, sizeof 24, one WCHAR ends at 22).
+    // FileNameLength still counts only the name bytes, without a terminator.
+    let bytes = size_of::<FILE_RENAME_INFORMATION>().max(start + units.len() * 2);
+    // usize storage aligns the record and rounds up the allocation separately.
+    let mut buffer = vec![0usize; bytes.div_ceil(size_of::<usize>())];
+    let info = buffer.as_mut_ptr().cast::<FILE_RENAME_INFORMATION>();
+    let mut status_block = IO_STATUS_BLOCK::default();
+    // FILE_RENAME_INFORMATION (ntifs.h) permits a simple name relative to
+    // RootDirectory with DELETE access on the source. Use the NT Ex class (65)
+    // directly, retaining the pinned directory across the rename.
+    // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information
+    // SAFETY: aligned, zeroed allocation fits the record and complete tail;
+    // both handles and all name bytes remain live for the synchronous call.
+    let status = unsafe {
+        (*info).Anonymous.Flags = FILE_RENAME_REPLACE_IF_EXISTS | FILE_RENAME_POSIX_SEMANTICS;
+        (*info).RootDirectory = destination.directory.as_raw_handle();
+        (*info).FileNameLength = (units.len() * 2) as u32;
+        std::ptr::copy_nonoverlapping(
+            units.as_ptr(),
+            buffer.as_mut_ptr().cast::<u8>().add(start).cast::<u16>(),
+            units.len(),
+        );
+        NtSetInformationFile(
+            file.as_raw_handle(),
+            &mut status_block,
+            info.cast(),
+            bytes as u32,
+            FileRenameInformationEx,
+        )
+    };
+    if status < 0 {
+        // SAFETY: pure NTSTATUS conversion; Win32 last-error is not set by NT.
+        return Err(io::Error::from_raw_os_error(
+            unsafe { RtlNtStatusToDosError(status) } as i32,
+        ));
+    }
+    Ok(())
+}
+
+pub(super) fn dispose_file(file: &File) -> io::Result<()> {
+    let info = FILE_DISPOSITION_INFO_EX {
+        Flags: FILE_DISPOSITION_FLAG_DELETE | FILE_DISPOSITION_FLAG_POSIX_SEMANTICS,
+    };
+    // SAFETY: borrowed DELETE-capable handle and exact repr(C) record. Do not
+    // ignore read-only attributes or fall back when the filesystem refuses Ex.
+    if unsafe {
+        SetFileInformationByHandle(
+            file.as_raw_handle(),
+            FileDispositionInfoEx,
+            (&info as *const FILE_DISPOSITION_INFO_EX).cast(),
+            size_of_val(&info) as u32,
+        )
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+pub(super) fn unlink(parent: &Parent, name: &OsStr, directory: bool) -> io::Result<()> {
+    let file = open_relative(&parent.directory, name, DELETE, FILE_OPEN, 0)?;
+    let info: FILE_ATTRIBUTE_TAG_INFO = information(&file, FileAttributeTagInfo)?;
+    let is_dir = info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY != 0;
+    let reparse = info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT != 0;
+    // Inspect the exact deletion handle, closing a file-to-directory swap.
+    // Directory cleanup rejects every reparse type; file unlink removes a link
+    // itself (including a junction), just as unlinkat never follows its leaf.
+    if directory != (is_dir && !reparse) {
+        use windows_sys::Win32::Foundation::{ERROR_ACCESS_DENIED, ERROR_DIRECTORY};
+        return Err(io::Error::from_raw_os_error(if directory {
+            ERROR_DIRECTORY as i32
+        } else {
+            ERROR_ACCESS_DENIED as i32
+        }));
+    }
+    dispose_file(&file)
+}
+
 pub(super) fn sync_file(parent: &File) -> io::Result<File> {
-    // Reopen the pinned directory by empty NT name with write access for FlushFileBuffers.
+    // FlushFileBuffers requires GENERIC_WRITE. open_counted adds the attributes
+    // needed for directory verification; GENERIC_READ would also demand LIST_DIRECTORY.
     directory(open_counted(
         parent,
         &mut [],
-        FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+        FILE_GENERIC_WRITE,
         FILE_OPEN,
         FILE_DIRECTORY_FILE,
     )?)
