@@ -3,7 +3,12 @@ use std::{fs, process::Command};
 
 #[test]
 fn frozen_context_parser_and_removed_cwd() {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e9.json")).unwrap();
+    let mut records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e9.json")).unwrap();
+    records
+        .extend(serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e10.json")).unwrap());
+    records.extend(
+        serde_json::from_str::<Vec<Value>>(include_str!("fixtures/e10_constructor.json")).unwrap(),
+    );
     let mut failures = Vec::new();
     for r in records {
         let temp = tempfile::tempdir().unwrap();
@@ -11,15 +16,24 @@ fn frozen_context_parser_and_removed_cwd() {
         let gone = root.join("gone");
         fs::create_dir(&gone).unwrap();
         fs::write(root.join("bad.db"), b"not a database").unwrap();
-        if r["argv"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|v| v == "valid.db")
+        if let Some(config) = r["config"].as_str() {
+            fs::create_dir(root.join("notes")).unwrap();
+            fs::write(root.join("harness_a.toml"), config).unwrap();
+        }
+        if r["config"].is_string()
+            || r["argv"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|v| v == "valid.db")
         {
             use handoff_packet::mir_core::memory::store;
             let c = store::connect(
-                &root.join("valid.db"),
+                &root.join(if r["config"].is_string() {
+                    "memory.db"
+                } else {
+                    "valid.db"
+                }),
                 store::ConnectOptions {
                     timeout: None,
                     vec_loading: store::VecLoading::Bundled,
@@ -39,7 +53,7 @@ fn frozen_context_parser_and_removed_cwd() {
         } else {
             Command::new(env!("CARGO_BIN_EXE_mir"))
         };
-        let out = command
+        command
             .args(
                 r["argv"]
                     .as_array()
@@ -49,9 +63,14 @@ fn frozen_context_parser_and_removed_cwd() {
             )
             .env_clear()
             .env("HOME", &root)
-            .current_dir(&root)
-            .output()
-            .unwrap();
+            .current_dir(&root);
+        if let Some(key) = r["key"].as_str() {
+            command.env("FAKE_KEY", key);
+        }
+        if let Some(env) = r["env"].as_object() {
+            command.envs(env.iter().map(|(k, v)| (k, v.as_str().unwrap())));
+        }
+        let out = command.output().unwrap();
         let actual = serde_json::json!({"exit":out.status.code(),
             "stdout":String::from_utf8(out.stdout).unwrap(),
             "stderr":String::from_utf8(out.stderr).unwrap()});

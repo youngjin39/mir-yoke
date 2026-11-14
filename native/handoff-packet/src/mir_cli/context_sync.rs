@@ -122,8 +122,8 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
             unknown.extend_from_slice(&argv[i - 1..]);
             break;
         }
-        if token.starts_with("-h") && !token.starts_with("-h=") {
-            if let Some((_, value)) = token.split_once('=') {
+        if token.starts_with("-h") && !token.starts_with("--") {
+            if let Some(value) = short_help_error(token) {
                 return diag(
                     sync,
                     &format!(
@@ -145,7 +145,7 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         let option = match matches.as_slice() {
             [o] if sync || **o == "--help" => **o,
             [] | [_] => {
-                if !sync && !token.starts_with('-') {
+                if !sync && !option_like(token) {
                     return diag(
                         false,
                         &format!(
@@ -275,9 +275,17 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         let es = external_store::ExternalStore::new(&conn, &clock)
             .map_err(|e| format!("{}: {e}", e.kind))?;
         let emb = &cfg["memory"]["embedding"];
-        let mut backend = backend(emb);
+        let instance = std::cell::RefCell::new(
+            None::<omlx_http::OmlxHttpBackend<super::embedding_http::HttpTransport>>,
+        );
         let mut encode = |texts: &[String]| {
-            backend
+            instance
+                .borrow_mut()
+                .as_mut()
+                .ok_or_else(|| external_store::HelperError {
+                    kind: "RuntimeError",
+                    message: "embedding provider unavailable".into(),
+                })?
                 .encode(texts)
                 .map_err(|e| external_store::HelperError {
                     kind: "RuntimeError",
@@ -287,6 +295,7 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         let result =
             super::context::do_sync_with_embedding(&es, &cfg, &root, &home, reindex, || {
                 if emb["enabled"] == true {
+                    *instance.borrow_mut() = Some(backend(emb)?);
                     Ok(Some(&mut encode))
                 } else {
                     Ok(None)
@@ -308,10 +317,80 @@ pub(super) fn cwd_error(e: std::io::Error) -> String {
     }
 }
 
+pub(super) fn short_help_error(token: &str) -> Option<&str> {
+    let tail = token.strip_prefix('-')?.trim_start_matches('h');
+    tail.strip_prefix('=')
+        .or_else(|| tail.starts_with('-').then_some(tail))
+}
+
 pub(super) fn backend(
     emb: &serde_json::Value,
-) -> omlx_http::OmlxHttpBackend<super::embedding_http::HttpTransport> {
-    omlx_http::from_config(
+) -> Result<
+    omlx_http::OmlxHttpBackend<super::embedding_http::HttpTransport>,
+    external_store::HelperError,
+> {
+    let error = |kind, message| external_store::HelperError { kind, message };
+    let url = emb["base_url"].as_str().unwrap_or_default();
+    if let Some((position, c)) = url.chars().enumerate().find(|(_, c)| c.is_ascii_control()) {
+        return Err(error(
+            "InvalidURL",
+            format!(
+                "Invalid non-printable ASCII character in URL, {} at position {position}.",
+                repr(&c.to_string())
+            ),
+        ));
+    }
+    let authority = url
+        .split_once("://")
+        .map(|(_, s)| s.split(['/', '?', '#']).next().unwrap_or_default());
+    if let Some(authority) = authority {
+        let host = authority.rsplit('@').next().unwrap_or_default();
+        if host.starts_with('[')
+            && let Some((address, _)) = host.split_once(']')
+        {
+            let (ip, scope) = address[1..].split_once('%').unwrap_or((&address[1..], ""));
+            if ip.parse::<std::net::Ipv6Addr>().is_err()
+                || (address.contains('%') && (scope.is_empty() || scope.contains('%')))
+            {
+                return Err(error(
+                    "InvalidURL",
+                    format!("Invalid IPv6 address: {}", repr(&format!("{address}]"))),
+                ));
+            }
+        }
+        if let Some((_, port)) = host.rsplit_once(':').filter(|_| !host.ends_with(']'))
+            && !port.is_empty()
+            && super::context::python_k(port).is_none()
+        {
+            return Err(error("InvalidURL", format!("Invalid port: {}", repr(port))));
+        }
+    }
+    let key = std::env::var(emb["api_key_env"].as_str().unwrap_or_default()).unwrap_or_default();
+    let header = format!("{} {key}", emb["auth_scheme"].as_str().unwrap_or_default());
+    if !key.is_empty()
+        && let Some((position, c)) = header.chars().enumerate().find(|(_, c)| !c.is_ascii())
+    {
+        let escaped = if (c as u32) < 256 {
+            format!("\\x{:02x}", c as u32)
+        } else if (c as u32) < 65536 {
+            format!("\\u{:04x}", c as u32)
+        } else {
+            format!("\\U{:08x}", c as u32)
+        };
+        return Err(error(
+            "UnicodeEncodeError",
+            format!(
+                "'ascii' codec can't encode character '{escaped}' in position {position}: ordinal not in range(128)"
+            ),
+        ));
+    }
+    if let Some(file) = std::env::var_os("SSL_CERT_FILE").filter(|s| !s.is_empty()) {
+        std::fs::read(file).map_err(|e| {
+            let text = crate::executor_brief_profile::python_os_error_message(&e, Path::new(""));
+            error("OSError", text.strip_suffix(": ''").unwrap_or(&text).into())
+        })?;
+    }
+    Ok(omlx_http::from_config(
         omlx_http::BackendCfg {
             base_url: emb["base_url"].as_str().unwrap_or_default().into(),
             model: emb["model"].as_str().unwrap_or_default().into(),
@@ -323,5 +402,5 @@ pub(super) fn backend(
         },
         |name| std::env::var(name).unwrap_or_default(),
         super::embedding_http::HttpTransport,
-    )
+    ))
 }

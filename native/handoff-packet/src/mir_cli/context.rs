@@ -713,10 +713,11 @@ fn main_inner(
             }
             continue;
         }
-        let (name, inline) = token
+        let (name, mut inline) = token
             .split_once('=')
             .map_or((token, None), |(a, b)| (a, Some(b)));
         let name = if name.starts_with("-h") && !name.starts_with("--") {
+            inline = super::context_sync::short_help_error(token);
             "--help"
         } else {
             name
@@ -896,11 +897,28 @@ fn main_inner(
     if degraded {
         notices.push("[degraded] embedding unavailable \u{2014} FTS-only results".into());
     }
+    let mut backend = if embedding.is_none() && cfg["memory"]["embedding"]["enabled"] == true {
+        match super::context_sync::backend(&cfg["memory"]["embedding"]) {
+            Ok(provider) => Some(provider),
+            Err(_) => {
+                degraded = true;
+                notices.push("[degraded] embedding unavailable \u{2014} FTS-only results".into());
+                None
+            }
+        }
+    } else {
+        None
+    };
     let clock = crate::executor_execute::utc_now;
     let es = external_store::ExternalStore::new(&connection, &clock)?;
-    let mut backend = super::context_sync::backend(&cfg["memory"]["embedding"]);
+    let enabled = backend.is_some();
     let mut encode = |texts: &[String]| {
         backend
+            .as_mut()
+            .ok_or_else(|| external_store::HelperError {
+                kind: "RuntimeError",
+                message: "embedding provider unavailable".into(),
+            })?
             .encode(texts)
             .map_err(|e| external_store::HelperError {
                 kind: "RuntimeError",
@@ -940,7 +958,6 @@ fn main_inner(
     let hits = if archives == 0 {
         Vec::new()
     } else {
-        let enabled = embedding.is_none() && cfg["memory"]["embedding"]["enabled"] == true;
         match es.search(
             query,
             k,
@@ -1094,7 +1111,7 @@ fn indented_len(s: &str) -> usize {
     }
 }
 
-fn python_k(value: &str) -> Option<Option<i64>> {
+pub(super) fn python_k(value: &str) -> Option<Option<i64>> {
     let value = value.trim_matches(char::is_whitespace);
     let (negative, value) = if let Some(v) = value.strip_prefix('-') {
         (true, v)
@@ -1116,7 +1133,8 @@ fn python_k(value: &str) -> Option<Option<i64>> {
             digit = true;
         }
     }
-    if !digit {
+    // CPython limits decimal conversion to 4300 digits, excluding underscores/sign.
+    if !digit || text.len() > 4300 {
         return None;
     }
     if negative {

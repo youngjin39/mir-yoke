@@ -105,6 +105,29 @@ fn line(reader: &mut impl BufRead) -> Result<Vec<u8>, HttpError> {
         .map_err(|e| io_error(e, "Read"))?;
     Ok(bytes)
 }
+fn bytearray(bytes: &[u8]) -> String {
+    let quote = if bytes.contains(&b'\'') && !bytes.contains(&b'"') {
+        '"'
+    } else {
+        '\''
+    };
+    let mut out = format!("bytearray(b{quote}");
+    for &b in bytes {
+        match b {
+            b'\\' => out.push_str("\\\\"),
+            b'\r' => out.push_str("\\r"),
+            b'\n' => out.push_str("\\n"),
+            b'\t' => out.push_str("\\t"),
+            b if b == quote as u8 => {
+                out.push('\\');
+                out.push(quote);
+            }
+            32..=126 => out.push(char::from(b)),
+            b => out.push_str(&format!("\\x{b:02x}")),
+        }
+    }
+    format!("{out}{quote})")
+}
 impl Transport for HttpTransport {
     fn send(&mut self, request: HttpRequest) -> Result<HttpResponse, HttpError> {
         let url = request.url.split('#').next().unwrap_or("");
@@ -194,19 +217,37 @@ impl Transport for HttpTransport {
             if raw.is_empty() {
                 return Err(protocol("Server disconnected without sending a response."));
             }
-            let status_line = String::from_utf8_lossy(&raw)
-                .trim_end_matches(['\r', '\n'])
-                .to_owned();
-            let mut parts = status_line.splitn(3, ' ');
-            let version = parts.next().unwrap_or("");
-            let status = parts.next().and_then(|s| s.parse::<u16>().ok());
-            if !matches!(version, "HTTP/1.1" | "HTTP/1.0") || status.is_none() {
+            let status_line = raw.strip_suffix(b"\n").unwrap_or(&raw);
+            let status_line = status_line.strip_suffix(b"\r").unwrap_or(status_line);
+            if status_line.is_empty() {
+                return Err(protocol("no response line received"));
+            }
+            let parts: Vec<_> = status_line.splitn(3, |b| *b == b' ').collect();
+            let version = parts[0];
+            let valid = version.len() == 8
+                && version.starts_with(b"HTTP/")
+                && version[5].is_ascii_digit()
+                && version[6] == b'.'
+                && version[7].is_ascii_digit()
+                && parts
+                    .get(1)
+                    .is_some_and(|s| s.len() == 3 && s.iter().all(u8::is_ascii_digit))
+                && parts
+                    .get(2)
+                    .is_none_or(|s| !s.iter().any(|b| matches!(b, 0 | 10..=13)));
+            if !valid {
                 return Err(protocol(format!(
-                    "illegal status line: bytearray(b'{status_line}')"
+                    "illegal status line: {}",
+                    bytearray(status_line)
                 )));
             }
-            let status = status.unwrap_or(0);
-            let reason = parts.next().unwrap_or("").to_owned();
+            let status = parts[1]
+                .iter()
+                .fold(0u16, |n, b| n * 10 + u16::from(b - b'0'));
+            let reason = parts
+                .get(2)
+                .map(|s| String::from_utf8_lossy(s).into_owned())
+                .unwrap_or_default();
             let mut headers = std::collections::BTreeMap::new();
             loop {
                 let raw = line(&mut reader)?;
@@ -218,6 +259,16 @@ impl Transport for HttpTransport {
                     .split_once(':')
                     .ok_or_else(|| protocol("illegal header line"))?;
                 headers.insert(name.to_ascii_lowercase(), value.trim().to_owned());
+            }
+            if status < 100 {
+                return Err(protocol(format!(
+                    "InformationalResponse status_code should be in range [100, 200), not {status}"
+                )));
+            }
+            if status == 101 {
+                return Err(protocol(
+                    "Received server _SWITCH_UPGRADE event without a pending proposal",
+                ));
             }
             if status < 200 {
                 continue;
@@ -362,5 +413,71 @@ mod tests {
         stream.shutdown(std::net::Shutdown::Write).unwrap();
         let error = stream.write_all(b"closed").unwrap_err();
         assert_eq!(io_error(error, "Write").class, "WriteError");
+    }
+}
+
+#[cfg(test)]
+mod e10_http_tests {
+    use super::*;
+    #[test]
+    fn frozen_loopback_protocol() {
+        if std::env::var_os("E10_HTTP_WORKER").is_none() {
+            assert!(
+                std::process::Command::new(std::env::current_exe().unwrap())
+                    .args([
+                        "--exact",
+                        "mir_cli::embedding_http::e10_http_tests::frozen_loopback_protocol",
+                        "--nocapture"
+                    ])
+                    .env_clear()
+                    .env("E10_HTTP_WORKER", "1")
+                    .env("NO_PROXY", "*")
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+            return;
+        }
+        let records: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../../tests/fixtures/e10_http.json")).unwrap();
+        let mut mismatches = Vec::new();
+        for (i, r) in records.iter().enumerate() {
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+            let url = format!("http://{}/embeddings", listener.local_addr().unwrap());
+            let wire: Vec<u8> = serde_json::from_value(r["wire"].clone()).unwrap();
+            let server = std::thread::spawn(move || {
+                let mut stream = listener.accept().unwrap().0;
+                let mut bytes = Vec::new();
+                let mut byte = [0];
+                while !bytes.ends_with(b"\r\n\r\n") {
+                    stream.read_exact(&mut byte).unwrap();
+                    bytes.push(byte[0]);
+                }
+                stream
+                    .read_exact(&mut vec![0; br#"{"model":"fake","input":["fake"]}"#.len()])
+                    .unwrap();
+                stream.write_all(&wire).unwrap();
+            });
+            let result = HttpTransport.send(HttpRequest {
+                url,
+                method: "POST".into(),
+                headers: Default::default(),
+                body: serde_json::json!({"model":"fake","input":["fake"]}),
+                timeout: serde_json::json!({"connect":1,"read":1,"write":1}),
+            });
+            server.join().unwrap();
+            let actual = match result {
+                Ok(r) => {
+                    serde_json::json!({"status":r.status,"reason":r.reason,"body":String::from_utf8_lossy(&r.body)})
+                }
+                Err(e) => serde_json::json!({"error":e.class,"message":e.message}),
+            };
+            let mut expected = r.clone();
+            expected.as_object_mut().unwrap().remove("wire");
+            if actual != expected {
+                mismatches.push(format!("case {i}: actual {actual}; expected {expected}"));
+            }
+        }
+        assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
     }
 }
