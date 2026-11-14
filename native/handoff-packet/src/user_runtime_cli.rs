@@ -221,9 +221,12 @@ fn parse(raw: &[OsString]) -> Result<(PathBuf, PathBuf, bool), Output> {
                     .to_vec(),
             )
         } else {
+            // argparse 3.12 _parse_optional checks short-option tuples before
+            // its space-containing positional fallback: "-h x" is still -h.
             if i == raw.len()
                 || (!crate::executor_execute_parser::value_token(&text::os_text(&raw[i]))
-                    && !text::os_text(&raw[i]).contains(' '))
+                    && !(text::os_text(&raw[i]).contains(' ')
+                        && !text::os_text(&raw[i]).starts_with("-h")))
             {
                 return Err(diag(format!("argument {option}: expected one argument")));
             }
@@ -385,6 +388,26 @@ fn install(root: &Path, claude: &Path, codex: &Path, apply: bool) -> Result<Stri
     }
     Ok(report)
 }
+// Stdout's standard-library writer suppresses EBADF; a duplicated File preserves
+// the descriptor's access mode and exposes the Python-visible write failure.
+struct OutputStream;
+impl Write for OutputStream {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        use std::os::fd::AsFd;
+        let descriptor = io::stdout().as_fd().try_clone_to_owned()?;
+        std::fs::File::from(descriptor).write(bytes)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+fn output_error(e: &io::Error) -> String {
+    match e.raw_os_error() {
+        Some(libc::EBADF) => "[Errno 9] Bad file descriptor".into(),
+        Some(libc::EPIPE) => "[Errno 32] Broken pipe".into(),
+        _ => e.to_string(),
+    }
+}
 /// Consume the explicit provider binding before Python-visible argv.
 pub fn run(raw: &[OsString]) -> i32 {
     let Some((root, args)) = raw.split_first() else {
@@ -409,7 +432,7 @@ pub fn run(raw: &[OsString]) -> i32 {
     let (code, out, err) = result;
     let buffered = !io::stdout().is_terminal()
         && !std::env::var_os("PYTHONUNBUFFERED").is_some_and(|v| !v.is_empty() && v != "0");
-    let mut stdout = io::BufWriter::with_capacity(if buffered { 8192 } else { 0 }, io::stdout());
+    let mut stdout = io::BufWriter::with_capacity(if buffered { 8192 } else { 0 }, OutputStream);
     if let Err(e) = stdout.write_all(out.as_bytes()) {
         if help {
             return code;
@@ -417,11 +440,7 @@ pub fn run(raw: &[OsString]) -> i32 {
         let _ = io::stderr().write_all(
             format!(
                 "error: unexpected installer failure: {}\n",
-                if e.kind() == io::ErrorKind::BrokenPipe {
-                    "[Errno 32] Broken pipe".into()
-                } else {
-                    e.to_string()
-                }
+                output_error(&e)
             )
             .as_bytes(),
         );
@@ -440,7 +459,7 @@ pub fn run(raw: &[OsString]) -> i32 {
         let message = if e.kind() == io::ErrorKind::BrokenPipe {
             "BrokenPipeError: [Errno 32] Broken pipe".into()
         } else {
-            format!("OSError: {e}")
+            format!("OSError: {}", output_error(&e))
         };
         let _ = io::stderr().write_all(format!("Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='utf-8'>\n{message}\n").as_bytes());
         return 120;

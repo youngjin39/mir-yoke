@@ -59,6 +59,13 @@ for prefix in ("", "buffered-"):
     CASES[prefix + "main-broken-stderr"] = ["--claude-home", "relative", "--codex-home", "{ROOT}/codex"]
     CASES[prefix + "parser-broken-stderr"] = []
 
+for name, value in (("short-space", "-h x"), ("unknown", "-x"), ("negative", "-1"),
+                    ("separator", "--"), ("dash", "-"), ("space", "a b"), ("unknown-space", "-x x")):
+    CASES["fix-value-" + name] = ["--claude-home", value, "--codex-home", "relative"]
+for prefix in ("", "buffered-"):
+    for route, argv in (("help", ["--help"]), ("dry-run", VALID), ("apply", VALID + ["--apply"])):
+        CASES[prefix + "fix-" + route + "-readonly-stdout"] = argv
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -93,7 +100,9 @@ def main():
             # Standalone source has no package imports; isolated interpreter cannot load live repo code.
             bootstrap = "import argparse,hashlib,json,os,stat,subprocess,sys,tempfile,dataclasses,typing,textwrap,__future__; from pathlib import Path; p=sys.argv.pop(1); sys.path[:]=[str(Path(p).parent)]; sys.argv[0]='install_user_runtime_agents.py'; before=set(sys.modules); namespace=sys.modules['__main__'].__dict__; namespace['__file__']=p; exec(compile(Path(p).read_bytes().split(b'if __name__ ==')[0],p,'exec'),namespace); assert all(Path(sys.modules[n].__file__).resolve().is_relative_to(Path(p).parent.parent) for n in set(sys.modules)-before); sys.exit(namespace['main']())"
             destination = subprocess.PIPE
-            if name.endswith("broken-stdout"):
+            if name.endswith("readonly-stdout"):
+                destination = os.open(os.devnull, os.O_RDONLY)
+            elif name.endswith("broken-stdout"):
                 reader, destination = os.pipe()
                 os.close(reader)
             error_destination = subprocess.PIPE

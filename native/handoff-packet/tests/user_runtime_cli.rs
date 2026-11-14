@@ -7,13 +7,15 @@ use std::{
     process::{Command, Stdio},
 };
 
-#[test]
 #[rustfmt::skip] // Compact frozen-process matrix keeps the bounded migration diff reviewable.
-fn user_runtime_cli_frozen_processes() {
+fn frozen_processes(group: &str) {
     let records: Vec<Value> = serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/cli.json")).unwrap();
     let temporary = tempfile::tempdir().unwrap(); // Gate supplies synthetic TMPDIR.
     for record in records {
         let name = record["name"].as_str().unwrap();
+        let actual_group = if name.starts_with("fix-value-") { "values" }
+            else if name.ends_with("readonly-stdout") { "stdout" } else { "original" };
+        if actual_group != group { continue; }
         let root = temporary.path().join(name);
         for folder in ["provider/config", "provider/.claude/agents", "provider/.codex/agents", "bin"] {
             fs::create_dir_all(root.join(folder)).unwrap();
@@ -53,7 +55,9 @@ fn user_runtime_cli_frozen_processes() {
         command.env("COLUMNS", columns);
         if name.starts_with("buffered-") { command.env_remove("PYTHONUNBUFFERED"); }
         else { command.env("PYTHONUNBUFFERED", "1"); }
-        let stdout = if name.ends_with("broken-stdout") {
+        let stdout = if name.ends_with("readonly-stdout") {
+            Stdio::from(fs::File::open("/dev/null").unwrap())
+        } else if name.ends_with("broken-stdout") {
             let (reader, writer) = std::os::unix::net::UnixStream::pair().unwrap();
             drop(reader);
             Stdio::from(std::os::fd::OwnedFd::from(writer))
@@ -75,11 +79,11 @@ fn user_runtime_cli_frozen_processes() {
         assert_eq!(output.status.code(), Some(record["code"].as_i64().unwrap() as i32), "{name}: {:?}", output);
         assert_eq!(normalize(output.stdout), record["stdout"].as_str().unwrap(), "{name} stdout");
         assert_eq!(normalize(output.stderr), record["stderr"].as_str().unwrap(), "{name} stderr");
-        if name == "dry-run" || name == "abbreviated" || name == "normalized" {
+        if name == "dry-run" || name == "abbreviated" || name == "normalized" || name.ends_with("dry-run-readonly-stdout") {
             assert!(!root.join("claude").exists(), "{name} wrote claude home");
             assert!(!root.join("codex").exists(), "{name} wrote codex home");
         }
-        if name == "apply" || name == "duplicate" {
+        if name == "apply" || name == "duplicate" || name.ends_with("apply-readonly-stdout") {
             let home = root.join(if name == "duplicate" { "last" } else { "claude" });
             assert_eq!(fs::read(home.join("agents/a.md")).unwrap(), b"agent\n");
             assert_eq!(fs::read(root.join("codex/agents/a.toml")).unwrap(), b"agent = true\n");
@@ -89,6 +93,19 @@ fn user_runtime_cli_frozen_processes() {
             }
         }
     }
+}
+
+#[test]
+fn user_runtime_cli_frozen_processes() {
+    frozen_processes("original");
+}
+#[test]
+fn user_runtime_cli_fix_values() {
+    frozen_processes("values");
+}
+#[test]
+fn user_runtime_cli_fix_stdout() {
+    frozen_processes("stdout");
 }
 
 #[test]

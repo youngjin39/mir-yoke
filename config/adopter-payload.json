@@ -3815,7 +3815,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_cli.rs",
-      "sha256": "e03da0e56329ab15145e2cab9582d3b5f2bceebe66e1f23b669fa9ec2f25d7f7"
+      "sha256": "554603ca300d03347c24edcf729910040e48da44f7ee95463df65c8b73ea3c90"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5081,7 +5081,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/user_runtime_cli.rs",
-      "sha256": "abf6a8c7d97f9401a5b38cc15313d26f5752d09794f6f983a7194515a86f4959"
+      "sha256": "a1479e52b6a67f7315ba95bd082af7e9122ce3f334b5a23c65bdc451f2b017e1"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7349,13 +7349,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/user_runtime_install/capture_cli.py",
-      "sha256": "87c46ea82f88b6694fdd8199d68b18b6faf8cf14abc92290e4f106ad37987a24"
+      "sha256": "6b2f618df2a5807255df8a5ca6c3672053589c9caa30fcc717626f84e1bf3735"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/user_runtime_install/cli.json",
-      "sha256": "2bfa3f64de0fdd535347601bd468ce5b5c99bf47c5b6f6956f2bac0a90968089"
+      "sha256": "b1ac422b893e5c8d9bb00e70b10c48ec848c680e300382aa94000914460169e2"
     },
     {
       "classification": "template-maintainer-tool",

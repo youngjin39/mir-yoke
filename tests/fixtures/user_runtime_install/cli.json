@@ -54,5 +54,18 @@
 {"name":"main-broken-stderr","argv":["--claude-home","relative","--codex-home","{ROOT}/codex"],"code":1,"stdout":"","stderr":""},
 {"name":"parser-broken-stderr","argv":[],"code":2,"stdout":"","stderr":""},
 {"name":"buffered-main-broken-stderr","argv":["--claude-home","relative","--codex-home","{ROOT}/codex"],"code":120,"stdout":"","stderr":""},
-{"name":"buffered-parser-broken-stderr","argv":[],"code":120,"stdout":"","stderr":""}
+{"name":"buffered-parser-broken-stderr","argv":[],"code":120,"stdout":"","stderr":""},
+{"name":"fix-value-short-space","argv":["--claude-home","-h x","--codex-home","relative"],"code":2,"stdout":"","stderr":"usage: install_user_runtime_agents.py [-h] --claude-home CLAUDE_HOME\n                                      --codex-home CODEX_HOME [--apply]\ninstall_user_runtime_agents.py: error: argument --claude-home: expected one argument\n"},
+{"name":"fix-value-unknown","argv":["--claude-home","-x","--codex-home","relative"],"code":2,"stdout":"","stderr":"usage: install_user_runtime_agents.py [-h] --claude-home CLAUDE_HOME\n                                      --codex-home CODEX_HOME [--apply]\ninstall_user_runtime_agents.py: error: argument --claude-home: expected one argument\n"},
+{"name":"fix-value-negative","argv":["--claude-home","-1","--codex-home","relative"],"code":2,"stdout":"","stderr":"error: runtime homes must be explicit absolute non-root paths\n"},
+{"name":"fix-value-separator","argv":["--claude-home","--","--codex-home","relative"],"code":2,"stdout":"","stderr":"usage: install_user_runtime_agents.py [-h] --claude-home CLAUDE_HOME\n                                      --codex-home CODEX_HOME [--apply]\ninstall_user_runtime_agents.py: error: argument --claude-home: expected one argument\n"},
+{"name":"fix-value-dash","argv":["--claude-home","-","--codex-home","relative"],"code":2,"stdout":"","stderr":"error: runtime homes must be explicit absolute non-root paths\n"},
+{"name":"fix-value-space","argv":["--claude-home","a b","--codex-home","relative"],"code":2,"stdout":"","stderr":"error: runtime homes must be explicit absolute non-root paths\n"},
+{"name":"fix-value-unknown-space","argv":["--claude-home","-x x","--codex-home","relative"],"code":2,"stdout":"","stderr":"error: runtime homes must be explicit absolute non-root paths\n"},
+{"name":"fix-help-readonly-stdout","argv":["--help"],"code":0,"stdout":"","stderr":""},
+{"name":"fix-dry-run-readonly-stdout","argv":["--claude-home","{ROOT}/claude","--codex-home","{ROOT}/codex"],"code":2,"stdout":"","stderr":"error: unexpected installer failure: [Errno 9] Bad file descriptor\n"},
+{"name":"fix-apply-readonly-stdout","argv":["--claude-home","{ROOT}/claude","--codex-home","{ROOT}/codex","--apply"],"code":2,"stdout":"","stderr":"error: unexpected installer failure: [Errno 9] Bad file descriptor\n"},
+{"name":"buffered-fix-help-readonly-stdout","argv":["--help"],"code":120,"stdout":"","stderr":"Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='utf-8'>\nOSError: [Errno 9] Bad file descriptor\n"},
+{"name":"buffered-fix-dry-run-readonly-stdout","argv":["--claude-home","{ROOT}/claude","--codex-home","{ROOT}/codex"],"code":120,"stdout":"","stderr":"Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='utf-8'>\nOSError: [Errno 9] Bad file descriptor\n"},
+{"name":"buffered-fix-apply-readonly-stdout","argv":["--claude-home","{ROOT}/claude","--codex-home","{ROOT}/codex","--apply"],"code":120,"stdout":"","stderr":"Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='utf-8'>\nOSError: [Errno 9] Bad file descriptor\n"}
 ]
