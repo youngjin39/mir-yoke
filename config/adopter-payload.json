@@ -4403,13 +4403,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/README.md",
-      "sha256": "946278390201db12c63fc78e1372088afd9f703343c63bfee24ba0104324c2b8"
+      "sha256": "5583a979d16da9ff5c3bb3c8f8e5ac3b4f5d10a238876fd1c35ca7eeb1b466ce"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/manifest.json",
-      "sha256": "cf7cd0f65db719583cdf063a2895a94755ccd0e904672d98926b78c24a21aa1a"
+      "sha256": "0a759a377d9d46672da075c503d355d7e9d0114848d028eeddd511f2906e27bb"
     },
     {
       "classification": "template-maintainer-tool",

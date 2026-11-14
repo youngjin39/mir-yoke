@@ -53,6 +53,11 @@ skips POSIX replay and retains the platform-specific suite.
 
 ## Source re-pins
 
+- Stage D exec-resume B4a/B4b (0754c36, a550659) re-pins five crate sources
+  (executor_dispatch_cli, executor_resume_cli, executor_resume, executor_admission,
+  executor_query); only source hashes moved and every frozen W1 observation is
+  unchanged (full W1 replay).
+
 - Clean-checkout hygiene removes the ignored CPython cache from source/copy
   inventories; the Python source remains pinned and all expected envelopes remain
   unchanged. Crate build inputs follow committed CLI migration changes, including
