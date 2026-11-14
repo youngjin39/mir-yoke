@@ -14,6 +14,7 @@ import stat  # noqa: F401 -- preload oracle dependencies before restricting sys.
 import subprocess
 import sys
 import tempfile
+import typing  # noqa: F401 -- preload reference dependency on newer Python
 from pathlib import Path
 from unittest.mock import patch
 
@@ -121,6 +122,7 @@ def acquire(scratch, mutant=None):
                 record(f"source-{name}", module.regular_source, base / name)
         with patch.object(Path, "read_bytes", side_effect=PermissionError("read denied")):
             record("source-read-error", module.regular_source, regular)
+        record("source-null", module.regular_source, base / "null\x00.md")
         with patch.object(Path, "lstat", side_effect=PermissionError("stat denied")):
             record("source-stat-error", module.regular_source, regular)
         home = base / "home"
@@ -136,8 +138,25 @@ def acquire(scratch, mutant=None):
         ]):
             record(f"home-{index}", module.require_safe_home, path)
         for relative in ("agents/new.md", "link/new.md", "file/new.md", "agents/link",
-                         "agents", "file", "absent/new.md"):
+                         "agents", "file", "absent/new.md", ".", "agents/./new.md",
+                         "agents//new.md", "agents/new.md/"):
             record(f"target-{relative}", module.safe_target, home, Path(relative))
+        record("home-double-anchor", module.require_safe_home, Path("/" + str(home)))
+        long_name = "x" * 256
+        record("home-long-name", module.require_safe_home, home / long_name)
+        record("target-long-name", module.safe_target, home, Path(long_name))
+        record("target-long-ancestor", module.safe_target, home, Path(long_name) / "new.md")
+        record("source-long-name", module.regular_source, base / long_name)
+        blocked = base / "blocked"
+        blocked.mkdir()
+        blocked.chmod(0)
+        try:
+            record("home-permission", module.require_safe_home, blocked / "child")
+            record("target-permission", module.safe_target, blocked, Path("child"))
+            record("target-permission-ancestor", module.safe_target, blocked, Path("child/new.md"))
+            record("source-permission", module.regular_source, blocked / "child")
+        finally:
+            blocked.chmod(0o700)
         module.CONFIG_PATH.parent.mkdir()
         empty = {"agents": {"allowlist": []}, "commands": {"allowlist": {}},
                  "profiles": {"packs": {}}}
@@ -149,6 +168,16 @@ def acquire(scratch, mutant=None):
                 **empty, "profiles": {"packs": {"bad": {}}}}))]:
             module.CONFIG_PATH.write_text(config)
             record(f"sources-invalid-{name}", module.load_sources)
+        for name, raw in [
+            ("top-list", b"[]"), ("top-null", b"null"), ("invalid-utf8", b"\xff"),
+            ("utf16", b"\xff\xfe{\x00}\x00"), ("nan", b"NaN"),
+            ("pack-precedence", b'{"agents":{"allowlist":[]},"commands":{"allowlist":{}},'
+             b'"profiles":{"packs":{"p":{"agents":[7]}}}}'),
+            ("surrogate", b'{"agents":{"allowlist":[]},"commands":{"allowlist":{}},'
+             b'"profiles":{"packs":{"p":{"agents":["\\ud800"],"commands":[]}}}}'),
+        ]:
+            module.CONFIG_PATH.write_bytes(raw)
+            record(f"sources-{name}", module.load_sources)
         agent, command = ".claude/agents/z.md", ".claude/commands/a.md"
         for relative, content in [(agent, b"agent\r\n"), (command, b"command\n"),
                                   (".codex/agents/z.toml", b"codex\n")]:
@@ -160,6 +189,28 @@ def acquire(scratch, mutant=None):
                                                "commands": [command]}}}}
         module.CONFIG_PATH.write_text(json.dumps(config))
         record("sources-valid", module.load_sources)
+        surrogate = ".claude/agents/\ud800.md"
+        invalid = {**empty, "agents": {"allowlist": [surrogate]},
+                   "profiles": {"packs": {"p": {"agents": [surrogate], "commands": []}}}}
+        module.CONFIG_PATH.write_text(json.dumps(invalid))
+        module.ROOT = Path("provider")
+        record("sources-allowlisted-surrogate", module.load_sources)
+        def wire_failure():
+            try:
+                module.load_sources()
+            except Exception as error:
+                return {"error": type(error).__name__, "message": str(error).encode(
+                    "utf-8", "backslashreplace").decode()}
+        surrogate = ".claude/agents/\udc80.md"
+        invalid["agents"]["allowlist"] = [surrogate]
+        invalid["profiles"]["packs"]["p"]["agents"] = [surrogate]
+        module.CONFIG_PATH.write_text(json.dumps(invalid))
+        record("sources-surrogateescape-stderr", wire_failure)
+        invalid["agents"]["allowlist"] = [".claude/agents/\udcc3\udca9.md"]
+        invalid["profiles"]["packs"]["p"]["agents"] = invalid["agents"]["allowlist"]
+        module.CONFIG_PATH.write_text(json.dumps(invalid))
+        record("sources-surrogateescape-pair-stderr", wire_failure)
+        module.ROOT = base
         for name, pack in [
             ("pack-type", []), ("agent-type", {"agents": [7], "commands": []}),
             ("agent-unlisted", {"agents": ["unlisted"], "commands": []}),

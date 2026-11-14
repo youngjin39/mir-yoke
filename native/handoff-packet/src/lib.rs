@@ -732,3 +732,6 @@ pub mod plugin_scripts;
 
 #[forbid(unsafe_code)]
 pub mod tools;
+
+#[forbid(unsafe_code)]
+pub mod user_runtime_install;
