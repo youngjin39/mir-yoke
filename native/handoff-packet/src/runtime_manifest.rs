@@ -4,9 +4,14 @@
     not(test),
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
-#[allow(unsafe_code, dead_code)] // Reuse the reviewed descriptor-relative adoption boundary.
-#[path = "adoption_fs.rs"]
-mod adoption_fs;
+// Reuse the reviewed descriptor-relative adoption boundary. Loaded as a normal (non-#[path]) module so its
+// platform submodules resolve under src/adoption_fs/ exactly as in the library.
+#[allow(unsafe_code, dead_code)]
+#[path = "."]
+mod fs_root {
+    pub(crate) mod adoption_fs;
+}
+use fs_root::adoption_fs;
 #[path = "runtime_manifest_args.rs"]
 mod runtime_manifest_args;
 #[path = "runtime_verify.rs"]

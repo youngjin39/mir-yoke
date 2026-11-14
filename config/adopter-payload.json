@@ -3749,7 +3749,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/runtime_manifest.rs",
-      "sha256": "91bb540e23dec548eea2af84395502e55305c2b0be588df3826f6e09845da863"
+      "sha256": "e9f5c20e9bdb2a14a5c8aa6a6c593dcab6bb37d65243adbbfb3c3083c50c1f54"
     },
     {
       "classification": "template-maintainer-tool",
