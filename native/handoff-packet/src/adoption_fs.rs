@@ -304,6 +304,18 @@ pub(crate) fn path_from_points(points: &[u32]) -> std::path::PathBuf {
       }
       OsString::from_wide(&wide).into() }
 }
+pub(crate) fn is_executable(path: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(path).is_ok_and(|m| m.permissions().mode() & 0o111 != 0)
+    }
+    #[cfg(not(unix))]
+    {
+        path.is_file()
+    }
+}
+
 pub(crate) fn set_mode(file: &File, mode: u32) -> io::Result<()> {
     #[cfg(unix)]
     {
@@ -785,9 +797,6 @@ pub(crate) struct StagedFile {
     requires_visible_parent: bool,
 }
 impl StagedFile {
-    // Current production callers use this wrapper only on Unix; Windows uses
-    // create_with/create_with_parent_check, with this convenience API in tests.
-    #[cfg(any(unix, test))]
     pub(crate) fn create(root: &Path, path: &Path) -> io::Result<Self> {
         Self::create_with(root, path, |_| Ok(()))
     }

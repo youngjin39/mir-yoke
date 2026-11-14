@@ -136,7 +136,6 @@ pub fn write_receipt_with(
     publish_receipt(path, data.as_bytes(), before_replace)
 }
 
-#[cfg(unix)]
 fn publish_receipt(
     path: &Path,
     data: &[u8],
@@ -180,31 +179,6 @@ fn publish_receipt(
     }
     staged
         .publish(directory, path)
-        .map(|_| ())
-        .map_err(|e| e.to_string())
-}
-
-#[cfg(not(unix))]
-fn publish_receipt(
-    path: &Path,
-    data: &[u8],
-    before_replace: impl FnOnce(&Path, &Path) -> io::Result<()>,
-) -> Result<(), String> {
-    let directory = path.parent().ok_or("missing receipt parent")?;
-    let mut temporary = tempfile::Builder::new()
-        .prefix(".project-hooks-")
-        .tempfile_in(directory)
-        .map_err(|e| e.to_string())?;
-    temporary.write_all(data).map_err(|e| e.to_string())?;
-    temporary.flush().map_err(|e| e.to_string())?;
-    before_replace(temporary.path(), path).map_err(|e| e.to_string())?;
-    // Preserve the existing non-Unix provider path; descriptor-relative support
-    // is Unix-only. Recheck linked components immediately before placement.
-    if path.ancestors().any(Path::is_symlink) {
-        return Err("linked project-hook path".into());
-    }
-    temporary
-        .persist(path)
         .map(|_| ())
         .map_err(|e| e.to_string())
 }
