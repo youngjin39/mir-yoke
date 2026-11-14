@@ -664,14 +664,22 @@ const OPTIONS: &[OptionSpec] = &[
 /// Library boundary: all relative paths use cwd; no caller or environment discovery.
 /// Retrieval consumes no wall clock; profile freshness uses the existing Git helper.
 pub fn main(argv: &[&str], cwd: &Path, embedding: EmbeddingState) -> Result<Output> {
-    main_inner(argv, cwd, Some(embedding), &Path::to_path_buf)
+    main_inner(argv, cwd, Some(embedding), &Path::to_path_buf, &[])
 }
 pub fn console(
     argv: &[&str],
     cwd: &Path,
     path: &dyn Fn(&Path) -> std::path::PathBuf,
 ) -> Result<Output> {
-    main_inner(argv, cwd, None, path)
+    console_parent(argv, cwd, path, &[])
+}
+pub(super) fn console_parent(
+    argv: &[&str],
+    cwd: &Path,
+    path: &dyn Fn(&Path) -> std::path::PathBuf,
+    parent_unknown: &[&str],
+) -> Result<Output> {
+    main_inner(argv, cwd, None, path, parent_unknown)
 }
 const PULL_USAGE: &str = "usage: mir context pull [-h] [--history] [--json] [--k K]\n                        [--path TARGET_PATHS] [--risk {low,normal,high}]\n                        [--db DB] [--project-root PROJECT_ROOT]\n                        query\n";
 const PULL_HELP: &str = "\npositional arguments:\n  query                 search query\n\noptions:\n  -h, --help            show this help message and exit\n  --history             include expired/archived docs and facts\n  --json                machine-readable JSON output\n  --k K                 number of results (default: 8)\n  --path TARGET_PATHS   repository-relative task target (repeatable)\n  --risk {low,normal,high}\n                        main-agent task risk classification (default: normal)\n  --db DB\n  --project-root PROJECT_ROOT\n";
@@ -680,6 +688,7 @@ fn main_inner(
     cwd: &Path,
     embedding: Option<EmbeddingState>,
     path: &dyn Fn(&Path) -> std::path::PathBuf,
+    parent_unknown: &[&str],
 ) -> Result<Output> {
     let (mut query, mut history, mut json_output, mut k) = (None, false, false, 8i64);
     let mut k_overflow = false;
@@ -697,12 +706,13 @@ fn main_inner(
     let option_names: Vec<_> = OPTIONS.iter().map(|o| o.name).collect();
     let option_like = |s: &str| super::context_sync::option_like_with(s, &option_names);
     let (mut i, mut unknown, mut positional_only) = (1, Vec::new(), false);
+    let mut query_end = 0;
     while i < argv.len() {
         let token = argv[i];
         i += 1;
         if !positional_only && token == "--" {
             positional_only = true;
-            if query.is_some() {
+            if query.is_some() && query_end != i - 1 {
                 unknown.push(token);
             }
             continue;
@@ -710,6 +720,7 @@ fn main_inner(
         if positional_only || !option_like(token) {
             if query.is_none() {
                 query = Some(token);
+                query_end = i;
             } else {
                 unknown.push(token);
             }
@@ -808,11 +819,17 @@ fn main_inner(
     let Some(query) = query else {
         return Ok(fail("the following arguments are required: query"));
     };
+    unknown.splice(0..0, parent_unknown.iter().copied());
     if !unknown.is_empty() {
         return Ok((2, Vec::new(), format!("usage: mir context [-h] {{pull,sync}} ...\nmir context: error: unrecognized arguments: {}\n", unknown.join(" ")).into_bytes()));
     }
     let actual_cwd;
-    let cwd = if embedding.is_none() {
+    let needs_cwd = db.is_none()
+        || root.as_ref().map_or_else(
+            || db.as_ref().is_some_and(|p| p.is_relative()),
+            |p| p.is_relative(),
+        );
+    let cwd = if embedding.is_none() && needs_cwd {
         actual_cwd = match std::env::current_dir() {
             Ok(p) => p,
             Err(e) => {

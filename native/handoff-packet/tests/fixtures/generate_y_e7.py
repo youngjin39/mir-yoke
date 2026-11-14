@@ -13,6 +13,7 @@ from pathlib import Path
 assert sys.flags.isolated
 p = argparse.ArgumentParser()
 p.add_argument('--scratch', type=Path, required=True)
+p.add_argument('--e12a', action='store_true')
 p.add_argument('--output', type=Path, required=True)
 a = p.parse_args()
 root = a.scratch.resolve() / 'oracle'
@@ -73,6 +74,15 @@ if mode == 'recent':
                    ('{"created":"2026-11-15"}', '2.md'))
 if mode in {'filtered', 'history'}:
     c.conn.execute("UPDATE external_documents SET status='archived' WHERE relative_path='2.md'")
+if mode.startswith('metadata-'):
+    kind = mode.removeprefix('metadata-')
+    value = (b'{"created":"2026-11-15"}' if kind in {'unrelated', 'archived'}
+             else bytes.fromhex(sys.argv[3]) if kind.startswith('blob')
+             else int(sys.argv[3]) if kind == 'integer' else sys.argv[3])
+    c.conn.execute('UPDATE external_documents SET frontmatter_json=? WHERE relative_path=?',
+                   (value, '1.md'))
+    if kind == 'archived':
+        c.conn.execute("UPDATE external_documents SET status='archived' WHERE relative_path='1.md'")
 scopes = ('1.md',) if mode == 'scoped' else ('absent',) if mode == 'empty' else ()
 def embed(texts):
     assert texts == ['absentword' if mode == 'no-scores' else 'apple']
@@ -87,7 +97,8 @@ def embed(texts):
     return [[1.0] + [0.0] * 1023]
 try:
     hits = es.search('absentword' if mode == 'no-scores' else 'apple',
-                     k=int(sys.argv[2]), embed_fn=None if mode == 'disabled' else embed,
+                     k=int(sys.argv[2]),
+                     embed_fn=None if mode == 'disabled' or mode.startswith('metadata-') else embed,
                      encoder_fingerprint='synthetic-v1', path_scopes=scopes,
                      include_history=mode in {'history', 'empty-index'})
     print(json.dumps([dict(path=h.relative_path, score=h.score) for h in hits]))
@@ -96,14 +107,26 @@ except Exception as exc:
     raise SystemExit(1)
 '''.replace('PACKAGE_SET', repr(set(['mir', *packages]))))
 records = []
-for mode in ['hybrid', 'ties', 'limit', 'zero', 'disabled', 'failed', 'mismatch', 'no-vectors',
+modes = ['hybrid', 'ties', 'limit', 'zero', 'disabled', 'failed', 'mismatch', 'no-vectors',
              'recent', 'filtered', 'history', 'scoped', 'empty', 'bad-dim', 'empty-embedding',
              'unavailable', 'vec-error', 'fts-error', 'expansion', 'no-scores', 'multiple',
-             'empty-index']:
+             'empty-index']
+metadata = {}
+if a.e12a:
+    metadata = {'unrelated': '', 'archived': '', 'integer': '7', 'malformed': '{',
+                'surrogate': '{"created":"2026-11-15","x":"\\ud800"}',
+                'deep': '{"created":"2026-11-15","x":' + '['*5000 + '0' + ']'*5000 + '}'}
+    for enc in ['utf-8-sig', 'utf-16-le', 'utf-16-be', 'utf-32-le', 'utf-32-be']:
+        metadata['blob-' + enc] = '{"created":"2026-11-15T12:00:00"}'.encode(enc).hex()
+    metadata['blob-invalid'] = 'ff'
+    modes = ['metadata-' + kind for kind in metadata]
+for mode in modes:
     work = root / mode
     work.mkdir(exist_ok=True)
     (work / 'notes').mkdir(exist_ok=True)
     docs = ['alpha apple orchard.\n', 'beta ocean harbor.\n', 'gamma desert dunes.\n']
+    if mode.startswith('metadata-') and mode not in {'metadata-unrelated', 'metadata-archived'}:
+        docs = ['apple.\n', 'apple.\n']
     if mode == 'empty-index':
         docs = []
     if mode == 'expansion':
@@ -113,11 +136,20 @@ for mode in ['hybrid', 'ties', 'limit', 'zero', 'disabled', 'failed', 'mismatch'
     for suffix in ['', '-wal', '-shm']:
         (work / ('memory.db' + suffix)).unlink(missing_ok=True)
     k = 1 if mode in {'limit', 'expansion'} else 0 if mode == 'zero' else 3
-    result = subprocess.run([sys.executable, '-I', '-X', 'utf8', str(wrapper), mode, str(k)],
+    result = subprocess.run([sys.executable, '-I', '-X', 'utf8', str(wrapper), mode, str(k),
+                             metadata.get(mode.removeprefix('metadata-'), '')],
                             cwd=work, env=dict(HOME=str(work), PATH=os.defpath),
                             capture_output=True)
-    records.append(dict(mode=mode, docs=docs, k=k, exit=result.returncode,
+    records.append(dict(metadata=metadata.get(mode.removeprefix('metadata-')), mode=mode, docs=docs,
+                        k=k, exit=result.returncode,
                         stdout=result.stdout.decode(), stderr=result.stderr.decode()))
-assert len(json.loads(records[0]['stdout'])) == 3, records
-assert records[5]['stderr'] == 'ValueError: synthetic provider failure\n'
+if not a.e12a:
+    for r in records:
+        r.pop('metadata')
+    assert len(json.loads(records[0]['stdout'])) == 3, records
+    assert records[5]['stderr'] == 'ValueError: synthetic provider failure\n'
+else:
+    assert len(json.loads(records[0]['stdout'])) == 1, records[0]
+    assert json.loads(records[2]['stdout'])[0]['path'] == '0.md', records[2]
+    assert json.loads(records[4]['stdout'])[0]['path'] == '1.md', records[4]
 a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n')

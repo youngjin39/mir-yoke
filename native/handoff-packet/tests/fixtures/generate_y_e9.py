@@ -14,6 +14,7 @@ assert sys.flags.isolated
 p = argparse.ArgumentParser()
 p.add_argument('--scratch', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
+p.add_argument('--e12a', action='store_true')
 p.add_argument('--e11', action='store_true')
 p.add_argument('--e10', action='store_true', help='capture remaining parser boundaries')
 a = p.parse_args()
@@ -93,10 +94,21 @@ if a.e11:
         '--path=x y', '--k= 1', '--json=x y', '--risk=low high']]
     cases += [['pull', 'q', '--k', chr(c)] for c in [
         0x10d40, 0x116d0, 0x11bf0, 0x16130, 0x16d70, 0x1ccf0, 0x1e5f1]]
+if a.e12a:
+    cases = [[opt, 'pull', 'q', '--db', 'absent'] for opt in
+             ['--hi', '--j', '--p', '--db', '--db=x', '--k', '--risk', '--path',
+              '--json', '--history', '--risk=low', '--db=--help']]
+    cases += [['--j', 'pull', *tail] for tail in [[], ['--help'], ['q', '--k', 'bad'],
+                                               ['q', '--bad']]]
+    cases += [['pull', *tail] for tail in [['q', '--', '--db', 'absent'],
+                                          ['q', '--'], ['--', 'q', '--json']]]
+    cases += [['--bad', '--', '--db', 'absent']]
 records = []
 for removed, argv in [(False, c) for c in cases] + [(True, c) for c in
+        ([ [action, *(['q'] if action == 'pull' else []), '--db', '{ROOT}/absent',
+             '--project-root', '{ROOT}'] for action in ['pull', 'sync']] if a.e12a else
         [['pull', '--help'], ['sync', '--help'], ['pull', 'q'], ['sync'],
-         ['pull', 'q', '--db', 'absent'], ['sync', '--db', 'absent']]]:
+         ['pull', 'q', '--db', 'absent'], ['sync', '--db', 'absent']])]:
     work = root / ('case-' + str(len(records)))
     work.mkdir(exist_ok=True)
     if not removed:
@@ -107,13 +119,15 @@ for removed, argv in [(False, c) for c in cases] + [(True, c) for c in
         at = args.index('--') if '--' in args else len(args)
         args[at:at] = ['--db', 'absent']
     result = subprocess.run([sys.executable, '-I', '-X', 'utf8', str(wrapper),
-                             'removed' if removed else 'normal', *args], cwd=work,
+                             'removed' if removed else 'normal',
+                             *[v.replace('{ROOT}', str(work.parent)) for v in args]], cwd=work,
                             env=dict(HOME=str(work), PATH=os.defpath), capture_output=True)
     records.append(dict(argv=args, removed=removed, exit=result.returncode,
-                        stdout=result.stdout.decode(), stderr=result.stderr.decode()))
+                        stdout=result.stdout.decode().replace(str(work.parent), '{ROOT}'),
+                        stderr=result.stderr.decode().replace(str(work.parent), '{ROOT}')))
 if a.e10:
     assert records[0]['exit'] == 2 and 'no memory.db' in records[0]['stdout'], records[0]
     assert 'invalid int value' in records[1]['stderr'], records[1]
-elif not a.e11:
+elif not a.e11 and not a.e12a:
     assert 'usage: mir context pull' in records[2]['stdout'], records[2]
 a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n')

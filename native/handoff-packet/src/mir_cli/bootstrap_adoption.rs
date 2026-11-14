@@ -288,7 +288,7 @@ pub(super) fn json_bytes_text(b: &[u8]) -> Result<String, Error> {
 }
 
 /// Preserve Python-only code points until the JSON consumer inspects them.
-pub(super) fn json_bytes_codepoints(b: &[u8]) -> Result<Vec<u32>, Error> {
+pub(crate) fn json_bytes_codepoints(b: &[u8]) -> Result<Vec<u32>, Error> {
     json_byte_points(b, true)
 }
 fn json_byte_points(b: &[u8], surrogatepass: bool) -> Result<Vec<u32>, Error> {

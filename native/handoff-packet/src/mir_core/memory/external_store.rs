@@ -1206,6 +1206,9 @@ pub fn extract_title_and_frontmatter(text: &str) -> (Option<String>, Option<Stri
     (title, encoded)
 }
 pub fn doc_created_ordinal(frontmatter: Option<&str>) -> i64 {
+    doc_created_value(frontmatter.and_then(|s| crate::python_json::parse(s).ok()))
+}
+fn doc_created_value(fm: Option<crate::python_json::Value>) -> i64 {
     fn ordinal(s: &str) -> Option<i64> {
         let s: String = s.chars().take(10).collect();
         if !s.is_ascii() {
@@ -1264,16 +1267,16 @@ pub fn doc_created_ordinal(frontmatter: Option<&str>) -> i64 {
         }
         Some(before(year) + months[..month as usize - 1].iter().sum::<i64>() + day)
     }
-    let Some(fm) = frontmatter.and_then(|s| serde_json::from_str::<Value>(s).ok()) else {
+    let Some(fm) = fm else {
         return 0;
     };
     let Some(created) = fm.get("created") else {
         return 0;
     };
-    let text = created
-        .as_str()
-        .map(str::to_owned)
-        .unwrap_or_else(|| created.to_string());
+    if !created.truthy() {
+        return 0;
+    }
+    let text: String = created.py_str().chars().take(10).collect();
     ordinal(&text).unwrap_or(0)
 }
 
@@ -1312,7 +1315,7 @@ fn search_ranked(
     }
     let mut stmt = conn.prepare(
         "SELECT c.id, a.slug, a.root_path, d.relative_path, c.byte_start, c.byte_end,
-         d.status, d.file_hash, d.frontmatter_json
+         d.status, d.file_hash
          FROM external_chunks c
          JOIN external_documents d ON d.id=c.document_id
          JOIN external_archives a ON a.id=d.archive_id",
@@ -1330,12 +1333,11 @@ fn search_ranked(
                 file_hash: r.get(7)?,
                 score: 0.0,
             },
-            r.get::<_, Option<String>>(8)?,
         ))
     })?;
     let mut candidates = BTreeMap::new();
     for row in rows {
-        let (id, hit, frontmatter) = row?;
+        let (id, hit) = row?;
         let logical = logical_metadata_path(&hit.root, &hit.relative_path);
         if !history && (hit.status != "active" || is_history_path(&logical)) {
             continue;
@@ -1349,7 +1351,7 @@ fn search_ranked(
                 continue;
             }
         }
-        candidates.insert(id, (hit, doc_created_ordinal(frontmatter.as_deref())));
+        candidates.insert(id, (hit, 0));
     }
     if candidates.is_empty() && (!history || !scopes.is_empty()) {
         return Ok(Vec::new());
@@ -1419,6 +1421,24 @@ fn search_ranked(
         .into_iter()
         .filter(|(_, (hit, _))| hit.score > 0.0)
         .collect::<Vec<_>>();
+    if candidates.is_empty() {
+        return Ok(Vec::new());
+    }
+    // Read ranking metadata only for scored rows, as in the reference.
+    let mut metadata = conn.prepare("SELECT d.frontmatter_json FROM external_chunks c JOIN external_documents d ON d.id=c.document_id WHERE c.id=?")?;
+    for (id, (_, created)) in &mut candidates {
+        let raw = metadata.query_row([*id], |r| r.get::<_, rusqlite::types::Value>(0))?;
+        let fm = match raw {
+            rusqlite::types::Value::Text(s) => crate::python_json::parse(&s).ok(),
+            rusqlite::types::Value::Blob(b) => {
+                crate::mir_cli::bootstrap_adoption::json_bytes_codepoints(&b)
+                    .ok()
+                    .and_then(|points| crate::python_json::parse_codepoints(points).ok())
+            }
+            _ => None,
+        };
+        *created = doc_created_value(fm);
+    }
     candidates.sort_by(|a, b| {
         b.1.0
             .score

@@ -11,6 +11,9 @@ fn frozen_context_parser_and_removed_cwd() {
     );
     records
         .extend(serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e11.json")).unwrap());
+    records.extend(
+        serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e12a-parser.json")).unwrap(),
+    );
     let mut failures = Vec::new();
     for r in records {
         let temp = tempfile::tempdir().unwrap();
@@ -56,13 +59,11 @@ fn frozen_context_parser_and_removed_cwd() {
             Command::new(env!("CARGO_BIN_EXE_mir"))
         };
         command
-            .args(
-                r["argv"]
-                    .as_array()
+            .args(r["argv"].as_array().unwrap().iter().map(|v| {
+                v.as_str()
                     .unwrap()
-                    .iter()
-                    .map(|v| v.as_str().unwrap()),
-            )
+                    .replace("{ROOT}", root.to_str().unwrap())
+            }))
             .env_clear()
             .env("HOME", &root)
             .current_dir(&root);
@@ -91,8 +92,8 @@ fn frozen_context_parser_and_removed_cwd() {
         }
         let out = command.output().unwrap();
         let actual = serde_json::json!({"exit":out.status.code(),
-            "stdout":String::from_utf8(out.stdout).unwrap(),
-            "stderr":String::from_utf8(out.stderr).unwrap()});
+            "stdout":String::from_utf8(out.stdout).unwrap().replace(root.to_str().unwrap(), "{ROOT}"),
+            "stderr":String::from_utf8(out.stderr).unwrap().replace(root.to_str().unwrap(), "{ROOT}")});
         if actual["exit"] != r["exit"]
             || actual["stdout"] != r["stdout"]
             || actual["stderr"] != r["stderr"]

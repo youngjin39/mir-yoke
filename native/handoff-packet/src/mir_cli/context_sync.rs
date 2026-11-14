@@ -87,12 +87,19 @@ pub(super) fn option_like_with(s: &str, options: &[&str]) -> bool {
 }
 /// Raw OS paths are restored by the root's shared scalar bridge before I/O.
 pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
+    console_parent(argv, path, &[])
+}
+fn console_parent(
+    argv: &[&str],
+    path: impl Fn(&Path) -> PathBuf,
+    parent_unknown: &[&str],
+) -> Output {
     let Some(&action) = argv.first() else {
         return diag(false, "the following arguments are required: action");
     };
     let mut sync = false;
     if action == "pull" {
-        return match super::context::console(argv, Path::new("."), &path) {
+        return match super::context::console_parent(argv, Path::new("/"), &path, parent_unknown) {
             Ok((code, out, err)) => (
                 code,
                 String::from_utf8_lossy(&out).into(),
@@ -109,17 +116,27 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         };
     }
     let (mut db, mut root, mut reindex) = (None, None, false);
-    let (mut unknown, mut i) = (Vec::new(), 0);
+    let (mut unknown, mut i) = (parent_unknown.to_vec(), 0);
     while let Some(&token) = argv.get(i) {
         i += 1;
         if !sync && token == "pull" {
-            let mut args = argv[i - 1..].to_vec();
-            args.extend(unknown);
-            return console(&args, path);
+            return console_parent(&argv[i - 1..], path, &unknown);
         }
         if !sync && token == "sync" {
             sync = true;
             continue;
+        }
+        if token == "--"
+            && !sync
+            && let Some(next) = argv.get(i)
+        {
+            return diag(
+                false,
+                &format!(
+                    "argument action: invalid choice: {} (choose from pull, sync)",
+                    repr(next)
+                ),
+            );
         }
         if token == "--" {
             unknown.extend_from_slice(&argv[i - 1..]);
@@ -143,7 +160,10 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         let name = if name == "-h" { "--help" } else { name };
         let matches: Vec<_> = OPTIONS
             .iter()
-            .filter(|o| **o == name || (name.starts_with("--") && o.starts_with(name)))
+            .filter(|o| {
+                (sync || **o == "--help")
+                    && (**o == name || (name.starts_with("--") && o.starts_with(name)))
+            })
             .collect();
         let option = match matches.as_slice() {
             [o] if sync || **o == "--help" => **o,
@@ -213,8 +233,16 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         return diag(false, "the following arguments are required: action");
     }
     let result = (|| -> Result<Output, String> {
-        let cwd =
-            std::env::current_dir().map_err(|e| cwd_error(e).trim_end_matches('\n').to_owned())?;
+        let needs_cwd = db.is_none()
+            || root.map_or_else(
+                || db.is_some_and(|p| Path::new(p).is_relative()),
+                |p| Path::new(p).is_relative(),
+            );
+        let cwd = if needs_cwd {
+            std::env::current_dir().map_err(|e| cwd_error(e).trim_end_matches('\n').to_owned())?
+        } else {
+            PathBuf::from("/")
+        };
         let home = std::env::var_os("HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|| cwd.clone());

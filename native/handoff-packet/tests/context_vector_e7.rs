@@ -4,7 +4,10 @@ use std::fs;
 
 #[test]
 fn frozen_vector_retrieval() {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e7.json")).unwrap();
+    let mut records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e7.json")).unwrap();
+    records.extend(
+        serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e12a-metadata.json")).unwrap(),
+    );
     for r in records {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
@@ -41,6 +44,32 @@ fn frozen_vector_retrieval() {
             .unwrap();
         es.scan(id, None).unwrap();
         let mode = r["mode"].as_str().unwrap();
+        if let Some(kind) = mode.strip_prefix("metadata-") {
+            let raw = r["metadata"].as_str().unwrap();
+            let value = if ["unrelated", "archived"].contains(&kind) {
+                rusqlite::types::Value::Blob(br#"{"created":"2026-11-15"}"#.to_vec())
+            } else if kind.starts_with("blob") {
+                rusqlite::types::Value::Blob(
+                    (0..raw.len())
+                        .step_by(2)
+                        .map(|i| u8::from_str_radix(&raw[i..i + 2], 16).unwrap())
+                        .collect(),
+                )
+            } else if kind == "integer" {
+                rusqlite::types::Value::Integer(raw.parse().unwrap())
+            } else {
+                rusqlite::types::Value::Text(raw.into())
+            };
+            c.conn
+                .execute(
+                    "UPDATE external_documents SET frontmatter_json=? WHERE relative_path='1.md'",
+                    [value],
+                )
+                .unwrap();
+            if kind == "archived" {
+                c.conn.execute("UPDATE external_documents SET status='archived' WHERE relative_path='1.md'", []).unwrap();
+            }
+        }
         if mode == "recent" {
             c.conn
                 .execute(
@@ -138,7 +167,7 @@ fn frozen_vector_retrieval() {
             r["k"].as_i64().unwrap(),
             &scopes,
             ["history", "empty-index"].contains(&mode),
-            if mode == "disabled" {
+            if mode == "disabled" || mode.starts_with("metadata-") {
                 None
             } else {
                 Some(&mut embed)
@@ -181,15 +210,16 @@ fn frozen_vector_retrieval() {
         }
         assert_eq!(
             called,
-            ![
-                "zero",
-                "disabled",
-                "mismatch",
-                "empty",
-                "unavailable",
-                "vec-error"
-            ]
-            .contains(&mode),
+            !mode.starts_with("metadata-")
+                && ![
+                    "zero",
+                    "disabled",
+                    "mismatch",
+                    "empty",
+                    "unavailable",
+                    "vec-error"
+                ]
+                .contains(&mode),
             "{mode}"
         );
     }
