@@ -144,7 +144,7 @@ pub(super) fn wire(path: &Path) -> String {
         path.display().to_string()
     }
 }
-pub(super) fn io_error(path: &Path, e: io::Error) -> Error {
+pub(crate) fn io_error(path: &Path, e: io::Error) -> Error {
     let (class, errno, message) = match e.kind() {
         io::ErrorKind::NotFound => ("FileNotFoundError", 2, "No such file or directory"),
         io::ErrorKind::PermissionDenied => ("PermissionError", 13, "Permission denied"),
@@ -162,7 +162,7 @@ pub(super) fn io_error(path: &Path, e: io::Error) -> Error {
         message: format!("[Errno {errno}] {message}: {}", repr(&wire(path))),
     }
 }
-pub(super) fn decode(bytes: Vec<u8>) -> Result<String, Error> {
+pub(crate) fn decode(bytes: Vec<u8>) -> Result<String, Error> {
     String::from_utf8(bytes).map_err(|e| {
         let start = e.utf8_error().valid_up_to();
         let len = e
@@ -288,7 +288,7 @@ pub(super) fn json_bytes_text(b: &[u8]) -> Result<String, Error> {
 }
 
 /// Preserve Python-only code points until the JSON consumer inspects them.
-pub(super) fn json_bytes_codepoints(b: &[u8]) -> Result<Vec<u32>, Error> {
+pub(crate) fn json_bytes_codepoints(b: &[u8]) -> Result<Vec<u32>, Error> {
     json_byte_points(b, true)
 }
 fn json_byte_points(b: &[u8], surrogatepass: bool) -> Result<Vec<u32>, Error> {

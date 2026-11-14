@@ -2279,7 +2279,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/global-plugin-migration.md",
-      "sha256": "a2f7f43bcca64c0983a3f3dbdaf54268a6c0b57d69bb12e1451dd0a263f00583"
+      "sha256": "4afc06a9f5cb09a824e399d954c50a6d631adac09ddf7ca47b3d542878c7a63d"
     },
     {
       "classification": "reference",
@@ -2297,7 +2297,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/new-machine-setup.md",
-      "sha256": "5bd33427359e55ea48936ae0b723177a466d35203c215c0f44e5ed7168da8350"
+      "sha256": "b1a76cbc057c489823dc450728ad9389d1e4a4d21bca304697586a54c7ef700f"
     },
     {
       "classification": "reference",
@@ -2801,7 +2801,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/Cargo.toml",
-      "sha256": "a20f6376daf7c51e4b2a52d27028efa9d9aca83c88773d765b549eadad12fd27"
+      "sha256": "3d394203bc2a1facf211da59e71df8b21c2d9d055027c45257b36741e436db82"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2849,7 +2849,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/adoption_fs.rs",
-      "sha256": "941c062c5c7d8c42ade2b3b32d9b11271729e4d68c2eb8bf6468e29a56c52e9d"
+      "sha256": "837f73da06d812452e7087f80fb5f81bb7c577e0ab56821d2c203dd404b94c86"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3185,7 +3185,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/lib.rs",
-      "sha256": "9520c531396a1eef3bbafb5e060efdb94c6fc94a8fee0ebcf20635ff5c871e6d"
+      "sha256": "96cb8b1efec4302bcbf1f4b10f2e0432f2dd83b75594f6b606fb48acee2664f6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3227,7 +3227,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/bootstrap_adoption.rs",
-      "sha256": "4a7bb8b38e16fe88dda8b72319b847b75b6d742940bdba05381ac7b1c570d515"
+      "sha256": "594048104b911a18cc963bea953073ba449579e6ac32b7c1de8e74d1653549d5"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3701,7 +3701,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/python_json.rs",
-      "sha256": "83182e8127e881cf26584c0ac25b43a5bf6667611ecb9a8ea18f6136e2162849"
+      "sha256": "b0d469aacec5969b9fbb955467e2631add4960c03c4683285d4589451f455e23"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3828,6 +3828,54 @@
       "disposition": "remove",
       "path": "native/handoff-packet/src/transcript_windows.rs",
       "sha256": "e43fe2becc96048284cd46ffba8505c87930dff88746600adbef2f59b25cd313"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_cli.rs",
+      "sha256": "7b0abae4b456730181265eb1297a480f12ab92d3e618ad1aa6fed244956cc2a4"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_identity_tests.rs",
+      "sha256": "9d892211c0c745a7da4486400f6c88d63aee6784f601aadb9b1273f18411de07"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_install.rs",
+      "sha256": "044faee01068303959e6c6d2f1425cf72636cfdca5fbc2d21dd7afb3c56729c6"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_install_main.rs",
+      "sha256": "069e97b3992e1dddb6a6c6c453cdf348977a27dc49f7d1e14d9bf8be01ef016c"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_install_tests.rs",
+      "sha256": "0cc5158c90aa6da04d4013dcf4047d92c039371cdbdb2c28c94d804a85d5ed95"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_mutation.rs",
+      "sha256": "47776c0c2637a8ea90e83be35b9f4f7292fa95daa71cd4f5ac04617d3281990e"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_transaction.rs",
+      "sha256": "e773e40cc13c5a3389e066540227f9917970f7673aa27fcc14bcb78289e74305"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/user_runtime_transaction_tests.rs",
+      "sha256": "69798a263cc492d165a8463985d05d36ebf11da0be6f11141b3429f654712e41"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5176,6 +5224,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/user_runtime_cli.rs",
+      "sha256": "421069b5facb7cc1e4250a47104b0f1d85dc74568aa2145ba389fc11fafd6df1"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/warmup.rs",
       "sha256": "7839e1c19145424ff59d0852b7cd03dc81a499be8ca47ed3a0bd118a29c5bfaf"
     },
@@ -6185,7 +6239,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "scripts/install_user_runtime_agents.py",
-      "sha256": "f1e88dbce842d7aa9590874d2bb925f7a5a30de6348b5754144ba1a3cc8de98e"
+      "sha256": "d4acf43a000c4c3256cf80b91dcf2d6b9d4308f864244c340d00f707f8f9a64d"
     },
     {
       "classification": "reference",
@@ -7438,6 +7492,54 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/admission-receipts.json",
+      "sha256": "ddfe75a8dfa8da4f48be711d28c54e1cd4f167efa2ba3aaebc7613c8767337ae"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/capture_admission_receipts.py",
+      "sha256": "611ded993f0b112e64f692d5334aac2d98ad70c61e13c17f9a93b4c9bcd8b066"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/capture_case_alias.py",
+      "sha256": "52941ff659fb375b3566a929772a115c387ca16faff7b0fb2572d2df16c17d88"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/capture_cli.py",
+      "sha256": "3580c3d38916b385544174b0287791aec9153c6244d5cff866e9f4a22834e1c0"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/case-alias.json",
+      "sha256": "29c94422b3da48d25de739cae7344f1008e67f99fc7962ff233a7162c20dc908"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/cli.json",
+      "sha256": "9d81423fe084b838d89de23281adcb12b0651aa00ea684b81fd45fd3e5b31c31"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/transaction-fixes.json",
+      "sha256": "00923ddfa7070f2303b6f6d662f8d3a4d22578c9031f5e45874a7fa7dec8756f"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/user_runtime_install/transactions.json",
+      "sha256": "03b2f20abc52cde14ef6a277b5e7e086fea502963946a44d1d4191d510654674"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tests/fixtures/yoke_local_brief.json",
       "sha256": "d23b4e9f84450717268f2b78cc242fc3f611d11cb3d4afe7b22597a86c6e2e7e"
     },
@@ -8417,7 +8519,19 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_user_runtime_agent_command_install.py",
-      "sha256": "549faaf4a1c4910e7742863c37a33d6b2794cc2bba752307eb7772ea4c84138d"
+      "sha256": "7b687d43069c634affb2f2ce9239aa574cd4777ad009d514690a2ef5d6101dfd"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_user_runtime_install_reference.py",
+      "sha256": "4690b8a39f6651f4ec29cfd14565d9e6826df2c2aefe8ec685d7eefefece6cbb"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_user_runtime_launcher.py",
+      "sha256": "128564948a53d79526d9832ac4ec32a9b4b0a32b8332740307cbe8be999cd64b"
     },
     {
       "classification": "template-maintainer-tool",

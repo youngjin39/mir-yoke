@@ -1,0 +1,14 @@
+{
+  "pin": "0754c36a1bc5814d793984292aa9be6ae26d3001",
+  "record": {
+    "status": 2,
+    "stdout": "",
+    "stderr": "error: --claude-home and --codex-home must not overlap\n",
+    "residue": false
+  },
+  "helpers": {
+    "identity_parent": "symlinked target path is not allowed: {ROOT}/a/../b",
+    "cleanup_error": "[Errno 66] Directory not empty: '{ROOT}/b'",
+    "cleanup_stat_error": "[Errno 13] Permission denied: '{ROOT}/denied/home'"
+  }
+}

@@ -73,3 +73,7 @@ path = "src/runtime_manifest.rs"
 [[bin]]
 name = "adoption-install"
 path = "src/adoption_install.rs"
+
+[[bin]]
+name = "user-runtime-install"
+path = "src/user_runtime_install_main.rs"
