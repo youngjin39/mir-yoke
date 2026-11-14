@@ -29,6 +29,7 @@ fn resume_uncaught(args: &Value, error: String) -> String {
     if args["resume_job_id"].is_null() {
         error
     } else {
+        let error = error.strip_prefix("\0uncaught:").unwrap_or(&error);
         format!("\0resume_uncaught:{error}")
     }
 }
@@ -392,7 +393,7 @@ pub fn dispatch(
         Ok(v) => v,
         Err(e) => {
             if e.starts_with("\0uncaught:") {
-                return Err(e);
+                return Err(resume_uncaught(args, e));
             }
             diagnostic(&format!("DispatchBrief error: {}", strip_class(&e)));
             return Ok(1);

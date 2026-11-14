@@ -9,6 +9,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from test_executor_dispatch_stage_d import contained_parent_swap_expected
 from test_executor_status_native_parity import binary  # noqa: F401
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,6 +53,10 @@ def test_resume_frozen_parity(binary, oracle, tmp_path, route, case):  # noqa: F
     setup = S["seed"](home, case, reference, database, None if route == "reference" else binary)
     actual, _ = S["capture"](home, case, setup, route, binary)
     expected = case.get("expected_by_route", {}).get(route, case["expected"])
+    if route != "reference" and case["name"] == "dispatch-fault-artifacts-parent-swap-to-outside":
+        expected = contained_parent_swap_expected(
+            case, cases=GOLDEN["cases"], failure_name="dispatch-artifacts-file"
+        )
     difference = D["first_difference"](expected, actual)
     assert difference is None, json.dumps(
         dict(name=case["name"], route=route, **(difference or {}))

@@ -93,13 +93,16 @@ def test_first_difference_reports_decoded_byte_offset():
     }
 
 
-def contained_parent_swap_expected(case):
+def contained_parent_swap_expected(case, *, cases=None, failure_name="artifacts-file"):
     """Owner exception: refuse at the same write boundary as artifacts-file.
 
     Derive every byte from frozen Python failure/state records, never native output.
     Only the error and the parent-swap input layout differ from artifacts-file.
     """
-    failure = next(item for item in GOLDEN["cases"] if item["name"] == "artifacts-file")
+    failure = next(
+        item for item in (GOLDEN["cases"] if cases is None else cases)
+        if item["name"] == failure_name
+    )
     expected = copy.deepcopy(failure["expected"])
     message = "symlink/reparse point rejected: <root>/artifact-container"
     files = expected["effects"]["files"]
@@ -110,9 +113,12 @@ def contained_parent_swap_expected(case):
                 files[name] = copy.deepcopy(value)
     old = "[Errno 20] Not a directory: '<root>/artifacts/<id>'"
     hooks = bytes.fromhex(files["hook-events"]["hex"]).decode()
-    files["hook-events"]["hex"] = hooks.replace(old, message).replace(
-        "NotADirectoryError", "ValueError"
-    ).encode().hex()
+    files["hook-events"]["hex"] = (
+        hooks.replace(old, message)
+        .replace("NotADirectoryError", "ValueError")
+        .replace("<root>/artifacts", "<root>/artifact-container/artifacts")
+        .encode().hex()
+    )
     row = files["tasks/jobs.db"]["tables"]["jobs"][0]
     row["stderr"] = message
     row["dispatch_options_json"] = row["dispatch_options_json"].replace(

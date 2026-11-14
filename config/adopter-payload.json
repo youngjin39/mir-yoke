@@ -2975,7 +2975,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_dispatch_cli.rs",
-      "sha256": "58e808c5f9e352ee3bbb043fb61fe913125ea5845aad2420bd55fef3153fe885"
+      "sha256": "116cfc77d676f5b95e79c6f0dfce9bdb2a6cbc1c3a409c0ed3b2de274cbe2146"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7613,7 +7613,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_dispatch_stage_d.py",
-      "sha256": "a19b75840d834fbe8150580abcaefbca1d1f7391e83537fd03459a2dc490066a"
+      "sha256": "d08b0681801defdff3f337648e64e90da4acf118312a67bde3ab12c2e0000fdc"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7703,7 +7703,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_resume_stage_d.py",
-      "sha256": "b5030dbc068aa1340aa33ba2ba7f1a2e114ba7fe741ec892589ea40c7d17fcc3"
+      "sha256": "707f2fc67f4cb3ee25c59d575b58376e28d9fedb89e9b286ba7aaf6687932807"
     },
     {
       "classification": "template-maintainer-tool",
