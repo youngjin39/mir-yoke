@@ -248,7 +248,7 @@ fn double_anchor(path: &Path) -> bool {
     b.starts_with(b"//") && !b.starts_with(b"///")
 }
 // pathlib suppresses only these stat errors (and non-encodable paths).
-fn path_metadata(path: &Path, follow: bool) -> Result<Option<fs::Metadata>, Error> {
+pub(crate) fn path_metadata(path: &Path, follow: bool) -> Result<Option<fs::Metadata>, Error> {
     if path.as_os_str().as_encoded_bytes().contains(&0) {
         return Ok(None);
     }
@@ -648,7 +648,9 @@ pub fn capture_home_identity(home: &Path) -> Result<HomeIdentity, Error> {
     let details=fs::symlink_metadata(home).map_err(|_|sync(format!("cannot inspect runtime home: {}",crate::executor_text::os_text(home.as_os_str()))))?;
     if !details.is_dir() || details.is_symlink() { return Err(sync(format!("runtime home is not a real directory: {}",crate::executor_text::os_text(home.as_os_str())))); }
     let canonical_path=fs::canonicalize(home).map_err(|e|input_error(json_input::io_error(home,e)))?;
-    if canonical_path != home || double_anchor(home) { return Err(sync(format!("symlinked target path is not allowed: {}",crate::executor_text::os_text(home.as_os_str())))); }
+    // CPython realpath preserves case aliases on macOS, unlike canonicalize.
+    // Inspect every component for links rather than treating case as a link.
+    if double_anchor(home) || normalized(home) != home || (canonical_path != home && require_safe_home(home).is_err()) { return Err(sync(format!("symlinked target path is not allowed: {}",crate::executor_text::os_text(home.as_os_str())))); }
     Ok(HomeIdentity {path:home.into(),canonical_path,device:details.dev(),inode:details.ino()})
 }
 #[cfg(unix)]

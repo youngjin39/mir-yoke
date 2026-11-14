@@ -2,6 +2,22 @@ use super::*;
 use serde_json::{Value as J, json};
 use std::os::unix::fs::{MetadataExt, symlink};
 #[test]
+fn parent_dir_identity_matches_reference() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().canonicalize().unwrap();
+    fs::create_dir(root.join("a")).unwrap();
+    fs::create_dir(root.join("b")).unwrap();
+    let error = capture_home_identity(&root.join("a/../b")).unwrap_err();
+    let corpus: J = serde_json::from_str(include_str!(
+        "../../../tests/fixtures/user_runtime_install/case-alias.json"
+    ))
+    .unwrap();
+    assert_eq!(
+        error.message.replace(root.to_str().unwrap(), "{ROOT}"),
+        corpus["helpers"]["identity_parent"].as_str().unwrap()
+    );
+}
+#[test]
 #[rustfmt::skip]
 fn frozen_identity() {
     let corpus: J=serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/admission-receipts.json")).unwrap();

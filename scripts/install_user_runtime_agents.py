@@ -530,7 +530,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> int:
+def windows_main(argv: list[str] | None = None) -> int:
+    # Owner decision 1571132453584638016: Windows keeps this implementation
+    # until the shared handle-relative win-fs layer is wired; never a fallback.
     arguments = parse_args(sys.argv[1:] if argv is None else argv)
     try:
         claude_home = require_safe_home(arguments.claude_home)
@@ -604,6 +606,31 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as error:
         print(f"error: unexpected installer failure: {error}", file=sys.stderr)
         return 2
+
+
+def main(argv: list[str] | None = None) -> int:
+    if os.name == "nt":
+        return windows_main(argv)
+    # Same checkout-local {path, sha256} identity contract as
+    # tools/mir_executor/entrypoint.py:_pinned_query; never search PATH/homes.
+    relative = ".mir/bin/user-runtime-install"
+    try:
+        for path in (ROOT / ".mir", ROOT / ".mir/bin",
+                     ROOT / (relative + ".json"), ROOT / relative):
+            if path.is_symlink():
+                raise ValueError("linked installer identity")
+        pin = json.loads((ROOT / (relative + ".json")).read_bytes())
+        binary = ROOT / relative
+        if (not isinstance(pin, dict) or set(pin) != {"path", "sha256"}
+                or pin["path"] != relative or not binary.is_file()
+                or not os.access(binary, os.X_OK)
+                or pin["sha256"] != hashlib.sha256(binary.read_bytes()).hexdigest()):
+            raise ValueError("invalid installer identity")
+        os.execv(str(binary), [str(binary), str(ROOT), *(sys.argv[1:] if argv is None else argv)])
+    except (OSError, ValueError, RecursionError):
+        print("error: checkout-pinned user-runtime-install unavailable or incompatible; "
+              "build and pin it before syncing", file=sys.stderr)
+        return 3
 
 
 if __name__ == "__main__":

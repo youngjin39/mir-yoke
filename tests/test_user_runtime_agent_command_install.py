@@ -5,11 +5,14 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from e02a_binary import build_binary
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "install_user_runtime_agents.py"
@@ -58,17 +61,48 @@ def run_installer(
 ) -> tuple[int, str, str]:
     module = module or installer_module()
     monkeypatch.setattr(module, "source_commit", lambda: SOURCE_COMMIT)
-    result = module.main(
-        [
+    arguments = [
             "--claude-home",
             str(claude_home),
             "--codex-home",
             str(codex_home),
             *extra,
         ]
+    if getattr(module, "windows_injection", False) or os.name == "nt":
+        result = module.windows_main(arguments)
+        captured = capsys.readouterr()
+        return result, captured.out, captured.err
+    # Each native scenario uses a synthetic provider, fake Git and explicit homes.
+    if module.ROOT == ROOT:
+        provider = Path(os.path.commonpath([claude_home, codex_home])).parent / "provider"
+        provider.mkdir(parents=True, exist_ok=True)
+        for relative in ("config", ".claude", ".codex"):
+            shutil.copytree(ROOT / relative, provider / relative, dirs_exist_ok=True)
+    else:
+        provider = module.ROOT
+    scripts = provider / "scripts"
+    scripts.mkdir(exist_ok=True)
+    shutil.copyfile(SCRIPT, scripts / SCRIPT.name)
+    binary = provider / ".mir/bin/user-runtime-install"
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(build_binary("user-runtime-install"), binary)
+    binary.chmod(0o755)
+    binary.with_suffix(".json").write_text(json.dumps({
+        "path": ".mir/bin/user-runtime-install",
+        "sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+    }))
+    fake_bin = provider / "fake-bin"
+    fake_bin.mkdir(exist_ok=True)
+    git = fake_bin / "git"
+    git.write_text(f'#!/bin/sh\nif [ "$3" = rev-parse ]; then echo {SOURCE_COMMIT}; fi\n')
+    git.chmod(0o755)
+    process = subprocess.run(
+        [sys.executable, "-I", str(scripts / SCRIPT.name), *arguments],
+        cwd=provider, env=dict(os.environ, HOME=str(provider),
+                               PATH=str(fake_bin) + os.pathsep + os.environ["PATH"]),
+        capture_output=True, text=True,
     )
-    captured = capsys.readouterr()
-    return result, captured.out, captured.err
+    return process.returncode, process.stdout, process.stderr
 
 
 def test_dry_run_is_default_and_leaves_explicit_homes_untouched(
@@ -281,7 +315,7 @@ def test_case_insensitive_ancestor_aliases_are_rejected_without_created_home_res
     claude_home = tmp_path / "CaseHome" / "a" / "claude"
     codex_home = tmp_path / "casehome"
 
-    result, _, stderr = run_installer(
+    result, stdout, stderr = run_installer(
         monkeypatch, capsys, claude_home, codex_home, "--apply", module=module
     )
 
@@ -289,6 +323,9 @@ def test_case_insensitive_ancestor_aliases_are_rejected_without_created_home_res
     assert "must not overlap" in stderr
     assert not (tmp_path / "CaseHome").exists()
     assert not (tmp_path / "casehome").exists()
+    fixture = ROOT / "tests/fixtures/user_runtime_install/case-alias.json"
+    expected = json.loads(fixture.read_text())["record"]
+    assert {"status": result, "stdout": stdout, "stderr": stderr, "residue": False} == expected
 
 
 def write_provider_config(
@@ -410,6 +447,7 @@ def test_apply_failure_rolls_back_both_runtime_homes_and_allows_retry(
     failure_call: int,
 ) -> None:
     module = minimal_provider(tmp_path)
+    module.windows_injection = True  # Python fault injection covers retained Windows body.
     command_relative = ".claude/commands/retired.md"
     command = module.ROOT / command_relative
     command.parent.mkdir(parents=True)
@@ -462,6 +500,7 @@ def test_first_apply_failure_removes_created_homes_and_allows_retry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     module = minimal_provider(tmp_path)
+    module.windows_injection = True
     command_relative = ".claude/commands/retired.md"
     command = module.ROOT / command_relative
     command.parent.mkdir(parents=True)
@@ -500,6 +539,7 @@ def test_interrupt_during_apply_rolls_back_created_homes_and_reraises(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     module = minimal_provider(tmp_path)
+    module.windows_injection = True
     claude_home = tmp_path / "claude-home"
     codex_home = tmp_path / "codex-home"
     original_atomic_write = module.atomic_write

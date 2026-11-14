@@ -1,4 +1,4 @@
-//! Explicit-checkout CLI; callers remain on the Python reference.
+//! Explicit-checkout CLI behind the POSIX user-runtime launcher.
 #![forbid(unsafe_code)]
 use crate::{
     adoption_fs, executor_text as text,
@@ -327,6 +327,35 @@ fn names<'a>(files: impl Iterator<Item = &'a crate::python_json::Text>) -> Strin
     let items: Vec<_> = files.map(|f| quote(&f.codepoints)).collect();
     format!("[{}]", items.join(", "))
 }
+fn cleanup_missing_with(
+    missing: &[&Path],
+    mut before_unlink: impl FnMut(&Path),
+) -> Result<(), Error> {
+    let mut missing = missing.to_vec();
+    missing.sort_by_key(|p| std::cmp::Reverse(p.components().count()));
+    for path in missing {
+        if path_metadata(path, true)
+            .map_err(|e| error("SyncError", format!("apply failed before transaction: {e}")))?
+            .is_none()
+        {
+            continue;
+        }
+        let failure = |e| {
+            let description = text::io_error(e, path);
+            let message = description
+                .split_once(": ")
+                .map_or(description.as_str(), |(_, m)| m);
+            error(
+                "SyncError",
+                format!("apply failed before transaction: {message}"),
+            )
+        };
+        let parent = adoption_fs::parent(Path::new("/"), path).map_err(failure)?;
+        before_unlink(path);
+        parent.unlink(&parent.name, true).map_err(failure)?;
+    }
+    Ok(())
+}
 fn apply_with(
     homes: [&Path; 2],
     files: [Vec<ManagedFile>; 2],
@@ -335,6 +364,10 @@ fn apply_with(
     before: impl FnOnce(),
 ) -> Result<(), Error> {
     let created = homes.map(|p| !p.exists());
+    let missing: Vec<_> = homes
+        .iter()
+        .flat_map(|p| p.ancestors().take_while(|p| !p.exists()))
+        .collect();
     before();
     for home in homes {
         let missing: Vec<_> = home.ancestors().take_while(|p| !p.exists()).collect();
@@ -364,6 +397,7 @@ fn apply_with(
     };
     let identities = [claude.map_err(wrap)?, codex.map_err(wrap)?];
     if runtime_homes_overlap(&identities[0], &identities[1]) {
+        cleanup_missing_with(&missing, |_| {})?;
         return Err(error(
             "SyncError",
             "--claude-home and --codex-home must not overlap",
@@ -498,6 +532,79 @@ pub fn run(raw: &[OsString]) -> i32 {
 mod tests {
     use super::*;
     use std::fs;
+    #[test]
+    fn overlap_cleanup_contains_ancestor_swap() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(tmp.path()).unwrap();
+        let parent = root.join("parent");
+        let parked = root.join("parked");
+        let outside = root.join("outside");
+        fs::create_dir_all(parent.join("home")).unwrap();
+        fs::create_dir_all(outside.join("home")).unwrap();
+        cleanup_missing_with(&[&parent.join("home")], |_| {
+            fs::rename(&parent, &parked).unwrap();
+            std::os::unix::fs::symlink(&outside, &parent).unwrap();
+        })
+        .unwrap();
+        assert!(outside.join("home").is_dir());
+        assert!(!parked.join("home").exists());
+        assert_eq!(fs::read_dir(outside).unwrap().count(), 1);
+    }
+    #[test]
+    #[cfg(target_os = "macos")] // Frozen rmdir errno is the macOS reference's 66.
+    fn overlap_cleanup_errors_match_reference() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(tmp.path()).unwrap();
+        fs::create_dir(root.join("b")).unwrap();
+        let result = cleanup_missing_with(&[&root.join("b")], |path| {
+            fs::write(path.join("child"), b"foreign").unwrap();
+        });
+        let corpus: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/user_runtime_install/case-alias.json"
+        ))
+        .unwrap();
+        assert_eq!(
+            result
+                .unwrap_err()
+                .message
+                .replace(root.to_str().unwrap(), "{ROOT}"),
+            format!(
+                "apply failed before transaction: {}",
+                corpus["helpers"]["cleanup_error"].as_str().unwrap()
+            )
+        );
+        assert_eq!(fs::read(root.join("b/child")).unwrap(), b"foreign");
+    }
+    #[test]
+    fn cleanup_metadata_errors_match_reference() {
+        use std::os::unix::fs::PermissionsExt;
+        let tmp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(tmp.path()).unwrap();
+        let denied = root.join("denied");
+        fs::create_dir_all(denied.join("home")).unwrap();
+        fs::set_permissions(&denied, fs::Permissions::from_mode(0o0)).unwrap();
+        let privileged = fs::metadata(denied.join("home")).is_ok();
+        let result = cleanup_missing_with(&[&denied.join("home")], |_| {});
+        fs::set_permissions(&denied, fs::Permissions::from_mode(0o700)).unwrap();
+        if privileged {
+            return;
+        } // Root bypasses the permission-denial scenario.
+        let corpus: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/user_runtime_install/case-alias.json"
+        ))
+        .unwrap();
+        assert_eq!(
+            result
+                .unwrap_err()
+                .message
+                .replace(root.to_str().unwrap(), "{ROOT}"),
+            format!(
+                "apply failed before transaction: {}",
+                corpus["helpers"]["cleanup_stat_error"].as_str().unwrap()
+            )
+        );
+        assert!(denied.join("home").is_dir());
+    }
     #[test]
     fn creation_rejects_ancestor_swap() {
         let tmp = tempfile::tempdir().unwrap();

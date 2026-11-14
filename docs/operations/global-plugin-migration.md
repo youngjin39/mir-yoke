@@ -238,6 +238,12 @@ When the operator wants the reviewed common agents available from every working 
 editing consumer repositories, use the separate user-runtime installer. Supply both runtime homes
 explicitly because bridge sessions may not share one `HOME`:
 
+On POSIX, first [build and pin `user-runtime-install` in the provider checkout](new-machine-setup.md#3-install-user-scope-capabilities-in-both-clis).
+The launcher requires that checkout's `.mir/bin/user-runtime-install` and its
+path/SHA-256 JSON pin; missing or incompatible bytes fail with status 3. Rebuild
+and repin to repair them. Windows retains the Python implementation pending the
+shared Windows filesystem layer (owner decision 1571132453584638016).
+
 ```bash
 python3 scripts/install_user_runtime_agents.py \
   --claude-home /absolute/claude-config-root \

@@ -97,6 +97,29 @@ paste its hook registration into settings. Repository-coupled hooks remain local
 
 Optional host-wide agents and Claude commands use the separate dry-run installer:
 
+On POSIX, first build and pin the native binary in this provider checkout (requires
+the repository Rust toolchain and Cargo dependencies). From the checkout root:
+
+```bash
+(cd native/handoff-packet && cargo build --locked --release --bin user-runtime-install)
+mkdir -p .mir/bin
+cp native/handoff-packet/target/release/user-runtime-install .mir/bin/user-runtime-install
+python3 - <<'PY'
+import hashlib, json
+from pathlib import Path
+binary = Path('.mir/bin/user-runtime-install')
+binary.with_suffix('.json').write_text(json.dumps({
+    'path': binary.as_posix(), 'sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
+}) + '\n')
+PY
+```
+
+The launcher uses this checkout-local path and SHA-256 pin, following the executor
+launcher identity contract. Missing or incompatible bytes fail with status 3;
+rebuild and repin to repair them. It does not resolve published native-artifacts.
+Windows retains the Python implementation until the shared Windows filesystem
+layer is integrated (owner decision 1571132453584638016).
+
 ```bash
 python3 scripts/install_user_runtime_agents.py \
   --claude-home "$HOME/.claude" --codex-home "$HOME/.codex"
