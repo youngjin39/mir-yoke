@@ -167,7 +167,7 @@ pub struct Client {
     turn: Option<Turn>,
     next_wait_error: Option<&'static str>,
     closed: bool,
-    #[cfg(test)]
+    #[cfg(all(test, unix))]
     frame_delay: Duration,
 }
 impl Client {
@@ -285,7 +285,7 @@ impl Client {
             turn: None,
             next_wait_error: None,
             closed: false,
-            #[cfg(test)]
+            #[cfg(all(test, unix))]
             frame_delay: Duration::ZERO,
         };
         let mut progress = |_: &str, _: &Value| Ok(());

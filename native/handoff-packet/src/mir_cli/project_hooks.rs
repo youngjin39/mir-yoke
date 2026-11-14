@@ -209,6 +209,7 @@ fn publish_receipt(
         .map_err(|e| e.to_string())
 }
 
+#[cfg(any(unix, test))]
 fn probe_timeout_message(argv: &[String; 2], timeout: u64, remaining: Option<f64>) -> String {
     // communicate() hands wait() a float remaining timeout after both pipes
     // reach EOF. TimeoutExpired then reports that value, not the initial integer.
