@@ -315,7 +315,7 @@ pub fn do_sync_with_embedding<'e>(
     }
     Ok((i32::from(failed), output))
 }
-/// Inject the factory result; even Present cannot invoke vectors in this FTS slice.
+/// Frozen FTS fixture factory result; the console uses the configured provider.
 #[derive(Clone, Copy)]
 pub enum EmbeddingState {
     Absent,
@@ -658,6 +658,12 @@ const OPTIONS: &[OptionSpec] = &[
 /// Library boundary: all relative paths use cwd; no caller or environment discovery.
 /// Retrieval consumes no wall clock; profile freshness uses the existing Git helper.
 pub fn main(argv: &[&str], cwd: &Path, embedding: EmbeddingState) -> Result<Output> {
+    main_inner(argv, cwd, Some(embedding))
+}
+pub fn console(argv: &[&str], cwd: &Path) -> Result<Output> {
+    main_inner(argv, cwd, None)
+}
+fn main_inner(argv: &[&str], cwd: &Path, embedding: Option<EmbeddingState>) -> Result<Output> {
     let (mut query, mut history, mut json_output, mut k) = (None, false, false, 8i64);
     let (mut paths, mut risk, mut db, mut root) = (Vec::new(), "normal", None, None);
     let fail = |message: &str| {
@@ -737,14 +743,35 @@ pub fn main(argv: &[&str], cwd: &Path, embedding: EmbeddingState) -> Result<Outp
         ));
     }
     let root = root.canonicalize()?;
-    if let Err(e) = loader::load_config(Some(&root), cwd, cwd) {
-        return Ok((
-            2,
-            format!("invalid memory configuration: {e}\n").into_bytes(),
-            Vec::new(),
-        ));
-    }
-    let c = store::connect(&db, None)?.conn;
+    let home = std::env::var_os("HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| cwd.to_owned());
+    let cfg = match loader::load_config(
+        Some(&root),
+        if embedding.is_none() { &home } else { cwd },
+        cwd,
+    ) {
+        Ok(cfg) => cfg.to_dict(),
+        Err(e) => {
+            return Ok((
+                2,
+                format!("invalid memory configuration: {e}\n").into_bytes(),
+                Vec::new(),
+            ));
+        }
+    };
+    let connection = store::connect(
+        &db,
+        store::ConnectOptions {
+            timeout: None,
+            vec_loading: if embedding.is_none() {
+                store::VecLoading::Bundled
+            } else {
+                store::VecLoading::Disabled
+            },
+        },
+    )?;
+    let c = &connection.conn;
     let profile = crate::mir_core::context::profile_task_context::build_profile_task_context(
         &root, query, &paths, risk,
     )?;
@@ -753,12 +780,23 @@ pub fn main(argv: &[&str], cwd: &Path, embedding: EmbeddingState) -> Result<Outp
     } else {
         string_list(&profile_search_scopes(&profile.value))
     };
-    let degraded = matches!(embedding, EmbeddingState::Failed);
+    let mut degraded = matches!(embedding, Some(EmbeddingState::Failed));
     let mut notices = Vec::<String>::new();
     if degraded {
         notices.push("[degraded] embedding unavailable \u{2014} FTS-only results".into());
     }
-    let (facts, blocked) = search_fact_rows(&c, query, k, history)?;
+    let clock = crate::executor_execute::utc_now;
+    let es = external_store::ExternalStore::new(&connection, &clock)?;
+    let mut backend = super::context_sync::backend(&cfg["memory"]["embedding"]);
+    let mut encode = |texts: &[String]| {
+        backend
+            .encode(texts)
+            .map_err(|e| external_store::HelperError {
+                kind: "RuntimeError",
+                message: e.message,
+            })
+    };
+    let (facts, blocked) = search_fact_rows(c, query, k, history)?;
     if !blocked.is_empty() {
         notices.push(format!(
             "[unsafe-memory] unsafe fact(s) omitted: {}",
@@ -780,11 +818,32 @@ pub fn main(argv: &[&str], cwd: &Path, embedding: EmbeddingState) -> Result<Outp
             .into(),
         );
     }
-    // The reference degrades an archive search failure to an empty archive leg.
+    // An embedding/search error retries exactly once without the provider.
     let hits = if archives == 0 {
         Vec::new()
     } else {
-        external_store::search_fts(&c, query, k, &scopes, history).unwrap_or_default()
+        let enabled = embedding.is_none() && cfg["memory"]["embedding"]["enabled"] == true;
+        match es.search(
+            query,
+            k,
+            &scopes,
+            history,
+            enabled.then_some(&mut encode),
+            if enabled {
+                cfg["memory"]["embedding"]["fingerprint"].as_str()
+            } else {
+                None
+            },
+        ) {
+            Ok(hits) => hits,
+            Err(_) if enabled => {
+                degraded = true;
+                notices.push("[degraded] embedding unavailable — FTS-only results".into());
+                es.search(query, k, &scopes, history, None, None)
+                    .unwrap_or_default()
+            }
+            Err(_) => Vec::new(),
+        }
     };
     let (mut chunks, mut seen) = (Vec::new(), Vec::new());
     for hit in hits {
@@ -884,7 +943,17 @@ pub fn main(argv: &[&str], cwd: &Path, embedding: EmbeddingState) -> Result<Outp
             lines.join("\n") + "\n"
         }
     };
-    Ok((0, out.into_bytes(), VEC_NOTICE.as_bytes().to_vec()))
+    let stderr = if embedding.is_some() {
+        VEC_NOTICE.into()
+    } else if connection.vec_available {
+        String::new()
+    } else {
+        format!(
+            "sqlite-vec unavailable, FTS5-only mode: {}\n",
+            connection.vec_reason
+        )
+    };
+    Ok((0, out.into_bytes(), stderr.into_bytes()))
 }
 fn splitlines(s: &str) -> Vec<&str> {
     let mut lines = s

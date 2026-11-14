@@ -3323,13 +3323,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/context.rs",
-      "sha256": "e27f40ae2f1550c8595a3069e82f09554f53b8b929da8d809f251b8dc7b85297"
+      "sha256": "357f108eb69ae9eaaad16d2b88d30cb05d8086af47be043b78ac98fd8d195a94"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/context_sync.rs",
-      "sha256": "e423585de16eb3f7d523d4e81156bd369d231b6a389457a875d13e79e3b88e66"
+      "sha256": "cb02759d80a525e54a5b674f3c8305f2d2edd4fd382d1776e754f7e2baa11b96"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4456,6 +4456,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/generate_y_e8.py",
+      "sha256": "080f1eed96cd7ce81782a2a14b852f55256dea1e836e9e2c24e05b69bb942dd8"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/handoff-json.json",
       "sha256": "b21b6a76854672148389e4039496178ee68fdca297f0927b1fa5645890faae2b"
     },
@@ -4870,6 +4876,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e8.json",
+      "sha256": "a7d117ba4973396bcfedeb9cb2190adaeb6cff04c686e0cda1eecb5dc8ebe007"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/handoff_json.rs",
       "sha256": "8e788ae93cbeffa82f3beb4dd860ce25ca82d50bf734bc25843ef2f5f5ff93e5"
     },
@@ -5124,6 +5136,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e6.rs",
       "sha256": "a7891f85a1a751d40beaa1c475e45299e16fafc88016963d9435ed58218fc9e5"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/mir_entry_e8.rs",
+      "sha256": "072cca4a46ba88efd9006fdd87738667d0c83526b7067707a9917f6f011eb630"
     },
     {
       "classification": "template-maintainer-tool",

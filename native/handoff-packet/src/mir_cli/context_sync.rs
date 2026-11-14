@@ -89,11 +89,17 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
     };
     let mut sync = false;
     if action == "pull" {
-        return (
-            64,
-            String::new(),
-            "mir: native context pull unavailable (pending Y-E7)\n".into(),
-        );
+        return match std::env::current_dir()
+            .map_err(|e| e.to_string())
+            .and_then(|cwd| super::context::console(argv, &cwd).map_err(|e| e.to_string()))
+        {
+            Ok((code, out, err)) => (
+                code,
+                String::from_utf8_lossy(&out).into(),
+                String::from_utf8_lossy(&err).into(),
+            ),
+            Err(e) => (1, String::new(), format!("{e}\n")),
+        };
     }
     let (mut db, mut root, mut reindex) = (None, None, false);
     let (mut unknown, mut i) = (Vec::new(), 0);
@@ -259,19 +265,7 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         let es = external_store::ExternalStore::new(&conn, &clock)
             .map_err(|e| format!("{}: {e}", e.kind))?;
         let emb = &cfg["memory"]["embedding"];
-        let mut backend = omlx_http::from_config(
-            omlx_http::BackendCfg {
-                base_url: emb["base_url"].as_str().unwrap_or_default().into(),
-                model: emb["model"].as_str().unwrap_or_default().into(),
-                dim: emb["dim"].as_i64().unwrap_or_default(),
-                timeout_sec: emb["timeout_sec"].as_i64().unwrap_or_default(),
-                norm_tolerance: emb["norm_tolerance"].as_f64().unwrap_or_default(),
-                api_key_env: emb["api_key_env"].as_str().unwrap_or_default().into(),
-                auth_scheme: emb["auth_scheme"].as_str().unwrap_or_default().into(),
-            },
-            |name| std::env::var(name).unwrap_or_default(),
-            super::embedding_http::HttpTransport,
-        );
+        let mut backend = backend(emb);
         let mut encode = |texts: &[String]| {
             backend
                 .encode(texts)
@@ -294,4 +288,22 @@ pub fn console(argv: &[&str], path: impl Fn(&Path) -> PathBuf) -> Output {
         }
     })();
     result.unwrap_or_else(|e| (1, String::new(), format!("{e}\n")))
+}
+
+pub(super) fn backend(
+    emb: &serde_json::Value,
+) -> omlx_http::OmlxHttpBackend<super::embedding_http::HttpTransport> {
+    omlx_http::from_config(
+        omlx_http::BackendCfg {
+            base_url: emb["base_url"].as_str().unwrap_or_default().into(),
+            model: emb["model"].as_str().unwrap_or_default().into(),
+            dim: emb["dim"].as_i64().unwrap_or_default(),
+            timeout_sec: emb["timeout_sec"].as_i64().unwrap_or_default(),
+            norm_tolerance: emb["norm_tolerance"].as_f64().unwrap_or_default(),
+            api_key_env: emb["api_key_env"].as_str().unwrap_or_default().into(),
+            auth_scheme: emb["auth_scheme"].as_str().unwrap_or_default().into(),
+        },
+        |name| std::env::var(name).unwrap_or_default(),
+        super::embedding_http::HttpTransport,
+    )
 }
