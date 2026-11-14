@@ -1,4 +1,4 @@
-//! Installer-only descriptor-relative mutations. Windows returns Unsupported.
+//! Installer-only descriptor-relative mutations.
 use crate::adoption_fs::{self, StagedFile};
 use std::{
     ffi::OsStr,
@@ -54,7 +54,7 @@ impl PendingWrite {
             }
         }
         let path = target.with_file_name(temporary);
-        if path == target {
+        if adoption_fs::aliases(root, &path, target).map_err(|e| error(Some(target), e))? {
             return Err(error(
                 Some(target),
                 io::Error::new(
@@ -68,14 +68,7 @@ impl PendingWrite {
         staged.file.write_all(content).map_err(|e| error(None, e))?;
         staged.file.flush().map_err(|e| error(None, e))?;
         staged.file.sync_all().map_err(|e| error(None, e))?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            staged
-                .file
-                .set_permissions(std::fs::Permissions::from_mode(0o644))
-                .map_err(|e| error(Some(&path), e))?;
-        }
+        adoption_fs::set_mode(&staged.file, 0o644).map_err(|e| error(Some(&path), e))?;
         Ok(Self {
             staged,
             root: root.to_owned(),

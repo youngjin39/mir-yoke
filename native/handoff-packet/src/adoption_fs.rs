@@ -49,6 +49,271 @@ fn file_identity(file: &File) -> io::Result<Identity> {
     windows::file_identity(file)
 }
 
+pub(crate) fn missing_metadata(error: &io::Error) -> bool {
+    #[cfg(unix)]
+    let codes = [libc::ENOENT, libc::ENOTDIR, libc::EBADF, libc::ELOOP];
+    // CPython 3.12 pathlib._WINERRORS.
+    #[cfg(windows)]
+    let codes = [6, 21, 123, 267, 1921];
+    error.kind() == io::ErrorKind::NotFound
+        || error.raw_os_error().is_some_and(|c| codes.contains(&c))
+}
+pub(crate) fn reparse(metadata: &std::fs::Metadata) -> bool {
+    #[cfg(unix)]
+    {
+        metadata.is_symlink()
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        metadata.file_attributes() & 0x400 != 0
+    }
+}
+pub(crate) fn double_anchor(path: &Path) -> bool {
+    cfg!(unix)
+        && path.as_os_str().as_encoded_bytes().starts_with(b"//")
+        && !path.as_os_str().as_encoded_bytes().starts_with(b"///")
+}
+pub(crate) fn anchor(path: &Path) -> &Path {
+    path.ancestors().last().unwrap_or(path)
+}
+#[rustfmt::skip]
+pub(crate) fn check_directory(path: &Path) -> io::Result<()> {
+    #[cfg(unix)]
+    { if path == anchor(path) { return Ok(()); } parent(anchor(path), path).map(|_| ()) }
+    #[cfg(windows)]
+    { parent(path, &path.join(".mir-identity")).map(|_| ()) }
+}
+pub(crate) fn directory_identity(path: &Path) -> io::Result<Identity> {
+    // The sentinel is never opened; parent walks and validates every directory.
+    file_identity(&parent(path, &path.join(".mir-identity"))?.directory)
+}
+pub(crate) fn canonical_spelling(home: &Path, canonical: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        home == canonical && !home.as_os_str().as_encoded_bytes().starts_with(b"//")
+    }
+    #[cfg(windows)]
+    {
+        let _ = (home, canonical);
+        true
+    } // Safe walk + full ID handles case/8.3 aliases.
+}
+// Python 3.12 WindowsPath compares components with Unicode 15 str.lower().
+#[cfg(any(windows, test))]
+fn python312_sigma_context(c: char) -> u8 {
+    const DELTA: &[(u32, u8, u8)] = include!("../tests/fixtures/python312-sigma.rs");
+    if let Ok(i) = DELTA.binary_search_by_key(&(c as u32), |r| r.0) {
+        return DELTA[i].1;
+    }
+    // Probe Rust's effective categories, with Case_Ignorable taking precedence
+    // over Cased when both properties hold (e.g. U+0345).
+    if format!("{c}Σ").to_lowercase().ends_with('ς') {
+        3 // non-ignorable Cased
+    } else if format!("A{c}Σ").to_lowercase().ends_with('ς') {
+        6 // Case_Ignorable
+    } else {
+        4 // neither
+    }
+}
+
+#[cfg(any(windows, test))]
+fn python312_lower(text: &str) -> String {
+    const DELTA: &[(u32, &str, &str)] = include!("../tests/fixtures/python312-lower.rs");
+    let mut out = String::new();
+    let mut preceded_by_cased = false;
+    for (index, c) in text.char_indices() {
+        if c == 'Σ' {
+            // Final_Sigma: skip ignorable characters on both sides and require
+            // a preceding Cased character but no following Cased character.
+            let followed_by_cased = text[index + c.len_utf8()..]
+                .chars()
+                .map(python312_sigma_context)
+                .find(|mask| *mask != 6)
+                == Some(3);
+            out.push(if preceded_by_cased && !followed_by_cased {
+                'ς'
+            } else {
+                'σ'
+            });
+        } else if let Ok(i) = DELTA.binary_search_by_key(&(c as u32), |r| r.0) {
+            out.push_str(DELTA[i].1);
+        } else {
+            out.extend(c.to_lowercase());
+        }
+        let context = python312_sigma_context(c);
+        if context != 6 {
+            preceded_by_cased = context == 3;
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+#[test]
+fn python312_lower_matches_complete_scalar_record() {
+    let record: &[(u32, &str, &str)] = include!("../tests/fixtures/python312-lower.rs");
+    assert_eq!(char::UNICODE_VERSION, (17, 0, 0));
+    assert!(record.windows(2).all(|p| p[0].0 < p[1].0));
+    let mut differences = 0;
+    for c in (0..=0x10ffff).filter_map(char::from_u32) {
+        let input = c.to_string();
+        let rust = input.to_lowercase();
+        let expected = match record.binary_search_by_key(&(c as u32), |r| r.0) {
+            Ok(i) => {
+                differences += 1;
+                assert_eq!(rust, record[i].2, "Rust U+{:04X}", c as u32);
+                assert_ne!(record[i].1, record[i].2);
+                record[i].1
+            }
+            Err(_) => &rust,
+        };
+        assert_eq!(
+            python312_lower(&input),
+            expected,
+            "Python U+{:04X}",
+            c as u32
+        );
+    }
+    assert_eq!(differences, record.len());
+    assert_eq!(python312_lower("ΟΣ İ"), "ος i\u{307}");
+}
+
+#[cfg(test)]
+fn sigma_probe(c: char, lower: impl Fn(&str) -> String) -> u8 {
+    u8::from(lower(&format!("{c}Σ")).ends_with('ς'))
+        | (u8::from(lower(&format!("A{c}Σ")).ends_with('ς')) << 1)
+        | (u8::from(lower(&format!("AΣ{c}")).chars().nth(1) == Some('ς')) << 2)
+}
+
+#[cfg(test)]
+#[test]
+fn python312_sigma_matches_complete_scalar_record() {
+    let record: &[(u32, u8, u8)] = include!("../tests/fixtures/python312-sigma.rs");
+    assert_eq!(char::UNICODE_VERSION, (17, 0, 0));
+    assert!(record.windows(2).all(|p| p[0].0 < p[1].0));
+    let mut differences = 0;
+    for c in (0..=0x10ffff).filter_map(char::from_u32) {
+        let rust = sigma_probe(c, str::to_lowercase);
+        let expected = match record.binary_search_by_key(&(c as u32), |r| r.0) {
+            Ok(i) => {
+                differences += 1;
+                assert_eq!(rust, record[i].2, "Rust U+{:04X}", c as u32);
+                assert_ne!(record[i].1, record[i].2);
+                record[i].1
+            }
+            Err(_) => rust,
+        };
+        assert_eq!(
+            sigma_probe(c, python312_lower),
+            expected,
+            "Python U+{:04X}",
+            c as u32
+        );
+    }
+    assert_eq!(differences, record.len());
+}
+
+#[cfg(test)]
+#[test]
+fn python312_sigma_path_pair_stays_distinct() {
+    assert_eq!(
+        python312_lower("agents/ΟΣ\u{1c89}.md"),
+        "agents/ος\u{1c89}.md"
+    );
+    assert_ne!(
+        python312_lower("agents/ΟΣ\u{1c89}.md"),
+        python312_lower("agents/Οσ\u{1c89}.md")
+    );
+    // U+0345 has both properties; Case_Ignorable must take precedence.
+    assert_eq!(python312_lower("A\u{345}Σ\u{345}"), "a\u{345}ς\u{345}");
+    assert_eq!(python312_lower("Σ\u{345}"), "σ\u{345}");
+    assert_eq!(python312_lower("AΣ\u{345}B"), "aσ\u{345}b");
+}
+
+#[rustfmt::skip]
+pub(crate) fn path_key(path: &Path) -> Vec<Vec<u32>> {
+    path.components().map(|p| {
+        #[cfg(unix)]
+        let points = {
+            let mut rest = p.as_os_str().as_bytes(); let mut out = Vec::new();
+            while !rest.is_empty() {
+                match std::str::from_utf8(rest) {
+                    Ok(text) => { out.extend(text.chars().map(u32::from)); break; }
+                    Err(e) => {
+                        out.extend(String::from_utf8_lossy(&rest[..e.valid_up_to()]).chars().map(u32::from));
+                        let end = e.valid_up_to() + e.error_len().unwrap_or(rest.len()-e.valid_up_to());
+                        out.extend(rest[e.valid_up_to()..end].iter().map(|b| 0xdc00 + u32::from(*b)));
+                        rest = &rest[end..];
+                    }
+                }
+            }
+            out
+        };
+        #[cfg(windows)]
+        let points = { use std::os::windows::ffi::OsStrExt;
+            char::decode_utf16(p.as_os_str().encode_wide()).map(|c| c.map(u32::from)
+                .unwrap_or_else(|e| u32::from(e.unpaired_surrogate()))).collect::<Vec<_>>() };
+        #[cfg(windows)]
+        { // WindowsPath compares component str.lower(), retaining lone surrogates.
+          let mut out = Vec::new(); let mut run = String::new();
+          for cp in points.into_iter().chain(Some(0xd800)) {
+              if let Some(c) = char::from_u32(cp) { run.push(c); }
+              else { out.extend(python312_lower(&run).chars().map(u32::from)); run.clear(); out.push(cp); }
+          }
+          out.pop(); out }
+        #[cfg(unix)]
+        { points }
+    }).collect()
+}
+pub(crate) fn aliases(root: &Path, a: &Path, b: &Path) -> io::Result<bool> {
+    #[cfg(windows)]
+    {
+        windows::aliases(root, a, b)
+    }
+    #[cfg(unix)]
+    {
+        let _ = root;
+        Ok(a == b)
+    }
+}
+#[rustfmt::skip]
+pub(crate) fn encoding_error(points: &[u32]) -> Option<(usize, usize)> {
+    #[cfg(windows)]
+    { let _ = points; None }
+    #[cfg(unix)]
+    { let start = points.iter().position(|c| (0xd800..=0xdfff).contains(c) && !(0xdc80..=0xdcff).contains(c))?;
+      Some((start, start + points[start..].iter().take_while(|c| (0xd800..=0xdfff).contains(*c)).count())) }
+}
+#[rustfmt::skip]
+pub(crate) fn path_from_points(points: &[u32]) -> std::path::PathBuf {
+    #[cfg(unix)]
+    { use std::os::unix::ffi::OsStringExt;
+      let mut bytes = Vec::new();
+      for &cp in points {
+          if (0xdc80..=0xdcff).contains(&cp) { bytes.push((cp - 0xdc00) as u8); }
+          else if let Some(c) = char::from_u32(cp) { bytes.extend(c.to_string().as_bytes()); }
+      }
+      OsString::from_vec(bytes).into() }
+    #[cfg(windows)]
+    { use std::os::windows::ffi::OsStringExt;
+      let mut wide = Vec::new();
+      for &cp in points {
+          if cp <= 0xffff { wide.push(cp as u16); }
+          else if let Some(c) = char::from_u32(cp) { wide.extend(c.encode_utf16(&mut [0; 2]).iter().copied()); }
+      }
+      OsString::from_wide(&wide).into() }
+}
+pub(crate) fn set_mode(file: &File, mode: u32) -> io::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        file.set_permissions(std::fs::Permissions::from_mode(mode))
+    }
+    #[cfg(windows)]
+    windows::set_mode(file, mode)
+}
+
 #[cfg(unix)]
 fn c_name(name: &OsStr) -> io::Result<CString> {
     CString::new(name.as_bytes())
@@ -811,4 +1076,25 @@ mod owned_cleanup_tests {
         drop(s);
         assert_eq!(fs::read(path).unwrap(), b"foreign");
     }
+}
+
+#[cfg(all(test, windows))]
+pub(crate) fn short_path(path: &Path) -> std::path::PathBuf {
+    use std::os::windows::ffi::{OsStrExt, OsStringExt};
+    let input: Vec<_> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+    let mut output = vec![0; 32768];
+    // SAFETY: terminated input and writable output with its exact capacity.
+    let count = unsafe {
+        windows_sys::Win32::Storage::FileSystem::GetShortPathNameW(
+            input.as_ptr(),
+            output.as_mut_ptr(),
+            output.len() as u32,
+        )
+    } as usize;
+    assert!(
+        count > 0 && count < output.len(),
+        "8.3 capability precondition: {:?}",
+        io::Error::last_os_error()
+    );
+    std::path::PathBuf::from(OsString::from_wide(&output[..count]))
 }

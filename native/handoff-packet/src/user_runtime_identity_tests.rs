@@ -1,6 +1,23 @@
 use super::*;
 use serde_json::{Value as J, json};
-use std::os::unix::fs::{MetadataExt, symlink};
+use std::os::unix::fs::symlink;
+#[test]
+fn safe_home_double_anchor_failure_keeps_original_spelling() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().canonicalize().unwrap();
+    let regular = root.join("regular-file");
+    fs::write(&regular, b"file").unwrap();
+    let input = PathBuf::from(format!("/{}/child", regular.display()));
+    let error = require_safe_home(&input).unwrap_err();
+    assert_eq!(error.class, "SyncError");
+    assert_eq!(
+        error.message,
+        format!(
+            "target path component is not a directory: /{}",
+            regular.display()
+        )
+    );
+}
 #[test]
 #[rustfmt::skip]
 fn frozen_identity() {
@@ -17,7 +34,7 @@ fn frozen_identity() {
     fs::create_dir(root.join("identity-other")).unwrap(); fs::write(root.join("regular"),b"old").unwrap(); symlink(&home,root.join("identity-link")).unwrap();
     for name in ["identity","missing","regular","identity-link","identity-link/nested","null\0"] {
         check(format!("identity-capture-{}",name.replace('\0',"null")),capture_home_identity(&root.join(name)).map(|id| {
-            let m=fs::symlink_metadata(&id.path).unwrap(); json!([id.path.to_str().unwrap().replace(root.to_str().unwrap(),"{ROOT}"),id.canonical_path.to_str().unwrap().replace(root.to_str().unwrap(),"{ROOT}"),id.device==m.dev(),id.inode==m.ino()])
+            let m=fs::symlink_metadata(&id.path).unwrap(); json!([id.path.to_str().unwrap().replace(root.to_str().unwrap(),"{ROOT}"),id.canonical_path.to_str().unwrap().replace(root.to_str().unwrap(),"{ROOT}"),id.object==adoption_fs::directory_identity(&id.path).unwrap(),m.is_dir()])
         }));
     }
     for (name,path) in [("double",PathBuf::from(format!("/{}",home.display()))),("relative",PathBuf::from("."))] {
@@ -27,7 +44,7 @@ fn frozen_identity() {
     let bad=root.join(std::ffi::OsString::from_vec(b"bad-\xff".to_vec()));
     let wire=|result:Result<J,Error>| { let e=result.unwrap_err(); Ok(json!({"error":e.class,"message":e.message.replace(root.to_str().unwrap(),"{ROOT}")})) };
     check("identity-bytes-missing".into(),wire(capture_home_identity(&bad).map(|_|json!(null))));
-    let bad_identity=HomeIdentity {path:bad.clone(),canonical_path:bad,device:0,inode:0};
+    let bad_identity=HomeIdentity {path:bad.clone(),canonical_path:bad,object:adoption_fs::directory_identity(root).unwrap()};
     check("identity-bytes-changed".into(),wire(verified_target(&bad_identity,Path::new("new.md")).map(|p|json!(p))));
     let identity=capture_home_identity(&home).unwrap();
     for name in ["identity","identity/nested","identity-other"] {

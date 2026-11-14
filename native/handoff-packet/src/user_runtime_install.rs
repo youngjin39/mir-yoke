@@ -1,6 +1,6 @@
 //! Library-only admission; callers remain on the Python reference.
 use crate::{
-    digest,
+    adoption_fs, digest,
     mir_cli::bootstrap_adoption as json_input,
     python_json::{self, Value},
 };
@@ -208,21 +208,11 @@ fn sources_from_bytes(
 fn source_path(root: &Path, text: &python_json::Text) -> Result<PathBuf, Error> {
     let mut points = crate::executor_text::os_points(root.as_os_str());
     points.push(47); points.extend(&text.codepoints);
-    if let Some(start) = points.iter().position(|c| (0xd800..=0xdfff).contains(c) && !(0xdc80..=0xdcff).contains(c)) {
-        let end = start + points[start..].iter().take_while(|c| (0xd800..=0xdfff).contains(*c)).count();
+    if let Some((start,end)) = adoption_fs::encoding_error(&points) {
         return Err(Error { class: "UnicodeEncodeError", message: crate::executor_text::encode_error(
             "utf-8", &points, start, end, "surrogates not allowed").replacen("UnicodeEncodeError: ", "", 1) });
     }
-    #[cfg(unix)] {
-        use std::os::unix::ffi::OsStringExt;
-        let mut bytes=Vec::new();
-        for cp in &text.codepoints {
-            if (0xdc80..=0xdcff).contains(cp) {bytes.push((cp-0xdc00) as u8);}
-            else if let Some(c)=char::from_u32(*cp) {bytes.extend(c.to_string().as_bytes());}
-        }
-        Ok(PathBuf::from(std::ffi::OsString::from_vec(bytes)))
-    }
-    #[cfg(not(unix))] { Ok(PathBuf::from(text.py_str())) }
+    Ok(adoption_fs::path_from_points(&text.codepoints))
 }
 fn normalized(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
@@ -235,17 +225,13 @@ fn normalized(path: &Path) -> PathBuf {
             p => out.push(p.as_os_str()),
         }
     }
-    if double_anchor(path) {
+    if adoption_fs::double_anchor(path) {
         let mut anchor = std::ffi::OsString::from("/");
         anchor.push(out);
         PathBuf::from(anchor)
     } else {
         out
     }
-}
-fn double_anchor(path: &Path) -> bool {
-    let b = path.as_os_str().as_encoded_bytes();
-    b.starts_with(b"//") && !b.starts_with(b"///")
 }
 // pathlib suppresses only these stat errors (and non-encodable paths).
 fn path_metadata(path: &Path, follow: bool) -> Result<Option<fs::Metadata>, Error> {
@@ -259,13 +245,7 @@ fn path_metadata(path: &Path, follow: bool) -> Result<Option<fs::Metadata>, Erro
     };
     match result {
         Ok(metadata) => Ok(Some(metadata)),
-        Err(e)
-            if e.raw_os_error().is_some_and(|code| {
-                [libc::ENOENT, libc::ENOTDIR, libc::EBADF, libc::ELOOP].contains(&code)
-            }) =>
-        {
-            Ok(None)
-        }
+        Err(e) if adoption_fs::missing_metadata(&e) => Ok(None),
         Err(e) => {
             let errno = e.raw_os_error();
             let text = e.to_string();
@@ -286,7 +266,7 @@ fn path_metadata(path: &Path, follow: bool) -> Result<Option<fs::Metadata>, Erro
     }
 }
 fn directory(path: &Path) -> Result<(), Error> {
-    if path_metadata(path, false)?.is_some_and(|m| m.is_symlink()) {
+    if path_metadata(path, false)?.is_some_and(|m| adoption_fs::reparse(&m)) {
         return Err(sync(format!(
             "symlinked target path is not allowed: {}",
             path.display()
@@ -300,10 +280,9 @@ fn directory(path: &Path) -> Result<(), Error> {
         )));
     }
     // Reuse descriptor containment for existing ancestors. This API never writes.
-    #[cfg(unix)]
     if metadata.is_some_and(|m| m.is_dir()) {
         let p = normalized(path);
-        crate::adoption_fs::parent(Path::new("/"), &p)
+        crate::adoption_fs::check_directory(&p)
             .map_err(|e| input_error(json_input::io_error(path, e)))?;
     }
     Ok(())
@@ -315,8 +294,16 @@ pub fn require_safe_home(path: &Path) -> Result<PathBuf, Error> {
             "runtime homes must be explicit absolute non-root paths",
         ));
     }
-    let mut current = PathBuf::from(if double_anchor(path) { "//" } else { "/" });
-    for part in path.components().skip(1) {
+    // Python starts at path.anchor, not a partially assembled Windows prefix.
+    // In particular, \\?\C: has an implicit root but is not a complete anchor.
+    let mut current = adoption_fs::anchor(path).to_path_buf();
+    if adoption_fs::double_anchor(path) {
+        current = PathBuf::from("//");
+    }
+    for part in path.components() {
+        if matches!(part, Component::Prefix(_) | Component::RootDir) {
+            continue;
+        }
         current.push(part.as_os_str());
         directory(&current)?;
     }
@@ -341,7 +328,7 @@ pub fn safe_target(home: &Path, relative: &Path) -> Result<PathBuf, Error> {
         current.push(part.as_os_str());
         directory(&current)?;
     }
-    if path_metadata(&target, false)?.is_some_and(|m| m.is_symlink()) {
+    if path_metadata(&target, false)?.is_some_and(|m| adoption_fs::reparse(&m)) {
         return Err(sync(format!(
             "symlinked target path is not allowed: {}",
             target.display()
@@ -635,52 +622,42 @@ mod identity_tests;
 pub struct HomeIdentity {
     pub path: PathBuf,
     pub canonical_path: PathBuf,
-    pub device: u64,
-    pub inode: u64,
+    pub(crate) object: adoption_fs::Identity,
 }
-#[cfg(unix)]
 #[rustfmt::skip]
 pub fn capture_home_identity(home: &Path) -> Result<HomeIdentity, Error> {
-    use std::os::unix::fs::MetadataExt;
     if home.as_os_str().as_encoded_bytes().contains(&0) {
         return Err(Error { class:"ValueError", message:"stat: embedded null character in path".into() });
     }
     let details=fs::symlink_metadata(home).map_err(|_|sync(format!("cannot inspect runtime home: {}",crate::executor_text::os_text(home.as_os_str()))))?;
-    if !details.is_dir() || details.is_symlink() { return Err(sync(format!("runtime home is not a real directory: {}",crate::executor_text::os_text(home.as_os_str())))); }
+    if !details.is_dir() || adoption_fs::reparse(&details) { return Err(sync(format!("runtime home is not a real directory: {}",crate::executor_text::os_text(home.as_os_str())))); }
     let canonical_path=fs::canonicalize(home).map_err(|e|input_error(json_input::io_error(home,e)))?;
-    if canonical_path != home || double_anchor(home) { return Err(sync(format!("symlinked target path is not allowed: {}",crate::executor_text::os_text(home.as_os_str())))); }
-    Ok(HomeIdentity {path:home.into(),canonical_path,device:details.dev(),inode:details.ino()})
+    if !adoption_fs::canonical_spelling(home, &canonical_path) { return Err(sync(format!("symlinked target path is not allowed: {}",crate::executor_text::os_text(home.as_os_str())))); }
+    Ok(HomeIdentity {path:home.into(),canonical_path,object:adoption_fs::directory_identity(home).map_err(|e|input_error(json_input::io_error(home,e)))?})
 }
-#[cfg(unix)]
 #[rustfmt::skip]
 pub fn runtime_homes_overlap(claude_home: &HomeIdentity, codex_home: &HomeIdentity) -> bool {
-    use std::os::unix::fs::MetadataExt;
-    if (claude_home.device,claude_home.inode)==(codex_home.device,codex_home.inode) { return true; }
+    if claude_home.object==codex_home.object { return true; }
     for (child,ancestor) in [(claude_home,codex_home),(codex_home,claude_home)] {
         for parent in child.path.ancestors().skip(1) {
-            if let Ok(details)=fs::symlink_metadata(parent)
-                && (details.dev(),details.ino())==(ancestor.device,ancestor.inode) { return true; }
+            if let Ok(object)=adoption_fs::directory_identity(parent)
+                && object==ancestor.object { return true; }
         }
     }
     false
 }
-#[cfg(unix)]
 #[rustfmt::skip]
 pub fn verified_target(identity: &HomeIdentity, relative: &Path) -> Result<PathBuf, Error> {
-    use std::os::unix::fs::MetadataExt;
     if identity.path.as_os_str().as_encoded_bytes().contains(&0) {
         return Err(Error { class:"ValueError", message:"stat: embedded null character in path".into() });
     }
     let changed=||sync(format!("runtime home changed during apply: {}",crate::executor_text::os_text(identity.path.as_os_str())));
     let details=fs::symlink_metadata(&identity.path).map_err(|_|changed())?;
     let canonical=fs::canonicalize(&identity.path).map_err(|_|changed())?;
-    if !details.is_dir() || details.is_symlink() || canonical!=identity.canonical_path || details.dev()!=identity.device || details.ino()!=identity.inode { return Err(changed()); }
+    if !details.is_dir() || adoption_fs::reparse(&details) || !adoption_fs::canonical_spelling(&identity.canonical_path,&canonical) || adoption_fs::directory_identity(&identity.path).map_err(|_|changed())?!=identity.object { return Err(changed()); }
     safe_target(&identity.path,relative)
 }
-#[cfg(not(unix))]
-pub fn capture_home_identity(_home: &Path) -> Result<HomeIdentity, Error> {
-    Err(Error {
-        class: "Unsupported",
-        message: "runtime home identity requires Unix".into(),
-    })
-}
+
+#[cfg(all(test, windows))]
+#[path = "user_runtime_windows_core_tests.rs"]
+mod user_runtime_windows_core_tests;

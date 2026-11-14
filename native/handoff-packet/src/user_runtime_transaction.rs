@@ -105,26 +105,27 @@ fn rename_error(temporary: &Path, path: &Path, e: std::io::Error) -> Error {
     error
 }
 
-fn ordered_desired(desired: BTreeMap<PathBuf, Option<Vec<u8>>>) -> Vec<(PathBuf, Option<Vec<u8>>)> {
-    let mut items: Vec<_> = desired.into_iter().collect();
-    // 0754c36 install_user_runtime_agents.py:402: sorted(desired.items()).
-    // pathlib compares component strings, including surrogateescaped bytes.
-    items.sort_by_cached_key(|(path, _)| {
-        path.components()
-            .map(|part| crate::executor_text::os_points(part.as_os_str()))
-            .collect::<Vec<_>>()
-    });
-    items
+pub(crate) fn ordered_desired(
+    desired: impl IntoIterator<Item = (PathBuf, Option<Vec<u8>>)>,
+) -> Vec<(PathBuf, Option<Vec<u8>>)> {
+    let mut merged = BTreeMap::new();
+    for (path, value) in desired {
+        let entry = merged
+            .entry(adoption_fs::path_key(&path))
+            .or_insert((path, None));
+        entry.1 = value;
+    }
+    merged.into_values().collect()
 }
 fn snapshot(plan: &RuntimePlan) -> Result<Vec<Snapshot>, Error> {
-    let mut desired = BTreeMap::new();
+    let mut desired = Vec::new();
     for item in &plan.files {
-        desired.insert(item.target_relative.clone(), Some(item.content.clone()));
+        desired.push((item.target_relative.clone(), Some(item.content.clone())));
     }
     for item in &plan.stale {
-        desired.insert(item.target_relative.clone(), None);
+        desired.push((item.target_relative.clone(), None));
     }
-    desired.insert(RECEIPT_NAME.into(), Some(plan.receipt.clone()));
+    desired.push((RECEIPT_NAME.into(), Some(plan.receipt.clone())));
     ordered_desired(desired)
         .into_iter()
         .map(|(relative, after)| {
@@ -270,3 +271,17 @@ pub(crate) fn transaction_with(
 #[cfg(all(test, unix))]
 #[path = "user_runtime_transaction_tests.rs"]
 mod tests;
+
+#[cfg(all(test, windows))]
+#[rustfmt::skip]
+pub(crate) fn windows_core_order_test() {
+    let desired = BTreeMap::from([
+        (PathBuf::from("agents/Z.md"), Some(vec![1])),
+        (PathBuf::from("agents/a.md"), Some(vec![2])),
+        (PathBuf::from("agents/z.MD"), Some(vec![3])),
+    ]);
+    assert_eq!(ordered_desired(desired), vec![
+        (PathBuf::from("agents/a.md"), Some(vec![2])),
+        (PathBuf::from("agents/Z.md"), Some(vec![3])),
+    ]);
+}
