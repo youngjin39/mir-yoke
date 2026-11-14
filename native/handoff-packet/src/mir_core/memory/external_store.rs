@@ -153,6 +153,25 @@ fn store_error(message: impl Into<String>) -> HelperError {
     }
 }
 impl<'a> ExternalStore<'a> {
+    pub fn search(
+        &self,
+        query: &str,
+        k: i64,
+        scopes: &[String],
+        history: bool,
+        embed: Option<&mut EmbedFn<'_>>,
+        fingerprint: Option<&str>,
+    ) -> std::result::Result<Vec<SearchHit>, Box<dyn std::error::Error>> {
+        let embed = if self.connection.vec_available {
+            embed
+        } else {
+            None
+        };
+        if embed.is_some() {
+            self.validate_encoder_fingerprint(fingerprint)?;
+        }
+        search_ranked(&self.connection.conn, query, k, scopes, history, embed)
+    }
     pub fn new(
         connection: &'a super::store::Connection,
         clock: &'a dyn Fn() -> String,
@@ -1258,7 +1277,7 @@ pub fn doc_created_ordinal(frontmatter: Option<&str>) -> i64 {
     ordinal(&text).unwrap_or(0)
 }
 
-/// Metadata-only FTS search leaf of ExternalStore.search, with no vector backend.
+/// Metadata-only search result; callers reread snippets from the archive.
 #[derive(Debug)]
 pub struct SearchHit {
     pub archive_slug: String,
@@ -1277,20 +1296,28 @@ pub fn search_fts(
     scopes: &[String],
     history: bool,
 ) -> std::result::Result<Vec<SearchHit>, Box<dyn std::error::Error>> {
+    search_ranked(conn, query, k, scopes, history, None)
+}
+fn search_ranked(
+    conn: &rusqlite::Connection,
+    query: &str,
+    k: i64,
+    scopes: &[String],
+    history: bool,
+    embed: Option<&mut EmbedFn<'_>>,
+) -> std::result::Result<Vec<SearchHit>, Box<dyn std::error::Error>> {
+    use std::collections::BTreeMap;
     if k <= 0 {
         return Ok(Vec::new());
     }
-    let query = super::distill::sanitize_fts_query(query)
-        .map_err(|e| std::io::Error::other(format!("{e:?}")))?;
     let mut stmt = conn.prepare(
         "SELECT c.id, a.slug, a.root_path, d.relative_path, c.byte_start, c.byte_end,
-         d.status, d.file_hash, d.frontmatter_json, s.rank
-         FROM external_chunks_fts s JOIN external_chunks c ON c.id=s.rowid
+         d.status, d.file_hash, d.frontmatter_json
+         FROM external_chunks c
          JOIN external_documents d ON d.id=c.document_id
-         JOIN external_archives a ON a.id=d.archive_id
-         WHERE external_chunks_fts MATCH ? ORDER BY s.rank, c.id ASC",
+         JOIN external_archives a ON a.id=d.archive_id",
     )?;
-    let rows = stmt.query_map([query], |r| {
+    let rows = stmt.query_map([], |r| {
         Ok((
             r.get::<_, i64>(0)?,
             SearchHit {
@@ -1304,13 +1331,11 @@ pub fn search_fts(
                 score: 0.0,
             },
             r.get::<_, Option<String>>(8)?,
-            r.get::<_, f64>(9)?,
         ))
     })?;
-    let mut candidates = Vec::new();
-    let (mut previous, mut tie) = (None, 0);
+    let mut candidates = BTreeMap::new();
     for row in rows {
-        let (id, mut hit, frontmatter, rank) = row?;
+        let (id, hit, frontmatter) = row?;
         let logical = logical_metadata_path(&hit.root, &hit.relative_path);
         if !history && (hit.status != "active" || is_history_path(&logical)) {
             continue;
@@ -1324,23 +1349,83 @@ pub fn search_fts(
                 continue;
             }
         }
-        let position = candidates.len();
-        if previous != Some(rank) {
-            tie = position;
-            previous = Some(rank);
+        candidates.insert(id, (hit, doc_created_ordinal(frontmatter.as_deref())));
+    }
+    if candidates.is_empty() && (!history || !scopes.is_empty()) {
+        return Ok(Vec::new());
+    }
+    let target = k.saturating_mul(3) as usize;
+    let mut vectors = Vec::new();
+    if let Some(encode) = embed {
+        let encoded = encode(&[query.into()])?;
+        if encoded.len() != 1 {
+            return Err(Box::new(HelperError {
+                kind: "ValueError",
+                message: if encoded.is_empty() {
+                    "not enough values to unpack (expected 1, got 0)"
+                } else {
+                    "too many values to unpack (expected 1)"
+                }
+                .into(),
+            }));
         }
-        hit.score = 1.0 / (60.0 + tie as f64);
-        candidates.push((id, hit, doc_created_ordinal(frontmatter.as_deref())));
-        if candidates.len() as i64 >= k.saturating_mul(3) {
-            break;
+        super::vector_index::validate_embedding(&encoded[0], DEFAULT_EMBED_DIM)?;
+        let total = conn.query_row("SELECT COUNT(*) FROM external_chunks", [], |r| {
+            r.get::<_, i64>(0)
+        })? as usize;
+        let mut limit = target.min(total);
+        while limit > 0 {
+            let rows =
+                super::vector_index::knn(conn, &encoded[0], limit as i64, "external_chunks_vec")?;
+            let count = rows.len();
+            vectors = rows
+                .into_iter()
+                .filter(|(id, _)| candidates.contains_key(id))
+                .collect();
+            if vectors.len() >= target.min(candidates.len()) || count < limit || limit >= total {
+                break;
+            }
+            limit = total.min((limit + 1).max(limit * 2));
+        }
+        vectors.truncate(target);
+        vectors.sort_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)));
+    }
+    let safe = super::distill::sanitize_fts_query(query)
+        .map_err(|e| std::io::Error::other(format!("{e:?}")))?;
+    let mut stmt = conn.prepare(
+        "SELECT rowid, rank FROM external_chunks_fts
+        WHERE external_chunks_fts MATCH ? ORDER BY rank, rowid ASC",
+    )?;
+    let fts = stmt
+        .query_map([safe], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, f64>(1)?)))?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    let fts = fts
+        .into_iter()
+        .filter(|(id, _)| candidates.contains_key(id))
+        .take(target);
+    for ranked in [vectors, fts.collect()] {
+        let (mut previous, mut tie) = (None, 0);
+        for (position, (id, rank)) in ranked.into_iter().enumerate() {
+            if previous != Some(rank) {
+                tie = position;
+                previous = Some(rank);
+            }
+            if let Some((hit, _)) = candidates.get_mut(&id) {
+                hit.score += 1.0 / (60.0 + tie as f64);
+            }
         }
     }
+    let mut candidates = candidates
+        .into_iter()
+        .filter(|(_, (hit, _))| hit.score > 0.0)
+        .collect::<Vec<_>>();
     candidates.sort_by(|a, b| {
-        b.1.score
-            .total_cmp(&a.1.score)
-            .then(b.2.cmp(&a.2))
+        b.1.0
+            .score
+            .total_cmp(&a.1.0.score)
+            .then(b.1.1.cmp(&a.1.1))
             .then(a.0.cmp(&b.0))
     });
     candidates.truncate(k as usize);
-    Ok(candidates.into_iter().map(|(_, hit, _)| hit).collect())
+    Ok(candidates.into_iter().map(|(_, (hit, _))| hit).collect())
 }
