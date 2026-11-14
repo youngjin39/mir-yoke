@@ -3353,7 +3353,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/context_sync.rs",
-      "sha256": "57729b1c673d37d19ca5cdee142b6038dd339f0cf91278afc730e86c2643eff6"
+      "sha256": "2896a306b549e10fa22af7333a62df9b5b293516934593355ed6fbb7943789eb"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3371,7 +3371,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/migrate.rs",
-      "sha256": "20cfae5562bb410af8174845df39942e6667889a829dfeda2577b1dcb1db1b30"
+      "sha256": "427158e527bdb14603dc645ff0770913d09202015a38ac17731d158081189816"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3629,7 +3629,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_core/tomllib.rs",
-      "sha256": "61b776fce3d69060acfd379b7b3131d1ccc23857628a4763cf1bf66c50a60e97"
+      "sha256": "43b96623f13fb6b133ffdfc63072f7efc724b787d470805ac713621bf6b8212f"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4493,7 +4493,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e5.py",
-      "sha256": "c06bfe5d06004b4e32730b4ad4a815dd4851c4ea7a7c88bad7d74177b278468d"
+      "sha256": "4b0f337263d5bfde109d26796cf01cf509c4f48c23d8ede28c3047104234a126"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/generate_y_e5_tomllib.py",
+      "sha256": "b4d5dad81f018f36432c344613b8a57b5b02c2a21960703890e475a78cd7881d"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4882,8 +4888,14 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e5-tomllib.json",
+      "sha256": "376b0aa6162c7f54daf04177588f34940e0e2575c512db035e9bd4924ffcb644"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e5.json",
-      "sha256": "982703237579dcbac4f2a16ca9d3277193fae0dcf818f2d7d4ad423b65d7ccb2"
+      "sha256": "1d588ab2e1fb2c30260a848d6dcdd712125405ba75049ec7a47666fe533700f3"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5135,7 +5147,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e5.rs",
-      "sha256": "e8ad8b1ae55a67f98b32bbe97fa779913eecb8a0f1ed8bfd531c274d59f9a485"
+      "sha256": "f8395669527b188d700d0f3c7cc6f2fcbb8820f148c1197192d78f57905e2c0b"
     },
     {
       "classification": "template-maintainer-tool",

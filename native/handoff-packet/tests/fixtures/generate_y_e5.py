@@ -69,7 +69,12 @@ cases = [(['sync'], ''), (['--help'], ''), (['sync', '--help'], ''),
          (['sync', '--pro', '.'], archive_cfg), (['sync', '--', 'tail'], ''),
          (['bogus'], ''), (['-h=oops'], ''), (['sync', '-hgarbage'], ''),
          (['sync'], ''), (['sync'], ''), (['sync'], ''),
-         (['sync', '--project-root', '~'], archive_cfg)]
+         (['sync', '--project-root', '~'], archive_cfg),
+         (['sync', '--db', 'missing//./'], ''),
+         (['sync', '--db', '--project-root=x y', '--help'], ''),
+         (['--bad', 'sync', '--help'], ''),
+         (['--bad', 'sync'], ''),
+         (['sync', '-hh=oops'], '')]
 records = []
 for i, (args, config) in enumerate(cases):
     work = root / f'case-{i}'
@@ -91,7 +96,7 @@ for i, (args, config) in enumerate(cases):
         (work / 'memory.db').write_text('not a database')
     if i == 23:
         (work / 'memory.db').touch()
-    argv = ['context', *args, '--db', 'memory.db']
+    argv = ['context', *args, *([] if i == 25 else ['--db', 'memory.db'])]
     result = run(argv)
     assert result.returncode in {0, 1, 2}, result.stderr
     records.append(dict(argv=argv, config=config, seed=seed, exit=result.returncode,

@@ -1,0 +1,4364 @@
+[
+  {
+    "text": "a=[",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[ ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[1",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[1, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[1,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[1,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[1,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[1,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[1,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[1,2",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1,2 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1,2\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1,2\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1,2\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1,2# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1,2\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[true",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[true ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[true\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[true\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[true\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[true# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[true\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[true,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[true, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[true,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[true,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[true,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[true,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[true,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[]",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[] ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[]\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[]\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[]\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[]# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[]\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[],",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[], ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[],\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[],\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[],\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[],# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[],\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"x\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"x\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"x\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"x\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"x\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"x\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"x\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"x\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"x\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"x\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"x\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"x\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"x\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"x\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[{a=1}",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[{a=1} ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[{a=1}\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[{a=1}\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[{a=1}\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[{a=1}# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[{a=1}\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[{a=1},",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[{a=1}, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[{a=1},\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[{a=1},\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[{a=1},\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[{a=1},# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[{a=1},\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[#comment",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[#comment ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[#comment\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[#comment\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[#comment\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[#comment# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[#comment\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[1 #comment",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 #comment ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 #comment\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 #comment\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 #comment\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 #comment# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 #comment\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[,",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[, ",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[,\t",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[,\n",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[,\r\n",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[,# eof",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[,\n# eof\n",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[1,,",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[1,, ",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[1,,\t",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[1,,\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[1,,\r\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[1,,# eof",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[1,,\n# eof\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1  ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 \t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 \n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 \r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 # eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[1 \n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\r\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\r\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\r\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\r\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\r\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\r\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\u000b",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u000b ",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u000b\t",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u000b\n",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u000b\r\n",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u000b# eof",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u000b\n# eof\n",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u001c",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u001c ",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u001c\t",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u001c\n",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u001c\r\n",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u001c# eof",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\u001c\n# eof\n",
+    "error": "Invalid value (at line 1, column 4)"
+  },
+  {
+    "text": "a=[\"#,[\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"#,[\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"#,[\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"#,[\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"#,[\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"#,[\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"#,[\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['#,['",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['#,[' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['#,['\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['#,['\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['#,['\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['#,['# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['#,['\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"\n#,[\"\"\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"\n#,[\"\"\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"\n#,[\"\"\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"\n#,[\"\"\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"\n#,[\"\"\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"\n#,[\"\"\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"\n#,[\"\"\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['''\n#,['''",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['''\n#,[''' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['''\n#,['''\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['''\n#,['''\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['''\n#,['''\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['''\n#,['''# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=['''\n#,['''\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"escaped\\\"#\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"escaped\\\"#\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"escaped\\\"#\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"escaped\\\"#\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"escaped\\\"#\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"escaped\\\"#\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"escaped\\\"#\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[\"#\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"#\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"#\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"#\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"#\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"#\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"#\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [ ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [1",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [1, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [1,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [1,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [1,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [1,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [1,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [1,2",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1,2 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1,2\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1,2\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1,2\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1,2# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1,2\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [true",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [true ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [true\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [true\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [true\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [true# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [true\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [true,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [true, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [true,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [true,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [true,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [true,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [true,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [[]",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [[] ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [[]\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [[]\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [[]\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [[]# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [[]\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [[],",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [[], ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [[],\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [[],\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [[],\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [[],# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [[],\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"x\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1}",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1} ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1}\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1}\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1}\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1}# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1}\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1},",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1}, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1},\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1},\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1},\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1},# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [{a=1},\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [#comment",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [#comment ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [#comment\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [#comment\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [#comment\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [#comment# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [#comment\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [1 #comment",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 #comment ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 #comment\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 #comment\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 #comment\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 #comment# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 #comment\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [,",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [, ",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [,\t",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [,\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [,\r\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [,# eof",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [,\n# eof\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [1,,",
+    "error": "Invalid value (at line 1, column 10)"
+  },
+  {
+    "text": "bad = [1,, ",
+    "error": "Invalid value (at line 1, column 10)"
+  },
+  {
+    "text": "bad = [1,,\t",
+    "error": "Invalid value (at line 1, column 10)"
+  },
+  {
+    "text": "bad = [1,,\n",
+    "error": "Invalid value (at line 1, column 10)"
+  },
+  {
+    "text": "bad = [1,,\r\n",
+    "error": "Invalid value (at line 1, column 10)"
+  },
+  {
+    "text": "bad = [1,,# eof",
+    "error": "Invalid value (at line 1, column 10)"
+  },
+  {
+    "text": "bad = [1,,\n# eof\n",
+    "error": "Invalid value (at line 1, column 10)"
+  },
+  {
+    "text": "bad = [1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1  ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 \t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 \n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 \r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 # eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [1 \n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\r\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\r\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\r\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\r\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\r\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\r\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\u000b",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u000b ",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u000b\t",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u000b\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u000b\r\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u000b# eof",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u000b\n# eof\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u001c",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u001c ",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u001c\t",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u001c\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u001c\r\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u001c# eof",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\u001c\n# eof\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "bad = [\"#,[\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"#,[\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"#,[\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"#,[\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"#,[\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"#,[\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"#,[\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['#,['",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['#,[' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['#,['\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['#,['\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['#,['\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['#,['# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['#,['\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"\"\"\n#,[\"\"\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"\"\"\n#,[\"\"\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"\"\"\n#,[\"\"\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"\"\"\n#,[\"\"\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"\"\"\n#,[\"\"\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"\"\"\n#,[\"\"\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"\"\"\n#,[\"\"\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['''\n#,['''",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['''\n#,[''' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['''\n#,['''\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['''\n#,['''\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['''\n#,['''\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['''\n#,['''# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = ['''\n#,['''\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"escaped\\\"#\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"escaped\\\"#\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"escaped\\\"#\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"escaped\\\"#\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"escaped\\\"#\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"escaped\\\"#\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"escaped\\\"#\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "bad = [\"#\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"#\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"#\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"#\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"#\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"#\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "bad = [\"#\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[ ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,2",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,2 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,2\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,2\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,2\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,2# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1,2\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[true,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[]",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[] ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[]\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[]\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[]\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[]# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[]\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[],",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[], ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[],\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[],\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[],\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[],# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[[],\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"x\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1}",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1} ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1}\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1}\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1}\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1}# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1}\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1},",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1}, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1},\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1},\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1},\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1},# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[{a=1},\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[#comment",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[#comment ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[#comment\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[#comment\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[#comment\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[#comment# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[#comment\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 #comment",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 #comment ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 #comment\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 #comment\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 #comment\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 #comment# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 #comment\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[,",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[, ",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[,\t",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[,\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[,\r\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[,# eof",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[,\n# eof\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[1,,",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "[table]\na=[1,, ",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "[table]\na=[1,,\t",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "[table]\na=[1,,\n",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "[table]\na=[1,,\r\n",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "[table]\na=[1,,# eof",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "[table]\na=[1,,\n# eof\n",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "[table]\na=[1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1  ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 \t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 \n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 \r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 # eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[1 \n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\r\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\r\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\r\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\r\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\r\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\r\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\u000b",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u000b ",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u000b\t",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u000b\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u000b\r\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u000b# eof",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u000b\n# eof\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u001c",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u001c ",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u001c\t",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u001c\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u001c\r\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u001c# eof",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\u001c\n# eof\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "[table]\na=[\"#,[\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#,[\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#,[\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#,[\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#,[\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#,[\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#,[\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['#,['",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['#,[' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['#,['\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['#,['\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['#,['\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['#,['# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['#,['\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"\"\"\n#,[\"\"\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"\"\"\n#,[\"\"\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"\"\"\n#,[\"\"\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"\"\"\n#,[\"\"\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"\"\"\n#,[\"\"\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"\"\"\n#,[\"\"\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"\"\"\n#,[\"\"\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['''\n#,['''",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['''\n#,[''' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['''\n#,['''\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['''\n#,['''\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['''\n#,['''\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['''\n#,['''# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=['''\n#,['''\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"escaped\\\"#\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"escaped\\\"#\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"escaped\\\"#\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"escaped\\\"#\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"escaped\\\"#\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"escaped\\\"#\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"escaped\\\"#\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "[table]\na=[\"#\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[ ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,2",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,2 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,2\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,2\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,2\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,2# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,2\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[true,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[]",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[] ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[]\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[]\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[]\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[]# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[]\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[],",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[], ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[],\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[],\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[],\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[],# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[[],\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"x\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1}",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1} ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1}\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1}\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1}\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1}# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1}\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1},",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1}, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1},\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1},\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1},\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1},# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[{a=1},\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[#comment",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[#comment ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[#comment\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[#comment\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[#comment\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[#comment# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[#comment\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 #comment",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 #comment ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 #comment\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 #comment\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 #comment\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 #comment# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 #comment\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[,",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[, ",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[,\t",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[,\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[,\r\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[,# eof",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[,\n# eof\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,,",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,, ",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,,\t",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,,\n",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,,\r\n",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,,# eof",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1,,\n# eof\n",
+    "error": "Invalid value (at line 2, column 6)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1  ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 \t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 \n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 \r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 # eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[1 \n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\r\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\r\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\r\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\r\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\r\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\r\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u000b",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u000b ",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u000b\t",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u000b\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u000b\r\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u000b# eof",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u000b\n# eof\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u001c",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u001c ",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u001c\t",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u001c\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u001c\r\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u001c# eof",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\u001c\n# eof\n",
+    "error": "Invalid value (at line 2, column 4)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#,[\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#,[\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#,[\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#,[\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#,[\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#,[\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#,[\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['#,['",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['#,[' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['#,['\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['#,['\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['#,['\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['#,['# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['#,['\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"\"\"\n#,[\"\"\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"\"\"\n#,[\"\"\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"\"\"\n#,[\"\"\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"\"\"\n#,[\"\"\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"\"\"\n#,[\"\"\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"\"\"\n#,[\"\"\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"\"\"\n#,[\"\"\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['''\n#,['''",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['''\n#,[''' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['''\n#,['''\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['''\n#,['''\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['''\n#,['''\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['''\n#,['''# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=['''\n#,['''\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"escaped\\\"#\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"escaped\\\"#\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"escaped\\\"#\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"escaped\\\"#\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"escaped\\\"#\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"escaped\\\"#\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"escaped\\\"#\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "unicode=\"\ud55c\uae00\"\na=[\"#\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[ ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[1",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[1, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[1,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[1,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[1,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[1,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[1,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[1,2",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1,2 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1,2\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1,2\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1,2\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1,2# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1,2\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[true",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[true ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[true\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[true\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[true\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[true# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[true\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[true,",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[true, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[true,\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[true,\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[true,\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[true,# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[true,\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[[]",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[[] ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[[]\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[[]\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[[]\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[[]# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[[]\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[[],",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[[], ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[[],\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[[],\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[[],\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[[],# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[[],\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"x\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1}",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1} ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1}\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1}\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1}\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1}# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1}\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1},",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1}, ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1},\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1},\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1},\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1},# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[{a=1},\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[#comment",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[#comment ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[#comment\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[#comment\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[#comment\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[#comment# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[#comment\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[1 #comment",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 #comment ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 #comment\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 #comment\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 #comment\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 #comment# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 #comment\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[,",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[, ",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[,\t",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[,\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[,\r\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[,# eof",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[,\n# eof\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[1,,",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "a=[[[1,, ",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "a=[[[1,,\t",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "a=[[[1,,\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "a=[[[1,,\r\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "a=[[[1,,# eof",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "a=[[[1,,\n# eof\n",
+    "error": "Invalid value (at line 1, column 8)"
+  },
+  {
+    "text": "a=[[[1 ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1  ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 \t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 \n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 \r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 # eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[1 \n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\r\n ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\r\n\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\r\n\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\r\n\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\r\n# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\r\n\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\u000b",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u000b ",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u000b\t",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u000b\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u000b\r\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u000b# eof",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u000b\n# eof\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u001c",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u001c ",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u001c\t",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u001c\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u001c\r\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u001c# eof",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\u001c\n# eof\n",
+    "error": "Invalid value (at line 1, column 6)"
+  },
+  {
+    "text": "a=[[[\"#,[\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#,[\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#,[\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#,[\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#,[\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#,[\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#,[\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['#,['",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['#,[' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['#,['\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['#,['\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['#,['\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['#,['# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['#,['\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"\"\"\n#,[\"\"\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"\"\"\n#,[\"\"\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"\"\"\n#,[\"\"\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"\"\"\n#,[\"\"\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"\"\"\n#,[\"\"\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"\"\"\n#,[\"\"\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"\"\"\n#,[\"\"\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['''\n#,['''",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['''\n#,[''' ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['''\n#,['''\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['''\n#,['''\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['''\n#,['''\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['''\n#,['''# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[['''\n#,['''\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"escaped\\\"#\"",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"escaped\\\"#\" ",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"escaped\\\"#\"\t",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"escaped\\\"#\"\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"escaped\\\"#\"\r\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"escaped\\\"#\"# eof",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"escaped\\\"#\"\n# eof\n",
+    "error": "Unclosed array (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#\",",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#\", ",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#\",\t",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#\",\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#\",\r\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#\",# eof",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[[[\"#\",\n# eof\n",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"]",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": [
+        "x"
+      ]
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\",",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\", ",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\",# eof",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\",\n# eof\n",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"}",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x"
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\", c=1}",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\",",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": "x"
+    }
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\n",
+    "closing_quotes": 3,
+    "quote": "\"",
+    "value": {
+      "a": "x"
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"]",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": [
+        "x\""
+      ]
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\",",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\", ",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\",# eof",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\",\n# eof\n",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"}",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x\""
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\", c=1}",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x\"",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\",",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": "x\""
+    }
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\n",
+    "closing_quotes": 4,
+    "quote": "\"",
+    "value": {
+      "a": "x\""
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"]",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": [
+        "x\"\""
+      ]
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\",",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\", ",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\",# eof",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\",\n# eof\n",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\"}",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x\"\""
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\", c=1}",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": {
+        "b": "x\"\"",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\",",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\"",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": "x\"\""
+    }
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\"\n",
+    "closing_quotes": 5,
+    "quote": "\"",
+    "value": {
+      "a": "x\"\""
+    }
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\"]",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\",",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\", ",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\",# eof",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=[\"\"\"x\"\"\"\"\"\",\n# eof\n",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\"\"}",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\"\", c=1}",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a={b=\"\"\"x\"\"\"\"\"\",",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\"\"",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Expected newline or end of document after a statement (at line 1, column 12)"
+  },
+  {
+    "text": "a=\"\"\"x\"\"\"\"\"\"\n",
+    "closing_quotes": 6,
+    "quote": "\"",
+    "error": "Expected newline or end of document after a statement (at line 1, column 12)"
+  },
+  {
+    "text": "a=['''x''']",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": [
+        "x"
+      ]
+    }
+  },
+  {
+    "text": "a=['''x''',",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''', ",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''',# eof",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''',\n# eof\n",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b='''x'''}",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x"
+      }
+    }
+  },
+  {
+    "text": "a={b='''x''', c=1}",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b='''x''',",
+    "closing_quotes": 3,
+    "quote": "'",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a='''x'''",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": "x"
+    }
+  },
+  {
+    "text": "a='''x'''\n",
+    "closing_quotes": 3,
+    "quote": "'",
+    "value": {
+      "a": "x"
+    }
+  },
+  {
+    "text": "a=['''x'''']",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": [
+        "x'"
+      ]
+    }
+  },
+  {
+    "text": "a=['''x'''',",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x'''', ",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x'''',# eof",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x'''',\n# eof\n",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b='''x''''}",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x'"
+      }
+    }
+  },
+  {
+    "text": "a={b='''x'''', c=1}",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x'",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b='''x'''',",
+    "closing_quotes": 4,
+    "quote": "'",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a='''x''''",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": "x'"
+    }
+  },
+  {
+    "text": "a='''x''''\n",
+    "closing_quotes": 4,
+    "quote": "'",
+    "value": {
+      "a": "x'"
+    }
+  },
+  {
+    "text": "a=['''x''''']",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": [
+        "x''"
+      ]
+    }
+  },
+  {
+    "text": "a=['''x''''',",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''''', ",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''''',# eof",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a=['''x''''',\n# eof\n",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid value (at end of document)"
+  },
+  {
+    "text": "a={b='''x'''''}",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x''"
+      }
+    }
+  },
+  {
+    "text": "a={b='''x''''', c=1}",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": {
+        "b": "x''",
+        "c": 1
+      }
+    }
+  },
+  {
+    "text": "a={b='''x''''',",
+    "closing_quotes": 5,
+    "quote": "'",
+    "error": "Invalid initial character for a key part (at end of document)"
+  },
+  {
+    "text": "a='''x'''''",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": "x''"
+    }
+  },
+  {
+    "text": "a='''x'''''\n",
+    "closing_quotes": 5,
+    "quote": "'",
+    "value": {
+      "a": "x''"
+    }
+  },
+  {
+    "text": "a=['''x'''''']",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=['''x'''''',",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=['''x'''''', ",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=['''x'''''',# eof",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a=['''x'''''',\n# eof\n",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed array (at line 1, column 13)"
+  },
+  {
+    "text": "a={b='''x''''''}",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a={b='''x'''''', c=1}",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a={b='''x'''''',",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Unclosed inline table (at line 1, column 15)"
+  },
+  {
+    "text": "a='''x''''''",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Expected newline or end of document after a statement (at line 1, column 12)"
+  },
+  {
+    "text": "a='''x''''''\n",
+    "closing_quotes": 6,
+    "quote": "'",
+    "error": "Expected newline or end of document after a statement (at line 1, column 12)"
+  }
+]
