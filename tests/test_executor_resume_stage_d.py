@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import copy
+import hashlib
 import json
 import os
 import runpy
@@ -16,7 +18,36 @@ ROOT = Path(__file__).resolve().parents[1]
 S = runpy.run_path(str(ROOT / "tests/fixtures/generate_executor_resume_stage_d.py"))
 D = S["D"]
 GOLDEN = json.loads(S["OUTPUT"].read_text(encoding="ascii"))
+POLICY = json.loads((ROOT / "tests/fixtures/executor_resume_policy.json").read_text("ascii"))
 pytestmark = pytest.mark.skipif(os.name != "posix", reason="POSIX synthetic provider fixtures")
+
+
+def native_policy_expected(case):
+    """Owner exception, B4b WRITER 2026-11-14: pinned API counterpart only.
+
+    The pinned CLI refuses native_policy before reaching that API. BASE composes
+    the frozen failure donor and isolated pinned model diagnostic. INVALID has
+    no Python oracle for its full diagnostic and is asserted at pinned strength.
+    """
+    refusal = case["expected"]
+    assert refusal["exit"] == 1 and refusal["stdout_hex"] == ""
+    assert bytes.fromhex(refusal["stderr_hex"]) == (
+        b"[mir_executor] <root> declares native_policy; the native executor is required\n"
+    )
+    if case["name"] == "native-policy-invalid":
+        return copy.deepcopy(refusal)
+    assert POLICY["reference"] == S["PIN"]
+    assert POLICY["resume_sha256"] == hashlib.sha256(S["OUTPUT"].read_bytes()).hexdigest()
+    brief = json.loads(bytes.fromhex(refusal["effects"]["files"]["brief.json"]["hex"]))
+    assert POLICY["input"] == brief
+    expected = copy.deepcopy(next(
+        c["expected"] for c in GOLDEN["cases"] if c["name"] == "dispatch-validate-failure"
+    ))
+    del expected["effects"]["files"]["hook-events"]
+    expected["stderr_hex"] = (
+        "[mir_executor] DispatchBrief error: " + POLICY["message"] + "\n"
+    ).encode().hex()
+    return expected
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -57,6 +88,16 @@ def test_resume_frozen_parity(binary, oracle, tmp_path, route, case):  # noqa: F
         expected = contained_parent_swap_expected(
             case, cases=GOLDEN["cases"], failure_name="dispatch-artifacts-file"
         )
+    if case["name"].startswith("native-policy-"):
+        policy_expected = native_policy_expected(case)  # Assert original refusal on every route.
+        if route != "reference":
+            expected = policy_expected
+            if case["name"] == "native-policy-invalid":
+                diagnostic = bytes.fromhex(actual["stderr_hex"])
+                assert diagnostic.startswith(b"[mir_executor] ")
+                assert b"native_policy" in diagnostic
+                # Compare exit/stdout/effects exactly; no invented full stderr oracle.
+                actual = {**actual, "stderr_hex": expected["stderr_hex"]}
     difference = D["first_difference"](expected, actual)
     assert difference is None, json.dumps(
         dict(name=case["name"], route=route, **(difference or {}))

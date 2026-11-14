@@ -1,0 +1,16 @@
+{
+  "reference": "d7ce42656224c719094358f343317907bf6e46a9",
+  "sources_sha256": "11afd358d7857fa4520aa0568491ec324de1b6ffc97cdf1e5be0144cabe94568",
+  "dependencies": {
+    "pydantic": "2.13.4",
+    "pydantic_core": "2.46.4",
+    "annotated_types": "0.7.0",
+    "typing_extensions": "4.16.0",
+    "typing_inspection": "0.4.2"
+  },
+  "resume_sha256": "0dc07846ad1e1223556bfa19ea4bc5fbce8ef6bc1d3a675b69390b9c41b70b18",
+  "input": {
+    "expanded_goal": "offline fixture"
+  },
+  "message": "9 validation errors for DispatchBrief\ntask_id\n  Field required [type=missing, input_value={'expanded_goal': 'offline fixture'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nslice_id\n  Field required [type=missing, input_value={'expanded_goal': 'offline fixture'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\ntarget_agent\n  Field required [type=missing, input_value={'expanded_goal': 'offline fixture'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nuser_intent\n  Field required [type=missing, input_value={'expanded_goal': 'offline fixture'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nowned_scope\n  Field required [type=missing, input_value={'expanded_goal': 'offline fixture'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nverification_commands\n  Field required [type=missing, input_value={'expanded_goal': 'offline fixture'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nstop_conditions\n  Field required [type=missing, input_value={'expanded_goal': 'offline fixture'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nresume_state_ref\n  Field required [type=missing, input_value={'expanded_goal': 'offline fixture'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsource_refs\n  Field required [type=missing, input_value={'expanded_goal': 'offline fixture'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"
+}
