@@ -1,0 +1,1755 @@
+{
+  "manifest": {
+    "architecture": "AMD64",
+    "filesystem": "NTFS",
+    "filesystem_encoding": "utf-8",
+    "generator_sha256": "3114b099f44b54a766602fee1cc45c9f1c91b088e02f7a3aa0787f6d4b4ce8c6",
+    "locale": "LC_COLLATE=C;LC_CTYPE=Korean_Korea.949;LC_MONETARY=C;LC_NUMERIC=C;LC_TIME=C",
+    "os": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.13 (main, Aug  7 2026, 02:26:41) [MSC v.1944 64 bit (AMD64)]",
+    "reference_pin": "0754c36a1bc5814d793984292aa9be6ae26d3001",
+    "source": "scripts/install_user_runtime_agents.py",
+    "source_sha256": "f1e88dbce842d7aa9590874d2bb925f7a5a30de6348b5754144ba1a3cc8de98e",
+    "windows": [
+      "11",
+      "10.0.26200",
+      "SP0",
+      "Multiprocessor Free"
+    ]
+  },
+  "records": {
+    "atomic-readonly": {
+      "error": {
+        "class": "PermissionError",
+        "errno": 13,
+        "filename": "{ROOT}\\cases\\refusals\\{TEMP-16}",
+        "filename2": "{ROOT}\\cases\\refusals\\file",
+        "rendered": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\refusals\\\\{TEMP-16}' -> '{ROOT}\\\\cases\\\\refusals\\\\file'",
+        "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+        "winerror": 5
+      },
+      "exit": null,
+      "operation": "atomic_write",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "atomic_write",
+          "phase": "entry"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "file"
+        },
+        {
+          "error": {
+            "class": "PermissionError",
+            "errno": 13,
+            "filename": "{ROOT}\\cases\\refusals\\{TEMP-16}",
+            "filename2": "{ROOT}\\cases\\refusals\\file",
+            "rendered": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\refusals\\\\{TEMP-16}' -> '{ROOT}\\\\cases\\\\refusals\\\\file'",
+            "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+            "winerror": 5
+          },
+          "operation": "atomic_write",
+          "phase": "error"
+        }
+      ],
+      "tree": {
+        "file": {
+          "attributes": 33,
+          "bytes": "666f726569676e",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "cleanup-created-home": {
+      "error": null,
+      "exit": null,
+      "operation": "remove_created_home",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "remove_created_home",
+          "phase": "entry"
+        },
+        {
+          "operation": "remove_created_home",
+          "phase": "begin",
+          "relative": null
+        },
+        {
+          "operation": "remove_created_home",
+          "phase": "return"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "fsync-invalid": {
+      "error": {
+        "class": "ValueError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "file descriptor cannot be a negative integer (-1)",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "os.fsync",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "os.fsync",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "directory": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "directory/child": {
+          "attributes": 32,
+          "bytes": "6368696c64",
+          "type": "file"
+        },
+        "file": {
+          "attributes": 32,
+          "bytes": "66696c65",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "home-relative": {
+      "error": {
+        "class": "SyncError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "runtime homes must be explicit absolute non-root paths",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "require_safe_home",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "require_safe_home",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "source.md": {
+          "attributes": 32,
+          "bytes": "62656e69676e206167656e740d0a",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "home-root": {
+      "error": {
+        "class": "SyncError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "runtime homes must be explicit absolute non-root paths",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "require_safe_home",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "require_safe_home",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "source.md": {
+          "attributes": 32,
+          "bytes": "62656e69676e206167656e740d0a",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "mkdir-collision": {
+      "error": {
+        "class": "FileExistsError",
+        "errno": 17,
+        "filename": "{ROOT}\\cases\\os-errors\\file",
+        "filename2": null,
+        "rendered": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\os-errors\\\\file'",
+        "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+        "winerror": 183
+      },
+      "exit": null,
+      "operation": "Path.mkdir",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "Path.mkdir",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "directory": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "directory/child": {
+          "attributes": 32,
+          "bytes": "6368696c64",
+          "type": "file"
+        },
+        "file": {
+          "attributes": 32,
+          "bytes": "66696c65",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "normal": {
+      "error": null,
+      "exit": null,
+      "input": [
+        {
+          "created_home": false,
+          "files": [
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".claude/agents/old.md",
+              "target": "agents\\old.md"
+            },
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".claude/agents/Z.md",
+              "target": "agents\\Z.md"
+            },
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".claude/agents/a.md",
+              "target": "agents\\a.md"
+            }
+          ],
+          "home": "{ROOT}\\cases\\normal\\claude",
+          "receipt": {
+            "hex": "7b0a20202266696c6573223a207b0a20202020222e636c617564652f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636c61756465222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a"
+          },
+          "stale": [
+            {
+              "sha256": "a03f2386ae06b21109577020844df367857b72c2fcce384c1896fed98a89c82b",
+              "source": ".claude/agents/stale.md",
+              "target": "agents\\stale.md"
+            }
+          ]
+        },
+        {
+          "created_home": false,
+          "files": [
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".codex/agents/old.md",
+              "target": "agents\\old.md"
+            },
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".codex/agents/Z.md",
+              "target": "agents\\Z.md"
+            },
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".codex/agents/a.md",
+              "target": "agents\\a.md"
+            }
+          ],
+          "home": "{ROOT}\\cases\\normal\\codex",
+          "receipt": {
+            "hex": "7b0a20202266696c6573223a207b0a20202020222e636f6465782f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636f646578222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a"
+          },
+          "stale": [
+            {
+              "sha256": "a03f2386ae06b21109577020844df367857b72c2fcce384c1896fed98a89c82b",
+              "source": ".codex/agents/stale.md",
+              "target": "agents\\stale.md"
+            }
+          ]
+        }
+      ],
+      "operation": "apply_transaction",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "apply_transaction",
+          "phase": "entry"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\old.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\Z.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\a.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "remove_stale_file",
+          "phase": "begin",
+          "relative": "agents\\stale.md"
+        },
+        {
+          "operation": "remove_stale_file",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "mir-yoke-agent-command-receipt.json"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\old.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\Z.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\a.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "remove_stale_file",
+          "phase": "begin",
+          "relative": "agents\\stale.md"
+        },
+        {
+          "operation": "remove_stale_file",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "mir-yoke-agent-command-receipt.json"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        }
+      ],
+      "tree": {
+        "claude": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents/Z.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636c617564652f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636c61756465222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        },
+        "codex": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents/Z.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636f6465782f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636f646578222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "read-missing": {
+      "error": {
+        "class": "FileNotFoundError",
+        "errno": 2,
+        "filename": "{ROOT}\\cases\\os-errors\\missing",
+        "filename2": null,
+        "rendered": "[Errno 2] No such file or directory: '{ROOT}\\\\cases\\\\os-errors\\\\missing'",
+        "strerror": "No such file or directory",
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "Path.read_bytes",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "Path.read_bytes",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "directory": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "directory/child": {
+          "attributes": 32,
+          "bytes": "6368696c64",
+          "type": "file"
+        },
+        "file": {
+          "attributes": 32,
+          "bytes": "66696c65",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "receipt-bytes": {
+      "error": null,
+      "exit": null,
+      "operation": "make_receipt",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "make_receipt",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b",
+          "type": "file"
+        },
+        "source.md": {
+          "attributes": 32,
+          "bytes": "62656e69676e206167656e740d0a",
+          "type": "file"
+        }
+      },
+      "value": {
+        "hex": "7b0a20202266696c6573223a207b7d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636c61756465222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a"
+      }
+    },
+    "receipt-malformed": {
+      "error": {
+        "cause": {
+          "class": "JSONDecodeError",
+          "errno": null,
+          "filename": null,
+          "filename2": null,
+          "rendered": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+          "strerror": null,
+          "winerror": null
+        },
+        "class": "SyncError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "unmanaged existing receipt: {ROOT}\\cases\\admission\\mir-yoke-agent-command-receipt.json",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "load_receipt",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "load_receipt",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b",
+          "type": "file"
+        },
+        "source.md": {
+          "attributes": 32,
+          "bytes": "62656e69676e206167656e740d0a",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "receipt-missing": {
+      "error": null,
+      "exit": null,
+      "operation": "load_receipt",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "load_receipt",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "source.md": {
+          "attributes": 32,
+          "bytes": "62656e69676e206167656e740d0a",
+          "type": "file"
+        }
+      },
+      "value": [
+        "{ROOT}\\cases\\admission\\mir-yoke-agent-command-receipt.json",
+        null
+      ]
+    },
+    "replace-missing": {
+      "error": {
+        "class": "FileNotFoundError",
+        "errno": 2,
+        "filename": "{ROOT}\\cases\\os-errors\\missing",
+        "filename2": "{ROOT}\\cases\\os-errors\\file",
+        "rendered": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\os-errors\\\\missing' -> '{ROOT}\\\\cases\\\\os-errors\\\\file'",
+        "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+        "winerror": 2
+      },
+      "exit": null,
+      "operation": "os.replace",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "os.replace",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "directory": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "directory/child": {
+          "attributes": 32,
+          "bytes": "6368696c64",
+          "type": "file"
+        },
+        "file": {
+          "attributes": 32,
+          "bytes": "66696c65",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "restore-absent": {
+      "error": null,
+      "exit": null,
+      "operation": "restore_snapshot",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "restore_snapshot",
+          "phase": "entry"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "missing"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        }
+      ],
+      "tree": {
+        "file": {
+          "attributes": 32,
+          "bytes": "666f726569676e",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "restore-foreign": {
+      "error": {
+        "class": "SyncError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "rollback found unexpected file: {ROOT}\\cases\\refusals\\file",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "restore_snapshot",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "restore_snapshot",
+          "phase": "entry"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "file"
+        },
+        {
+          "error": {
+            "class": "SyncError",
+            "errno": null,
+            "filename": null,
+            "filename2": null,
+            "rendered": "rollback found unexpected file: {ROOT}\\cases\\refusals\\file",
+            "strerror": null,
+            "winerror": null
+          },
+          "operation": "restore_snapshot",
+          "phase": "error"
+        }
+      ],
+      "tree": {
+        "file": {
+          "attributes": 32,
+          "bytes": "666f726569676e",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "restore-new": {
+      "error": null,
+      "exit": null,
+      "operation": "restore_snapshot",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "restore_snapshot",
+          "phase": "entry"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\Z.md"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        }
+      ],
+      "tree": {
+        "claude": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636c617564652f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636c61756465222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        },
+        "codex": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents/Z.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636f6465782f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636f646578222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "restore-old": {
+      "error": null,
+      "exit": null,
+      "operation": "restore_snapshot",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "restore_snapshot",
+          "phase": "entry"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\old.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\old.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        }
+      ],
+      "tree": {
+        "claude": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6f6c64",
+          "type": "file"
+        },
+        "claude/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636c617564652f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636c61756465222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        },
+        "codex": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents/Z.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636f6465782f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636f646578222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "rmdir-nonempty": {
+      "error": {
+        "class": "OSError",
+        "errno": 41,
+        "filename": "{ROOT}\\cases\\os-errors\\directory",
+        "filename2": null,
+        "rendered": "[WinError 145] \ub514\ub809\ud130\ub9ac\uac00 \ube44\uc5b4 \uc788\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\os-errors\\\\directory'",
+        "strerror": "\ub514\ub809\ud130\ub9ac\uac00 \ube44\uc5b4 \uc788\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+        "winerror": 145
+      },
+      "exit": null,
+      "operation": "Path.rmdir",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "Path.rmdir",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "directory": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "directory/child": {
+          "attributes": 32,
+          "bytes": "6368696c64",
+          "type": "file"
+        },
+        "file": {
+          "attributes": 32,
+          "bytes": "66696c65",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "rollback": {
+      "error": {
+        "cause": {
+          "class": "PermissionError",
+          "errno": 13,
+          "filename": "{ROOT}\\cases\\rollback\\codex\\agents\\{TEMP-13}",
+          "filename2": "{ROOT}\\cases\\rollback\\codex\\agents\\old.md",
+          "rendered": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\rollback\\\\codex\\\\agents\\\\{TEMP-13}' -> '{ROOT}\\\\cases\\\\rollback\\\\codex\\\\agents\\\\old.md'",
+          "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+          "winerror": 5
+        },
+        "class": "SyncError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "apply failed; rollback complete: [WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\rollback\\\\codex\\\\agents\\\\{TEMP-13}' -> '{ROOT}\\\\cases\\\\rollback\\\\codex\\\\agents\\\\old.md'",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "input": [
+        {
+          "created_home": false,
+          "files": [
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".claude/agents/old.md",
+              "target": "agents\\old.md"
+            },
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".claude/agents/Z.md",
+              "target": "agents\\Z.md"
+            },
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".claude/agents/a.md",
+              "target": "agents\\a.md"
+            }
+          ],
+          "home": "{ROOT}\\cases\\rollback\\claude",
+          "receipt": {
+            "hex": "7b0a20202266696c6573223a207b0a20202020222e636c617564652f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636c61756465222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a"
+          },
+          "stale": [
+            {
+              "sha256": "a03f2386ae06b21109577020844df367857b72c2fcce384c1896fed98a89c82b",
+              "source": ".claude/agents/stale.md",
+              "target": "agents\\stale.md"
+            }
+          ]
+        },
+        {
+          "created_home": false,
+          "files": [
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".codex/agents/old.md",
+              "target": "agents\\old.md"
+            },
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".codex/agents/Z.md",
+              "target": "agents\\Z.md"
+            },
+            {
+              "content": {
+                "hex": "6e65770d0a"
+              },
+              "sha256": "9f5d1ba48d2fd5c3aaa39bad078e9a929f1d292511f8febc308def37c3840ab2",
+              "source": ".codex/agents/a.md",
+              "target": "agents\\a.md"
+            }
+          ],
+          "home": "{ROOT}\\cases\\rollback\\codex",
+          "receipt": {
+            "hex": "7b0a20202266696c6573223a207b0a20202020222e636f6465782f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636f646578222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a"
+          },
+          "stale": [
+            {
+              "sha256": "a03f2386ae06b21109577020844df367857b72c2fcce384c1896fed98a89c82b",
+              "source": ".codex/agents/stale.md",
+              "target": "agents\\stale.md"
+            }
+          ]
+        }
+      ],
+      "operation": "apply_transaction",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "apply_transaction",
+          "phase": "entry"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\old.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\Z.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\a.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "remove_stale_file",
+          "phase": "begin",
+          "relative": "agents\\stale.md"
+        },
+        {
+          "operation": "remove_stale_file",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "mir-yoke-agent-command-receipt.json"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\old.md"
+        },
+        {
+          "error": {
+            "class": "PermissionError",
+            "errno": 13,
+            "filename": "{ROOT}\\cases\\rollback\\codex\\agents\\{TEMP-13}",
+            "filename2": "{ROOT}\\cases\\rollback\\codex\\agents\\old.md",
+            "rendered": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\rollback\\\\codex\\\\agents\\\\{TEMP-13}' -> '{ROOT}\\\\cases\\\\rollback\\\\codex\\\\agents\\\\old.md'",
+            "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+            "winerror": 5
+          },
+          "operation": "atomic_write",
+          "phase": "error"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "mir-yoke-agent-command-receipt.json"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\Z.md"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\stale.md"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\old.md"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\a.md"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "remove_created_home",
+          "phase": "begin",
+          "relative": null
+        },
+        {
+          "operation": "remove_created_home",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "mir-yoke-agent-command-receipt.json"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\Z.md"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\stale.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\stale.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\old.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "begin",
+          "relative": "agents\\old.md"
+        },
+        {
+          "operation": "atomic_write",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "begin",
+          "relative": "agents\\a.md"
+        },
+        {
+          "operation": "restore_snapshot",
+          "phase": "return"
+        },
+        {
+          "operation": "remove_created_home",
+          "phase": "begin",
+          "relative": null
+        },
+        {
+          "operation": "remove_created_home",
+          "phase": "return"
+        }
+      ],
+      "tree": {
+        "claude": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6f6c64",
+          "type": "file"
+        },
+        "claude/agents/stale.md": {
+          "attributes": 32,
+          "bytes": "7374616c65",
+          "type": "file"
+        },
+        "codex": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6f6c64",
+          "type": "file"
+        },
+        "codex/agents/stale.md": {
+          "attributes": 32,
+          "bytes": "7374616c65",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "snapshot-normal": {
+      "error": null,
+      "exit": null,
+      "operation": "snapshot_plan",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "snapshot_plan",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "claude": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6f6c64",
+          "type": "file"
+        },
+        "claude/agents/stale.md": {
+          "attributes": 32,
+          "bytes": "7374616c65",
+          "type": "file"
+        },
+        "codex": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6f6c64",
+          "type": "file"
+        },
+        "codex/agents/stale.md": {
+          "attributes": 32,
+          "bytes": "7374616c65",
+          "type": "file"
+        }
+      },
+      "value": [
+        {
+          "after": {
+            "hex": "6e65770d0a"
+          },
+          "before": null,
+          "relative": "agents\\a.md"
+        },
+        {
+          "after": {
+            "hex": "6e65770d0a"
+          },
+          "before": {
+            "hex": "6f6c64"
+          },
+          "relative": "agents\\old.md"
+        },
+        {
+          "after": null,
+          "before": {
+            "hex": "7374616c65"
+          },
+          "relative": "agents\\stale.md"
+        },
+        {
+          "after": {
+            "hex": "6e65770d0a"
+          },
+          "before": null,
+          "relative": "agents\\Z.md"
+        },
+        {
+          "after": {
+            "hex": "7b0a20202266696c6573223a207b0a20202020222e636c617564652f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636c61756465222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a"
+          },
+          "before": null,
+          "relative": "mir-yoke-agent-command-receipt.json"
+        }
+      ]
+    },
+    "source-missing": {
+      "error": {
+        "cause": {
+          "class": "FileNotFoundError",
+          "errno": 2,
+          "filename": "{ROOT}\\provider\\missing.md",
+          "filename2": null,
+          "rendered": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\provider\\\\missing.md'",
+          "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+          "winerror": 2
+        },
+        "class": "SyncError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "missing source file: missing.md",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "regular_source",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "regular_source",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "source.md": {
+          "attributes": 32,
+          "bytes": "62656e69676e206167656e740d0a",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "source-regular": {
+      "error": null,
+      "exit": null,
+      "operation": "regular_source",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "regular_source",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "source.md": {
+          "attributes": 32,
+          "bytes": "62656e69676e206167656e740d0a",
+          "type": "file"
+        }
+      },
+      "value": {
+        "hex": "62656e69676e206167656e740d0a"
+      }
+    },
+    "sources-empty": {
+      "error": null,
+      "exit": null,
+      "operation": "load_sources",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "load_sources",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": [
+        [],
+        []
+      ]
+    },
+    "sources-missing": {
+      "error": {
+        "cause": {
+          "class": "FileNotFoundError",
+          "errno": 2,
+          "filename": "{ROOT}\\provider\\config\\capability-sources.json",
+          "filename2": null,
+          "rendered": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\provider\\\\config\\\\capability-sources.json'",
+          "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+          "winerror": 2
+        },
+        "class": "SyncError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "missing source file: config\\capability-sources.json",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "load_sources",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "load_sources",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "stale-absent": {
+      "error": null,
+      "exit": null,
+      "operation": "remove_stale_file",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "remove_stale_file",
+          "phase": "entry"
+        },
+        {
+          "operation": "remove_stale_file",
+          "phase": "begin",
+          "relative": "agents\\stale.md"
+        },
+        {
+          "operation": "remove_stale_file",
+          "phase": "return"
+        }
+      ],
+      "tree": {
+        "claude": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6f6c64",
+          "type": "file"
+        },
+        "claude/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636c617564652f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636c61756465222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        },
+        "codex": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents/Z.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636f6465782f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636f646578222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "stale-divergent": {
+      "error": {
+        "class": "SyncError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "diverged stale managed file; refusing removal: {ROOT}\\cases\\refusals\\file",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "remove_stale_file",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "remove_stale_file",
+          "phase": "entry"
+        },
+        {
+          "operation": "remove_stale_file",
+          "phase": "begin",
+          "relative": "file"
+        },
+        {
+          "error": {
+            "class": "SyncError",
+            "errno": null,
+            "filename": null,
+            "filename2": null,
+            "rendered": "diverged stale managed file; refusing removal: {ROOT}\\cases\\refusals\\file",
+            "strerror": null,
+            "winerror": null
+          },
+          "operation": "remove_stale_file",
+          "phase": "error"
+        }
+      ],
+      "tree": {
+        "file": {
+          "attributes": 32,
+          "bytes": "666f726569676e",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "target-absent": {
+      "error": null,
+      "exit": null,
+      "operation": "target_bytes",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "target_bytes",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "claude": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "claude/agents/Z.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "claude/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636c617564652f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636c617564652f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636c617564652f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636c61756465222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        },
+        "codex": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "codex/agents/Z.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/a.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/agents/old.md": {
+          "attributes": 32,
+          "bytes": "6e65770d0a",
+          "type": "file"
+        },
+        "codex/mir-yoke-agent-command-receipt.json": {
+          "attributes": 32,
+          "bytes": "7b0a20202266696c6573223a207b0a20202020222e636f6465782f6167656e74732f5a2e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f5a2e6d64222c0a20202020202022746172676574223a20226167656e74732f5a2e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f612e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f612e6d64222c0a20202020202022746172676574223a20226167656e74732f612e6d64220a202020207d2c0a20202020222e636f6465782f6167656e74732f6f6c642e6d64223a207b0a20202020202022736861323536223a202239663564316261343864326664356333616161333962616430373865396139323966316432393235313166386665626333303864656633376333383430616232222c0a20202020202022736f75726365223a20222e636f6465782f6167656e74732f6f6c642e6d64222c0a20202020202022746172676574223a20226167656e74732f6f6c642e6d64220a202020207d0a20207d2c0a2020226d616e616765645f6279223a20226d69722d796f6b652d757365722d72756e74696d652d6167656e742d636f6d6d616e642d73796e63222c0a20202272756e74696d65223a2022636f646578222c0a202022736368656d615f76657273696f6e223a20312c0a202022736f757263655f636f6d6d6974223a202230373534633336613162633538313464373933393834323932616139626536616532366433303031220a7d0a",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "target-nonregular": {
+      "error": {
+        "class": "SyncError",
+        "errno": null,
+        "filename": null,
+        "filename2": null,
+        "rendered": "target path component is not a directory: {ROOT}\\cases\\refusals\\file",
+        "strerror": null,
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "safe_target",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "safe_target",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "file": {
+          "attributes": 32,
+          "bytes": "666f726569676e",
+          "type": "file"
+        }
+      },
+      "value": null
+    },
+    "unlink-directory": {
+      "error": {
+        "class": "PermissionError",
+        "errno": 13,
+        "filename": "{ROOT}\\cases\\os-errors\\directory",
+        "filename2": null,
+        "rendered": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\os-errors\\\\directory'",
+        "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+        "winerror": 5
+      },
+      "exit": null,
+      "operation": "Path.unlink",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "Path.unlink",
+          "phase": "entry"
+        }
+      ],
+      "tree": {
+        "directory": {
+          "attributes": 16,
+          "bytes": null,
+          "type": "directory"
+        },
+        "directory/child": {
+          "attributes": 32,
+          "bytes": "6368696c64",
+          "type": "file"
+        },
+        "file": {
+          "attributes": 32,
+          "bytes": "66696c65",
+          "type": "file"
+        }
+      },
+      "value": null
+    }
+  }
+}
