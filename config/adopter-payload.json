@@ -3329,13 +3329,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/context_sync.rs",
-      "sha256": "7395f1745881c6ee9dcdc1ed4e8993dd3de0f9557b6b5ed0a17987194a7062f6"
+      "sha256": "c638679170b531e7bb97bfc22cefb6f390683441f48d5cba1f8831c137ca2edf"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/embedding_http.rs",
-      "sha256": "e10042384d1fa3585d9034d24fb3ab082bd7da02a2a61f3081c2fd13590c0a72"
+      "sha256": "a9af0d97f5857156aa9da22eb9ea427f090ab79402e15db10dd5946d0e4f73fb"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4432,6 +4432,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/generate_y_e12b.py",
+      "sha256": "847b3117a022fd17ed6a105b6a8114ba38d4466bd3e13b720551691c13900ab8"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e1_fix.py",
       "sha256": "97d102a24d03e1a928ff45e58213af9164b5372e7c7700ee7f562a72450d96e1"
     },
@@ -4872,6 +4878,24 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e12a-parser.json",
       "sha256": "b88698a59d2812319e216fe6942f92af00bf7f31186acd4c782c743bb55d3ebc"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e12b-auth.json",
+      "sha256": "3de5e3a985792d21fb936db099fe4f250a437e74f61d77ba84fb2061bcc92c22"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e12b-http.json",
+      "sha256": "29d4e26036790d3cc5ae95cc00bd959e84bca1bb8a0014a6c2efc47b6592cca8"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e12b-lifecycle.json",
+      "sha256": "a9847a06d4fef72d54d1d1a290992b4c5f39e76ff6499a03adf58fd4395c8900"
     },
     {
       "classification": "template-maintainer-tool",

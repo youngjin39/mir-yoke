@@ -8,7 +8,11 @@ use std::{
     time::Duration,
 };
 
-pub struct HttpTransport;
+#[derive(Default)]
+pub struct HttpTransport {
+    pub(super) used: bool,
+    pub unbounded_timeout: bool,
+}
 fn unsupported(s: impl Into<String>) -> HttpError {
     HttpError::new("UnsupportedProtocol", s)
 }
@@ -129,22 +133,38 @@ fn bytearray(bytes: &[u8]) -> String {
     format!("{out}{quote})")
 }
 fn header_lines(reader: &mut impl BufRead) -> Result<Vec<Vec<u8>>, HttpError> {
-    let mut lines = Vec::new();
-    let mut total = 0;
+    // h11 caps incomplete events after each httpcore-sized receive.
+    let mut block = Vec::new();
     loop {
-        let raw = line(reader)?;
-        total += raw.len();
-        if raw == b"\r\n" || raw == b"\n" {
-            return Ok(lines);
-        }
-        if total > 102400 {
-            return Err(protocol("Receive buffer too long"));
-        }
-        if raw.is_empty() {
+        let chunk = reader.fill_buf().map_err(|e| io_error(e, "Read"))?;
+        if chunk.is_empty() {
             return Err(protocol("Server disconnected without sending a response."));
         }
-        let raw = raw.strip_suffix(b"\n").unwrap_or(&raw);
-        lines.push(raw.strip_suffix(b"\r").unwrap_or(raw).to_vec());
+        let mut used = 0;
+        let mut complete = false;
+        for &byte in chunk {
+            block.push(byte);
+            used += 1;
+            if block == b"\r\n"
+                || block == b"\n"
+                || block.ends_with(b"\r\n\r\n")
+                || block.ends_with(b"\n\n")
+            {
+                complete = true;
+                break;
+            }
+        }
+        reader.consume(used);
+        if complete {
+            return Ok(block
+                .split(|b| *b == b'\n')
+                .map(|s| s.strip_suffix(b"\r").unwrap_or(s).to_vec())
+                .take_while(|s| !s.is_empty())
+                .collect());
+        }
+        if block.len() > 102400 {
+            return Err(protocol("Receive buffer too long"));
+        }
     }
 }
 fn headers(lines: Vec<Vec<u8>>) -> Result<std::collections::BTreeMap<String, String>, HttpError> {
@@ -166,9 +186,7 @@ fn headers(lines: Vec<Vec<u8>>) -> Result<std::collections::BTreeMap<String, Str
         let token = |b: &u8| b.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(b);
         if colon == 0
             || !raw[..colon].iter().all(token)
-            || raw[colon + 1..]
-                .iter()
-                .any(|b| matches!(b, 0..=8 | 10..=31 | 127))
+            || raw[colon + 1..].iter().any(|b| matches!(b, 0 | 10..=13))
         {
             return Err(protocol(format!(
                 "illegal header line: {}",
@@ -215,8 +233,53 @@ fn incomplete_chunk() -> HttpError {
         "peer closed connection without sending complete message body (incomplete chunked read)",
     )
 }
+fn wire_url_guard(authority: &str, target: &str) -> Result<(), HttpError> {
+    // shortcut: refuse normalization-dependent URLs before DNS/write. Add exact
+    // httpx normalization and frozen wire records before admitting these shapes.
+    let port = authority.rsplit_once(':').map(|(_, p)| p).unwrap_or("");
+    if !authority.is_ascii()
+        || authority.bytes().any(|b| b.is_ascii_uppercase())
+        || port == "80"
+        || port.starts_with('0')
+        || target
+            .split('?')
+            .next()
+            .unwrap_or("")
+            .split('/')
+            .any(|s| matches!(s, "." | ".."))
+    {
+        return Err(unsupported("Embedding URL normalization is not supported"));
+    }
+    Ok(())
+}
+fn outgoing_value(value: &str) -> Result<(), HttpError> {
+    let space = |b: u8| matches!(b, b' ' | 9..=13);
+    if !value.is_ascii()
+        || value.bytes().any(|b| matches!(b, 0 | 10..=13))
+        || value.as_bytes().first().is_some_and(|b| space(*b))
+        || value.as_bytes().last().is_some_and(|b| space(*b))
+    {
+        let repr = bytearray(value.as_bytes());
+        return Err(HttpError::new(
+            "LocalProtocolError",
+            format!("Illegal header value {}", &repr[10..repr.len() - 1]),
+        ));
+    }
+    Ok(())
+}
 impl Transport for HttpTransport {
     fn send(&mut self, request: HttpRequest) -> Result<HttpResponse, HttpError> {
+        // shortcut: one request per backend until frozen pool/expiry/stale-socket
+        // parity is available. Never silently reconnect instead of reusing.
+        if self.used {
+            return Err(unsupported("Embedding connection reuse is not supported"));
+        }
+        if self.unbounded_timeout {
+            return Err(unsupported(
+                "Embedding timeout outside signed 64-bit range is not supported",
+            ));
+        }
+        self.used = true;
         let url = request.url.split('#').next().unwrap_or("");
         if url.starts_with("https://") {
             return Err(unsupported("HTTPS embedding transport is not supported"));
@@ -256,6 +319,7 @@ impl Transport for HttpTransport {
             ));
         }
         let port: u16 = port.parse().map_err(|_| unsupported("Invalid URL port"))?;
+        wire_url_guard(authority, &target)?;
         let timeout =
             |phase: &str| Duration::from_secs(request.timeout[phase].as_u64().unwrap_or(0));
         let addresses = (host, port)
@@ -287,27 +351,19 @@ impl Transport for HttpTransport {
             body.len()
         );
         for (name, value) in request.headers {
-            if !value.is_ascii() || value.contains(['\r', '\n']) {
-                return Err(HttpError::new(
-                    "LocalProtocolError",
-                    "Invalid embedding header value",
-                ));
-            }
+            outgoing_value(&value)?;
             head.push_str(&format!("{name}: {value}\r\n"));
         }
         stream
             .write_all(format!("{head}\r\n{body}").as_bytes())
             .map_err(|e| io_error(e, "Write"))?;
-        let mut reader = BufReader::new(stream);
+        let mut reader = BufReader::with_capacity(65536, stream);
         loop {
-            let raw = line(&mut reader)?;
-            if raw.is_empty() {
-                return Err(protocol("Server disconnected without sending a response."));
-            }
-            let block = if matches!(raw.as_slice(), b"\r\n" | b"\n") {
+            let mut block = header_lines(&mut reader)?;
+            let raw = if block.is_empty() {
                 Vec::new()
             } else {
-                header_lines(&mut reader)?
+                block.remove(0)
             };
             let status_line = raw.strip_suffix(b"\n").unwrap_or(&raw);
             let status_line = status_line.strip_suffix(b"\r").unwrap_or(status_line);
@@ -380,7 +436,7 @@ impl Transport for HttpTransport {
                         .next()
                         .unwrap_or("")
                         .trim_end_matches(['\r', '\n', ' ', '\t']);
-                    let size = usize::from_str_radix(digits, 16)
+                    let size = u128::from_str_radix(digits, 16)
                         .ok()
                         .filter(|_| {
                             !digits.is_empty()
@@ -398,10 +454,10 @@ impl Transport for HttpTransport {
                     let start = body.len();
                     reader
                         .by_ref()
-                        .take(size as u64)
+                        .take(size.min(u64::MAX as u128) as u64)
                         .read_to_end(&mut body)
                         .map_err(|e| io_error(e, "Read"))?;
-                    if body.len() - start != size {
+                    if (body.len() - start) as u128 != size {
                         return Err(incomplete_chunk());
                     }
                     let mut footer = Vec::new();
@@ -421,14 +477,16 @@ impl Transport for HttpTransport {
                     }
                 }
             } else if let Some(size) = response_headers.get("content-length") {
-                let size: u64 = size.parse().map_err(|_| protocol("bad Content-Length"))?;
+                let expected: u128 = size.parse().map_err(|_| protocol("bad Content-Length"))?;
+                let size = expected.min(u64::MAX as u128) as u64;
                 reader
+                    .by_ref()
                     .take(size)
                     .read_to_end(&mut body)
                     .map_err(|e| io_error(e, "Read"))?;
-                if body.len() as u64 != size {
+                if body.len() as u128 != expected {
                     return Err(protocol(format!(
-                        "peer closed connection without sending complete message body (received {} bytes, expected {size})",
+                        "peer closed connection without sending complete message body (received {} bytes, expected {expected})",
                         body.len()
                     )));
                 }
@@ -453,6 +511,34 @@ fn no_response_body(method: &str, status: u16) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn e12b_outgoing_values_and_url_refusals() {
+        let records: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../../tests/fixtures/y-e12b-auth.json")).unwrap();
+        for r in records {
+            let result = outgoing_value(r["value"].as_str().unwrap());
+            if r["ok"] == true {
+                assert!(result.is_ok());
+            } else {
+                let e = result.expect_err("h11 refuses before writing headers");
+                assert_eq!(e.class, r["error"].as_str().unwrap());
+                assert_eq!(e.message, r["message"].as_str().unwrap());
+            }
+        }
+        for (authority, target) in [
+            ("LOCALHOST:80", "/v1"),
+            ("localhost:080", "/v1"),
+            ("bücher.de", "/v1"),
+            ("localhost", "/a/../v1"),
+            ("localhost", "/./v1"),
+        ] {
+            assert_eq!(
+                wire_url_guard(authority, target).unwrap_err().class,
+                "UnsupportedProtocol"
+            );
+        }
+        assert!(wire_url_guard("localhost:12345", "/v1?a=..").is_ok());
+    }
     #[test]
     fn no_body_framing_rules() {
         assert!(no_response_body("HEAD", 200));
@@ -544,6 +630,23 @@ mod e10_http_tests {
         }
         let records: Vec<serde_json::Value> =
             serde_json::from_str(include_str!("../../tests/fixtures/e10_http.json")).unwrap();
+        let lifecycle: serde_json::Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/y-e12b-lifecycle.json"))
+                .unwrap();
+        assert_eq!(lifecycle["statuses"], serde_json::json!([200, 200]));
+        let cfg =
+            serde_json::json!({"base_url":"http://127.0.0.1/", "timeout_sec":lifecycle["timeout"]});
+        let mut backend = super::super::context_sync::backend(&cfg).unwrap();
+        assert!(backend.transport().unbounded_timeout);
+        assert_eq!(
+            backend.encode(&["fake".into()]).unwrap_err().class,
+            "UnsupportedProtocol"
+        );
+        let records = [
+            records,
+            serde_json::from_str(include_str!("../../tests/fixtures/y-e12b-http.json")).unwrap(),
+        ]
+        .concat();
         let mut mismatches = Vec::new();
         for (i, r) in records.iter().enumerate() {
             let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
@@ -562,14 +665,23 @@ mod e10_http_tests {
                     .unwrap();
                 stream.write_all(&wire).unwrap();
             });
-            let result = HttpTransport.send(HttpRequest {
+            let mut transport = HttpTransport::default();
+            let request = HttpRequest {
                 url,
                 method: "POST".into(),
                 headers: Default::default(),
                 body: serde_json::json!({"model":"fake","input":["fake"]}),
                 timeout: serde_json::json!({"connect":1,"read":1,"write":1}),
-            });
+            };
+            let result = transport.send(request.clone());
             server.join().unwrap();
+            if result.is_ok() {
+                assert_eq!(
+                    transport.send(request).unwrap_err().class,
+                    "UnsupportedProtocol",
+                    "repeat requests must reuse or refuse before connecting"
+                );
+            }
             let actual = match result {
                 Ok(r) => {
                     serde_json::json!({"status":r.status,"reason":r.reason,"body":String::from_utf8_lossy(&r.body)})

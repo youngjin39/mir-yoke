@@ -464,6 +464,9 @@ pub(super) fn backend(
             auth_scheme: emb["auth_scheme"].as_str().unwrap_or_default().into(),
         },
         |name| std::env::var(name).unwrap_or_default(),
-        super::embedding_http::HttpTransport,
+        super::embedding_http::HttpTransport {
+            unbounded_timeout: emb["timeout_sec"].as_i64().is_none(),
+            ..Default::default()
+        },
     ))
 }
