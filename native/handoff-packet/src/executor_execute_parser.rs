@@ -196,11 +196,28 @@ fn numeric_text(raw: &str) -> String {
         })
         .collect()
 }
+pub(crate) fn integer_text(raw: &str) -> Option<String> {
+    let normalized = numeric_text(raw.trim());
+    let digits = normalized.strip_prefix(['+', '-']).unwrap_or(&normalized);
+    let valid = regex::Regex::new(r"^[0-9](?:_?[0-9])*$").is_ok_and(|re| re.is_match(digits));
+    if !valid || digits.bytes().filter(u8::is_ascii_digit).count() > 4300 {
+        return None;
+    }
+    let number = digits.replace('_', "");
+    let digits = number.trim_start_matches('0');
+    Some(if digits.is_empty() {
+        "0".to_owned()
+    } else if normalized.starts_with('-') {
+        format!("-{digits}")
+    } else {
+        digits.to_owned()
+    })
+}
 fn negative(text: &str) -> bool {
     regex::Regex::new(r"^-([0-9]+|[0-9]*\.[0-9]+)$")
         .is_ok_and(|re| re.is_match(&numeric_text(text.strip_suffix('\n').unwrap_or(text))))
 }
-fn value_token(text: &str) -> bool {
+pub(crate) fn value_token(text: &str) -> bool {
     !text.starts_with('-') || text == "-" || negative(text)
 }
 fn abbreviates(arg: &str, name: &str) -> bool {
@@ -364,7 +381,6 @@ fn parse_inner(raw_argv: &[OsString], cwd: &Path, known: bool) -> Parsed {
     let mut unknown = Vec::new();
     let mut source = None;
     let mut index = 0;
-    let integer_pattern = regex::Regex::new(r"^[0-9](?:_?[0-9])*$");
     let float_pattern = regex::Regex::new(
         r"(?i)^[+-]?(?:(?:[0-9](?:_?[0-9])*(?:\.(?:[0-9](?:_?[0-9])*)?)?|\.[0-9](?:_?[0-9])*)(?:e[+-]?[0-9](?:_?[0-9])*)?|inf(?:inity)?|nan)$",
     );
@@ -517,11 +533,7 @@ fn parse_inner(raw_argv: &[OsString], cwd: &Path, known: bool) -> Parsed {
                     .unwrap_or(Value::Null)
                 }
                 "int" | "_positive_int" | "_nonnegative_int" => {
-                    let normalized = numeric_text(raw.trim());
-                    let digits = normalized.strip_prefix(['+', '-']).unwrap_or(&normalized);
-                    let valid = integer_pattern.as_ref().is_ok_and(|re| re.is_match(digits));
-                    let digit_count = digits.bytes().filter(u8::is_ascii_digit).count();
-                    if !valid || digit_count > 4300 {
+                    let Some(number) = integer_text(raw) else {
                         let name = if type_name == "int" { "int" } else { type_name };
                         return failure(
                             format!(
@@ -530,15 +542,6 @@ fn parse_inner(raw_argv: &[OsString], cwd: &Path, known: bool) -> Parsed {
                             ),
                             false,
                         );
-                    }
-                    let number = digits.replace('_', "");
-                    let digits = number.trim_start_matches('0');
-                    let number = if digits.is_empty() {
-                        "0".to_owned()
-                    } else if normalized.starts_with('-') {
-                        format!("-{digits}")
-                    } else {
-                        digits.to_owned()
                     };
                     if type_name == "_positive_int" && (number == "0" || number.starts_with('-')) {
                         return failure(

@@ -421,7 +421,10 @@ def snapshot(home):
             (".mir", "owned-receipt"),
         }:
             continue
-        if any(part in ignored for part in relative.parts) or relative.parts[0] in seeds:
+        if (
+            any(part in ignored | {"native-imported", "native-owned"} for part in relative.parts)
+            or relative.parts[0] in seeds
+        ):
             continue
         if path.is_symlink():
             files[relative.as_posix()] = {"link": normalize(os.readlink(path), home)}
@@ -516,6 +519,7 @@ def capture(home, case, setup, route="reference", binary=None, *, timeout=40):
     command = [sys.executable, "-c", "from tools.mir_executor.cli import main; main()"]
     if route == "module":
         command = [sys.executable, "-m", "tools.mir_executor"]
+        env = dict(env, MIR_EXECUTOR_ARGPARSE_PROG="__main__.py")
     elif route == "binary":
         command = [str(binary), "--home-root", str(home)]
         receipt = home / ".mir" / "owned-receipt"

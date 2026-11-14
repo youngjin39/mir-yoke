@@ -134,6 +134,27 @@ def cases():
         ),
     ):
         values.append({"name": "argv-" + name, "argv": argv})
+    # Preliminary parsers run before the full resume parser (pinned cli.main).
+    for name, argv in (
+        ("root-missing", ["resume", "--job-id=x", "--repo-root"]),
+        ("job-after-invalid", ["resume", "--timeout=bad", "--job-id"]),
+        ("db-missing", ["resume", "--job-id=x", "--jobs-db"]),
+        ("root-before-invalid", ["resume", "--repo-root", "--timeout=bad"]),
+        ("db-before-invalid", ["resume", "--jobs-db", "--timeout", "bad"]),
+        ("root-abbrev", ["resume", "--job-id=x", "--repo-r", "--timeout=bad"]),
+        ("db-abbrev", ["resume", "--job-id=x", "--jobs-d", "--timeout=bad"]),
+        ("job-abbrev", ["resume", "--timeout", "bad", "--job-i"]),
+        ("root-equals", ["resume", "--job-id=x", "--repo-r=<ROOT>", "--timeout=bad"]),
+        (
+            "db-equals",
+            ["--jobs-d=<ROOT>/tasks/jobs.db", "resume", "--job-id=x", "--timeout", "bad"],
+        ),
+        ("job-equals", ["resume", "--timeout=bad", "--job-i=x"]),
+        ("root-before-job", ["resume", "--job-id", "--repo-root"]),
+        ("root-space", ["resume", "--repo-root", "<ROOT>", "--timeout=bad", "--job-id"]),
+        ("db-space", ["--jobs-db", "<ROOT>/tasks/jobs.db", "resume", "--timeout=bad", "--job-id"]),
+    ):
+        values.append({"name": "argv-preliminary-" + name, "argv": argv})
     return values
 
 

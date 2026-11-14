@@ -9,11 +9,10 @@ use crate::{
 use rusqlite::{Connection, OpenFlags, types::ValueRef};
 use serde_json::{Value, json};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     ffi::OsString,
     fs,
-    io::Read,
-    path::{Component, Path, PathBuf},
+    path::{Path, PathBuf},
     time::Duration,
 };
 
@@ -23,15 +22,61 @@ struct Args {
     db: PathBuf,
     job: String,
     timeout: Option<Value>,
+    admission: Value,
 }
-fn parse(raw: &[OsString], cwd: &Path) -> Option<Args> {
-    let words = raw.iter().map(|v| v.to_str()).collect::<Option<Vec<_>>>()?;
+const USAGE: &str = "usage: python -m tools.mir_executor resume --job-id JOB_ID [--timeout SECONDS]\n                                           [--async] [--repo-root PATH]\n";
+fn parse(raw: &[OsString], cwd: &Path) -> Result<Args> {
+    let words = raw
+        .iter()
+        .map(|v| crate::executor_text::os_text(v))
+        .collect::<Vec<_>>();
+    // cli.main parses root options first, then job-id, before building the
+    // full parser. Unknown options (including timeout) have no type here.
+    for (options, usage) in [
+        (
+            &["--repo-root", "--jobs-db"][..],
+            "[--repo-root REPO_ROOT] [--jobs-db JOBS_DB] [subcommand]",
+        ),
+        (&["--job-id"][..], "[--job-id JOB_ID]"),
+    ] {
+        let mut i = 0;
+        while i < words.len() {
+            if words[i] == "--" {
+                break;
+            }
+            let (key, inline) = words[i]
+                .split_once('=')
+                .map_or((words[i].as_str(), false), |(key, _)| (key, true));
+            if let Some(flag) = options
+                .iter()
+                .find(|flag| key.starts_with("--") && key.len() > 2 && flag.starts_with(key))
+                && !inline
+            {
+                i += 1;
+                if !words
+                    .get(i)
+                    .is_some_and(|v| crate::executor_execute_parser::value_token(v))
+                {
+                    let prog =
+                        std::env::var("MIR_EXECUTOR_ARGPARSE_PROG").unwrap_or_else(|_| "-c".into());
+                    return Err(format!(
+                        "usage: {prog} {usage}\n{prog}: error: argument {flag}: expected one argument\n"
+                    ));
+                }
+            }
+            i += 1;
+        }
+    }
+    let failure =
+        |message: &str| format!("{USAGE}python -m tools.mir_executor resume: error: {message}\n");
     let mut command = false;
     let mut root = cwd.to_owned();
     let mut db = None;
     let mut job = None;
     let mut timeout = None;
-    let mut seen = BTreeSet::new();
+    let mut use_async = false;
+    let mut root_given = false;
+    let mut unknown = Vec::new();
     let mut i = 0;
     while i < words.len() {
         if words[i] == "resume" && !command {
@@ -39,108 +84,140 @@ fn parse(raw: &[OsString], cwd: &Path) -> Option<Args> {
             i += 1;
             continue;
         }
-        let (flag, inline) = words[i]
+        let (key, inline) = words[i]
             .split_once('=')
-            .map_or((words[i], None), |(a, b)| (a, Some(b)));
-        if matches!(flag, "--async" | "-a") && command && inline.is_none() {
+            .map_or((words[i].as_str(), None), |(a, b)| (a, Some(b)));
+        let flag = if key == "-h" {
+            Some("--help")
+        } else if key == "-a" {
+            Some("--async")
+        } else {
+            [
+                "--jobs-db",
+                "--repo-root",
+                "--job-id",
+                "--timeout",
+                "--async",
+                "--help",
+            ]
+            .into_iter()
+            .filter(|flag| command || *flag == "--jobs-db")
+            .filter(|flag| !command || *flag != "--jobs-db")
+            .find(|flag| {
+                *flag == key || (key.starts_with("--") && key.len() > 2 && flag.starts_with(key))
+            })
+        };
+        let Some(flag) = flag.filter(|flag| command || *flag == "--jobs-db") else {
+            unknown.push(words[i].clone());
             i += 1;
             continue;
-        }
-        if !matches!(flag, "--jobs-db" | "--repo-root" | "--job-id" | "--timeout")
-            || (flag == "--jobs-db" && command)
-            || (flag != "--jobs-db" && !command)
-            || !seen.insert(flag)
-        {
-            return None;
+        };
+        if flag == "--help" || flag == "--async" {
+            use_async |= flag == "--async";
+            i += 1;
+            continue;
         }
         let value = if let Some(value) = inline {
             value
         } else {
             i += 1;
-            let value = *words.get(i)?;
-            if value.starts_with('-') && flag != "--timeout" {
-                return None;
-            }
+            let value = words
+                .get(i)
+                .filter(|v| crate::executor_execute_parser::value_token(v));
+            let Some(value) = value else {
+                if flag == "--job-id" {
+                    let prog =
+                        std::env::var("MIR_EXECUTOR_ARGPARSE_PROG").unwrap_or_else(|_| "-c".into());
+                    return Err(format!(
+                        "usage: {prog} [--job-id JOB_ID]\n{prog}: error: argument --job-id: expected one argument\n"
+                    ));
+                }
+                return Err(failure(&format!("argument {flag}: expected one argument")));
+            };
             value
         };
         match flag {
             "--jobs-db" => db = Some(PathBuf::from(value)),
-            "--repo-root" => root = PathBuf::from(value),
+            "--repo-root" => {
+                root = PathBuf::from(value);
+                root_given = true;
+            }
             "--job-id" => job = Some(value.to_owned()),
-            "--timeout" => timeout = Some(json!(value.parse::<i64>().ok()?)),
-            _ => return None,
+            "--timeout" => {
+                let number =
+                    crate::executor_execute_parser::integer_text(value).ok_or_else(|| {
+                        failure(&format!(
+                            "argument --timeout: invalid int value: {}",
+                            execute::repr(value)
+                        ))
+                    })?;
+                timeout = Some(
+                    number
+                        .parse::<i64>()
+                        .map_or_else(|_| json!({"__native_integer":number}), |n| json!(n)),
+                );
+            }
+            _ => (),
         }
         i += 1;
     }
-    if !command {
-        return None;
+    let job = job.ok_or_else(|| failure("the following arguments are required: --job-id"))?;
+    if !unknown.is_empty() {
+        return Err(format!(
+            "usage: python -m tools.mir_executor [-h] [--jobs-db PATH]\n                                    {{execute,status,result,cancel,resume,list-jobs,sweep}}\n                                    ...\npython -m tools.mir_executor: error: unrecognized arguments: {}\n",
+            unknown.join(" ")
+        ));
     }
-    if !root.is_absolute() {
-        root = cwd.join(root);
-    }
-    let root = crate::supply::plain(fs::canonicalize(root).ok()?);
-    let db = db.unwrap_or_else(|| root.join("tasks").join("jobs.db"));
-    let db = if db.is_absolute() { db } else { cwd.join(db) };
-    if db.components().any(|c| c == Component::ParentDir) {
-        return None;
-    }
-    Some(Args {
+    let admission = json!({"subcommand":"resume", "jobs_db":db.as_ref().map(|p| crate::executor_text::os_text(p.as_os_str())),
+        "repo_root":if root_given {execute::path(&root)} else {Value::Null},
+        "job_id":job, "timeout":timeout, "use_async":use_async});
+    let root = crate::executor_admission::resolved(&root, cwd)
+        .map_err(|e| crate::executor_text::io_error(e, &root))?;
+    let db = db.unwrap_or_else(|| root.join("tasks/jobs.db"));
+    let db = match crate::executor_admission::resolved(&db, cwd) {
+        Ok(path) => path,
+        Err(e) if e.kind() == std::io::ErrorKind::NotADirectory => {
+            if db.is_absolute() {
+                db
+            } else {
+                cwd.join(db)
+            }
+        }
+        Err(e) => return Err(crate::executor_text::io_error(e, &db)),
+    };
+    Ok(Args {
         root,
         db,
-        job: job?,
+        job,
         timeout,
+        admission,
     })
 }
 // Read without migration or sidecar creation, so unsupported saved targets can
 // return to the reference before ownership and before importing local hooks.
 fn read_row(path: &Path, id: &str) -> Result<Option<Value>> {
-    match fs::symlink_metadata(path) {
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Ok(metadata) if metadata.is_file() => (),
-        _ => return Err("resume registry is not a regular file or metadata unavailable".into()),
+    if !path.exists() {
+        return Ok(None);
     }
-    let mut header = [0; 100];
-    fs::File::open(path)
-        .map_err(|e| format!("resume registry read: {e}"))?
-        .read_exact(&mut header)
-        .map_err(|e| format!("resume registry read: {e}"))?;
-    if &header[..16] != b"SQLite format 3\0" || header[18] != 1 || header[19] != 1 {
-        return Err("resume registry unsupported SQLite header/journal mode".into());
-    }
-    for suffix in ["-journal", "-wal", "-shm"] {
-        let mut sidecar = path.as_os_str().to_owned();
-        sidecar.push(suffix);
-        if Path::new(&sidecar).exists() {
-            return Err("resume registry sidecar present".into());
-        }
-    }
-    let db = Connection::open_with_flags(
-        path,
-        OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NOFOLLOW,
-    )
-    .map_err(|e| format!("resume registry read: {e}"))?;
+    let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(crate::executor_text::sql_error)?;
     let mut stmt = db
         .prepare("SELECT * FROM jobs WHERE job_id=?")
-        .map_err(|e| format!("resume registry read: {e}"))?;
+        .map_err(crate::executor_text::sql_error)?;
     let names = stmt
         .column_names()
         .iter()
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
-    let mut rows = stmt
-        .query([id])
-        .map_err(|e| format!("resume registry read: {e}"))?;
-    let Some(row) = rows
-        .next()
-        .map_err(|e| format!("resume registry read: {e}"))?
-    else {
+    let mut rows = stmt.query([id]).map_err(crate::executor_text::sql_error)?;
+    let Some(row) = rows.next().map_err(crate::executor_text::sql_error)? else {
         return Ok(None);
     };
     let mut result = json!({});
     for (index, name) in names.iter().enumerate() {
         let value = match row
             .get_ref(index)
-            .map_err(|e| format!("resume registry read: {e}"))?
+            .map_err(crate::executor_text::sql_error)?
         {
             ValueRef::Null => Value::Null,
             ValueRef::Integer(n) => {
@@ -257,6 +334,20 @@ fn report_error(error: &str) {
         execute::diagnostic(error);
     }
 }
+fn parse_local(bridge: &mut CommandHooks, argv: Value, root: &Path) -> Result<Option<i32>> {
+    let reply = bridge
+        .call(
+            "bridge.parse_execute",
+            vec![argv, execute::path(root)],
+            json!({}),
+        )
+        .map_err(|e| e.to_string())?;
+    let output = &reply["result"];
+    for (name, error) in [("stdout", false), ("stderr", true)] {
+        let _ = execute::emit(output[name].as_str().unwrap_or(""), error);
+    }
+    Ok((!output["args"].is_object()).then(|| output["code"].as_i64().unwrap_or(1) as i32))
+}
 struct Lease {
     bridge: Option<Box<CommandHooks>>,
     handle: Option<String>,
@@ -294,9 +385,35 @@ impl Drop for Lease {
 }
 /// Exit 64 declines silently before the ownership receipt or Python effects.
 pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
-    let Some(cli) = parse(raw, cwd) else {
-        return crate::executor_protocol::decline("resume options/root parse");
+    // Python resolves the invoking root as well as the selected repo root.
+    // Aliased temp paths must not enter cross-target admission and spawn git.
+    let home = match crate::executor_admission::resolved(home, cwd) {
+        Ok(home) => home,
+        Err(_) => return crate::executor_protocol::decline("resume home resolve"),
     };
+    let home = home.as_path();
+    let packaged = home.join("tools/mir_executor/local_bridge.py").is_file();
+    let mut cli = match parse(raw, cwd) {
+        Ok(cli) => cli,
+        Err(_) if !packaged => {
+            return crate::executor_protocol::decline("resume options/root parse");
+        }
+        Err(text) => {
+            crate::executor_protocol::claim();
+            let _ = execute::emit(&text, true);
+            return 2;
+        }
+    };
+    if raw.iter().any(|v| {
+        let text = crate::executor_text::os_text(v);
+        let key = text.split_once('=').map_or(text.as_str(), |(k, _)| k);
+        (key == "-h" || (key.len() > 2 && key.starts_with("--") && "--help".starts_with(key)))
+            || text.split_once('=').is_some_and(|(k, _)| {
+                k == "-a" || (k.starts_with("--") && "--async".starts_with(k))
+            })
+    }) {
+        return crate::executor_protocol::decline("resume unsupported parser action");
+    }
     let disabled = match crate::executor_local::python_local_hooks_disabled(&cli.root) {
         Ok(disabled) => disabled,
         Err(error) => {
@@ -305,22 +422,23 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             return 1;
         }
     };
-    let cross_target = fs::canonicalize(home)
-        .ok()
-        .map(crate::supply::plain)
-        .as_ref()
-        != Some(&cli.root);
-    let row = match read_row(&cli.db, &cli.job) {
-        Ok(row) => row,
-        Err(reason) => return crate::executor_protocol::decline(&reason),
+    let target_policy = if cli.root.is_dir() {
+        crate::executor_admission::native_policy(&cli.root)
+    } else {
+        Ok(None)
     };
+    // A packaged parser can serve legacy resumes, but Python compatibility
+    // routes must still decline before effects when native policy owns admission.
+    let policy_compatibility = !matches!(&target_policy, Ok(None));
+    let row = read_row(&cli.db, &cli.job).ok().flatten();
     if let Some(row) = &row {
-        if row["repo_root"]
-            .as_str()
-            .and_then(|p| fs::canonicalize(p).ok())
-            .map(crate::supply::plain)
-            .as_ref()
-            != Some(&cli.root)
+        if (!packaged || policy_compatibility)
+            && row["repo_root"]
+                .as_str()
+                .and_then(|p| fs::canonicalize(p).ok())
+                .map(crate::supply::plain)
+                .as_ref()
+                != Some(&cli.root)
         {
             return crate::executor_protocol::decline("resume saved root mismatch");
         }
@@ -331,14 +449,14 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             .as_ref()
             .and_then(|s| s.get("execution_backend"))
             .unwrap_or(&row["execution_backend"]);
-        if backend
-            .as_str()
-            .is_some_and(|s| !matches!(s, "codex" | "claude"))
+        if !packaged
+            && backend
+                .as_str()
+                .is_some_and(|s| !matches!(s, "codex" | "claude"))
         {
             return crate::executor_protocol::decline("resume unsupported backend");
         }
     }
-    let target_policy = crate::executor_admission::native_policy(&cli.root);
     if let (Ok(Some(policy)), Some(row)) = (&target_policy, &row)
         && policy
             .brief_profile
@@ -348,7 +466,15 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     {
         return crate::executor_protocol::decline("resume development packet representation");
     }
-    if cross_target {
+    let cross_target = fs::canonicalize(home)
+        .ok()
+        .map(crate::supply::plain)
+        .as_ref()
+        != Some(&cli.root);
+    let native_authorized = cross_target
+        && crate::executor_admission::native_policy(home)
+            .is_ok_and(|p| p.is_some_and(|p| p.has_authorize_target()));
+    if cross_target && (!packaged || native_authorized) {
         let family = row.as_ref().and_then(|row| row["family"].as_str());
         match crate::executor_admission::authorize_command(home, cwd, &cli.root, family, false, 2) {
             Ok(true) => (),
@@ -363,7 +489,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         }
     }
     let local = cli.root.join("tools").join("mir_executor").join("local.py");
-    if !disabled {
+    if !disabled && (!packaged || policy_compatibility) {
         match fs::read(local) {
             Ok(source)
                 if source
@@ -404,42 +530,156 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     };
     crate::executor_protocol::claim();
     let result = (|| -> Result<i32> {
-        // The reference constructor migrates the registry before inspecting its job.
-        let registry = JobRegistry::open(&cli.db).map_err(|e| format!("registry error: {e:?}"))?;
+        let mut home_bridge = None;
+        let request = crate::executor_admission::Request {
+            argv: &[],
+            cwd,
+            invoking_home: home,
+            environment: &environment,
+            interpreter: &python,
+            bridge_script: &home.join("tools/mir_executor/local_bridge.py"),
+        };
+        let preauthorized = native_authorized.then(|| cli.root.clone());
+        let authorize = |root: &Path, args: &Value, home_bridge: &mut _| -> Result<()> {
+            if preauthorized.as_deref() == Some(root) {
+                return Ok(());
+            }
+            match crate::executor_admission::authorize(
+                &request,
+                home,
+                root,
+                args,
+                home_bridge,
+                false,
+            )
+            .map_err(|e| format!("\0resume_uncaught:{e}"))?
+            {
+                Some(crate::executor_admission::Admission::Refused { stderr, .. }) => Err(format!(
+                    "\0resume_uncaught:{}",
+                    String::from_utf8_lossy(&stderr).trim_end()
+                )),
+                _ => Ok(()),
+            }
+        };
+        let resume_args = &cli.admission;
+        authorize(&cli.root, resume_args, &mut home_bridge)?;
+        let local_path = cli.root.join("tools/mir_executor/local.py");
+        if local_path.is_dir() {
+            let error = fs::read(&local_path)
+                .err()
+                .ok_or("local directory unexpectedly readable")?;
+            return Err(format!(
+                "\0resume_uncaught:{}",
+                crate::executor_text::io_error(error, &local_path)
+            ));
+        }
+        let mut bridge = if cli.root.is_dir() {
+            CommandHooks::start_in(
+                BridgeConfig {
+                    interpreter: python.clone(),
+                    target_root: cli.root.clone(),
+                    bridge_script: home.join("tools/mir_executor/local_bridge.py"),
+                    environment: environment.clone(),
+                    timeout: Duration::from_secs(10),
+                },
+                cwd,
+            )
+            .map_err(|e| format!("\0resume_uncaught:{e}"))?
+            .map(Box::new)
+        } else {
+            None
+        };
+        if let Some(local) = bridge.as_mut()
+            && local.hello()["register_execute_options"] == true
+        {
+            let argv = raw
+                .iter()
+                .map(|v| crate::executor_text::os_text(v))
+                .collect::<Vec<_>>();
+            if let Some(code) = parse_local(local, json!(argv), &cli.root)? {
+                return Ok(code);
+            }
+        }
+        authorize(&cli.root, resume_args, &mut home_bridge)?;
+        if cli.root.is_dir() {
+            crate::executor_local::LocalConfig::load(&cli.root).map_err(|e| e.to_string())?;
+        }
+        if let Some(raw_job) = raw.iter().rev().find(|v| {
+            let text = crate::executor_text::os_text(v);
+            text == cli.job || text.split_once('=').is_some_and(|(_, v)| v == cli.job)
+        }) {
+            let bytes = raw_job.as_encoded_bytes();
+            let value = bytes
+                .iter()
+                .position(|b| *b == b'=')
+                .map_or(bytes, |i| &bytes[i + 1..]);
+            if let Some(error) = execute::utf8_error(&crate::executor_text::codepoints(value)) {
+                return Err(error
+                    .strip_prefix("UnicodeEncodeError: ")
+                    .unwrap_or(&error)
+                    .into());
+            }
+        }
+        // The constructor migrates/chmods even malformed and unreadable registries.
+        let registry = JobRegistry::open(&cli.db).map_err(|e| {
+            format!(
+                "\0resume_uncaught:{}",
+                crate::executor_text::registry_error(
+                    e,
+                    if cli.root.is_file() {
+                        cli.db.parent().unwrap_or(&cli.db)
+                    } else {
+                        &cli.db
+                    }
+                )
+            )
+        })?;
         drop(registry);
-        let row = row.ok_or("resume requires an existing job with a dispatch_brief_path")?;
+        let row = read_row(&cli.db, &cli.job)
+            .map_err(|e| format!("\0resume_uncaught:{e}"))?
+            .ok_or("resume requires an existing job with a dispatch_brief_path")?;
         if row["dispatch_brief_path"]
             .as_str()
             .is_none_or(str::is_empty)
         {
             return Err("resume requires an existing job with a dispatch_brief_path".into());
         }
+        let saved_root = crate::executor_admission::resolved(
+            Path::new(row["repo_root"].as_str().unwrap_or("")),
+            cwd,
+        )
+        .map_err(|e| e.to_string())?;
+        authorize(&saved_root, resume_args, &mut home_bridge)?;
+        if saved_root != cli.root {
+            cli.root = saved_root;
+            bridge = if cli.root.is_dir() {
+                CommandHooks::start_in(
+                    BridgeConfig {
+                        interpreter: python.clone(),
+                        target_root: cli.root.clone(),
+                        bridge_script: home.join("tools/mir_executor/local_bridge.py"),
+                        environment: environment.clone(),
+                        timeout: Duration::from_secs(10),
+                    },
+                    cwd,
+                )
+                .map_err(|e| format!("\0resume_uncaught:{e}"))?
+                .map(Box::new)
+            } else {
+                None
+            };
+        }
+        if let Some(local) = bridge.as_mut()
+            && local.hello()["register_execute_options"] == true
+            && let Some(code) = parse_local(local, json!(["execute", "--dispatch"]), &cli.root)?
+        {
+            return Ok(code);
+        }
         let mut prepared =
             executor_resume::prepare(&row, &defaults(&cli.root, &cli.db)?, cli.timeout)
                 .map_err(|e| prepare_error(e, &row))?;
         wire_paths(&mut prepared.args);
         let native_policy = target_policy;
-        let bridge = CommandHooks::start_in(
-            BridgeConfig {
-                interpreter: python,
-                target_root: cli.root.clone(),
-                bridge_script: home
-                    .join("tools")
-                    .join("mir_executor")
-                    .join("local_bridge.py"),
-                environment: environment.clone(),
-                timeout: Duration::from_secs(10),
-            },
-            cwd,
-        )
-        .map_err(|e| e.to_string())?
-        .map(Box::new);
-        if bridge
-            .as_ref()
-            .is_some_and(|b| b.hello()["register_execute_options"] == true)
-        {
-            return Err("local import dynamically registered execute options; native ownership is final, invoke Python explicitly".into());
-        }
         let mut lease = Lease {
             bridge,
             handle: None,
@@ -528,19 +768,20 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                     .bind_instruction(&cli.root, cwd, &prepared.args, argv)
                     .map_err(|e| pre_execute_refusal(has_options, &e.kind, &e.message))?;
             }
-            if fs::canonicalize(execute::value_path(&prepared.args["repo_root"], cwd))
-                .ok()
-                .map(crate::supply::plain)
-                .as_ref()
-                != Some(&cli.root)
+            if !crate::executor_admission::git(&request, &cli.root, "--is-inside-work-tree")
+                .map_err(|e| {
+                    format!(
+                        "\0resume_uncaught:{}",
+                        crate::executor_text::io_error(e, Path::new("git"))
+                    )
+                })?
+                .status
+                .success()
             {
-                return Err("resume root changed; refusing resume".into());
-            }
-            if prepared.args["execution_backend"]
-                .as_str()
-                .is_some_and(|s| !matches!(s, "codex" | "claude"))
-            {
-                return Err("pre_execute selected an unsupported native execution path".into());
+                return Err(format!(
+                    "resume root error: repo root is not a git repository: {}",
+                    cli.root.display()
+                ));
             }
             let codex_args = prepared
                 .codex_args

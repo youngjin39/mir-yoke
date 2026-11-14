@@ -466,7 +466,7 @@ def test_executor_query_absent_database_matches_with_creation(binary, home, argv
 
 @pytest.mark.parametrize("argv", [
     [], ["--help"], ["status", "--help"], ["result", "--help"], ["list-jobs", "--help"],
-    ["unknown"], ["resume"], ["sweep", "--unknown"],
+    ["unknown"], ["unknown", "--unknown"], ["sweep", "--unknown"],
     ["status"], ["result"], ["list-jobs", "--unknown"],
     ["status", "--job-id", "running", "--job-id", "failed"],
     ["list-jobs", "--status", "not-a-status"],
@@ -698,7 +698,7 @@ def test_pinned_sweep_is_native_only(binary, tmp_path, apply, selector):
 
 def test_executor_decline_trace_is_append_only_and_optional(binary, home, monkeypatch):
     trace = Path(os.environ["MIR_EXECUTOR_DECLINE_TRACE"])
-    argv = ["resume", "--unknown"]
+    argv = ["unknown", "--unknown"]
     assert not trace.exists(), trace_details()
     for count in (1, 2):
         assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
@@ -715,3 +715,19 @@ def test_executor_decline_trace_is_append_only_and_optional(binary, home, monkey
         monkeypatch.setenv("MIR_EXECUTOR_DECLINE_TRACE", str(invalid))
         assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
     assert not (home / "missing-parent").exists(), trace_details()
+
+
+def test_current_resume_module_missing_value_program_name(binary, home):
+    # seed copies the current entrypoint, rather than the pinned fixture facade.
+    assert (home / "tools/mir_executor/entrypoint.py").read_bytes() == (
+        ROOT / "tools/mir_executor/entrypoint.py"
+    ).read_bytes()
+    install_pin(binary, home)
+    (home / "tools/mir_executor/cli.py").write_text(
+        'raise AssertionError("Python fallback must not run")\n'
+    )
+    stdout, stderr, code = pinned_cli(home, "module", ["resume", "--job-id"])
+    assert code == 2, (stdout, stderr)
+    assert stdout == b""
+    assert stderr.startswith(b"usage: __main__.py [--job-id JOB_ID]\n"), stderr
+    assert b"__main__.py: error: argument --job-id: expected one argument\n" in stderr

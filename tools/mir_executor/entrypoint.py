@@ -197,8 +197,9 @@ def _native_command(argv: list[str], *, required: bool = False) -> int | None:
         receipt = pathlib.Path(directory.name) / 'owned'
         environment = dict(os.environ, MIR_EXECUTOR_OWNED_RECEIPT=str(receipt))
         environment.setdefault('MIR_EXECUTOR_PYTHON', sys.executable)
-        if required:
+        if required or command == 'resume':
             environment['MIR_EXECUTOR_ARGPARSE_PROG'] = os.path.basename(sys.argv[0])
+        if required:
             for name, stream in (('STDOUT', sys.stdout), ('STDERR', sys.stderr)):
                 for attribute in ('encoding', 'errors'):
                     value = getattr(stream, attribute, None)

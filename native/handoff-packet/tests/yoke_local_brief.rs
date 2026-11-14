@@ -15,6 +15,14 @@ fn disabled_parser_extensions_do_not_control_execute_or_resume() {
         "# register_execute_options\nraise AssertionError('inactive module imported')\n",
     )
     .unwrap();
+    // Host temp roots may use an alias (e.g. /var versus /private/var).
+    // Keep this deterministic even when scratch has no aliased ancestors.
+    #[cfg(unix)]
+    let invoking_home = root.path().join("home-alias");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(root.path(), &invoking_home).unwrap();
+    #[cfg(not(unix))]
+    let invoking_home = root.path().to_path_buf();
     let db = root.path().join("tasks/jobs.db");
     drop(handoff_packet::executor_registry::JobRegistry::open(&db).unwrap());
     let before = fs::read(&db).unwrap();
@@ -43,7 +51,7 @@ fn disabled_parser_extensions_do_not_control_execute_or_resume() {
                 .join(format!("{}-{disabled}.trace", arguments[0]));
             let output = std::process::Command::new(env!("CARGO_BIN_EXE_executor-query"))
                 .arg("--home-root")
-                .arg(root.path())
+                .arg(&invoking_home)
                 .args(*arguments)
                 .arg("--repo-root")
                 .arg(root.path())

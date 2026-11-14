@@ -28,6 +28,21 @@ SECTIONS = {
 POISON = ("from pathlib import Path\n"
           "root = Path(__file__).resolve().parents[2]\n"
           "(root / 'unexpected-import').touch()\n")
+# Captured from the pinned Python CLI at d7ce42656224c719094358f343317907bf6e46a9.
+RESUME_OPTIONS = (2, b'', (
+    'usage: python -m tools.mir_executor [-h] [--jobs-db PATH]\n'
+    '                                    {execute,status,result,cancel,resume,list-jobs,sweep}\n'
+    '                                    ...\n'
+    'python -m tools.mir_executor: error: unrecognized arguments: --unknown\n'
+).replace('\n', os.linesep).encode())
+REFUSALS = {
+    'dynamic_options': 'execute invoking-home local parser extension',
+    'resume_parser': 'resume local parser extension',
+    'resume_interpreter': 'resume Python interpreter lookup',
+    'resume_saved_root': 'resume saved root mismatch',
+    'resume_source_read': 'resume local source read',
+    'receipt': 'ownership receipt write failed',
+}
 
 
 def declare(root, section):
@@ -216,6 +231,8 @@ def test_parser_selected_native_target_is_guarded_before_its_import(tmp_path):
 def test_native_ownership_and_named_compatibility_refusals(binary, tmp_path, case):
     home, launcher, environment = PARITY['pinned_home'](binary, tmp_path)
     environment['TMPDIR'] = str(tmp_path)
+    trace = tmp_path.with_suffix('.declines')
+    environment['MIR_EXECUTOR_DECLINE_TRACE'] = str(trace)
     declare(home, 'agent_route')
     args = arguments('execute')
     source = (POISON + "with (root / 'import-count').open('a') as stream:\n"
@@ -284,7 +301,9 @@ def test_native_ownership_and_named_compatibility_refusals(binary, tmp_path, cas
     # Enabled invoking-home local.py is the named compatibility route. Its
     # Python policy guard must refuse before importing or mutating anything.
     result = invoke(home, environment, args)
-    if case in ('unknown', 'admission_value', 'resume_options'):
+    if case == 'resume_options':
+        assert (result.returncode, result.stdout, result.stderr) == RESUME_OPTIONS
+    elif case in ('unknown', 'admission_value'):
         # Malformed arguments surface as argparse errors; nothing runs either way.
         assert result.returncode == 2, (result.stdout, result.stderr)
         assert b'error:' in result.stderr and b'native executor' not in result.stderr
@@ -294,12 +313,19 @@ def test_native_ownership_and_named_compatibility_refusals(binary, tmp_path, cas
     else:
         assert_refusal(result, home)
     assert snapshot(tmp_path) == before
+    trace.write_bytes(b'')
     direct = subprocess.run([str(binary), '--home-root', str(home), *args], cwd=home,
                             env=environment, capture_output=True, timeout=45, check=False)
     owned = {'unknown', 'help', 'ledger', 'cross_root', 'interpreter',
-             'non_utf8_provider', 'admission_value'}
+             'non_utf8_provider', 'admission_value', 'resume_options'}
     if case not in owned:
         assert (direct.returncode, direct.stdout, direct.stderr) == (64, b'', b'')
+        assert case in REFUSALS
+        assert trace.read_text().splitlines()[0].endswith(': ' + REFUSALS[case])
+        assert snapshot(tmp_path) == before
+        return
+    if case == 'resume_options':
+        assert (direct.returncode, direct.stdout, direct.stderr) == RESUME_OPTIONS
         assert snapshot(tmp_path) == before
         return
     if case in ('unknown', 'help', 'admission_value'):

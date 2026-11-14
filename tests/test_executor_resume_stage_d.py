@@ -162,3 +162,20 @@ def test_resume_read_path_and_writer_teardown(binary, oracle, tmp_path, route, s
         assert expected[0] == 1
         assert expected[2] == caught + b"EXIT-MARKER\n" + error
     assert observations[route] == expected
+
+
+def test_snapshot_excludes_only_exact_nested_native_markers(tmp_path):
+    D["git"](tmp_path, "init", "-q")
+    D["git"](
+        tmp_path, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+        "commit", "--allow-empty", "-qm", "fixture",
+    )
+    nested = tmp_path / "target"
+    nested.mkdir()
+    for name in ("native-imported", "native-owned", "native-imported-other", "other"):
+        (nested / name).write_text("effect")
+    files = D["snapshot"](tmp_path)["files"]
+    assert "target/native-imported" not in files
+    assert "target/native-owned" not in files
+    assert files["target/native-imported-other"]["mode"] == "0o644"
+    assert files["target/other"]["mode"] == "0o644"

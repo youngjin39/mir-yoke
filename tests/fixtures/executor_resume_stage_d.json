@@ -23542,6 +23542,2369 @@
         "stdout_hex": "5b524553554d455d206a6f625f69643d726573756d652d6669787475726520616c6c6f775f6861726e6573735f73656c665f6d6f646966793d46616c73650a5b44495350415443485d207374617475733d636f6d706c6574656420617474656d7074733d312066656c6c5f6261636b3d46616c736520726561736f6e3d4e6f6e650a5b46494e414c495a455d20616374696f6e3d6d657267656420726561736f6e3d27617070726f76656427206d65726765643d5b27636f64652e747874275d0a"
       },
       "name": "argv-db-dot-path"
+    },
+    {
+      "argv": [
+        "resume",
+        "--job-id=x",
+        "--repo-root"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a2d633a206572726f723a20617267756d656e74202d2d7265706f2d726f6f743a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d7265706f2d726f6f743a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-root-missing"
+    },
+    {
+      "argv": [
+        "resume",
+        "--timeout=bad",
+        "--job-id"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d6a6f622d6964204a4f425f49445d0a2d633a206572726f723a20617267756d656e74202d2d6a6f622d69643a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d6a6f622d6964204a4f425f49445d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d6a6f622d69643a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-job-after-invalid"
+    },
+    {
+      "argv": [
+        "resume",
+        "--job-id=x",
+        "--jobs-db"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a2d633a206572726f723a20617267756d656e74202d2d6a6f62732d64623a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d6a6f62732d64623a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-db-missing"
+    },
+    {
+      "argv": [
+        "resume",
+        "--repo-root",
+        "--timeout=bad"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a2d633a206572726f723a20617267756d656e74202d2d7265706f2d726f6f743a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d7265706f2d726f6f743a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-root-before-invalid"
+    },
+    {
+      "argv": [
+        "resume",
+        "--jobs-db",
+        "--timeout",
+        "bad"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a2d633a206572726f723a20617267756d656e74202d2d6a6f62732d64623a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d6a6f62732d64623a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-db-before-invalid"
+    },
+    {
+      "argv": [
+        "resume",
+        "--job-id=x",
+        "--repo-r",
+        "--timeout=bad"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a2d633a206572726f723a20617267756d656e74202d2d7265706f2d726f6f743a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d7265706f2d726f6f743a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-root-abbrev"
+    },
+    {
+      "argv": [
+        "resume",
+        "--job-id=x",
+        "--jobs-d",
+        "--timeout=bad"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a2d633a206572726f723a20617267756d656e74202d2d6a6f62732d64623a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d6a6f62732d64623a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-db-abbrev"
+    },
+    {
+      "argv": [
+        "resume",
+        "--timeout",
+        "bad",
+        "--job-i"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d6a6f622d6964204a4f425f49445d0a2d633a206572726f723a20617267756d656e74202d2d6a6f622d69643a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d6a6f622d6964204a4f425f49445d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d6a6f622d69643a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-job-abbrev"
+    },
+    {
+      "argv": [
+        "resume",
+        "--job-id=x",
+        "--repo-r=<ROOT>",
+        "--timeout=bad"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a20707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d65202d2d6a6f622d6964204a4f425f4944205b2d2d74696d656f7574205345434f4e44535d0a202020202020202020202020202020202020202020202020202020202020202020202020202020202020205b2d2d6173796e635d205b2d2d7265706f2d726f6f7420504154485d0a707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d653a206572726f723a20617267756d656e74202d2d74696d656f75743a20696e76616c696420696e742076616c75653a2027626164270a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a20707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d65202d2d6a6f622d6964204a4f425f4944205b2d2d74696d656f7574205345434f4e44535d0a202020202020202020202020202020202020202020202020202020202020202020202020202020202020205b2d2d6173796e635d205b2d2d7265706f2d726f6f7420504154485d0a707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d653a206572726f723a20617267756d656e74202d2d74696d656f75743a20696e76616c696420696e742076616c75653a2027626164270a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-root-equals"
+    },
+    {
+      "argv": [
+        "--jobs-d=<ROOT>/tasks/jobs.db",
+        "resume",
+        "--job-id=x",
+        "--timeout",
+        "bad"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a20707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d65202d2d6a6f622d6964204a4f425f4944205b2d2d74696d656f7574205345434f4e44535d0a202020202020202020202020202020202020202020202020202020202020202020202020202020202020205b2d2d6173796e635d205b2d2d7265706f2d726f6f7420504154485d0a707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d653a206572726f723a20617267756d656e74202d2d74696d656f75743a20696e76616c696420696e742076616c75653a2027626164270a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a20707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d65202d2d6a6f622d6964204a4f425f4944205b2d2d74696d656f7574205345434f4e44535d0a202020202020202020202020202020202020202020202020202020202020202020202020202020202020205b2d2d6173796e635d205b2d2d7265706f2d726f6f7420504154485d0a707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d653a206572726f723a20617267756d656e74202d2d74696d656f75743a20696e76616c696420696e742076616c75653a2027626164270a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-db-equals"
+    },
+    {
+      "argv": [
+        "resume",
+        "--timeout=bad",
+        "--job-i=x"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a20707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d65202d2d6a6f622d6964204a4f425f4944205b2d2d74696d656f7574205345434f4e44535d0a202020202020202020202020202020202020202020202020202020202020202020202020202020202020205b2d2d6173796e635d205b2d2d7265706f2d726f6f7420504154485d0a707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d653a206572726f723a20617267756d656e74202d2d74696d656f75743a20696e76616c696420696e742076616c75653a2027626164270a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a20707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d65202d2d6a6f622d6964204a4f425f4944205b2d2d74696d656f7574205345434f4e44535d0a202020202020202020202020202020202020202020202020202020202020202020202020202020202020205b2d2d6173796e635d205b2d2d7265706f2d726f6f7420504154485d0a707974686f6e202d6d20746f6f6c732e6d69725f6578656375746f7220726573756d653a206572726f723a20617267756d656e74202d2d74696d656f75743a20696e76616c696420696e742076616c75653a2027626164270a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-job-equals"
+    },
+    {
+      "argv": [
+        "resume",
+        "--job-id",
+        "--repo-root"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a2d633a206572726f723a20617267756d656e74202d2d7265706f2d726f6f743a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d7265706f2d726f6f74205245504f5f524f4f545d205b2d2d6a6f62732d6462204a4f42535f44425d205b737562636f6d6d616e645d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d7265706f2d726f6f743a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-root-before-job"
+    },
+    {
+      "argv": [
+        "resume",
+        "--repo-root",
+        "<ROOT>",
+        "--timeout=bad",
+        "--job-id"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d6a6f622d6964204a4f425f49445d0a2d633a206572726f723a20617267756d656e74202d2d6a6f622d69643a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d6a6f622d6964204a4f425f49445d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d6a6f622d69643a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-root-space"
+    },
+    {
+      "argv": [
+        "--jobs-db",
+        "<ROOT>/tasks/jobs.db",
+        "resume",
+        "--timeout=bad",
+        "--job-id"
+      ],
+      "expected": {
+        "effects": {
+          "branch_commits": {
+            "master": "offline fixture"
+          },
+          "branches": "master\n",
+          "commit_graph": [
+            {
+              "parents": [],
+              "subject": "offline fixture"
+            }
+          ],
+          "diff": "",
+          "files": {
+            ".gitignore": {
+              "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+              "mode": "0o644"
+            },
+            "brief.json": {
+              "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+              "mode": "0o644"
+            },
+            "code.txt": {
+              "hex": "696e697469616c0a",
+              "mode": "0o644"
+            },
+            "tasks": {
+              "directory_mode": "0o755"
+            },
+            "tasks/jobs.db": {
+              "mode": "0o644",
+              "tables": {
+                "artifact_sweeps": [],
+                "jobs": [
+                  {
+                    "agent_definition_path": null,
+                    "agent_definition_sha256": null,
+                    "ai_run_metadata": null,
+                    "allow_harness_self_modify": 0,
+                    "cancel_requested": 0,
+                    "category": "unit",
+                    "change_id": "old-dispatch",
+                    "codex_args": "[\"offline fixture\"]",
+                    "completed_at": null,
+                    "dispatch_brief_path": "<root>/brief.json",
+                    "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                    "duration_seconds": null,
+                    "execution_backend": "codex",
+                    "exit_code": null,
+                    "family": null,
+                    "identity_json": null,
+                    "job_id": "resume-fixture",
+                    "last_resumed_at": null,
+                    "repo_root": "<root>",
+                    "resolved_model": "offline-fixture",
+                    "resolved_reasoning_effort": "medium",
+                    "resume_count": 0,
+                    "started_at": "<timestamp>",
+                    "status": "failed",
+                    "stderr": null,
+                    "stdout": null,
+                    "target_agent": null,
+                    "timeout_seconds": 60
+                  }
+                ]
+              }
+            },
+            "tasks/tdd.json": {
+              "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+              "mode": "0o644"
+            }
+          },
+          "status": "",
+          "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+        },
+        "exit": 2,
+        "stderr_hex": "75736167653a202d63205b2d2d6a6f622d6964204a4f425f49445d0a2d633a206572726f723a20617267756d656e74202d2d6a6f622d69643a206578706563746564206f6e6520617267756d656e740a",
+        "stdout_hex": ""
+      },
+      "expected_by_route": {
+        "module": {
+          "effects": {
+            "branch_commits": {
+              "master": "offline fixture"
+            },
+            "branches": "master\n",
+            "commit_graph": [
+              {
+                "parents": [],
+                "subject": "offline fixture"
+              }
+            ],
+            "diff": "",
+            "files": {
+              ".gitignore": {
+                "hex": "2a0a21636f64652e7478740a212e67697469676e6f72650a",
+                "mode": "0o644"
+              },
+              "brief.json": {
+                "hex": "7b22657870616e6465645f676f616c223a226f66666c696e652066697874757265227d",
+                "mode": "0o644"
+              },
+              "code.txt": {
+                "hex": "696e697469616c0a",
+                "mode": "0o644"
+              },
+              "tasks": {
+                "directory_mode": "0o755"
+              },
+              "tasks/jobs.db": {
+                "mode": "0o644",
+                "tables": {
+                  "artifact_sweeps": [],
+                  "jobs": [
+                    {
+                      "agent_definition_path": null,
+                      "agent_definition_sha256": null,
+                      "ai_run_metadata": null,
+                      "allow_harness_self_modify": 0,
+                      "cancel_requested": 0,
+                      "category": "unit",
+                      "change_id": "old-dispatch",
+                      "codex_args": "[\"offline fixture\"]",
+                      "completed_at": null,
+                      "dispatch_brief_path": "<root>/brief.json",
+                      "dispatch_options_json": "{\"dispatch_brief\": \"<root>/brief.json\", \"brief_sha256\": \"22fb43d58eb3c8d22a43b1fbe473e07a6e9eb2a53ba1ca995c956036fcf960ed\", \"allow_paths\": [\"code.txt\"], \"verify_cmds\": [\"offline\"], \"expect_changes\": true, \"model\": \"offline-fixture\", \"reasoning_effort\": \"medium\", \"artifacts_dir\": \"<root>/artifacts\"}",
+                      "duration_seconds": null,
+                      "execution_backend": "codex",
+                      "exit_code": null,
+                      "family": null,
+                      "identity_json": null,
+                      "job_id": "resume-fixture",
+                      "last_resumed_at": null,
+                      "repo_root": "<root>",
+                      "resolved_model": "offline-fixture",
+                      "resolved_reasoning_effort": "medium",
+                      "resume_count": 0,
+                      "started_at": "<timestamp>",
+                      "status": "failed",
+                      "stderr": null,
+                      "stdout": null,
+                      "target_agent": null,
+                      "timeout_seconds": 60
+                    }
+                  ]
+                }
+              },
+              "tasks/tdd.json": {
+                "hex": "7b0a2020226368616e676573223a205b0a202020207b0a202020202020226964223a202266697874757265222c0a20202020202022707265736572766564223a20226b656570222c0a2020202020202263617465676f72696573223a207b0a202020202020202022756e6974223a207b0a2020202020202020202022737461747573223a2022706c616e6e6564222c0a20202020202020202020227665726966696572223a20227072657365727665642d7665726966696572222c0a20202020202020202020226e6f746573223a2022696e697469616c220a20202020202020207d0a2020202020207d0a202020207d0a20205d0a7d0a",
+                "mode": "0o644"
+              }
+            },
+            "status": "",
+            "worktrees": "worktree <root>\nHEAD <commit>\nbranch refs/heads/master\n\n"
+          },
+          "exit": 2,
+          "stderr_hex": "75736167653a205f5f6d61696e5f5f2e7079205b2d2d6a6f622d6964204a4f425f49445d0a5f5f6d61696e5f5f2e70793a206572726f723a20617267756d656e74202d2d6a6f622d69643a206578706563746564206f6e6520617267756d656e740a",
+          "stdout_hex": ""
+        }
+      },
+      "name": "argv-preliminary-db-space"
     }
   ],
   "exception_protocol": "exit 1; preserve raw stdout; traceback final stderr line",

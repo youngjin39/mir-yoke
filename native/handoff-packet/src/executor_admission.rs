@@ -102,7 +102,11 @@ pub(crate) fn from_path_value(value: &Value) -> Option<PathBuf> {
         .or_else(|| value.as_str())
         .map(PathBuf::from)
 }
-fn git(request: &Request<'_>, root: &Path, flag: &str) -> io::Result<std::process::Output> {
+pub(crate) fn git(
+    request: &Request<'_>,
+    root: &Path,
+    flag: &str,
+) -> io::Result<std::process::Output> {
     Command::new("git")
         .args(["-C"])
         .arg(root)
@@ -638,7 +642,7 @@ fn bridge_config(request: &Request<'_>, root: &Path) -> BridgeConfig {
         timeout: Duration::from_secs(10),
     }
 }
-fn authorize(
+pub(crate) fn authorize(
     request: &Request<'_>,
     home: &Path,
     root: &Path,
@@ -653,7 +657,9 @@ fn authorize(
     if !output.status.success()
         || std::str::from_utf8(&output.stdout)
             .ok()
-            .and_then(|s| resolved(Path::new(s.trim()), request.cwd).ok())
+            .and_then(|s| {
+                resolved(Path::new(crate::python_json::python_strip(s)), request.cwd).ok()
+            })
             .as_deref()
             != Some(home)
     {

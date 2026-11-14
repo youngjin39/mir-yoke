@@ -191,7 +191,11 @@ pub fn prepare(row: &Value, defaults: &Value, timeout: Option<Value>) -> Result<
         }
     }
     let root = Path::new(text(&args, "repo_root")?);
-    let config = LocalConfig::load(root).map_err(Error::Local)?;
+    let config = if root.is_file() {
+        LocalConfig::default()
+    } else {
+        LocalConfig::load(root).map_err(Error::Local)?
+    };
     if config.raw().contains_key("timeout_seconds_range") {
         for key in ["timeout", "stall_timeout", "finalize_lock_timeout"] {
             config

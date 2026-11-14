@@ -728,6 +728,11 @@ fn main() {
         let command = match raw.get(2).and_then(|s| s.to_str()) {
             Some("--jobs-db") => raw.get(4),
             Some(s) if s.starts_with("--jobs-db=") => raw.get(3),
+            Some(s) if s.starts_with("--") && s.len() > 2 => {
+                let (key, inline) = s.split_once('=').map_or((s, false), |(k, _)| (k, true));
+                let command = raw.get(if inline { 3 } else { 4 });
+                command.filter(|command| "--jobs-db".starts_with(key) && *command == "resume")
+            }
             _ => raw.get(2),
         }
         .and_then(|s| s.to_str());
