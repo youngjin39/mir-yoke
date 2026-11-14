@@ -528,13 +528,14 @@ impl Move {
 }
 
 /// An exclusive destination-directory temporary; one descriptor for byte work.
-/// Drop checks visible parent identity before using its pinned descriptor.
+/// Drop cleans through its pinned descriptor; installers opt into visible-parent checks.
 pub(crate) struct StagedFile {
     pub(crate) file: File,
     pub(crate) path: std::path::PathBuf,
     source: Parent,
     root: std::path::PathBuf,
     cleanup_disabled: std::cell::Cell<bool>,
+    cleanup_requires_visible_parent: bool,
 }
 impl StagedFile {
     pub(crate) fn create(root: &Path, path: &Path) -> io::Result<Self> {
@@ -556,7 +557,12 @@ impl StagedFile {
             source,
             root: root.to_owned(),
             cleanup_disabled: std::cell::Cell::new(false),
+            cleanup_requires_visible_parent: false,
         })
+    }
+    // Installer temporaries must remain inside the visible runtime root, even on Drop.
+    pub(crate) fn require_visible_cleanup_parent(&mut self) {
+        self.cleanup_requires_visible_parent = true;
     }
     pub(crate) fn identity(&self) -> io::Result<(u64, u64)> {
         #[cfg(unix)]
@@ -622,7 +628,9 @@ impl StagedFile {
         }
         #[cfg(unix)]
         {
-            self.source.verify_parent(&self.root, &self.path)?;
+            if self.cleanup_requires_visible_parent {
+                self.source.verify_parent(&self.root, &self.path)?;
+            }
             let expected = self.identity()?;
             match self.source.identity() {
                 Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),

@@ -2849,7 +2849,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/adoption_fs.rs",
-      "sha256": "2bf2097292919097ef84462451251cc8382982fd2428a15e08a42c8dd4c47af8"
+      "sha256": "fe5fa143019e5e66281dd40c2046fba20f6b6cced39c8d7411176d2aa43964b1"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3833,7 +3833,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_mutation.rs",
-      "sha256": "46d101648cbd90d43a07689481d0b272d14b18872e68669ad93870b0d39e93de"
+      "sha256": "b16e0552299a7b1f9213081d3decc96af1d72540747437dc806c0b3d628b646b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5033,7 +5033,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/stage_e02b_placement.rs",
-      "sha256": "fb1fa6a2ed8939369346e26ba8ae755fd22fe022e28aba2dcbad12ad708aaa93"
+      "sha256": "750992a1498bd68474619ca27ed7a5a6885e931dd7b216703c262f6d2feba62d"
     },
     {
       "classification": "template-maintainer-tool",

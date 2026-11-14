@@ -48,6 +48,7 @@ impl PendingWrite {
             ));
         }
         let mut staged = StagedFile::create(root, &path)?;
+        staged.require_visible_cleanup_parent();
         staged.file.write_all(content)?;
         staged.file.flush()?;
         staged.file.sync_all()?;
@@ -82,7 +83,11 @@ pub fn remove_with(
     directory: bool,
     before: impl FnOnce() -> io::Result<()>,
 ) -> io::Result<()> {
-    let pinned = adoption_fs::parent(root, target)?;
+    let pinned = match adoption_fs::parent(root, target) {
+        Ok(pinned) => pinned,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(e),
+    };
     match pinned.object_identity(directory) {
         Ok(Some(_)) => (),
         Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
@@ -198,6 +203,16 @@ mod tests {
         for temporary in ["../escape", "nested/temp", "", ".", ".."] {
             assert!(PendingWrite::prepare(&root, &root.join("agent"), OsStr::new(temporary), b"x").is_err());
         }
+    }
+    #[test]
+    fn missing_parent_removal_is_a_noop() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        for directory in [false, true] {
+            remove_with(&root, &root.join("missing/nested/target"), directory,
+                || panic!("missing parent skips mutation")).unwrap();
+        }
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 0);
     }
     #[test]
     fn directory_cleanup_rejects_swaps() {

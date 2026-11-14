@@ -354,18 +354,11 @@ fn every_placement_and_rollback_mutation_stays_in_the_pinned_root() {
         ) {
             assert!(!saved.join("runtime").exists(), "{site:?} rollback");
         }
-        // Relocation moves owned temporaries outside root; cleanup preserves them.
-        for (name, preserved, bytes, mode) in [
-            (".tmp-native-1", matches!(site, SetExecutable | PublishArtifact | RemoveTemporary), PAYLOAD.to_vec(), if site == RemoveTemporary { 0o600 } else { 0o755 }),
-            (".tmp-native-2", site == PublishMetadata, format!("{{\"mir-mcp\": {{\"sha256\": \"{}\", \"size\": 15, \"target\": \"{TARGET}\"}}}}", digest::sha256(PAYLOAD)).into_bytes(), 0o600),
-        ] {
-            let path = saved.join(name);
-            assert_eq!(path.exists(), preserved, "{site:?}/{name}");
-            if preserved {
-                assert_eq!(fs::read(&path).unwrap(), bytes, "{site:?}/{name}");
-                assert_eq!(fs::metadata(path).unwrap().permissions().mode() & 0o777, mode, "{site:?}/{name}");
-            }
-        }
+        assert!(!saved.join(".tmp-native-1").exists(), "{site:?} temporary");
+        assert!(
+            !saved.join(".tmp-native-2").exists(),
+            "{site:?} metadata temporary"
+        );
     }
 }
 
