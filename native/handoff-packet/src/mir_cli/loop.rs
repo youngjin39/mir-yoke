@@ -326,6 +326,40 @@ fn parser_error(mark: bool, message: &str) -> CliResult {
         stderr: format!("{usage}{prog}: error: {message}\n"),
     }
 }
+fn decimal_integer(text: &str) -> Option<String> {
+    let text = text.trim();
+    let (negative, digits) = if let Some(rest) = text.strip_prefix('-') {
+        (true, rest)
+    } else {
+        (false, text.strip_prefix('+').unwrap_or(text))
+    };
+    let mut result = String::new();
+    let mut previous_digit = false;
+    for c in digits.chars() {
+        if c == '_' {
+            if !previous_digit {
+                return None;
+            }
+            previous_digit = false;
+        } else {
+            let digit = crate::python_decimal::decimal_digit(c)?;
+            result.push(char::from(b'0' + digit as u8));
+            previous_digit = true;
+        }
+    }
+    if !previous_digit {
+        return None;
+    }
+    let result = result.trim_start_matches('0');
+    Some(if result.is_empty() {
+        "0".into()
+    } else if negative {
+        format!("-{result}")
+    } else {
+        result.into()
+    })
+}
+
 /// Explicit cwd replaces process-wide chdir so concurrent tests are safe.
 pub fn main(argv: &[&str], cwd: &Path) -> Result<CliResult, Error> {
     main_with_write(argv, cwd, |path, text| {
@@ -339,7 +373,9 @@ pub fn main_with_write(
     write: impl FnOnce(&Path, &str) -> Result<(), Error>,
 ) -> Result<CliResult, Error> {
     let command = argv.first().copied().unwrap_or("");
-    if matches!(command, "--help" | "-h") {
+    if command == "-h"
+        || (command.len() > 2 && command.starts_with("--") && "--help".starts_with(command))
+    {
         return Ok(CliResult {
             status: json!(["SystemExit", 0]),
             stdout: USAGE.to_owned() + HELP,
@@ -368,8 +404,44 @@ pub fn main_with_write(
     let mut as_json = false;
     let mut unknown = Vec::new();
     let mut index = 1;
+    let mut unmatched_id = None;
+    let negative_number = regex::Regex::new(r"^-(\d+|\d*\.\d+)$").ok();
     while index < argv.len() {
-        let arg = argv[index];
+        let raw = argv[index];
+        let (option, attached) = raw
+            .split_once('=')
+            .map_or((raw, None), |(a, b)| (a, Some(b)));
+        let choices: &[&str] = if mark {
+            &["--help", "--step", "--status", "--reason"]
+        } else {
+            &["--help", "--json"]
+        };
+        let matches: Vec<_> = choices
+            .iter()
+            .copied()
+            .filter(|c| option.len() > 2 && option.starts_with("--") && c.starts_with(option))
+            .collect();
+        if matches.len() > 1 {
+            return Ok(parser_error(
+                mark,
+                &format!(
+                    "ambiguous option: {option} could match {}",
+                    matches.join(", ")
+                ),
+            ));
+        }
+        let arg = matches.first().copied().unwrap_or(option);
+        if let Some(value) = attached
+            && matches!(arg, "--help" | "-h" | "--json")
+        {
+            return Ok(parser_error(
+                mark,
+                &format!(
+                    "argument {arg}: ignored explicit argument {}",
+                    crate::executor_execute::repr(value)
+                ),
+            ));
+        }
         if matches!(arg, "--help" | "-h") {
             let (usage, help) = if mark {
                 (MARK_USAGE, MARK_HELP)
@@ -385,8 +457,15 @@ pub fn main_with_write(
         if !mark && arg == "--json" {
             as_json = true;
         } else if mark && ["--step", "--status", "--reason"].contains(&arg) {
-            index += 1;
-            let Some(value) = argv.get(index).copied() else {
+            let value = if attached.is_some() {
+                attached
+            } else {
+                index += 1;
+                argv.get(index).copied().filter(|v| {
+                    !v.starts_with('-') || negative_number.as_ref().is_some_and(|re| re.is_match(v))
+                })
+            };
+            let Some(value) = value else {
                 return Ok(parser_error(
                     true,
                     &format!("argument {arg}: expected one argument"),
@@ -394,7 +473,7 @@ pub fn main_with_write(
             };
             match arg {
                 "--step" => {
-                    let Ok(value_id) = value.parse::<u64>() else {
+                    let Some(normalized) = decimal_integer(value) else {
                         return Ok(parser_error(
                             true,
                             &format!(
@@ -403,7 +482,8 @@ pub fn main_with_write(
                             ),
                         ));
                     };
-                    id = Some(value_id);
+                    unmatched_id = normalized.parse::<u64>().err().map(|_| normalized.clone());
+                    id = Some(normalized.parse::<u64>().unwrap_or(0));
                 }
                 "--status" => {
                     if !MARK_STATUSES.contains(&value) {
@@ -422,7 +502,7 @@ pub fn main_with_write(
                 _ => (),
             }
         } else {
-            unknown.push(arg);
+            unknown.push(raw);
         }
         index += 1;
     }
@@ -446,8 +526,13 @@ pub fn main_with_write(
     }
     let path = cwd.join(PLAN_PATH);
     let output = if mark {
-        mark_step_with(id.unwrap_or(0), status.unwrap_or(""), reason, &path, write)
-            .map(|v| json_text(&v) + "\n")
+        if let Some(id) = unmatched_id {
+            read_plan(&path)
+                .and_then(|_| Err(Error::named("LoopError", format!("step not found: {id}"))))
+        } else {
+            mark_step_with(id.unwrap_or(0), status.unwrap_or(""), reason, &path, write)
+                .map(|v| json_text(&v) + "\n")
+        }
     } else {
         next_step(&path).map(|r| print_next(&r, as_json))
     };

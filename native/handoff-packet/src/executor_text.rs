@@ -281,7 +281,7 @@ pub fn encode(text: &str, error: bool, bom: bool) -> Result<Vec<u8>> {
 pub fn encode_console(text: &str, error: bool) -> Result<Vec<u8>> {
     #[cfg(windows)]
     let text = &text.replace('\n', "\r\n");
-    encode_stream(text, error, true, false)
+    encode_stream(text, error, false, false)
 }
 fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<Vec<u8>> {
     if text.is_empty() {

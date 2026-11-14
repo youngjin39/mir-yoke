@@ -76,10 +76,7 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
         );
     }
     if argv[0] == "loop" {
-        let cwd = match std::env::current_dir() {
-            Ok(path) => path,
-            Err(error) => return (1, String::new(), format!("OSError: {error}\n")),
-        };
+        let cwd = std::path::PathBuf::from(".");
         // Collision-free scalar tokens carry typed OS surrogates through the scalar library.
         let mut token = "MIR_ARG_SURROGATE".to_owned();
         let needs_plan = argv[1..].iter().any(|a| a.to_str().is_none())
@@ -183,17 +180,66 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
     )
 }
 
+fn stdout_error(error: std::io::Error) -> String {
+    if error.kind() == std::io::ErrorKind::BrokenPipe {
+        return "BrokenPipeError: [Errno 32] Broken pipe".into();
+    }
+    let message = executor_text::io_error(error, std::path::Path::new(""));
+    message.strip_suffix(": ''").unwrap_or(&message).to_owned()
+}
+
 fn main() {
     if let Err(message) = executor_text::encode_console(" ", false) {
-        let _ = writeln!(std::io::stderr(), "{message}");
+        let _ = write!(
+            std::io::stderr(),
+            "Fatal Python error: init_stdio_encoding: failed to get the Python codec name of the stdio encoding\nPython runtime state: core initialized\n{message}\n\nCurrent thread <ADDRESS> (most recent call first):\n  <no Python frame>\n"
+        );
         std::process::exit(1);
     }
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let (mut code, out, mut err) = run(&args);
     match executor_text::encode_console(&out, false) {
         Ok(bytes) => {
-            if std::io::stdout().write_all(&bytes).is_err() {
+            // CPython buffers small piped writes until interpreter shutdown. A failure
+            // there has status 120; large writes fail during the command (status 1).
+            let stdout = std::io::stdout();
+            #[cfg(unix)]
+            let capacity = {
+                use std::os::{fd::AsFd, unix::fs::MetadataExt};
+                stdout
+                    .as_fd()
+                    .try_clone_to_owned()
+                    .ok()
+                    .and_then(|fd| std::fs::File::from(fd).metadata().ok())
+                    .map_or(8192, |m| m.blksize().clamp(8192, 8 * 1024 * 1024) as usize)
+            };
+            #[cfg(not(unix))]
+            let capacity = 8192;
+            #[cfg(unix)]
+            let writer = {
+                use std::os::fd::AsFd;
+                match stdout.as_fd().try_clone_to_owned() {
+                    Ok(fd) => std::fs::File::from(fd),
+                    Err(error) => {
+                        let _ = writeln!(std::io::stderr(), "{}", stdout_error(error));
+                        std::process::exit(1);
+                    }
+                }
+            };
+            #[cfg(not(unix))]
+            let writer = stdout.lock();
+            let mut stream = std::io::BufWriter::with_capacity(capacity, writer);
+            if let Err(error) = stream.write_all(&bytes) {
                 code = 1;
+                err = format!("{}\n", stdout_error(error));
+            } else if let Err(error) = stream.flush() {
+                code = 120;
+                let encoding = std::env::var("PYTHONIOENCODING").unwrap_or_else(|_| "utf-8".into());
+                let encoding = encoding.split(':').next().unwrap_or("utf-8");
+                err = format!(
+                    "Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='{encoding}'>\n{}\n",
+                    stdout_error(error)
+                );
             }
         }
         Err(message) => {

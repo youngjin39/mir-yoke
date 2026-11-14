@@ -3155,7 +3155,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_text.rs",
-      "sha256": "9dd98c9c4a6f7c15bf222bfd205a920d980ed4214200bc95f2ec606ee6a6a29d"
+      "sha256": "cdd955655f023b221afb3d7fb928be92a762e6f55478b6b513b271145d8e0a0b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3197,7 +3197,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir.rs",
-      "sha256": "584f6bedbed5d687e1ed81535a0d7455c66e0a7121826cc9785c93499ca1e7b5"
+      "sha256": "e6c410249377985aebf1bde8d5a92b6887e2cc16b800c6b8aef0d5a5a00d7952"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3323,7 +3323,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/loop.rs",
-      "sha256": "565a06b8a05e157834d6aa7fc85d94284ac522ef58d92c2ef2568beaa31ff47b"
+      "sha256": "e830cf837b7d4963db408af643ab2c6dfd446421944b80a2794bb0c4819ff188"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4384,6 +4384,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/generate_y_e1_fix.py",
+      "sha256": "f0400e316676dd24271cb2ca52b150fc88f69e5a1fa2c0f21dc018469fe37373"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e2.py",
       "sha256": "a90434a6587e3a07588f13f2de0770257294820a18d174b7ae998b72743d0d41"
     },
@@ -4738,6 +4744,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e1-fix.json",
+      "sha256": "10272cb1dd94277c3e31099168050867285019d443a8b2d17bc07e15409e42f7"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e1.json",
       "sha256": "e08d4db0eef6d1c739164089b70342aa0cf12abba365c685c1f1c9f096a5cfa8"
     },
@@ -4980,6 +4992,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e2.rs",
       "sha256": "c202a363f29fb10e3a845deb5e8bade273ff52aa9cb90638aa9fd07d2fd0aef9"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/mir_entry_fix.rs",
+      "sha256": "8d4794d308c35112121cb97ef4e7e82746273589a89eb030cfda5589772e4968"
     },
     {
       "classification": "template-maintainer-tool",
