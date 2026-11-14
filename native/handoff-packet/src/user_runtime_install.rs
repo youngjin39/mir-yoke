@@ -396,13 +396,20 @@ fn quoted(points: &[u32]) -> String {
 fn quote(text: &str) -> String {
     quoted(&text.chars().map(u32::from).collect::<Vec<_>>())
 }
+// Match Path.as_posix() without losing native surrogate code points.
+fn posix_path_points(path: &std::ffi::OsStr, separator: char) -> Vec<u32> {
+    crate::executor_text::os_points(path)
+        .into_iter()
+        .map(|cp| if cp == u32::from(separator) { 47 } else { cp })
+        .collect()
+}
 /// Python's sorted, ASCII JSON with two-space indentation and a final newline.
 pub fn make_receipt(runtime: &str, source_commit: &str, files: &[ManagedFile]) -> Vec<u8> {
     let sorted: std::collections::BTreeMap<_, _> = files
         .iter()
         .map(|f| (&f.source_relative.codepoints, f))
         .collect();
-    let entries=sorted.values().map(|f|format!("    {}: {{\n      \"sha256\": {},\n      \"source\": {},\n      \"target\": {}\n    }}",quoted(&f.source_relative.codepoints),quote(&f.sha256),quoted(&f.source_relative.codepoints),quoted(&crate::executor_text::os_points(f.target_relative.as_os_str())))).collect::<Vec<_>>();
+    let entries=sorted.values().map(|f|format!("    {}: {{\n      \"sha256\": {},\n      \"source\": {},\n      \"target\": {}\n    }}",quoted(&f.source_relative.codepoints),quote(&f.sha256),quoted(&f.source_relative.codepoints),quoted(&posix_path_points(f.target_relative.as_os_str(), std::path::MAIN_SEPARATOR)))).collect::<Vec<_>>();
     let body = if entries.is_empty() {
         "{}".into()
     } else {
@@ -477,8 +484,9 @@ pub fn receipt_allows_update(
             .get("target")
             .and_then(Value::as_text)
             .map(|t| &t.codepoints)
-            != Some(&crate::executor_text::os_points(
+            != Some(&posix_path_points(
                 item.target_relative.as_os_str(),
+                std::path::MAIN_SEPARATOR,
             ))
     {
         return Ok(false);

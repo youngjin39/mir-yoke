@@ -3815,13 +3815,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_install.rs",
-      "sha256": "2dc29188e554ed9fe6dfbf764556824fd34b3c171a38c59f4aa24c5b0d39b345"
+      "sha256": "afe7bd99fbabbca19a50caf27186d5d5f8aa8f003ce3dc3caab6e58e1989cb62"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_install_tests.rs",
-      "sha256": "3cd29812bd00e43f0796bbd1c1a1900f2ed9cc50eb64a277960fdd61d4876be8"
+      "sha256": "e5fe32fd397b26040f46e5c572c7e3cb7dca75588d3978e39c7c652b364c9ccf"
     },
     {
       "classification": "template-maintainer-tool",
