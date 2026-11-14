@@ -5,8 +5,11 @@
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
 #[allow(unsafe_code, dead_code)] // Reuse the reviewed descriptor-relative adoption boundary.
+#[path = "adoption_fs.rs"]
 mod adoption_fs;
+#[path = "runtime_manifest_args.rs"]
 mod runtime_manifest_args;
+#[path = "runtime_verify.rs"]
 mod runtime_verify;
 
 use runtime_verify::Failure;
@@ -140,56 +143,53 @@ fn create(options: &BTreeMap<String, OsString>) -> Result<usize> {
     Ok(entries.len())
 }
 
-fn run() -> Result<()> {
-    let (command, options) =
-        match runtime_manifest_args::parse(std::env::args_os().skip(1).collect()) {
-            runtime_manifest_args::Parsed::Run { command, options } => (command, options),
-            runtime_manifest_args::Parsed::Exit {
-                code,
-                stdout,
-                stderr,
-            } => {
-                let _ = io::stdout().write_all(stdout.as_bytes());
-                let _ = io::stderr().write_all(stderr.as_bytes());
-                std::process::exit(code);
-            }
-        };
-    match command.as_str() {
-        "create" => {
-            let entries = create(&options)?;
-            println!("{{\"status\": \"created\", \"entries\": {entries}}}");
-            Ok(())
-        }
+pub fn console(args: Vec<OsString>) -> (i32, String, String) {
+    let (command, options) = match runtime_manifest_args::parse(args) {
+        runtime_manifest_args::Parsed::Run { command, options } => (command, options),
+        runtime_manifest_args::Parsed::Exit {
+            code,
+            stdout,
+            stderr,
+        } => return (code, stdout, stderr),
+    };
+    let result = match command.as_str() {
+        "create" => create(&options)
+            .map(|entries| format!("{{\"status\": \"created\", \"entries\": {entries}}}\n")),
         "verify" => runtime_verify::verify_os(
             Path::new(&options["--runtime-root"]),
             Path::new(&options["--manifest"]),
             Some(&options["--source-url"]),
             Some(&options["--source-commit"]),
             Some(&options["--constraints-sha256"]),
-        ),
+        )
+        .map(|()| String::new()),
         _ => Err(Failure::Error(format!("invalid command: {command}"))),
+    };
+    match result {
+        Ok(out) => (0, out, String::new()),
+        Err(Failure::Finding(message)) => (
+            2,
+            String::new(),
+            format!("runtime manifest error: {message}\n"),
+        ),
+        Err(Failure::Error(message)) => (
+            2,
+            String::new(),
+            format!("runtime manifest error: {message}\n"),
+        ),
+        Err(Failure::Exception(message)) => (1, String::new(), format!("{message}\n")),
+        Err(Failure::Unsupported) => (
+            1,
+            String::new(),
+            "ValueError: unsupported runtime manifest input\n".into(),
+        ),
     }
 }
+#[allow(dead_code)]
 fn main() {
-    let code = match run() {
-        Ok(()) => 0,
-        Err(Failure::Finding(message)) => {
-            eprintln!("runtime manifest error: {message}");
-            2
-        }
-        Err(Failure::Error(message)) => {
-            eprintln!("runtime manifest error: {message}");
-            2
-        }
-        Err(Failure::Exception(message)) => {
-            eprintln!("{message}");
-            1
-        }
-        Err(Failure::Unsupported) => {
-            eprintln!("ValueError: unsupported runtime manifest input");
-            1
-        }
-    };
+    let (code, out, err) = console(std::env::args_os().skip(1).collect());
+    let _ = io::stdout().write_all(out.as_bytes());
+    let _ = io::stderr().write_all(err.as_bytes());
     std::process::exit(code);
 }
 

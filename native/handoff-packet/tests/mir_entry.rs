@@ -53,7 +53,10 @@ fn frozen_console_processes() {
 #[test]
 fn unbound_families_are_explicit() {
     for name in handoff_packet::mir_front::SUBCOMMANDS {
-        if name == "loop" {
+        if matches!(
+            name,
+            "loop" | "policy" | "runtime-manifest" | "run-python" | "migrate"
+        ) {
             continue;
         }
         let temp = tempfile::tempdir().unwrap();

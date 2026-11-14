@@ -2,8 +2,73 @@
 use handoff_packet::{executor_text, mir_cli, mir_front};
 use std::{ffi::OsString, io::Write};
 
+#[path = "runtime_manifest.rs"]
+mod manifest;
+#[path = "run_python.rs"]
+mod python;
+
 fn run(argv: &[OsString]) -> (i32, String, String) {
     if let Some((code, out, err)) = mir_front::root(argv) {
+        return (
+            code,
+            String::from_utf8_lossy(&out).into(),
+            String::from_utf8_lossy(&err).into(),
+        );
+    }
+    if argv[0] == "runtime-manifest" {
+        return manifest::console(argv[1..].to_vec());
+    }
+    if argv[0] == "run-python" {
+        python::console(argv[1..].to_vec());
+    }
+    if argv[0] == "policy" || argv[0] == "migrate" {
+        let cwd = match std::env::current_dir() {
+            Ok(path) => path,
+            Err(error) => return (1, String::new(), format!("OSError: {error}\n")),
+        };
+        if argv[0] == "policy" && argv.get(1).is_some_and(|a| a == "resolve") {
+            let raw = std::iter::once(OsString::from("policy-resolve"))
+                .chain(argv[2..].iter().cloned())
+                .collect::<Vec<_>>();
+            if let Some((out, err, code)) = handoff_packet::executor_policy_query::run(&raw, &cwd) {
+                return (code, out, err);
+            }
+        }
+        let args = argv[1..]
+            .iter()
+            .map(|a| a.to_string_lossy())
+            .collect::<Vec<_>>();
+        let refs = args.iter().map(|a| a.as_ref()).collect::<Vec<_>>();
+        let mut failure = String::new();
+        let (code, out, mut err) = if argv[0] == "policy" {
+            mir_cli::policy::main(&refs, |_| None)
+        } else {
+            use handoff_packet::mir_core::memory::store;
+            let parent = std::cell::RefCell::new(std::path::PathBuf::new());
+            mir_cli::migrate::main(
+                &refs,
+                &cwd,
+                |path| {
+                    *parent.borrow_mut() = path.parent().unwrap_or(path).to_owned();
+                    store::connect(
+                        path,
+                        store::ConnectOptions {
+                            timeout: None,
+                            vec_loading: store::VecLoading::Bundled,
+                        },
+                    )
+                },
+                |error| {
+                    failure = match error {
+                        store::Error::Io(e) => {
+                            format!("{}\n", executor_text::io_error(e, &parent.borrow()))
+                        }
+                        other => format!("{}: {other}\n", other.python_class()),
+                    };
+                },
+            )
+        };
+        err.extend_from_slice(failure.as_bytes());
         return (
             code,
             String::from_utf8_lossy(&out).into(),

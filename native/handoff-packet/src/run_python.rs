@@ -351,9 +351,18 @@ fn startup_requires_reference() -> bool {
     })
 }
 
+#[allow(dead_code)]
 fn main() {
-    let args: Vec<OsString> = std::env::args_os().skip(1).collect();
-    if env!("CARGO_BIN_NAME") == "run-python" {
+    dispatch(
+        std::env::args_os().skip(1).collect(),
+        env!("CARGO_BIN_NAME") == "run-python",
+    );
+}
+pub fn console(args: Vec<OsString>) -> ! {
+    dispatch(args, true)
+}
+fn dispatch(args: Vec<OsString>, installed_console: bool) -> ! {
+    if installed_console {
         // Installed Python console scripts bind to their own environment. Do
         // not silently switch dependencies to a project or host interpreter.
         let python = std::env::current_exe().ok().and_then(|path| {
