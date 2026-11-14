@@ -138,7 +138,7 @@ impl Object {
     }
     pub(crate) fn insert(&mut self, key: Text, value: Value) {
         if let Some((_, v)) = self.0.iter_mut().find(|(k, _)| *k == key) {
-            *v = value;
+            discard(std::mem::replace(v, value));
         } else {
             self.0.push((key, value));
         }
@@ -324,6 +324,19 @@ impl Value {
             }
         }
         output.pop().unwrap_or(serde_json::Value::Null)
+    }
+}
+/// Dispose of Python-depth JSON without recursive Rust enum destruction.
+pub(crate) fn discard(value: Value) {
+    let mut pending = vec![value];
+    while let Some(value) = pending.pop() {
+        match value {
+            Value::Array(values) => pending.extend(values),
+            Value::Object(fields) => {
+                pending.extend(fields.into_entries().into_iter().map(|(_, v)| v))
+            }
+            _ => (),
+        }
     }
 }
 impl Index<&str> for Value {
@@ -548,6 +561,14 @@ enum Frame {
     Array(Vec<Value>, bool),
     Object(Object, Option<Text>, bool),
 }
+impl Drop for Frame {
+    fn drop(&mut self) {
+        discard(match self {
+            Frame::Array(values, _) => Value::Array(std::mem::take(values)),
+            Frame::Object(fields, _, _) => Value::Object(std::mem::take(fields)),
+        });
+    }
+}
 fn parse_codes(chars: Vec<u32>) -> Result<Value, Error> {
     let mut r = Reader { chars, offset: 0 };
     if r.peek() == Some(0xfeff) {
@@ -573,6 +594,7 @@ fn parse_codes(chars: Vec<u32>) -> Result<Value, Error> {
                     return if r.peek().is_none() {
                         Ok(v)
                     } else {
+                        discard(v);
                         Err(r.error("Extra data", r.offset))
                     };
                 }
@@ -614,11 +636,10 @@ fn parse_codes(chars: Vec<u32>) -> Result<Value, Error> {
         }
         if close {
             r.offset += 1;
-            value = match stack.pop() {
-                Some(Frame::Array(a, _)) => Some(Value::Array(a)),
-                Some(Frame::Object(o, _, _)) => Some(Value::Object(o)),
-                None => None,
-            };
+            value = stack.pop().map(|mut frame| match &mut frame {
+                Frame::Array(a, _) => Value::Array(std::mem::take(a)),
+                Frame::Object(o, _, _) => Value::Object(std::mem::take(o)),
+            });
             continue;
         }
         if let Some(Frame::Object(_, key, _)) = stack.last_mut() {

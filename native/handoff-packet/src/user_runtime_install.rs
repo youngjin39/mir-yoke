@@ -358,3 +358,263 @@ pub fn safe_target(home: &Path, relative: &Path) -> Result<PathBuf, Error> {
 #[cfg(all(test, unix))]
 #[path = "user_runtime_install_tests.rs"]
 mod tests;
+
+pub const RECEIPT_NAME: &str = "mir-yoke-agent-command-receipt.json";
+const MANAGED_BY: &str = "mir-yoke-user-runtime-agent-command-sync";
+#[derive(Debug)]
+pub struct StaleFile {
+    pub source_relative: python_json::Text,
+    pub target_relative: PathBuf,
+    pub sha256: String,
+}
+fn quoted(points: &[u32]) -> String {
+    let mut out = String::from("\"");
+    for &cp in points {
+        match cp {
+            34 => out.push_str("\\\""),
+            92 => out.push_str("\\\\"),
+            8 => out.push_str("\\b"),
+            9 => out.push_str("\\t"),
+            10 => out.push_str("\\n"),
+            12 => out.push_str("\\f"),
+            13 => out.push_str("\\r"),
+            32..=126 => out.push(char::from_u32(cp).unwrap_or_default()),
+            0..=0xffff => out.push_str(&format!("\\u{cp:04x}")),
+            _ => {
+                let n = cp - 0x10000;
+                out.push_str(&format!(
+                    "\\u{:04x}\\u{:04x}",
+                    0xd800 + (n >> 10),
+                    0xdc00 + (n & 1023)
+                ));
+            }
+        }
+    }
+    out.push('"');
+    out
+}
+fn quote(text: &str) -> String {
+    quoted(&text.chars().map(u32::from).collect::<Vec<_>>())
+}
+/// Python's sorted, ASCII JSON with two-space indentation and a final newline.
+pub fn make_receipt(runtime: &str, source_commit: &str, files: &[ManagedFile]) -> Vec<u8> {
+    let sorted: std::collections::BTreeMap<_, _> = files
+        .iter()
+        .map(|f| (&f.source_relative.codepoints, f))
+        .collect();
+    let entries=sorted.values().map(|f|format!("    {}: {{\n      \"sha256\": {},\n      \"source\": {},\n      \"target\": {}\n    }}",quoted(&f.source_relative.codepoints),quote(&f.sha256),quoted(&f.source_relative.codepoints),quoted(&crate::executor_text::os_points(f.target_relative.as_os_str())))).collect::<Vec<_>>();
+    let body = if entries.is_empty() {
+        "{}".into()
+    } else {
+        format!("{{\n{}\n  }}", entries.join(",\n"))
+    };
+    format!("{{\n  \"files\": {body},\n  \"managed_by\": {},\n  \"runtime\": {},\n  \"schema_version\": 1,\n  \"source_commit\": {}\n}}\n",quote(MANAGED_BY),quote(runtime),quote(source_commit)).into_bytes()
+}
+fn exists(path: &Path) -> Result<bool, Error> {
+    Ok(path_metadata(path, true)?.is_some())
+}
+fn read_target(path: &Path) -> Result<Vec<u8>, Error> {
+    fs::read(path).map_err(|e| input_error(json_input::io_error(path, e)))
+}
+/// Retain unknown receipt fields without recursive destruction of Python-depth JSON.
+pub struct Receipt(Value);
+impl std::ops::Deref for Receipt {
+    type Target = Value;
+    fn deref(&self) -> &Value {
+        &self.0
+    }
+}
+impl Drop for Receipt {
+    fn drop(&mut self) {
+        python_json::discard(std::mem::replace(&mut self.0, Value::Null));
+    }
+}
+pub fn load_receipt(home: &Path, runtime: &str) -> Result<(PathBuf, Option<Receipt>), Error> {
+    let path = safe_target(home, Path::new(RECEIPT_NAME))?;
+    if !exists(&path)? {
+        return Ok((path, None));
+    }
+    let invalid = || sync(format!("unmanaged existing receipt: {}", path.display()));
+    let bytes = fs::read(&path).map_err(|_| invalid())?;
+    // read_text is strict UTF-8, not json.loads(bytes)' BOM/UTF-16 detection.
+    let text = json_input::decode(bytes).map_err(input_error)?;
+    let receipt = Receipt(python_json::parse(&text).map_err(|e| {
+        if e.exception == "JSONDecodeError" {
+            invalid()
+        } else {
+            Error {
+                class: e.exception,
+                message: e.to_string(),
+            }
+        }
+    })?);
+    if receipt.get("managed_by").and_then(Value::as_str) != Some(MANAGED_BY)
+        || receipt.get("runtime").and_then(Value::as_str) != Some(runtime)
+        || receipt.get("files").and_then(Value::as_object).is_none()
+    {
+        return Err(invalid());
+    }
+    Ok((path, Some(receipt)))
+}
+pub fn receipt_allows_update(
+    receipt: Option<&Receipt>,
+    item: &ManagedFile,
+    target: &Path,
+) -> Result<bool, Error> {
+    let recorded = receipt
+        .and_then(|r| r.get("files"))
+        .and_then(Value::as_object)
+        .and_then(|o| {
+            o.iter()
+                .find(|(k, _)| *k == &item.source_relative)
+                .map(|(_, v)| v)
+        });
+    let Some(recorded) = recorded else {
+        return Ok(false);
+    };
+    if recorded.get("source").and_then(Value::as_text) != Some(&item.source_relative)
+        || recorded
+            .get("target")
+            .and_then(Value::as_text)
+            .map(|t| &t.codepoints)
+            != Some(&crate::executor_text::os_points(
+                item.target_relative.as_os_str(),
+            ))
+    {
+        return Ok(false);
+    }
+    Ok(recorded.get("sha256").and_then(Value::as_str)
+        == Some(sha256_bytes(&read_target(target)?).as_str()))
+}
+pub fn receipt_path_is_safe(
+    runtime: &str,
+    source: &python_json::Text,
+    target: &python_json::Text,
+) -> Result<python_json::Text, Error> {
+    // A surrogate is a name character; keep its native encoding until filesystem access.
+    let spelling: String = source
+        .codepoints
+        .iter()
+        .map(|c| char::from_u32(*c).unwrap_or('\u{e000}'))
+        .collect();
+    let valid = if runtime == "claude" {
+        is_safe_relative(&spelling, ".claude/agents/", ".md")
+            || is_safe_relative(&spelling, ".claude/commands/", ".md")
+    } else {
+        is_safe_relative(&spelling, ".codex/agents/", ".toml")
+    };
+    let expected = source
+        .codepoints
+        .iter()
+        .position(|c| *c == 47)
+        .map(|i| &source.codepoints[i + 1..])
+        .unwrap_or(&[]);
+    if !valid || target.codepoints != expected {
+        return Err(sync(format!(
+            "invalid managed receipt entry: {}",
+            source.repr()
+        )));
+    }
+    Ok(target.clone())
+}
+pub fn stale_files(
+    home: &Path,
+    runtime: &str,
+    receipt: Option<&Receipt>,
+    files: &[ManagedFile],
+) -> Result<Vec<StaleFile>, Error> {
+    let Some(entries) = receipt
+        .and_then(|r| r.get("files"))
+        .and_then(Value::as_object)
+    else {
+        return Ok(vec![]);
+    };
+    let mut sorted = entries.iter().collect::<Vec<_>>();
+    sorted.sort_by(|a, b| a.0.codepoints.cmp(&b.0.codepoints));
+    let mut stale = Vec::new();
+    for (source, recorded) in sorted {
+        if files.iter().any(|f| &f.source_relative == source) {
+            continue;
+        }
+        if !recorded.is_object() {
+            return Err(sync("invalid managed receipt entry"));
+        }
+        let invalid = || sync(format!("invalid managed receipt entry: {}", source.repr()));
+        let target = recorded
+            .get("target")
+            .and_then(Value::as_text)
+            .ok_or_else(invalid)?;
+        let digest = recorded
+            .get("sha256")
+            .and_then(Value::as_str)
+            .ok_or_else(invalid)?;
+        if recorded.get("source").and_then(Value::as_text) != Some(source)
+            || digest.len() != 64
+            || !digest
+                .bytes()
+                .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
+        {
+            return Err(invalid());
+        }
+        let relative_text = receipt_path_is_safe(runtime, source, target)?;
+        let path = match source_path(home, &relative_text) {
+            Ok(path) => path,
+            Err(e) if e.class == "UnicodeEncodeError" => {
+                // pathlib predicates suppress an unencodable leaf, after checking its parent.
+                directory(
+                    &home.join(if relative_text.py_str().starts_with("commands/") {
+                        "commands"
+                    } else {
+                        "agents"
+                    }),
+                )?;
+                continue;
+            }
+            Err(e) => return Err(e),
+        };
+        let relative = path;
+        let path = safe_target(home, &relative)?;
+        if exists(&path)? && sha256_bytes(&read_target(&path)?) != digest {
+            return Err(sync(format!(
+                "diverged stale managed file; refusing removal: {}",
+                path.display()
+            )));
+        }
+        if exists(&path)? {
+            stale.push(StaleFile {
+                source_relative: source.clone(),
+                target_relative: relative,
+                sha256: digest.into(),
+            });
+        }
+    }
+    Ok(stale)
+}
+pub fn validate_targets(
+    home: &Path,
+    runtime: &str,
+    files: &[ManagedFile],
+) -> Result<(PathBuf, Vec<StaleFile>), Error> {
+    let (receipt_path, receipt) = load_receipt(home, runtime)?;
+    for item in files {
+        let target = safe_target(home, &item.target_relative)?;
+        if exists(&target)? && sha256_bytes(&read_target(&target)?) != item.sha256 {
+            if receipt_allows_update(receipt.as_ref(), item, &target)? {
+                continue;
+            }
+            return Err(sync(format!(
+                "{}; refusing overwrite: {}",
+                if receipt.is_none() {
+                    "unmanaged existing file"
+                } else {
+                    "diverged managed file"
+                },
+                target.display()
+            )));
+        }
+    }
+    Ok((
+        receipt_path,
+        stale_files(home, runtime, receipt.as_ref(), files)?,
+    ))
+}

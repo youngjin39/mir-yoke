@@ -79,3 +79,37 @@ fn files_json(files: (Vec<ManagedFile>, Vec<ManagedFile>)) -> J {
 fn malformed_configs() -> Vec<(&'static str, Vec<u8>)> {
     vec![("sources-pack-precedence",br#"{"agents":{"allowlist":[]},"commands":{"allowlist":{}},"profiles":{"packs":{"p":{"agents":[7]}}}}"#.to_vec()),("sources-top-list",b"[]".to_vec()),("sources-top-null",b"null".to_vec()),("sources-invalid-utf8",vec![255]),("sources-utf16",vec![255,254,123,0,125,0]),("sources-nan",b"NaN".to_vec()),("sources-surrogate",br#"{"agents":{"allowlist":[]},"commands":{"allowlist":{}},"profiles":{"packs":{"p":{"agents":["\ud800"],"commands":[]}}}}"#.to_vec())]
 }
+#[test]
+#[rustfmt::skip]
+fn frozen_receipts() {
+    let corpus:J=serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/admission-receipts.json")).unwrap();
+    let tmp=tempfile::tempdir().unwrap(); let root=tmp.path();
+    let home=root.join("receipt-home"); fs::create_dir_all(home.join("agents")).unwrap();
+    let file=|source:&str,target:&str,bytes:&[u8],sha:String| ManagedFile { source_relative:python_json::Text::new(source.chars().map(u32::from).collect()),target_relative:target.into(),content:bytes.to_vec(),sha256:sha };
+    for (runtime,files) in [("claude",vec![file(".claude/agents/z.md","agents/z.md",b"agent\r\n",sha256_bytes(b"agent\r\n")),file(".claude/commands/a.md","commands/a.md",b"command\n",sha256_bytes(b"command\n"))]),("codex",vec![]),("unicode",vec![file(".claude/agents/한.md","agents/한.md",b"","0".repeat(64))])] {
+        assert_eq!(json!({"value":{"hex":hex(&make_receipt(runtime,&"a".repeat(40),&files))},"stdout":"","stderr":""}),corpus["records"][format!("receipt-{runtime}")]);
+    }
+    let mut reversed=vec![file(".claude/commands/a.md","commands/a.md",b"command\n",sha256_bytes(b"command\n")),file(".claude/agents/z.md","agents/z.md",b"agent\r\n",sha256_bytes(b"agent\r\n"))];
+    assert_eq!(hex(&make_receipt("claude",&"a".repeat(40),&reversed)),corpus["records"]["receipt-unsorted"]["value"]["hex"]);
+    reversed=vec![file(".claude/agents/한😀.md","agents/한😀.md",b"","0".repeat(64))];
+    assert_eq!(hex(&make_receipt("claude","\u{7f}😀",&reversed)),corpus["records"]["receipt-ascii"]["value"]["hex"]);
+    let mut count=0;
+    for (name,record) in corpus["records"].as_object().unwrap().iter().filter(|(k,_)|k.starts_with("receipt-case-")) {
+        count+=1;let input=&record["input"]; let path=home.join(RECEIPT_NAME); let target=home.join("agents/z.md");
+        for p in [&path,&target] { if p.exists() {fs::remove_file(p).unwrap();} }
+        if !input["raw"].is_null() { let raw=&input["raw"]; let bytes=if let Some(s)=raw.as_str() {s.as_bytes().to_vec()} else {let s=raw["hex"].as_str().unwrap();(0..s.len()).step_by(2).map(|i|u8::from_str_radix(&s[i..i+2],16).unwrap()).collect()};fs::write(&path,bytes).unwrap(); }
+        if let Some(disk)=input["disk"].as_str() {fs::write(&target,disk).unwrap();}
+        let files=if input["selected"]==true {vec![file(".claude/agents/z.md","agents/z.md",b"agent\r\n",sha256_bytes(b"agent\r\n"))]} else {vec![]};
+        let runtime=input["runtime"].as_str().unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        let unreadable=if input["unreadable"]=="receipt" {&path} else {&target};
+        if input.get("unreadable").is_some() {fs::set_permissions(unreadable,fs::Permissions::from_mode(0o0)).unwrap();}
+        let result=if input["op"]=="load" {load_receipt(&home,runtime).map(|(p,r)|json!([p,r.is_some()]))} else {validate_targets(&home,runtime,&files).map(|(p,stale)|json!([p,stale.iter().map(|s|json!({"source_relative":s.source_relative.py_str(),"target_relative":s.target_relative,"sha256":s.sha256})).collect::<Vec<_>>()]))};
+        if input.get("unreadable").is_some() {fs::set_permissions(unreadable,fs::Permissions::from_mode(0o600)).unwrap();}
+        let actual=match result {Ok(v)=>json!({"value":v,"stdout":"","stderr":""}),Err(e)=>json!({"error":e.class,"message":e.message,"stdout":"","stderr":""})};
+        let mut expected=record.clone();expected.as_object_mut().unwrap().remove("input");
+        let actual:J=serde_json::from_str(&actual.to_string().replace(root.to_str().unwrap(),"{ROOT}")).unwrap();
+        assert_eq!(actual,expected,"{name}");
+    }
+    assert_eq!(count,50);
+}

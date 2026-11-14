@@ -3215,7 +3215,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/bootstrap_adoption.rs",
-      "sha256": "aaeb4af60819ba9b391a81a331b401092ebbdebf6f1c08fc6cddd54d29887c66"
+      "sha256": "594048104b911a18cc963bea953073ba449579e6ac32b7c1de8e74d1653549d5"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3683,7 +3683,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/python_json.rs",
-      "sha256": "83182e8127e881cf26584c0ac25b43a5bf6667611ecb9a8ea18f6136e2162849"
+      "sha256": "b0d469aacec5969b9fbb955467e2631add4960c03c4683285d4589451f455e23"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3815,13 +3815,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_install.rs",
-      "sha256": "286fa736561e1df903851ead6a64e2d5b6a1d416d6177ff049934100f462fe70"
+      "sha256": "2dc29188e554ed9fe6dfbf764556824fd34b3c171a38c59f4aa24c5b0d39b345"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/user_runtime_install_tests.rs",
-      "sha256": "73920328304e7d30ea381b838349b36d3a128285b5f1aed1d9c1d70a34534a45"
+      "sha256": "3cd29812bd00e43f0796bbd1c1a1900f2ed9cc50eb64a277960fdd61d4876be8"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7295,13 +7295,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/user_runtime_install/admission-receipts.json",
-      "sha256": "54806b98f900cd5c7aba0b69338e6160b83fa6c707ba96a3cbc8ee8e7a68fb95"
+      "sha256": "5254f985106bd54d59f8aa5c2ce4452fbee108eb535319cad10f7464664e2a6d"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/user_runtime_install/capture_admission_receipts.py",
-      "sha256": "19b9d5c2eb83f2133a71f03eeb5e22a1018abde23918f253c8b40eddb22850a2"
+      "sha256": "31d1a4bb0805ecec920f9fb40aba35ac5eead3365cf49b4f38c2aa4b0e5596a6"
     },
     {
       "classification": "template-maintainer-tool",

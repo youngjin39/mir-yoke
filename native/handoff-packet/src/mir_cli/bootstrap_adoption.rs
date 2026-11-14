@@ -162,7 +162,7 @@ pub(crate) fn io_error(path: &Path, e: io::Error) -> Error {
         message: format!("[Errno {errno}] {message}: {}", repr(&wire(path))),
     }
 }
-pub(super) fn decode(bytes: Vec<u8>) -> Result<String, Error> {
+pub(crate) fn decode(bytes: Vec<u8>) -> Result<String, Error> {
     String::from_utf8(bytes).map_err(|e| {
         let start = e.utf8_error().valid_up_to();
         let len = e

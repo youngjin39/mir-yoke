@@ -242,6 +242,92 @@ def acquire(scratch, mutant=None):
         for runtime, selected in [("claude", files), ("codex", []), ("unicode", [
             module.ManagedFile(".claude/agents/한.md", Path("agents/한.md"), b"", "0" * 64)])]:
             record(f"receipt-{runtime}", module.make_receipt, runtime, "a" * 40, selected)
+        record("receipt-unsorted", module.make_receipt, "claude", "a" * 40, list(reversed(files)))
+        record("receipt-ascii", module.make_receipt, "claude", "\x7f😀", [
+            module.ManagedFile(".claude/agents/한😀.md", Path("agents/한😀.md"), b"", "0" * 64)])
+        # Receipt decisions use explicit synthetic inputs, kept beside each frozen result.
+        old = module.sha256_bytes(b"old")
+        source = ".claude/agents/z.md"
+        entry = {"source": source, "target": "agents/z.md", "sha256": old}
+        receipt = {"managed_by": module.MANAGED_BY, "runtime": "claude",
+                   "files": {source: entry}}
+        cases = []
+        def case(name, raw=None, disk=None, selected=True, runtime="claude", op="validate"):
+            cases.append((name, {"raw": raw, "disk": disk, "selected": selected,
+                                 "runtime": runtime, "op": op}))
+        for name, raw in [("missing", None), ("json", "{"), ("list", "[]"),
+                          ("null", "null"), ("number", "5"), ("bom", "\ufeff{}"),
+                          ("utf8", {"hex": "ff"}), ("utf16", {"hex": "fffe7b007d00"})]:
+            case(name, raw, op="load")
+        for key, value in [("managed_by", "other"), ("runtime", "codex"),
+                           ("files", []), ("files", None)]:
+            case("wrong-" + key + str(value), json.dumps({**receipt, key: value}), op="load")
+        case("load-valid", json.dumps({**receipt, "schema_version": 99,
+                                       "extra": float("nan")}), op="load")
+        for name, raw, disk in [("unmanaged", None, "old"), ("identical", None, "agent\r\n"),
+                               ("absent", None, None), ("managed", json.dumps(receipt), "old"),
+                               ("divergent", json.dumps(receipt), "foreign")]:
+            case(name, raw, disk)
+        for key, value in [("source", "other"), ("target", "agents/other.md"),
+                           ("sha256", "0" * 64)]:
+            changed = {**receipt, "files": {source: {**entry, key: value}}}
+            case("update-" + key, json.dumps(changed), "old")
+        case("update-nondict", json.dumps({**receipt, "files": {source: []}}), "old")
+        for name, disk in [("valid", "old"), ("absent", None), ("divergent", "foreign")]:
+            case("stale-" + name, json.dumps(receipt), disk, False)
+        for key, value in [("source", "other"), ("target", 7), ("target", "../z.md"),
+                           ("sha256", 7), ("sha256", "A" * 64), ("sha256", "0" * 63)]:
+            changed = {**receipt, "files": {source: {**entry, key: value}}}
+            case("stale-" + key + str(value), json.dumps(changed), selected=False)
+        case("stale-nondict", json.dumps({**receipt, "files": {source: []}}), selected=False)
+        for name in [".claude/agents/한😀.md", ".claude/commands/old.md",
+                     ".codex/agents/old.toml", ".claude/agents/../z.md",
+                     ".claude/agents/\ud800.md"]:
+            target = Path(*Path(name).parts[1:]).as_posix()
+            case("stale-name-" + name, json.dumps({**receipt, "files": {
+                name: {"source": name, "target": target, "sha256": old}}}), selected=False)
+        for depth in [9993, 9994, 9995, 9996, 9997, 9998]:
+            case("depth-" + str(depth), json.dumps(receipt)[:-1] + ',"deep":' +
+                 '[' * depth + '0' + ']' * depth + '}', op="load")
+        for name, op, selected, kind in [("receipt-read-error", "load", True, "receipt"),
+                                         ("target-read-error", "validate", True, "target"),
+                                         ("stale-read-error", "validate", False, "target")]:
+            case(name, json.dumps(receipt), "old", selected, op=op)
+            cases[-1][1]["unreadable"] = kind
+        case("huge-integer", json.dumps(receipt)[:-1] + ',"x":' + '1' * 4301 + '}', op="load")
+        deep = '[' * 9993 + '0' + ']' * 9993
+        for name, raw in [("deep-extra", deep + 'x'), ("deep-malformed", '[' + deep + ',]'),
+                          ("deep-duplicate", json.dumps(receipt)[:-1] +
+                           ',"x":' + deep + ',"x":0}')]:
+            case(name, raw, op="load")
+        for name, inputs in cases:
+            test_home = base / "receipt-home"
+            test_home.mkdir(exist_ok=True)
+            path = test_home / module.RECEIPT_NAME
+            target = test_home / "agents/z.md"
+            target.parent.mkdir(exist_ok=True)
+            for file in (path, target):
+                file.unlink(missing_ok=True)
+            if inputs["raw"] is not None:
+                raw = inputs["raw"]
+                path.write_bytes(bytes.fromhex(raw["hex"]) if isinstance(raw, dict)
+                                 else raw.encode())
+            if inputs["disk"] is not None:
+                target.write_bytes(inputs["disk"].encode())
+            def decision(inputs=inputs, test_home=test_home):
+                if inputs["op"] == "load":
+                    loaded_path, loaded_receipt = module.load_receipt(test_home, inputs["runtime"])
+                    return [loaded_path, loaded_receipt is not None]
+                return module.validate_targets(test_home, inputs["runtime"],
+                                               files[:1] if inputs["selected"] else [])
+            unreadable = path if inputs.get("unreadable") == "receipt" else target
+            if "unreadable" in inputs:
+                unreadable.chmod(0)
+            key = "receipt-case-" + name.encode("utf-8", "backslashreplace").decode()
+            record(key, decision)
+            records[key]["input"] = inputs
+            if "unreadable" in inputs:
+                unreadable.chmod(0o600)
         valid = ["--claude-home", str(home), "--codex-home", str(base / "codex")]
         # argparse derives its program name from the reference invocation's argv[0].
         sys.argv[0] = str(script)
