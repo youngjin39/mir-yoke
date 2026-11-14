@@ -32,7 +32,136 @@ MUTANTS = {
 }
 
 
-def acquire(scratch, mutant=None):
+def acquire_transactions(module, base):
+    """Freeze operation-boundary faults against the isolated pinned implementation."""
+    os.umask(0o022)
+    records = {}
+    original = {name: getattr(module, name) for name in (
+        "snapshot_plan", "atomic_write", "remove_stale_file", "restore_snapshot",
+        "remove_created_home")}
+    cases = [("success", [], False, False, False)]
+    for created in (False, True):
+        suffix = "created" if created else "existing"
+        for operation in ("snapshot", "payload", "stale", "receipt", "restore", "cleanup"):
+            if created and operation == "stale":
+                continue
+            for home in range(2):
+                failures = [f"{operation}:{home}"]
+                if operation in ("restore", "cleanup"):
+                    failures.insert(0, "payload:1")
+                cases.append((f"{suffix}-{operation}-{home}", failures, created, False, False))
+    cases.extend([("foreign-edit", ["payload:1"], False, True, False),
+                  ("interrupt", ["payload:1"], False, False, True)])
+    cases.extend((f"cleanup-dir-{kind}", ["payload:1"], True, False, False)
+                 for kind in ("file", "symlink", "nonempty"))
+    for number, (name, failures, created, foreign, interrupt) in enumerate(cases):
+        cleanup_change = name[12:] if name.startswith("cleanup-dir-") else None
+        root = base / str(number)
+        homes = root / "homes"
+        plans = []
+        for home in range(2):
+            path = homes / str(home)
+            path.mkdir(parents=True)
+            if not created:
+                (path / "agents").mkdir()
+                for relative, content in [("agents/a.md", b"old"),
+                                          ("agents/stale.md", b"stale"),
+                                          (module.RECEIPT_NAME, b"old-receipt")]:
+                    target = path / relative
+                    target.write_bytes(content)
+                    target.chmod(0o600)
+            files = (module.ManagedFile(".claude/agents/a.md", Path("agents/a.md"),
+                                        b"new", module.sha256_bytes(b"new")),)
+            stale = () if created else (module.StaleFile(
+                ".claude/agents/stale.md", Path("agents/stale.md"),
+                module.sha256_bytes(b"stale")),)
+            plans.append(module.RuntimePlan(module.capture_home_identity(path), files,
+                                            stale, b"new-receipt", created))
+        trace, pending = [], list(failures)
+        edited = False
+
+        def hook(operation, identity, trace=trace, foreign=foreign, pending=pending,
+                 interrupt=interrupt):
+            nonlocal edited
+            home = identity.path.name
+            label = f"{operation}:{home}"
+            trace.append(label)
+            if foreign and operation == "restore" and home == "0" and not edited:
+                (identity.path / "agents/a.md").write_bytes(b"foreign")
+                edited = True
+            if label in pending:
+                pending.remove(label)
+                if interrupt and operation == "payload":
+                    raise KeyboardInterrupt("injected")
+                raise OSError("injected")
+
+        def snapshot(plan):
+            hook("snapshot", plan.identity)
+            return original["snapshot_plan"](plan)
+
+        def write(identity, relative, content):
+            hook("receipt" if relative == Path(module.RECEIPT_NAME) else "payload", identity)
+            return original["atomic_write"](identity, relative, content)
+
+        def stale(identity, item):
+            hook("stale", identity)
+            return original["remove_stale_file"](identity, item)
+
+        def restore(identity, item):
+            hook("restore", identity)
+            # Restoration writes are part of restore, not new payload operations.
+            with patch.object(module, "atomic_write", original["atomic_write"]):
+                return original["restore_snapshot"](identity, item)
+
+        def cleanup(plan, snapshots, change=cleanup_change, root=root):
+            hook("cleanup", plan.identity)
+            if change and plan.identity.path.name == "0":
+                directory = plan.identity.path / "agents"
+                if change == "nonempty":
+                    (directory / "foreign").write_bytes(b"foreign")
+                else:
+                    directory.rmdir()
+                    if change == "file":
+                        directory.write_bytes(b"foreign")
+                    else:
+                        (root / "outside").mkdir()
+                        directory.symlink_to(root / "outside", target_is_directory=True)
+            return original["remove_created_home"](plan, snapshots)
+
+        def run(trace=trace, plans=plans, root=root, homes=homes):
+            trace.clear()
+            error = None
+            try:
+                module.apply_transaction(tuple(plans))
+            except BaseException as exc:
+                error = {"class": type(exc).__name__, "message": str(exc).replace(
+                    str(root), "{ROOT}")}
+            tree = {str(home): {"exists": (homes / str(home)).exists(), "home_mode":
+                stat.S_IMODE((homes / str(home)).stat().st_mode)
+                if (homes / str(home)).exists() else None, "files": {
+                str(p.relative_to(homes / str(home))): {
+                    "hex": (os.readlink(p).replace(str(root), "{ROOT}").encode()
+                            if p.is_symlink() else p.read_bytes() if p.is_file() else b"").hex(),
+                    "kind": "symlink" if p.is_symlink() else "file" if p.is_file() else "directory",
+                    "mode": stat.S_IMODE(p.lstat().st_mode)}
+                for p in sorted((homes / str(home)).rglob("*"))}} for home in range(2)}
+            return {"trace": list(trace), "error": error, "tree": tree}
+
+        with contextlib.ExitStack() as stack:
+            for key, function in [("snapshot_plan", snapshot), ("atomic_write", write),
+                                  ("remove_stale_file", stale), ("restore_snapshot", restore),
+                                  ("remove_created_home", cleanup)]:
+                stack.enter_context(patch.object(module, key, function))
+            result = run()
+            if name == "existing-payload-1":
+                result["retry_result"] = run()
+        records[name] = {"created_home": created, "failures": failures,
+                         "foreign_edit": foreign, "interrupt": interrupt,
+                         "cleanup_change": cleanup_change, **result}
+    return {"pin": PIN, "source": SOURCE, "records": records}
+
+
+def acquire(scratch, mutant=None, transactions=False):
     assert sys.flags.isolated, "oracle must run with python -I"
     scratch = scratch.resolve(strict=True)
     source = subprocess.check_output(["git", "show", f"{PIN}:{SOURCE}"], cwd=REPO).decode()
@@ -62,6 +191,9 @@ def acquire(scratch, mutant=None):
             assert location and Path(location).resolve().is_relative_to(base), name
         module.ROOT = base
         module.CONFIG_PATH = base / "config/capability-sources.json"
+
+        if transactions:
+            return acquire_transactions(module, base)
 
         def forbidden(*args, **kwargs):
             raise AssertionError("acquisition must never execute delivery or Git source checks")
@@ -388,9 +520,10 @@ if __name__ == "__main__":
     parser.add_argument("--scratch", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--mutant", choices=MUTANTS)
+    parser.add_argument("--transactions", action="store_true")
     args = parser.parse_args()
     output = args.output.resolve()
-    result = acquire(args.scratch, args.mutant)
+    result = acquire(args.scratch, args.mutant, args.transactions)
     # One compact record per line keeps the corpus reviewable within the slice budget.
     output.write_text('{"pin": ' + json.dumps(result["pin"]) + ', "source": ' +
                       json.dumps(SOURCE) + ', "records": {\n' + ',\n'.join(
