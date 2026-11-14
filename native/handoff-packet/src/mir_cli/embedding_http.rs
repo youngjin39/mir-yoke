@@ -5,12 +5,12 @@ use crate::mir_core::memory::backends::omlx_http::{
 use std::{
     io::{self, BufRead, BufReader, Read, Write},
     net::{TcpStream, ToSocketAddrs},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 #[derive(Default)]
 pub struct HttpTransport {
-    pub(super) used: bool,
+    pub(super) idle: Option<(String, BufReader<TcpStream>, Instant)>,
     pub unbounded_timeout: bool,
 }
 fn unsupported(s: impl Into<String>) -> HttpError {
@@ -269,17 +269,12 @@ fn outgoing_value(value: &str) -> Result<(), HttpError> {
 }
 impl Transport for HttpTransport {
     fn send(&mut self, request: HttpRequest) -> Result<HttpResponse, HttpError> {
-        // shortcut: one request per backend until frozen pool/expiry/stale-socket
-        // parity is available. Never silently reconnect instead of reusing.
-        if self.used {
-            return Err(unsupported("Embedding connection reuse is not supported"));
-        }
         if self.unbounded_timeout {
-            return Err(unsupported(
-                "Embedding timeout outside signed 64-bit range is not supported",
+            return Err(HttpError::new(
+                "OverflowError",
+                "timestamp too large to convert to C _PyTime_t",
             ));
         }
-        self.used = true;
         let url = request.url.split('#').next().unwrap_or("");
         if url.starts_with("https://") {
             return Err(unsupported("HTTPS embedding transport is not supported"));
@@ -322,18 +317,43 @@ impl Transport for HttpTransport {
         wire_url_guard(authority, &target)?;
         let timeout =
             |phase: &str| Duration::from_secs(request.timeout[phase].as_u64().unwrap_or(0));
-        let addresses = (host, port)
-            .to_socket_addrs()
-            .map_err(|e| io_error(e, "Connect"))?;
-        let mut connection = Err(HttpError::new("ConnectError", "No addresses found"));
-        for address in addresses {
-            connection = TcpStream::connect_timeout(&address, timeout("connect"))
-                .map_err(|e| io_error(e, "Connect"));
-            if connection.is_ok() {
-                break;
+        // httpcore expires idle connections after five seconds and discards
+        // readable idle sockets (EOF or unsolicited bytes) before sending.
+        let mut pooled = self
+            .idle
+            .take()
+            .filter(|(key, _, since)| key == authority && since.elapsed() < Duration::from_secs(5));
+        if let Some((_, reader, _)) = pooled.as_mut() {
+            let stream = reader.get_mut();
+            stream
+                .set_nonblocking(true)
+                .map_err(|e| io_error(e, "Read"))?;
+            let peeked = stream.peek(&mut [0]);
+            let stale = !matches!(peeked, Err(e) if e.kind() == io::ErrorKind::WouldBlock);
+            stream
+                .set_nonblocking(false)
+                .map_err(|e| io_error(e, "Read"))?;
+            if stale || !reader.buffer().is_empty() {
+                pooled = None;
             }
         }
-        let mut stream = connection?;
+        let mut reader = if let Some((_, reader, _)) = pooled {
+            reader
+        } else {
+            let addresses = (host, port)
+                .to_socket_addrs()
+                .map_err(|e| io_error(e, "Connect"))?;
+            let mut connection = Err(HttpError::new("ConnectError", "No addresses found"));
+            for address in addresses {
+                connection = TcpStream::connect_timeout(&address, timeout("connect"))
+                    .map_err(|e| io_error(e, "Connect"));
+                if connection.is_ok() {
+                    break;
+                }
+            }
+            BufReader::with_capacity(65536, connection?)
+        };
+        let stream = reader.get_mut();
         stream
             .set_read_timeout(Some(timeout("read")))
             .map_err(|e| io_error(e, "Read"))?;
@@ -357,7 +377,6 @@ impl Transport for HttpTransport {
         stream
             .write_all(format!("{head}\r\n{body}").as_bytes())
             .map_err(|e| io_error(e, "Write"))?;
-        let mut reader = BufReader::with_capacity(65536, stream);
         loop {
             let mut block = header_lines(&mut reader)?;
             let raw = if block.is_empty() {
@@ -495,6 +514,16 @@ impl Transport for HttpTransport {
                     .read_to_end(&mut body)
                     .map_err(|e| io_error(e, "Read"))?;
             }
+            if version == b"HTTP/1.1"
+                && !response_headers
+                    .get("connection")
+                    .is_some_and(|s| s.split(',').any(|v| v.trim().eq_ignore_ascii_case("close")))
+                && (no_response_body(&request.method, status)
+                    || response_headers.contains_key("content-length")
+                    || response_headers.contains_key("transfer-encoding"))
+            {
+                self.idle = Some((authority.into(), reader, Instant::now()));
+            }
             return Ok(HttpResponse {
                 status,
                 reason,
@@ -610,6 +639,124 @@ mod tests {
 mod e10_http_tests {
     use super::*;
     #[test]
+    fn e12c_lifecycle() {
+        if std::env::var_os("E12C_WORKER").is_none() {
+            assert!(
+                std::process::Command::new(std::env::current_exe().unwrap())
+                    .args([
+                        "--exact",
+                        "mir_cli::embedding_http::e10_http_tests::e12c_lifecycle",
+                        "--nocapture"
+                    ])
+                    .env_clear()
+                    .env("E12C_WORKER", "1")
+                    .env("NO_PROXY", "*")
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+            return;
+        }
+        let records: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../../tests/fixtures/y-e12c.json")).unwrap();
+        let mut mismatches = Vec::new();
+        for r in records {
+            let mode = r["mode"].as_str().unwrap().to_owned();
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+            listener.set_nonblocking(true).unwrap();
+            let url = format!("http://{}/embeddings", listener.local_addr().unwrap());
+            let server_mode = mode.clone();
+            let server = std::thread::spawn(move || {
+                let start = std::time::Instant::now();
+                let mut count = 0;
+                let mut served = 0;
+                while served < 2 && start.elapsed() < Duration::from_secs(2) {
+                    let Ok((mut stream, _)) = listener.accept() else {
+                        std::thread::sleep(Duration::from_millis(2));
+                        continue;
+                    };
+                    count += 1;
+                    stream.set_nonblocking(false).unwrap();
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(1)))
+                        .unwrap();
+                    for n in 0..if matches!(server_mode.as_str(), "reuse" | "mid") {
+                        2
+                    } else {
+                        1
+                    } {
+                        let mut head = Vec::new();
+                        let mut byte = [0];
+                        while !head.ends_with(b"\r\n\r\n") {
+                            if stream.read_exact(&mut byte).is_err() {
+                                return count;
+                            }
+                            head.push(byte[0]);
+                        }
+                        let size: usize = String::from_utf8(head)
+                            .unwrap()
+                            .lines()
+                            .find_map(|s| s.strip_prefix("Content-Length: "))
+                            .unwrap()
+                            .parse()
+                            .unwrap();
+                        stream.read_exact(&mut vec![0; size]).unwrap();
+                        let close = if server_mode == "close" {
+                            "Connection: close\r\n"
+                        } else {
+                            ""
+                        };
+                        let body = if server_mode == "mid" && n == 1 {
+                            "x"
+                        } else {
+                            "{}"
+                        };
+                        stream
+                            .write_all(
+                                format!(
+                                    "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n{close}\r\n{body}"
+                                )
+                                .as_bytes(),
+                            )
+                            .unwrap();
+                        served += 1;
+                    }
+                }
+                count
+            });
+            let mut transport = HttpTransport {
+                unbounded_timeout: mode == "timeout",
+                ..Default::default()
+            };
+            let mut results = Vec::new();
+            for _ in 0..2 {
+                let request = HttpRequest {
+                    url: url.clone(),
+                    method: "POST".into(),
+                    headers: Default::default(),
+                    body: serde_json::json!({"model":"fake","input":["fake"]}),
+                    timeout: serde_json::json!({"connect":1,"read":1,"write":1}),
+                };
+                results.push(match transport.send(request) {
+                    Ok(r) => serde_json::json!({"status":r.status,"reason":r.reason,"body":String::from_utf8_lossy(&r.body)}),
+                    Err(e) => serde_json::json!({"error":e.class,"message":e.message}),
+                });
+                if mode == "stale" {
+                    std::thread::sleep(Duration::from_millis(100));
+                }
+            }
+            let count = server.join().unwrap();
+            if serde_json::json!(results) != r["results"]
+                || serde_json::json!(count) != r["connections"]
+            {
+                mismatches.push(format!(
+                    "{mode}: {results:?}, connections={count}, expected {r}"
+                ));
+            }
+        }
+        assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
+    }
+    #[test]
     fn frozen_loopback_protocol() {
         if std::env::var_os("E10_HTTP_WORKER").is_none() {
             assert!(
@@ -640,7 +787,7 @@ mod e10_http_tests {
         assert!(backend.transport().unbounded_timeout);
         assert_eq!(
             backend.encode(&["fake".into()]).unwrap_err().class,
-            "UnsupportedProtocol"
+            "OverflowError"
         );
         let records = [
             records,
@@ -675,13 +822,6 @@ mod e10_http_tests {
             };
             let result = transport.send(request.clone());
             server.join().unwrap();
-            if result.is_ok() {
-                assert_eq!(
-                    transport.send(request).unwrap_err().class,
-                    "UnsupportedProtocol",
-                    "repeat requests must reuse or refuse before connecting"
-                );
-            }
             let actual = match result {
                 Ok(r) => {
                     serde_json::json!({"status":r.status,"reason":r.reason,"body":String::from_utf8_lossy(&r.body)})
