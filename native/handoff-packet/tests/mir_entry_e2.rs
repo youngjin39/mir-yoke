@@ -73,8 +73,119 @@ fn fixture_interpreter_starts_with_its_own_prefix_and_stdlib() {
     assert!(out.stderr.is_empty());
 }
 
+fn expected_records(windows: bool, exists_message: &str) -> Vec<Value> {
+    let mut records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e2.json")).unwrap();
+    for r in &mut records {
+        for key in ["stdout", "stderr", "manifest"] {
+            if let Some(text) = r[key].as_str() {
+                r[key] = platform::expected_text(text, windows).into();
+            }
+        }
+    }
+    if windows {
+        let frozen: Value =
+            serde_json::from_str(include_str!("fixtures/y-e2-windows.json")).unwrap();
+        for r in &mut records {
+            // The verify setup reuses the captured create manifest, including its mode.
+            if r["manifest"].is_string() {
+                r["manifest"] = unhex(&frozen["records"][0]["manifest_hex"]).into();
+            }
+            if let Some(win) = frozen["records"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|w| w["argv"] == r["argv"])
+            {
+                r["exit"] = win["exit"].clone();
+                for key in ["stdout", "stderr"] {
+                    r[key] = unhex(&win[format!("{key}_hex")]).into();
+                }
+                if win["argv"][0] == "migrate" {
+                    r["stderr"] = format!(
+                        "FileExistsError: [WinError 183] {exists_message}: 'helper.py'\r\n"
+                    )
+                    .into();
+                }
+            }
+        }
+    }
+    records
+}
+
+fn unhex(value: &Value) -> String {
+    let bytes = value.as_str().unwrap().as_bytes().as_chunks::<2>();
+    assert!(bytes.1.is_empty());
+    String::from_utf8(
+        bytes
+            .0
+            .iter()
+            .map(|b| u8::from_str_radix(std::str::from_utf8(b).unwrap(), 16).unwrap())
+            .collect(),
+    )
+    .unwrap()
+}
+
+fn exists_message() -> String {
+    let message = std::io::Error::from_raw_os_error(183).to_string();
+    message
+        .strip_suffix(" (os error 183)")
+        .unwrap_or(&message)
+        .trim_end_matches([' ', '\r', '\n', '.'])
+        .into()
+}
+
+#[test]
+fn windows_manifest_selects_frozen_bytes() {
+    let frozen: Value = serde_json::from_str(include_str!("fixtures/y-e2-windows.json")).unwrap();
+    let records = expected_records(true, "unused");
+    let row = &frozen["records"][0];
+    let selected = records.iter().find(|r| r["argv"] == row["argv"]).unwrap();
+    assert_eq!(selected["exit"], row["exit"]);
+    for key in ["stdout", "stderr", "manifest"] {
+        assert_eq!(selected[key], unhex(&row[format!("{key}_hex")]), "{key}");
+    }
+    assert_eq!(
+        records
+            .iter()
+            .find(|r| r["setup"] == true && r["argv"][0] == "runtime-manifest")
+            .unwrap()["manifest"],
+        selected["manifest"]
+    );
+    let manifest: Value = serde_json::from_str(selected["manifest"].as_str().unwrap()).unwrap();
+    assert_eq!(manifest["entries"][0]["mode"], 438);
+}
+
+#[test]
+fn windows_migrate_selects_os_locale() {
+    let frozen: Value = serde_json::from_str(include_str!("fixtures/y-e2-windows.json")).unwrap();
+    let row = &frozen["records"][1];
+    let captured = unhex(&row["stderr_hex"]);
+    let locale = captured
+        .strip_prefix("FileExistsError: [WinError 183] ")
+        .unwrap()
+        .strip_suffix(": 'helper.py'\r\n")
+        .unwrap();
+    for message in [locale, "File already exists", &exists_message()] {
+        let records = expected_records(true, message);
+        let selected = records.iter().find(|r| r["argv"] == row["argv"]).unwrap();
+        assert_eq!(selected["exit"], row["exit"]);
+        assert_eq!(selected["stdout"], unhex(&row["stdout_hex"]));
+        assert_eq!(
+            selected["stderr"],
+            format!("FileExistsError: [WinError 183] {message}: 'helper.py'\r\n")
+        );
+        if message == locale {
+            assert_eq!(selected["stderr"], captured);
+        }
+    }
+    assert_eq!(
+        expected_records(false, "unused"),
+        serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e2.json")).unwrap()
+    );
+}
+
 fn check_family(family: &str) {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e2.json")).unwrap();
+    let records = expected_records(cfg!(windows), &exists_message());
     for r in records.iter().filter(|r| r["argv"][0] == family) {
         let temp = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(temp.path()).unwrap();
@@ -136,13 +247,13 @@ fn check_family(family: &str) {
         );
         assert_eq!(
             normalize(output.stdout),
-            platform::expected_text(r["stdout"].as_str().unwrap(), cfg!(windows)),
+            r["stdout"].as_str().unwrap(),
             "{}",
             r["argv"]
         );
         assert_eq!(
             normalize(output.stderr),
-            platform::expected_text(r["stderr"].as_str().unwrap(), cfg!(windows)),
+            r["stderr"].as_str().unwrap(),
             "{}",
             r["argv"]
         );
