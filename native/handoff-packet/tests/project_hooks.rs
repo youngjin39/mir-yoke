@@ -64,6 +64,42 @@ mod post_edit_check {
         process::{Command, Stdio},
     };
 
+    fn payload(template: &str, root: &str) -> String {
+        fn expand(value: &mut Value, root: &str) {
+            match value {
+                Value::String(text) => *text = text.replace("@PROJECT@", root),
+                Value::Array(items) => items.iter_mut().for_each(|v| expand(v, root)),
+                Value::Object(fields) => fields.values_mut().for_each(|v| expand(v, root)),
+                _ => {}
+            }
+        }
+        // Malformed-input records intentionally exercise the advisory parse failure.
+        let Ok(mut value) = serde_json::from_str::<Value>(template) else {
+            return template.to_owned();
+        };
+        expand(&mut value, root);
+        serde_json::to_string(&value).unwrap()
+    }
+
+    #[test]
+    fn payload_expansion_preserves_json_strings() {
+        let template = r#"{"tool_input":{"file_path":"@PROJECT@/app.ts","patch":"*** Update File: @PROJECT@/app.ts\n"}}"#;
+        for root in [
+            r"C:\scratch\project",
+            r"\\?\C:\scratch\project",
+            "/scratch/quote\"root",
+        ] {
+            let input: Value = serde_json::from_str(&payload(template, root)).unwrap();
+            assert_eq!(input["tool_input"]["file_path"], format!("{root}/app.ts"));
+            assert_eq!(
+                input["tool_input"]["patch"],
+                format!("*** Update File: {root}/app.ts\n")
+            );
+        }
+        assert_eq!(payload("no json", "root"), "no json");
+        assert_eq!(payload("", "root"), "");
+    }
+
     fn snapshot(root: &std::path::Path) -> Vec<(std::path::PathBuf, u64, bool)> {
         let mut out = Vec::new();
         for entry in fs::read_dir(root).unwrap() {
@@ -80,7 +116,6 @@ mod post_edit_check {
     fn invoke(record: &Value) -> Value {
         let dir = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(dir.path()).unwrap();
-        let expand = |s: &str| s.replace("@PROJECT@", root.to_str().unwrap());
         for (name, entry) in record["setup"].as_object().unwrap() {
             let path = root.join(name);
             fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -119,7 +154,9 @@ mod post_edit_check {
             .stdin
             .take()
             .unwrap()
-            .write_all(expand(record["stdin"].as_str().unwrap()).as_bytes())
+            .write_all(
+                payload(record["stdin"].as_str().unwrap(), root.to_str().unwrap()).as_bytes(),
+            )
             .unwrap();
         let result = child.wait_with_output().unwrap();
         assert_eq!(snapshot(&root), before);
@@ -169,7 +206,7 @@ mod post_edit_check {
 
     #[test]
     fn redaction_and_warnings_remain_advisory() {
-        let record = json!({"setup":{"app.ts":{"text":"console.log('sk-aaaaaaaaaaaaaaaaaaaa');\n"}},"stdin":"{\"tool_input\":{\"file_path\":\"app.ts\"}}","env":{}});
+        let record = json!({"setup":{"app.ts":{"text":"console.log('sk-aaaaaaaaaaaaaaaaaaaa');\n"}},"stdin":json!({"tool_input":{"file_path":"app.ts"}}).to_string(),"env":{}});
         let result = invoke(&record);
         assert_eq!(result["exit"], 0, "warnings must never block");
         let stdout = result["stdout"].as_str().unwrap();
