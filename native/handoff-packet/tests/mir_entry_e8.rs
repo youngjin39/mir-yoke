@@ -97,6 +97,8 @@ fn frozen_pull_console_provider() {
             loop {
                 match listener.accept() {
                     Ok((mut stream, _)) => {
+                        // macOS accepted sockets inherit the listener's O_NONBLOCK.
+                        stream.set_nonblocking(false).unwrap();
                         stream
                             .set_read_timeout(Some(Duration::from_secs(2)))
                             .unwrap();
