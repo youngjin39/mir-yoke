@@ -100,6 +100,9 @@ fn main() -> ExitCode {
             );
             tdd_ledger::guard(&project, strings.first().map(String::as_str).unwrap_or(""))
         };
+        // Match Python text streams, including the final exception line.
+        #[cfg(windows)]
+        let (stdout, stderr) = (stdout.replace('\n', "\r\n"), stderr.replace('\n', "\r\n"));
         if io::stdout()
             .write_all(stdout.as_bytes())
             .and_then(|()| io::stderr().write_all(stderr.as_bytes()))

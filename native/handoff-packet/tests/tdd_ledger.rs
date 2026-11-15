@@ -140,7 +140,28 @@ fn run(cmd: &mut Command, r: &Value, mode: &str, expand: &impl Fn(&str) -> Strin
         assert_eq!(observed["stderr"], "");
         return;
     }
-    assert_eq!(observed, r["expected"], "{}", r["id"]);
+    let mut expected = r["expected"].clone();
+    if cfg!(windows) {
+        if r["id"]
+            .as_str()
+            .and_then(|id| id.split_once("-metadata-depth-"))
+            .and_then(|(_, depth)| depth.parse::<usize>().ok())
+            .is_some_and(|depth| depth >= 2997)
+        {
+            let capture: Value =
+                serde_json::from_str(include_str!("fixtures/windows-deep.json")).unwrap();
+            let reference = &capture["boundaries"][1]["first_changed"]["reference"];
+            expected["exit"] = reference["code"].clone();
+            expected["stderr"] = json!(format!(
+                "{}\n",
+                reference["final_exception"].as_str().unwrap()
+            ));
+        }
+        for field in ["stdout", "stderr"] {
+            expected[field] = json!(expected[field].as_str().unwrap().replace('\n', "\r\n"));
+        }
+    }
+    assert_eq!(observed, expected, "{}", r["id"]);
 }
 #[test]
 fn matrix_prewrite() {
