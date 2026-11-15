@@ -37,6 +37,8 @@ struct Host {
     leaf: bool,
     refused: bool,
     count: usize,
+    #[cfg(windows)]
+    foreign_attributes: Option<u32>,
 }
 impl ArtifactHost for Host {
     fn read(&mut self, _: &str, _: u64) -> Result<Vec<u8>, String> {
@@ -58,6 +60,17 @@ impl ArtifactHost for Host {
                         fs::create_dir(&self.target)?;
                     } else {
                         fs::write(&self.target, b"foreign")?;
+                        if site == Site::SetExecutable {
+                            let mut permissions = fs::metadata(&self.target)?.permissions();
+                            permissions.set_readonly(true);
+                            fs::set_permissions(&self.target, permissions)?;
+                            #[cfg(windows)]
+                            {
+                                use std::os::windows::fs::MetadataExt;
+                                self.foreign_attributes =
+                                    Some(fs::metadata(&self.target)?.file_attributes());
+                            }
+                        }
                     }
                 } else {
                     directory_link(&self.outside, &self.target)?;
@@ -160,6 +173,30 @@ fn native_only_junction_and_owned_leaf_swaps_at_all_eight_sites() {
                 assert!(path.exists(), "foreign removed at {site:?}: {result:?}");
                 if site != RemoveDirectory {
                     assert_eq!(fs::read(path).unwrap(), b"foreign", "{site:?}: {result:?}");
+                }
+                if site == SetExecutable {
+                    let metadata = fs::metadata(path).unwrap();
+                    assert!(
+                        metadata.permissions().readonly(),
+                        "foreign readonly changed at {site:?}: {result:?}"
+                    );
+                    #[cfg(windows)]
+                    {
+                        use std::os::windows::fs::MetadataExt;
+                        assert_eq!(
+                            Some(metadata.file_attributes()),
+                            host.foreign_attributes,
+                            "foreign attributes changed at {site:?}: {result:?}"
+                        );
+                    }
+                    // Restore original writable permissions only after checking the foreign leaf.
+                    fs::set_permissions(
+                        path,
+                        fs::metadata(path.with_extension("saved"))
+                            .unwrap()
+                            .permissions(),
+                    )
+                    .unwrap();
                 }
                 assert!(result.is_err(), "foreign accepted at {site:?}: {result:?}");
             }
