@@ -12,6 +12,85 @@ use std::{
 pub struct HttpTransport {
     pub(super) idle: Option<(String, BufReader<TcpStream>, Instant)>,
     pub unbounded_timeout: bool,
+    pub(super) location: Option<String>,
+    pub(super) artifact_limit: Option<u64>,
+}
+impl HttpTransport {
+    pub(super) fn artifact(&mut self, url: &str, size: u64) -> Result<HttpResponse, HttpError> {
+        self.artifact_limit = Some(size.saturating_add(1));
+        let mut url = url.to_owned();
+        for count in 0..=20 {
+            let response = self.send(HttpRequest {
+                url: url.clone(),
+                method: "GET".into(),
+                headers: Default::default(),
+                body: serde_json::Value::Null,
+                timeout: serde_json::json!({"connect":30,"read":30,"write":30}),
+            })?;
+            if matches!(response.status, 301 | 302 | 303 | 307 | 308)
+                && let Some(location) = self.location.take()
+            {
+                if count == 20 {
+                    return Err(HttpError::new(
+                        "TooManyRedirects",
+                        "Exceeded maximum allowed redirects.",
+                    ));
+                }
+                let end = 7 + url[7..].find(['/', '?', '#']).unwrap_or(url.len() - 7);
+                let origin = &url[..end];
+                url = if location
+                    .split(['/', '?', '#'])
+                    .next()
+                    .is_some_and(|s| s.contains(':'))
+                {
+                    location
+                } else if location.starts_with("//") {
+                    format!("http:{location}")
+                } else if location.starts_with('/') {
+                    format!("{origin}{location}")
+                } else if location.is_empty() || location.starts_with('#') {
+                    format!("{}{location}", url.split('#').next().unwrap_or(&url))
+                } else if location.starts_with('?') {
+                    format!("{}{location}", url.split(['?', '#']).next().unwrap_or(&url))
+                } else {
+                    let path = url[end..].split(['?', '#']).next().unwrap_or("");
+                    let directory = path.rsplit_once('/').map(|(p, _)| p).unwrap_or("");
+                    format!("{origin}{directory}/{location}")
+                };
+                if !url.starts_with("http://") {
+                    continue;
+                }
+                if let Some(end) = url[7..].find('/').map(|n| n + 7) {
+                    let suffix = url[end..]
+                        .find(['?', '#'])
+                        .map(|n| n + end)
+                        .unwrap_or(url.len());
+                    let mut parts = Vec::new();
+                    for part in url[end..suffix].split('/') {
+                        match part {
+                            "." => {}
+                            ".." => {
+                                parts.truncate(parts.len().max(2) - 1);
+                            }
+                            p => parts.push(p),
+                        }
+                    }
+                    if url[..suffix].ends_with("/.") || url[..suffix].ends_with("/..") {
+                        parts.push("");
+                    }
+                    url = format!(
+                        "{}/{}{}",
+                        &url[..end],
+                        parts.join("/").replacen('/', "", 1),
+                        &url[suffix..]
+                    );
+                }
+                continue;
+            }
+            return Ok(response);
+        }
+        unreachable!()
+    }
 }
 fn unsupported(s: impl Into<String>) -> HttpError {
     HttpError::new("UnsupportedProtocol", s)
@@ -432,6 +511,10 @@ impl Transport for HttpTransport {
                 .map(|s| String::from_utf8_lossy(s).into_owned())
                 .unwrap_or_default();
             let response_headers = headers(block)?;
+            if self.artifact_limit.is_some() && response_headers.contains_key("set-cookie") {
+                return Err(unsupported("Artifact response cookies are not supported"));
+            }
+            self.location = response_headers.get("location").cloned();
             if status < 100 {
                 return Err(protocol(format!(
                     "InformationalResponse status_code should be in range [100, 200), not {status}"
@@ -452,6 +535,12 @@ impl Transport for HttpTransport {
                     "Content-Encoding {encoding} is not supported"
                 )));
             }
+            let limit = if matches!(status, 301 | 302 | 303 | 307 | 308) && self.location.is_some()
+            {
+                u64::MAX
+            } else {
+                self.artifact_limit.unwrap_or(u64::MAX)
+            };
             let mut body = Vec::new();
             if no_response_body(&request.method, status) {
                 // h11/httpx framing: these responses have no message body,
@@ -487,9 +576,11 @@ impl Transport for HttpTransport {
                         break;
                     }
                     let start = body.len();
+                    let read_size = (size.min(u64::MAX as u128) as u64)
+                        .min(limit.saturating_sub(body.len() as u64));
                     reader
                         .by_ref()
-                        .take(size.min(u64::MAX as u128) as u64)
+                        .take(read_size)
                         .read_to_end(&mut body)
                         .map_err(|e| io_error(e, "Read"))?;
                     if (body.len() - start) as u128 != size {
@@ -516,7 +607,7 @@ impl Transport for HttpTransport {
                 let size = expected.min(u64::MAX as u128) as u64;
                 reader
                     .by_ref()
-                    .take(size)
+                    .take(size.min(limit))
                     .read_to_end(&mut body)
                     .map_err(|e| io_error(e, "Read"))?;
                 if body.len() as u128 != expected {
@@ -527,6 +618,8 @@ impl Transport for HttpTransport {
                 }
             } else {
                 reader
+                    .by_ref()
+                    .take(limit)
                     .read_to_end(&mut body)
                     .map_err(|e| io_error(e, "Read"))?;
             }

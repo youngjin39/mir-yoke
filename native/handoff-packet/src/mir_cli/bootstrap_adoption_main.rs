@@ -322,18 +322,11 @@ pub(super) fn install_evaluator<H: Host + ?Sized>(
     struct ArtifactHost<'a, H: Host + ?Sized>(&'a mut H);
     impl<H: Host + ?Sized> adoption_native::InstallHost for ArtifactHost<'_, H> {
         fn read(&mut self, url: &str, size: u64) -> io::Result<Vec<u8>> {
-            use crate::mir_core::memory::backends::omlx_http::{HttpRequest, Transport};
             if !url.starts_with("http://") && !url.starts_with("https://") {
                 return crate::mir_core::capabilities::native::read(url, size);
             }
             let result =
-                crate::mir_cli::embedding_http::HttpTransport::default().send(HttpRequest {
-                    url: url.into(),
-                    method: "GET".into(),
-                    headers: Default::default(),
-                    body: Value::Null,
-                    timeout: json!({"connect":30,"read":30,"write":30}),
-                });
+                crate::mir_cli::embedding_http::HttpTransport::default().artifact(url, size);
             let response = match result {
                 Ok(response) => response,
                 Err(error) => {

@@ -20,4 +20,6 @@ pub mod bootstrap_adoption;
 pub mod capability;
 pub mod project_hooks;
 
+#[cfg(test)]
+mod artifact_redirect_tests;
 mod embedding_http;
