@@ -543,26 +543,7 @@ fn yaml_value(
     Ok(value)
 }
 pub(crate) fn load_yaml(text: &str) -> Result<Value, String> {
-    // The composer's error preserves class but lacks PyYAML's marked diagnostics.
-    // Render the unterminated flow sequence diagnostic from its source location.
-    let doc = yaml::compose(yaml::Input::Text(text)).map_err(|e| {
-        if text.trim_matches(is_python_space) == "[" {
-            let column = text.find('[').unwrap_or(0);
-            format!(
-                concat!(
-                    "while parsing a flow node\n",
-                    "expected the node content, but found '<stream end>'\n",
-                    "  in \"<unicode string>\", line 1, column {}:\n",
-                    "    {}\n    {}^"
-                ),
-                text.chars().count() + 1,
-                text,
-                " ".repeat(column + 1)
-            )
-        } else {
-            e.message
-        }
-    })?;
+    let doc = yaml::compose(yaml::Input::Text(text)).map_err(|e| e.message)?;
     doc.map(|doc| yaml_value(&doc, doc.root, &mut BTreeSet::new()))
         .unwrap_or(Ok(Value::Null))
 }

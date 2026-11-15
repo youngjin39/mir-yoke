@@ -6,6 +6,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+yaml_diagnostics = '--yaml-diagnostics' in sys.argv
+if yaml_diagnostics:
+    sys.argv.remove('--yaml-diagnostics')
+yaml_cases = {r['case']: r['text'].encode() for r in json.loads(
+    Path(__file__).with_name('y_e18_p3b.json').read_text()) if r['implemented']}
 yaml_probe = '--yaml-probe' in sys.argv
 if yaml_probe:
     sys.argv.remove('--yaml-probe')
@@ -45,8 +50,10 @@ cases = ['ready', 'flag', 'prior', 'prior-status', 'inactive', 'error', 'missing
          'placeholder', 'gaps', 'gap-shape', 'index', 'graph',
          'content-allow', 'content-restart', 'content-ready', 'content-stale', 'content-miss',
          'content-generated']
-if yaml_probe:  # Measured parser-diagnostic gap; deferred explicitly in split.md.
+if yaml_probe:  # Original p3 gap; also covered by --yaml-diagnostics after p3b.
     cases = ['gap-json']
+if yaml_diagnostics:
+    cases = list(yaml_cases)
 if selected:
     assert selected in cases, selected
     cases = [selected]
@@ -72,6 +79,7 @@ reasons = {
     'content-stale': 'content onboarding manifest is stale',
     'content-miss': 'project-specific memory query returned no matching path',
 }
+reasons.update(dict.fromkeys(yaml_cases, 'is invalid:'))
 for name in cases:
     work = a.scratch.resolve()/name
     if work.exists():
@@ -214,6 +222,8 @@ requires_global_capabilities = true
             initial['spec/gaps.yaml'] = b'{}\n'
         if name == 'gap-json':
             initial['spec/gaps.yaml'] = b'[broken\n'
+        if yaml_diagnostics:
+            initial['spec/gaps.yaml'] = yaml_cases[name]
         if name == 'index':
             initial['spec/index.yaml'] = b'requirements: [{status: incomplete}]\n'
         if name == 'graph':

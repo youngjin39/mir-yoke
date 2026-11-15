@@ -1,5 +1,4 @@
-//! Frozen PyYAML compose observations. Error messages are intentionally excluded:
-//! relations and relation_facts replace every YAML error with their own fixed message.
+//! Frozen compose observations and marked diagnostics for bootstrap's YAML loads.
 #[path = "../src/digest.rs"]
 mod digest;
 use handoff_packet::mir_core::yaml::{Input, Kind, Node, compose};
@@ -135,5 +134,26 @@ fn frozen_compose_records() {
     }
     eprintln!("success/error = {counts:?}; 257 records, no exemptions");
     assert_eq!(counts, [236, 21]);
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn frozen_marked_diagnostics() {
+    let records: Value = serde_json::from_str(include_str!("fixtures/y_e18_p3b.json")).unwrap();
+    let mut failures = Vec::new();
+    let mut count = 0;
+    for row in records
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|r| r["implemented"] == true)
+    {
+        count += 1;
+        let err = compose(Input::Text(row["text"].as_str().unwrap())).unwrap_err();
+        if err.class != row["error"] || err.message != row["message"] {
+            failures.push(format!("{}: {:?} != {}", row["case"], err, row["message"]));
+        }
+    }
+    assert_eq!(count, 24);
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }

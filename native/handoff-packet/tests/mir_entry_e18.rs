@@ -60,6 +60,12 @@ fn public_bootstrap_phase1_memory_receipts() {
 #[test]
 #[cfg(target_os = "macos")]
 fn public_bootstrap_phase2_content() {
+    replay_phase2(&[]);
+    replay_phase2(&["--yaml-diagnostics"]);
+}
+
+#[cfg(target_os = "macos")]
+fn replay_phase2(extra: &[&str]) {
     let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let scratch = package.join("target/mig-scratch/Y-E18-p3");
     fs::create_dir_all(&scratch).unwrap();
@@ -67,6 +73,7 @@ fn public_bootstrap_phase2_content() {
     let out = Command::new(package.join("../../.venv/bin/python"))
         .args(["-I", "-X", "utf8"])
         .arg(package.join("tests/fixtures/generate_y_e18_p3.py"))
+        .args(extra)
         .arg("--scratch")
         .arg(tmp.path())
         .arg("--output")
