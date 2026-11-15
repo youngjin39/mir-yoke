@@ -1,5 +1,7 @@
 #[path = "../src/digest.rs"]
 mod digest;
+#[path = "support/relation_root.rs"]
+mod relation_root;
 use handoff_packet::mir_core::{
     memory::{relation_facts as f, store},
     memory_relations as m,
@@ -384,6 +386,7 @@ fn frozen_records() {
         } else {
             scenario(name, &root)
         };
+        let actual = relation_root::normalize(actual, &root);
         let actual: Value = serde_json::from_str(&serde_json::to_string(&actual).unwrap().replace(
             &serde_json::to_string(root.to_str().unwrap()).unwrap()
                 [1..serde_json::to_string(root.to_str().unwrap()).unwrap().len() - 1],

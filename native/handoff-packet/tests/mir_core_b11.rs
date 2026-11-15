@@ -1,6 +1,8 @@
 //! Frozen Python B11 oracle replay. Only synthetic scratch databases are opened.
 #[path = "../src/digest.rs"]
 mod digest;
+#[path = "support/relation_root.rs"]
+mod relation_root;
 use handoff_packet::{
     mir_cli::memory as cli,
     mir_core::memory::{distill as d, store},
@@ -550,7 +552,10 @@ fn normalize(value: Value, root: &Path) -> Value {
             v => v,
         }
     }
-    walk(value, root.to_str().unwrap())
+    walk(
+        relation_root::normalize(value, root),
+        root.to_str().unwrap(),
+    )
 }
 #[test]
 fn frozen_records() {
