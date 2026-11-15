@@ -44,8 +44,9 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
     }
     if argv[0] == "bootstrap" {
         let (args, replacements) = scalar_args(&argv[1..], "");
+        let retained_production_bootstrap_host = &mut mir_cli::bootstrap::ProductionHost::default();
         let (code, out, err) =
-            match mir_cli::bootstrap::main(&mut mir_cli::bootstrap::ProductionHost, &args) {
+            match mir_cli::bootstrap::main(retained_production_bootstrap_host, &args) {
                 Ok(output) => (
                     output
                         .exit

@@ -819,7 +819,7 @@ fn uname_failure_propagates() {
         panic!("uname failure must propagate");
     };
     assert_eq!(
-        (error.class, error.message.as_str()),
+        (error.class.as_str(), error.message.as_str()),
         ("OSError", "uname failed")
     );
 }

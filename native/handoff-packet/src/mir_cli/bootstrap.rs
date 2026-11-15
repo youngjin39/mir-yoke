@@ -64,13 +64,13 @@ use std::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Error {
-    pub class: &'static str,
+    pub class: String,
     pub message: String,
 }
 impl Error {
-    pub fn new(class: &'static str, message: impl Into<String>) -> Self {
+    pub fn new(class: impl Into<String>, message: impl Into<String>) -> Self {
         Self {
-            class,
+            class: class.into(),
             message: message.into(),
         }
     }
@@ -823,7 +823,7 @@ pub fn storage_preflight(
     match same_filesystem {
         Err(error) => {
             if !matches!(
-                error.class,
+                error.class.as_str(),
                 "OSError"
                     | "FileNotFoundError"
                     | "PermissionError"

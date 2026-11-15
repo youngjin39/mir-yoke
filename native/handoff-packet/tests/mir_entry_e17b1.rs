@@ -122,8 +122,14 @@ fn manager_boundary() {
     let import = m.request(json!({"op":"import"})).unwrap();
     assert_eq!(import.events, vec![Event::Stdout(b"import".to_vec())]);
     let invalid = Path::new(std::ffi::OsStr::from_bytes(b"\xff"));
-    assert!(m.initialize(invalid, None, None).is_err());
-    assert!(m.initialize(&root, Some(invalid), None).is_err());
+    assert_eq!(
+        m.initialize(invalid, None, None).unwrap_err().class,
+        "UnicodeEncodeError"
+    );
+    assert_eq!(
+        m.initialize(&root, Some(invalid), None).unwrap_err().class,
+        "UnicodeEncodeError"
+    );
     m.initialize(&root.join("project"), None, None).unwrap();
     let reply = m
         .request(json!({"op":"call","method":"status","args":["p"],"kwargs":{"mcp":true}}))
@@ -211,6 +217,12 @@ fn manager_boundary() {
             reply.unwrap_err()
         };
         assert_eq!(e.kind, kind);
+        let mut typed = ProductionManager::start(&cli, &root).unwrap();
+        let error = typed
+            .call("status", vec![], Default::default())
+            .unwrap_err();
+        assert_eq!(error.class, "RuntimeError");
+        assert_eq!(error.message, e.message);
         if body.contains("launcher") {
             assert_eq!(e.stderr.unwrap().unwrap().unwrap(), b"launcher\n");
             assert_eq!(e.status.unwrap().code(), Some(23));
@@ -222,6 +234,32 @@ fn manager_boundary() {
     assert_eq!(
         m.request(json!("x".repeat(1000000))).unwrap_err().kind,
         Failure::Io
+    );
+    let mut m = ProductionManager::start(&cli, &root).unwrap();
+    m.import().unwrap();
+    let error = m
+        .call(
+            "status",
+            vec![json!("x".repeat(1000000))],
+            Default::default(),
+        )
+        .unwrap_err();
+    assert_eq!(error.class, "RuntimeError");
+    assert!(error.message.contains("Broken pipe"));
+    let mut host = handoff_packet::mir_cli::bootstrap::ProductionHost::default();
+    assert_eq!(
+        host.import_capabilities(&root.join("absent"), &root, Output::Console)
+            .err()
+            .unwrap()
+            .class,
+        "FileNotFoundError"
+    );
+    fs::write(&cli, "#!/bin/sh\nread x\necho '{\"value\":null,\"error\":{\"class\":\"OddProviderError\",\"message\":\"refused\"},\"events\":[]}'\nexit 23\n").unwrap();
+    let mut m = ProductionManager::start(&cli, &root).unwrap();
+    let error = m.call("status", vec![], Default::default()).unwrap_err();
+    assert_eq!(
+        (error.class.as_str(), error.message.as_str()),
+        ("OddProviderError", "refused")
     );
 }
 
@@ -345,4 +383,70 @@ fn check_output_records(records: Vec<Value>) {
         let expected = json!({"stdout":r["stdout"],"stderr":r["stderr"],"value":r["value"]});
         assert_eq!(actual, expected, "{}/{}", r["mode"], r["case"]);
     }
+}
+
+#[test]
+fn owned_provider_classes() {
+    use handoff_packet::mir_cli::bootstrap::{CapabilityOutput, ProductionHost};
+    let records: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/y-e17b2b1a.json")).unwrap();
+    let mut mismatches = Vec::new();
+    for r in records {
+        let source = format!(
+            "import os\n__import__('pathlib').Path('pid').write_text(str(os.getpid()))\nclass CapabilityError(RuntimeError): pass\nclass CapabilityConfigError(ValueError): pass\n{}",
+            r["source"].as_str().unwrap()
+        );
+        let (_temp, root, cli) = setup(Some(&source));
+        let mut host = ProductionHost::default();
+        let actual = match host.import_capabilities(&cli, &root, Output::Console) {
+            Err(e) => json!({"class":e.class,"message":e.message}),
+            Ok(_) => {
+                assert_eq!(fs::read_to_string(root.join("trace")).unwrap(), "import\n");
+                let m = host
+                    .import_capabilities(&cli, &root, Output::Console)
+                    .unwrap();
+                let args = vec![
+                    "status".into(),
+                    "--project-root".into(),
+                    root.display().to_string(),
+                    "--json".into(),
+                ];
+                match CapabilityOutput::run(&args, m) {
+                    Ok(out) => {
+                        assert_eq!(
+                            out.stdout.as_bytes(),
+                            serde_json::from_value::<Vec<u8>>(r["stdout"].clone()).unwrap()
+                        );
+                        assert_eq!(
+                            out.stderr.as_bytes(),
+                            serde_json::from_value::<Vec<u8>>(r["stderr"].clone()).unwrap()
+                        );
+                        json!({"code":out.code})
+                    }
+                    Err(e) => json!({"class":e.class,"message":e.message}),
+                }
+            }
+        };
+        let pid = fs::read_to_string(root.join("pid")).unwrap();
+        assert!(
+            !std::process::Command::new("/bin/kill")
+                .args(["-0", &pid])
+                .output()
+                .unwrap()
+                .status
+                .success()
+        );
+        let expected = r.get("result").cloned().unwrap_or_else(|| {
+            assert_eq!(r["reference_exit"], 23);
+            json!({"class":"RuntimeError","message":"manager reply EOF"})
+        });
+        if actual != expected {
+            mismatches.push(json!([r["stage"], actual, expected]));
+        }
+        assert_eq!(
+            fs::read_to_string(root.join("trace")).unwrap(),
+            r["trace"].as_str().unwrap()
+        );
+    }
+    assert!(mismatches.is_empty(), "{mismatches:?}");
 }

@@ -37,13 +37,13 @@ fn config_error(error: &Error) -> bool {
 }
 fn value_error(error: &Error) -> bool {
     matches!(
-        error.class,
+        error.class.as_str(),
         "ValueError" | "BoundaryError" | "AdoptionError" | "JSONDecodeError"
     )
 }
 fn io_error(error: &Error) -> bool {
     matches!(
-        error.class,
+        error.class.as_str(),
         "OSError"
             | "FileNotFoundError"
             | "PermissionError"
@@ -311,7 +311,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
     let (surface_errors, hook_runtime) = host.validate_surfaces(&root)?;
     errors.extend(surface_errors);
     if let Err(error) = host.load_capability_sources(&root, profile) {
-        if io_error(&error) || matches!(error.class, "ValueError" | "JSONDecodeError") {
+        if io_error(&error) || matches!(error.class.as_str(), "ValueError" | "JSONDecodeError") {
             invalid(&mut errors, &mut invalid_config, error);
         } else {
             return Err(error);

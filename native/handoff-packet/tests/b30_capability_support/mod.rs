@@ -14,7 +14,7 @@ pub fn replay(name: &str, tmp: &Path) -> Value {
             root: &Path,
             config: Option<&Path>,
             home: Option<&Path>,
-        ) -> Result<(), String> {
+        ) -> Result<(), capability::Error> {
             self.calls
                 .push(json!(["init",root,{"config_path":config,"capability_home":home}]));
             Ok(())
@@ -24,10 +24,13 @@ pub fn replay(name: &str, tmp: &Path) -> Value {
             method: &str,
             args: Vec<Value>,
             kwargs: Map<String, Value>,
-        ) -> Result<Value, String> {
+        ) -> Result<Value, capability::Error> {
             self.calls.push(json!([method, args, kwargs]));
             if self.error {
-                return Err("synthetic failure".into());
+                return Err(capability::Error::new(
+                    "CapabilityError",
+                    "synthetic failure",
+                ));
             }
             fs::write(self.root.join("written"), method).unwrap();
             Ok(json!({"query":method}))
@@ -103,7 +106,8 @@ pub fn replay(name: &str, tmp: &Path) -> Value {
     let (code, out, err) = capability::main(
         &args.iter().map(String::as_str).collect::<Vec<_>>(),
         &mut mock,
-    );
+    )
+    .unwrap();
     let mut files = Map::new();
     for entry in fs::read_dir(tmp).unwrap() {
         let path = entry.unwrap().path();

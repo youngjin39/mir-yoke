@@ -30,7 +30,7 @@ impl CapabilityOutput {
         manager: &mut impl crate::mir_cli::capability::Manager,
     ) -> Result<Self, Error> {
         let argv: Vec<_> = argv.iter().map(String::as_str).collect();
-        let (code, stdout, stderr) = crate::mir_cli::capability::main(&argv, manager);
+        let (code, stdout, stderr) = crate::mir_cli::capability::main(&argv, manager)?;
         Ok(Self {
             code,
             stdout: decode(stdout)?,
@@ -91,7 +91,7 @@ fn failed(reason: impl Into<String>) -> (String, Value) {
 fn import(host: &mut impl Host) -> Result<Option<(String, Value)>, Error> {
     match host.capability_import() {
         Ok(()) => Ok(None),
-        Err(e) if ["ImportError", "ModuleNotFoundError"].contains(&e.class) => {
+        Err(e) if ["ImportError", "ModuleNotFoundError"].contains(&e.class.as_str()) => {
             Ok(Some(failed(format!("capability CLI unavailable: {e}"))))
         }
         Err(e) => Err(e),
@@ -162,7 +162,7 @@ pub fn capability_lock_evidence(
         };
         match validate() {
             Ok(()) => (),
-            Err(e) if ["ValueError", "CapabilityConfigError"].contains(&e.class) => {
+            Err(e) if ["ValueError", "CapabilityConfigError"].contains(&e.class.as_str()) => {
                 return Ok(failed(format!("invalid capability lock: {e}")));
             }
             Err(e) => return Err(e),

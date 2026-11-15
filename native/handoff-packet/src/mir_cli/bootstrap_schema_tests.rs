@@ -34,12 +34,12 @@ fn frozen(mode: &str, case: &str) {
             fs::create_dir(root.join("config/s")).unwrap();
         }
         let result = if mode == "boundary" {
-            load_boundary(&root, &mut ProductionHost)
+            load_boundary(&root, &mut ProductionHost::default())
         } else {
             payload(
                 &root,
                 &json!({"payload_manifest":"config/p.json"}),
-                &mut ProductionHost,
+                &mut ProductionHost::default(),
             )
         };
         let actual = match result {

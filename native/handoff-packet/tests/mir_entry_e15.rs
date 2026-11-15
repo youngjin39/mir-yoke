@@ -93,7 +93,7 @@ fn host_child() {
     }
     assert!(std::env::var_os("Y_E15_ENV_POISON").is_none());
     let root = std::env::current_dir().unwrap();
-    let mut host = ProductionHost;
+    let mut host = ProductionHost::default();
     assert_eq!(
         host.expanduser(Path::new("~/future")).unwrap(),
         root.join("future")

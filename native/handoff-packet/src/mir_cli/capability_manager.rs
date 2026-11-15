@@ -184,24 +184,44 @@ impl ProductionManager {
         let clean = !matches!(error.stderr, Some(Err(_) | Ok(Err(_))));
         if success && clean { Ok(()) } else { Err(error) }
     }
-    fn invoke(&mut self, request: Value) -> Result<Value, String> {
+    fn transport(error: Error) -> super::capability::Error {
+        super::capability::Error::new("RuntimeError", error.message)
+    }
+    pub fn import(&mut self) -> Result<(), super::capability::Error> {
+        self.invoke(json!({"op":"import"})).map(|_| ())
+    }
+    fn invoke(&mut self, request: Value) -> Result<Value, super::capability::Error> {
         self.last_reply = None;
         let terminal = request["op"] == "call";
-        let reply = self.request(request).map_err(|e| format!("{e:?}"))?;
+        let reply = self.request(request).map_err(Self::transport)?;
         let result = match &reply.error {
-            Some(e) => Err(e.message.clone()),
+            Some(e) => Err(super::capability::Error::new(
+                e.class.clone(),
+                e.message.clone(),
+            )),
             None => Ok(reply.value.clone()),
         };
         self.last_reply = Some(reply);
-        if terminal {
-            self.finish().map_err(|e| format!("{e:?}"))?;
+        if terminal || result.is_err() {
+            let finished = self.finish().map_err(Self::transport);
+            if result.is_ok() {
+                finished?;
+            }
         }
         result
     }
 }
 impl Manager for ProductionManager {
-    fn initialize(&mut self, p: &Path, c: Option<&Path>, h: Option<&Path>) -> Result<(), String> {
-        let encode = |path: &Path| serde_json::to_value(path).map_err(|e| e.to_string());
+    fn initialize(
+        &mut self,
+        p: &Path,
+        c: Option<&Path>,
+        h: Option<&Path>,
+    ) -> Result<(), super::capability::Error> {
+        let encode = |path: &Path| {
+            serde_json::to_value(path)
+                .map_err(|e| super::capability::Error::new("UnicodeEncodeError", e.to_string()))
+        };
         let mut kwargs = Map::new();
         for (name, path) in [("config_path", c), ("capability_home", h)] {
             if let Some(path) = path {
@@ -212,7 +232,12 @@ impl Manager for ProductionManager {
         self.invoke(json!({"op":"initialize", "args":[root], "path_args":[0], "path_kwargs":kwargs.keys().collect::<Vec<_>>(), "kwargs":kwargs}))
             .map(|_| ())
     }
-    fn call(&mut self, op: &str, args: Vec<Value>, k: Map<String, Value>) -> Result<Value, String> {
+    fn call(
+        &mut self,
+        op: &str,
+        args: Vec<Value>,
+        k: Map<String, Value>,
+    ) -> Result<Value, super::capability::Error> {
         self.invoke(json!({"op":"call", "method":op, "args":args, "kwargs":k}))
     }
 }

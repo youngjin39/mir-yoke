@@ -187,7 +187,7 @@ fn check_marker_names(path: &Path) -> Result<(), Error> {
 
 fn caught_json(error: &Error) -> bool {
     matches!(
-        error.class,
+        error.class.as_str(),
         "OSError"
             | "FileNotFoundError"
             | "PermissionError"

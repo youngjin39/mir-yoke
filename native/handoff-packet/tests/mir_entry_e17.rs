@@ -16,7 +16,7 @@ impl capability::Manager for Provider {
         root: &Path,
         config: Option<&Path>,
         home: Option<&Path>,
-    ) -> Result<(), String> {
+    ) -> Result<(), b::Error> {
         assert_eq!(root, self.root);
         assert!(config.is_none() && home.is_none());
         Ok(())
@@ -26,7 +26,7 @@ impl capability::Manager for Provider {
         method: &str,
         args: Vec<Value>,
         kwargs: Map<String, Value>,
-    ) -> Result<Value, String> {
+    ) -> Result<Value, b::Error> {
         assert_eq!(args, vec![json!("code_app")]);
         if method == "sync" {
             assert_eq!(kwargs, json!({"apply": true}).as_object().unwrap().clone());
@@ -35,7 +35,7 @@ impl capability::Manager for Provider {
             assert!(kwargs.is_empty());
         }
         if self.case == "console-error" {
-            return Err("provider refused".into());
+            return Err(b::Error::new("CapabilityError", "provider refused"));
         }
         if self.case == "console-change" {
             fs::write(self.root.join(".mir/capability-lock.json"), "{}").unwrap();
@@ -114,7 +114,7 @@ fn frozen_capability_acquisition() {
             }
             "lock" => b::capability_lock_evidence(&root, &mut host).map(|v| json!(v)),
             "config" => b::Host::capability_config_plugins(
-                &mut b::ProductionHost,
+                &mut b::ProductionHost::default(),
                 &root.join("config/capability-sources.json"),
             )
             .map(|v| {

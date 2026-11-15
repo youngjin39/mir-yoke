@@ -6,7 +6,34 @@ use std::{
     process::{Command, Stdio},
 };
 
-pub struct ProductionHost;
+#[derive(Default)]
+pub struct ProductionHost {
+    #[cfg(unix)]
+    manager: Option<crate::mir_cli::capability_manager::ProductionManager>,
+}
+impl ProductionHost {
+    /// Explicit session boundary; public Host dispatch is bound in a later slice.
+    #[cfg(unix)]
+    pub fn import_capabilities(
+        &mut self,
+        cli: &Path,
+        root: &Path,
+        output: crate::mir_cli::capability_manager::Output,
+    ) -> Result<&mut crate::mir_cli::capability_manager::ProductionManager, Error> {
+        match self.manager {
+            Some(ref mut manager) => Ok(manager),
+            None => {
+                let mut manager =
+                    crate::mir_cli::capability_manager::ProductionManager::start_with_output(
+                        cli, root, output,
+                    )
+                    .map_err(|e| os_error(cli, e))?;
+                manager.import()?;
+                Ok(self.manager.insert(manager))
+            }
+        }
+    }
+}
 
 fn os_error(path: &Path, error: std::io::Error) -> Error {
     let class = authored::io_error(path, std::io::Error::from(error.kind())).class;
