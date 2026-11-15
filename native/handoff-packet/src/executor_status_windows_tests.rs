@@ -19,8 +19,10 @@ fn wt_path_status_matches_windows_capture() {
                 );
             } else {
                 assert_eq!(
-                    serde_json::json!(actual.unwrap()),
-                    record["value"],
+                    serde_json::json!(handoff_packet::supply::plain(actual.unwrap())),
+                    serde_json::json!(handoff_packet::supply::plain(PathBuf::from(
+                        record["value"].as_str().unwrap()
+                    ))),
                     "{route}"
                 );
             }

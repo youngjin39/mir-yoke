@@ -73,7 +73,8 @@ fn observe(mut value: Value, tmp: &Path) -> Value {
         strip_verbatim(&mut value);
     }
     let text = serde_json::to_string(&value).unwrap();
-    let escaped = serde_json::to_string(tmp.to_str().unwrap()).unwrap();
+    let plain_tmp = handoff_packet::supply::plain(tmp.to_owned());
+    let escaped = serde_json::to_string(plain_tmp.to_str().unwrap()).unwrap();
     value = serde_json::from_str(&text.replace(&escaped[1..escaped.len() - 1], "<tmp>")).unwrap();
     #[cfg(windows)]
     {
@@ -102,6 +103,22 @@ fn observe(mut value: Value, tmp: &Path) -> Value {
         }
     }
     value
+}
+
+#[cfg(windows)]
+#[test]
+fn wt_path_observe_root_spellings() {
+    let root = Path::new(r"\\?\C:\synthetic\b30-bootstrap-test");
+    for path in [
+        r"C:\synthetic\b30-bootstrap-test\project\notes\a.md",
+        r"\\?\C:\synthetic\b30-bootstrap-test\project\notes\a.md",
+        "C:/synthetic/b30-bootstrap-test/project/notes/a.md",
+    ] {
+        assert_eq!(
+            observe(json!({"value": [path]}), root),
+            json!({"value": ["<tmp>/project/notes/a.md"]})
+        );
+    }
 }
 
 struct StorageHost<'a> {

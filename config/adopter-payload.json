@@ -3167,7 +3167,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_status_windows_tests.rs",
-      "sha256": "b1c40efc5db83f40a2d626c4d1030cf09e2826102f65bfa171382521ff8c2d39"
+      "sha256": "53e3fe4f34473dda5ded97c015a10c2f0781acc9847fd8eb7d2bcbf180cbe8b6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4967,7 +4967,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_cli_b30_bootstrap_identity.rs",
-      "sha256": "d003d02c9dacc0d1195d90d39db2cab1c8113daa199dae99897026330ced0227"
+      "sha256": "df77de4f9dd416be3be254db24404f868971548395f2aebf11e772a22b9911b2"
     },
     {
       "classification": "template-maintainer-tool",
