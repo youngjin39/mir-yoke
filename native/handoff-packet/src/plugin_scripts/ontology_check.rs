@@ -331,7 +331,7 @@ fn io_error(e: std::io::Error, p: &Path) -> Error {
         ),
     )
 }
-fn read(p: &Path) -> Result<Vec<u8>> {
+pub fn read(p: &Path) -> Result<Vec<u8>> {
     if cfg!(not(windows)) && p.is_dir() {
         return Err(error(
             "IsADirectoryError",

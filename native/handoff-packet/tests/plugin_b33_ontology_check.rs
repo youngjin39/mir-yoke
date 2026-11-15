@@ -109,13 +109,50 @@ impl Reader for Io<'_> {
             self.0.join(p)
         };
         if path.is_dir() {
-            return Err(q::error(
-                "IsADirectoryError",
-                format!("[Errno 21] Is a directory: '{}'", path.display()),
-            ));
+            return q::read(&path);
         }
         fs::read(&path).map_err(|e| q::error("OSError", e.to_string()))
     }
+}
+#[test]
+fn reader_directory_errno_uses_python_repr() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("directory'quoted");
+    fs::create_dir(&path).unwrap();
+    let failure = Io(&path).read(".").unwrap_err();
+    assert_eq!(
+        json!([failure.class, failure.message]),
+        json!([
+            if cfg!(windows) {
+                "PermissionError"
+            } else {
+                "IsADirectoryError"
+            },
+            format!(
+                "{}: {}",
+                if cfg!(windows) {
+                    "[Errno 13] Permission denied"
+                } else {
+                    "[Errno 21] Is a directory"
+                },
+                serde_json::to_string(path.to_str().unwrap()).unwrap()
+            )
+        ])
+    );
+}
+#[cfg(windows)]
+#[test]
+fn windows_reader_directory_errno_matches_capture() {
+    let root = tempfile::tempdir().unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("fixtures/wt-path-records-b33-windows.json")).unwrap();
+    assert_eq!(
+        clean(
+            observe(Io(root.path()).read(".").map(|_| Value::Null), root.path()),
+            root.path()
+        ),
+        capture["records"]["core"]["refs_codes"]["value"][0][9]
+    );
 }
 fn run(
     root: &Path,
