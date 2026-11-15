@@ -96,7 +96,9 @@ def main():
                     raise ValueError("unknown manager operation: " + op)
                 response = {"value": value, "error": None}
             except BaseException as exc:
-                error = {"class": type(exc).__name__, "message": str(exc)}
+                error = {"class": type(exc).__name__, "message": str(exc),
+                         "mro": [c.__module__ + "." + c.__qualname__
+                                 for c in type(exc).__mro__]}
                 response = {"value": None, "error": error}
         if mode and (response["error"] is not None or request["op"] == "call"):
             sys.stdout.flush()

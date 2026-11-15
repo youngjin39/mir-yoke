@@ -18,6 +18,8 @@ pub enum Event {
 pub struct Exception {
     pub class: String,
     pub message: String,
+    #[serde(default)]
+    pub mro: Vec<String>,
 }
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -195,10 +197,11 @@ impl ProductionManager {
         let terminal = request["op"] == "call";
         let reply = self.request(request).map_err(Self::transport)?;
         let result = match &reply.error {
-            Some(e) => Err(super::capability::Error::new(
-                e.class.clone(),
-                e.message.clone(),
-            )),
+            Some(e) => Err(super::capability::Error {
+                class: e.class.clone(),
+                message: e.message.clone(),
+                mro: e.mro.clone(),
+            }),
             None => Ok(reply.value.clone()),
         };
         self.last_reply = Some(reply);

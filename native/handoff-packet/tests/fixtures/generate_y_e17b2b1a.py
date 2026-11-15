@@ -67,4 +67,30 @@ out = subprocess.run([scope['sys'].executable, '-I', str(wrapper)], cwd=work,
 assert out.returncode == 23 and not out.stdout and not out.stderr
 records.append(dict(stage='transport', source=source, reference_exit=23,
                     trace=(work / 'trace').read_text()))
+for case, definition, raised, expected in [
+    ('subclass', 'class DerivedCapabilityError(CapabilityError): pass',
+     'DerivedCapabilityError', {'code': 1}),
+    ('same-name', 'Unrelated = type("CapabilityError", (Exception,), {"__module__": "unrelated"})',
+     'Unrelated', {'class': 'CapabilityError', 'message': 'refused'}),
+]:
+    source = ("from pathlib import Path\n" + definition + "\n"
+              "Path('trace').write_text('import\\n')\n"
+              "class CapabilityManager:\n"
+              " def __init__(self,*a,**kw):\n"
+              "  with Path('trace').open('a') as f: f.write('init\\n')\n"
+              " def status(self,*a,**kw):\n"
+              "  with Path('trace').open('a') as f: f.write('call\\n')\n"
+              f"  raise {raised}('refused')\n")
+    manager.write_text(original + '\n' + source)
+    work = root / case
+    work.mkdir(exist_ok=True)
+    out = subprocess.run([scope['sys'].executable, '-I', str(wrapper)], cwd=work,
+                         env={'HOME': str(work), 'PATH': '/usr/bin:/bin'},
+                         capture_output=True, check=True)
+    result = json.loads((work / 'result.json').read_text())
+    assert result == expected and not out.stdout
+    assert out.stderr == (b'ERROR: refused\n' if case == 'subclass' else b'')
+    records.append(dict(stage='call', case=case, source=source, result=result,
+                        stdout=list(out.stdout), stderr=list(out.stderr),
+                        trace=(work / 'trace').read_text()))
 a.output.write_text('[\n' + ',\n'.join(json.dumps(r, sort_keys=True) for r in records) + '\n]\n')

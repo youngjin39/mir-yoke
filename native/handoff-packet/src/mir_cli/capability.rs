@@ -368,7 +368,15 @@ pub fn main(argv: &[&str], manager: &mut impl Manager) -> Result<Output, Error> 
     };
     match run().and_then(|v| ascii_json(&v, !values.contains_key("--json"))) {
         Ok(out) => Ok((0, out.into_bytes(), vec![])),
-        Err(e) if ["CapabilityError", "CapabilityConfigError"].contains(&e.class.as_str()) => {
+        Err(e)
+            if e.mro.iter().any(|c| {
+                matches!(
+                    c.as_str(),
+                    "mir.core.capabilities.manager.CapabilityError"
+                        | "mir.core.capabilities.config.CapabilityConfigError"
+                )
+            }) =>
+        {
             Ok((1, vec![], format!("ERROR: {e}\n").into_bytes()))
         }
         Err(e) => Err(e),

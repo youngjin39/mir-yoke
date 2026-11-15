@@ -66,12 +66,22 @@ use std::{
 pub struct Error {
     pub class: String,
     pub message: String,
+    pub mro: Vec<String>,
 }
 impl Error {
     pub fn new(class: impl Into<String>, message: impl Into<String>) -> Self {
+        let class = class.into();
+        let mro = match class.as_str() {
+            "CapabilityError" => vec!["mir.core.capabilities.manager.CapabilityError".into()],
+            "CapabilityConfigError" => {
+                vec!["mir.core.capabilities.config.CapabilityConfigError".into()]
+            }
+            _ => vec![],
+        };
         Self {
-            class: class.into(),
+            class,
             message: message.into(),
+            mro,
         }
     }
 }

@@ -195,7 +195,10 @@ fn manager_boundary() {
             );
         }
         let root_text = root.to_str().unwrap();
-        let actual = json!(m.last_reply).to_string().replace(root_text, "{ROOT}");
+        let mut reply = json!(m.last_reply);
+        // Earlier records predate the additive exception ancestry field.
+        reply["error"].as_object_mut().unwrap().remove("mro");
+        let actual = reply.to_string().replace(root_text, "{ROOT}");
         assert_eq!(actual, record["reply"].to_string(), "{case}");
         assert_eq!(fs::read_dir(root.join("outside")).unwrap().count(), 0);
     }
@@ -387,13 +390,30 @@ fn check_output_records(records: Vec<Value>) {
 
 #[test]
 fn owned_provider_classes() {
+    check_provider_classes(None);
+}
+
+#[test]
+fn provider_subclass_caught() {
+    check_provider_classes(Some("subclass"));
+}
+
+#[test]
+fn provider_same_name_propagated() {
+    check_provider_classes(Some("same-name"));
+}
+
+fn check_provider_classes(case: Option<&str>) {
     use handoff_packet::mir_cli::bootstrap::{CapabilityOutput, ProductionHost};
     let records: Vec<Value> =
         serde_json::from_str(include_str!("fixtures/y-e17b2b1a.json")).unwrap();
     let mut mismatches = Vec::new();
-    for r in records {
+    for r in records
+        .into_iter()
+        .filter(|r| case.is_none_or(|c| r["case"] == c))
+    {
         let source = format!(
-            "import os\n__import__('pathlib').Path('pid').write_text(str(os.getpid()))\nclass CapabilityError(RuntimeError): pass\nclass CapabilityConfigError(ValueError): pass\n{}",
+            "import os\n__import__('pathlib').Path('pid').write_text(str(os.getpid()))\nclass CapabilityError(RuntimeError): pass\nclass CapabilityConfigError(ValueError): pass\nCapabilityConfigError.__module__ = 'mir.core.capabilities.config'\n{}",
             r["source"].as_str().unwrap()
         );
         let (_temp, root, cli) = setup(Some(&source));
