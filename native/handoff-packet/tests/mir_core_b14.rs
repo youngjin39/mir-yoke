@@ -383,7 +383,8 @@ fn frozen_records() {
         };
         let actual = observe_root(name, actual, root.to_str().unwrap());
         let actual = observe_paths(name, normalize(actual, &root));
-        let expected = platform_expected(name, expected, cfg!(windows));
+        // Apply the same existing field observation to the selected platform oracle.
+        let expected = observe_paths(name, platform_expected(name, expected, cfg!(windows)));
         if actual != expected {
             failures.push(format!(
                 "record {name}: actual={actual}, expected={expected}"
@@ -512,31 +513,62 @@ fn wt_core_a_c_paths() {
 }
 
 fn platform_expected(name: &str, expected: &Value, windows: bool) -> Value {
-    if windows && name == "doctor.missing.True" {
-        serde_json::from_str::<Value>(
-            &include_str!("fixtures/w2/b14-gc-doctor-windows.json").replace("{ROOT}", "<tmp>"),
-        )
-        .unwrap()
-    } else {
-        expected.clone()
+    // Only these explicitly uncaptured records retain the Unix expectation.
+    if !windows || matches!(name, "doctor.relative_link.True") {
+        return expected.clone();
     }
+    let capture: Value = serde_json::from_str(
+        &include_str!("fixtures/w2/b14-gc-doctor-windows-all.json").replace("{ROOT}", "<tmp>"),
+    )
+    .unwrap();
+    capture["records"]
+        .get(name)
+        .expect("record missing from Windows capture")
+        .clone()
 }
 
 #[test]
-fn wt_core_a_e_expectations() {
+fn wt_core_a_f_expectations() {
     let unix: Value = serde_json::from_str(include_str!("fixtures/w2/b14-gc-doctor.json")).unwrap();
-    let captured: Value = serde_json::from_str(
+    let capture: Value = serde_json::from_str(
+        &include_str!("fixtures/w2/b14-gc-doctor-windows-all.json").replace("{ROOT}", "<tmp>"),
+    )
+    .unwrap();
+    let captured = capture["records"].as_object().unwrap();
+    // These records are absent from the PC capture; retain their existing handling.
+    let absent = ["doctor.relative_link.True"];
+    assert_eq!(captured.len(), 39);
+    assert_eq!(capture["exempt"], json!(absent));
+    assert_eq!(
+        captured.len() + absent.len(),
+        unix.as_object().unwrap().len()
+    );
+    let single: Value = serde_json::from_str(
         &include_str!("fixtures/w2/b14-gc-doctor-windows.json").replace("{ROOT}", "<tmp>"),
     )
     .unwrap();
+    assert_eq!(captured["doctor.missing.True"], single);
+    for name in captured.keys() {
+        assert!(unix.get(name).is_some(), "unknown captured record {name}");
+    }
     for (name, expected) in unix.as_object().unwrap() {
         assert_eq!(platform_expected(name, expected, false), *expected);
-        let wanted = if name == "doctor.missing.True" {
-            &captured
-        } else {
+        let wanted = if absent.contains(&name.as_str()) {
+            assert!(!captured.contains_key(name));
             expected
+        } else {
+            captured
+                .get(name)
+                .expect("record missing from Windows capture")
         };
         assert_eq!(platform_expected(name, expected, true), *wanted, "{name}");
+        // Distinguish selection even where the two platform values happen to match.
+        let sentinel = json!({"wrong_unix_expectation":name});
+        let wanted = if absent.contains(&name.as_str()) {
+            &sentinel
+        } else {
+            wanted
+        };
+        assert_eq!(platform_expected(name, &sentinel, true), *wanted, "{name}");
     }
-    assert_ne!(captured, unix["doctor.missing.True"]);
 }
