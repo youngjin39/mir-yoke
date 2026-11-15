@@ -19,6 +19,8 @@ from pathlib import Path
 from unittest import mock
 
 B15 = "98ad7423f84fe7e4ec0e38b63375216faa7966b7"
+# First historical generator/fixture revision containing all 53 B15 routes.
+B15_SCENARIOS = "aa4fdbdbaa1c9641d5b7594e6c73174a0e0e4315"
 B18 = "63efe8cddc6e9c718ec460b9f014523595bd433d"
 CASES = tuple(f"parity.fnmatch_{i}" for i in range(23))
 
@@ -42,6 +44,12 @@ def prepare(repo, bundle, yaml_root):
             target = bundle / pin / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(subprocess.check_output(["git", "show", f"{pin}:{name}"], cwd=repo))
+    for name in ("tests/test_w2_b15_render_frozen.py",
+                 "native/handoff-packet/tests/fixtures/w2/b15-render.json"):
+        target = bundle / B15_SCENARIOS / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(subprocess.check_output(
+            ["git", "show", f"{B15_SCENARIOS}:{name}"], cwd=repo))
     for source in yaml_root.glob("*.py"):
         target = bundle / "deps/yaml" / source.name
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -110,56 +118,66 @@ def capture(bundle, scratch, output, check_unix):
             raise RuntimeError("capture forbids network/process execution")
     sys.addaudithook(audit)
     activate(bundle, B15)
-    # Config is unreachable on the selected render CLI route. Do not fake it.
+    # Config is unreachable on the B15 render/helper routes. Do not fake it.
     isolated_module(bundle / B15 / "src/mir/cli/memory.py", "mir.cli.memory")
-    g15 = isolated_module(bundle / B15 / "tests/test_w2_b15_render_frozen.py", "oracle_b15", True)
+    g15 = isolated_module(
+        bundle / B15_SCENARIOS / "tests/test_w2_b15_render_frozen.py", "oracle_b15", True)
     check_modules(bundle)
-    root = scratch / "b15"
-    root.mkdir()
-    # The original scenario owns all setup, ingest, CLI calls, and teardown.
-    # Suppress only its final observer compaction to retain exact output bytes.
-    with mock.patch.object(g15, "_compact", side_effect=lambda v: v):
-        raw = g15.observe(g15.CASES["cli.None.True.True"], root)
-    check_modules(bundle)
-    assert "value" in raw, raw
-    file_bytes = (root / "out/nested/projection.md").read_bytes()
-    value = raw["value"]
-    assert value["results"] == [{"value": 0}] and value["stderr"] == "", raw
-    # Original JSON observer doesn't replace escaped Windows roots. Sanitize
-    # parsed string values instead, without touching projection file bytes.
-    def clean(v):
-        if isinstance(v, str):
-            v = v.replace(str(root), "{ROOT}")
-            return v.replace(root.drive, "{DRIVE}") if root.drive else v
-        if isinstance(v, list):
-            return [clean(x) for x in v]
-        if isinstance(v, dict):
-            return {k: clean(x) for k, x in v.items()}
-        return v
-    # raw may contain <tmp> on Unix, from the original generator observer.
-    record = clean(raw)
-    record = json.loads(json.dumps(record).replace("<tmp>", "{ROOT}"))
-    b15 = {"observation": record, "file_hex": file_bytes.hex(),
-           "byte_length": len(file_bytes), "sha256": digest(file_bytes),
-           "character_length": len(file_bytes.decode("utf-8"))}
+    fixture_dir = "native/handoff-packet/tests/fixtures/w2"
+    expected = json.loads((bundle / B15_SCENARIOS / fixture_dir / "b15-render.json").read_text())
+    assert len(g15.CASES) == 53 and g15.CASES.keys() == expected.keys()
+    b15 = {}
+    for name, case in g15.CASES.items():
+        root = scratch / "b15" / name
+        root.mkdir(parents=True)
+        # Only the observer compaction is suppressed. The pinned scenario still
+        # owns setup, ingest, exceptions, CLI calls and teardown for every route.
+        with mock.patch.object(g15, "_compact", side_effect=lambda v: v):
+            raw = g15.observe(case, root)
+        check_modules(bundle)
+        if check_unix:
+            assert os.name == "posix"
+            assert g15._compact(raw) == expected[name], name
+
+        def clean(v, root=root):
+            if isinstance(v, str):
+                v = v.replace(str(root), "{ROOT}").replace("<tmp>", "{ROOT}")
+                return v.replace(root.drive, "{DRIVE}") if root.drive else v
+            if isinstance(v, list):
+                return [clean(x) for x in v]
+            if isinstance(v, dict):
+                return {k: clean(x) for k, x in v.items()}
+            return v
+
+        # No projection is produced by helpers/early failures; null distinguishes
+        # absence from an empty file. Bytes and hashes are never normalized.
+        projection = root / ("out/real.md" if name == "cli.in_place"
+                             else "out/nested/projection.md")
+        file_bytes = projection.read_bytes() if projection.is_file() else None
+        b15[name] = {
+            "observation": clean(raw),
+            "file_hex": file_bytes.hex() if file_bytes is not None else None,
+            "byte_length": len(file_bytes) if file_bytes is not None else None,
+            "sha256": digest(file_bytes) if file_bytes is not None else None,
+            "character_length": (len(file_bytes.decode("utf-8"))
+                                 if file_bytes is not None else None),
+        }
+    assert b15["cli.None.True.True"]["observation"]["value"]["results"] == [{"value": 0}]
+    assert b15["cli.None.False.False"]["observation"]["value"]["stderr"] == ""
+    assert b15["helpers.empty"]["observation"]["value"]["ingests"] == []
     activate(bundle, B18)
     g18 = isolated_module(
         bundle / B18 / "tests/test_w2_b18_archive_helpers_frozen.py", "oracle_b18", True)
     check_modules(bundle)
     b18 = {name: g18.observe(g18.CASES[name], scratch) for name in CASES}
     check_modules(bundle)
-    fixture_dir = "native/handoff-packet/tests/fixtures/w2"
     if check_unix:
-        assert os.name == "posix"
-        expected = json.loads((bundle / B15 / fixture_dir / "b15-render.json").read_text())
-        normalized = json.loads(json.dumps(raw).replace(str(root), "<tmp>"))
-        assert {"value": g15._compact(normalized["value"])} == expected["cli.None.True.True"]
         expected = json.loads((bundle / B18 / fixture_dir / "b18-archive-helpers.json").read_text())
         assert all(b18[n] == expected[n] for n in CASES)
     result = {"platform": sys.platform, "python": sys.version.split()[0],
-              "pins": {"b15": B15, "b18": B18},
+              "pins": {"b15": B15, "b15_scenarios": B15_SCENARIOS, "b18": B18},
               "source_manifest_sha256": digest((bundle / "manifest.json").read_bytes()),
-              "b15": {"cli.None.True.True": b15}, "b18": b18,
+              "b15": b15, "b18": b18,
               "unix_frozen_verified": check_unix}
     text = json.dumps(result, indent=2, ensure_ascii=True) + "\n"
     for private in (str(scratch), os.environ.get("USERNAME", "")):
