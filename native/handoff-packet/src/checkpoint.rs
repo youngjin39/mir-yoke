@@ -80,12 +80,45 @@ pub fn atomic_write(
     checkpoint_io!("write", path, temp.write_all(body))?;
     checkpoint_io!("flush", path, temp.flush())?;
     checkpoint_io!("before_commit", path, before_commit())?;
+    #[cfg(not(windows))]
     checkpoint_io!(
         "persist",
         path,
         temp.persist(path).map_err(|error| error.error)
     )?;
+    #[cfg(windows)]
+    checkpoint_io!(
+        "persist",
+        path,
+        persist_windows(temp, path, |_| {
+            std::thread::sleep(Duration::from_millis(1));
+        })
+    )?;
     Ok(())
+}
+
+#[cfg(windows)]
+fn persist_windows(
+    mut temp: tempfile::NamedTempFile,
+    path: &Path,
+    mut wait: impl FnMut(&io::Error),
+) -> io::Result<()> {
+    let mut retries = 0;
+    loop {
+        match temp.persist(path) {
+            Ok(_) => return Ok(()),
+            // MoveFileExW replacement can deny access while a reader or another
+            // replacement still holds the old target. Retry only this Win32 code
+            // at this seam, retaining the same temp. Readonly/ACL denials must
+            // still return the actual OS error after at most 32 attempts.
+            Err(error) if error.error.raw_os_error() == Some(5) && retries < 31 => {
+                wait(&error.error);
+                temp = error.file;
+                retries += 1;
+            }
+            Err(error) => return Err(error.error),
+        }
+    }
 }
 
 // One shared budget for both Git commands and recursive runner/dispatch discovery.
@@ -431,7 +464,7 @@ mod tests {
             fs::write(&path, "curated original").unwrap();
             let held = Barrier::new(2);
             let finished = Barrier::new(2);
-            // Hold a real reader across the entire persist, without sleeps/retries.
+            // Hold a real reader across publication, including bounded retries.
             let result = std::thread::scope(|scope| {
                 let reader = scope.spawn(|| -> io::Result<String> {
                     let mut options = fs::OpenOptions::new();
@@ -470,6 +503,104 @@ mod tests {
             );
             assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
         }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_persist_releases_reader_after_real_denial() {
+        use std::os::windows::fs::OpenOptionsExt;
+        use windows_sys::Win32::Storage::FileSystem::{FILE_SHARE_READ, FILE_SHARE_WRITE};
+
+        for restricted in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("handoff.md");
+            fs::write(&path, b"curated").unwrap();
+            let mut options = fs::OpenOptions::new();
+            options.read(true);
+            if restricted {
+                options.share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE);
+            }
+            let mut reader = Some(options.open(&path).unwrap());
+            let mut temp = tempfile::NamedTempFile::new_in(dir.path()).unwrap();
+            temp.write_all(b"replacement").unwrap();
+            let mut retries = 0;
+            // The real MoveFileExW must fail before this seam releases the handle.
+            let result = persist_windows(temp, &path, |error| {
+                assert_eq!(error.raw_os_error(), Some(5), "{error:?}");
+                retries += 1;
+                drop(reader.take());
+            });
+            assert!(result.is_ok(), "restricted={restricted}: {result:?}");
+            assert_eq!(retries, 1, "{result:?}");
+            assert_eq!(fs::read(&path).unwrap(), b"replacement", "{result:?}");
+            assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1, "{result:?}");
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_persist_bounds_denial_and_does_not_retry_other_errors() {
+        for readonly in [true, false] {
+            let dir = tempfile::tempdir().unwrap();
+            let original = dir.path().join("handoff.md");
+            fs::write(&original, b"curated").unwrap();
+            let permissions = fs::metadata(&original).unwrap().permissions();
+            let path = if readonly {
+                let mut denied = permissions.clone();
+                denied.set_readonly(true);
+                fs::set_permissions(&original, denied).unwrap();
+                original.clone()
+            } else {
+                dir.path().join("missing/handoff.md")
+            };
+            let mut temp = tempfile::NamedTempFile::new_in(dir.path()).unwrap();
+            temp.write_all(b"replacement").unwrap();
+            let mut retries = 0;
+            let result = persist_windows(temp, &path, |_| retries += 1);
+            // Restore the original attributes before any assertion can unwind.
+            fs::set_permissions(&original, permissions).unwrap();
+            assert!(result.is_err(), "readonly={readonly}: {result:?}");
+            let error = result.as_ref().unwrap_err();
+            if readonly {
+                assert_eq!(error.raw_os_error(), Some(5), "{result:?}");
+                assert_eq!(retries, 31, "{result:?}");
+            } else {
+                assert_eq!(error.raw_os_error(), Some(3), "{result:?}");
+                assert_eq!(retries, 0, "{result:?}");
+            }
+            assert_eq!(fs::read(&original).unwrap(), b"curated", "{result:?}");
+            assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1, "{result:?}");
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_persist_refuses_substituted_target_junction() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("handoff.md");
+        let outside = dir.path().join("outside");
+        fs::create_dir(&outside).unwrap();
+        fs::write(outside.join("sentinel"), b"outside").unwrap();
+        fs::write(&path, b"curated").unwrap();
+        let result = atomic_write(&path, b"replacement", || {
+            fs::remove_file(&path)?;
+            let output = Command::new("cmd")
+                .args(["/d", "/c", "mklink", "/J"])
+                .arg(&path)
+                .arg(&outside)
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        });
+        assert!(result.is_err(), "{result:?}");
+        assert_eq!(
+            fs::read(outside.join("sentinel")).unwrap(),
+            b"outside",
+            "{result:?}"
+        );
+        assert_eq!(fs::read_dir(&outside).unwrap().count(), 1, "{result:?}");
+        fs::remove_dir(&path).unwrap();
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1, "{result:?}");
     }
 
     #[test]
