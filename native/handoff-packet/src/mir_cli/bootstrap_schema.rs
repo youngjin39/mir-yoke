@@ -12,11 +12,94 @@ fn repr(s: &str) -> String {
 fn padding(i: usize, indent: usize) -> String {
     " ".repeat(if i == 0 { 0 } else { indent + 1 })
 }
+// Python 3.12 PrettyPrinter._pprint_str at jsonschema's width of 72.
+fn pp_string(text: &crate::python_json::Text, indent: usize, allowance: usize) -> String {
+    use crate::python_json::{Text, is_python_space};
+    let top = indent == 0;
+    let indent = indent + usize::from(top);
+    let allowance = allowance + usize::from(top);
+    let width = 72_isize - indent as isize;
+    let points = &text.codepoints;
+    let space = |cp| char::from_u32(cp).is_some_and(is_python_space);
+    let render = |cp: &[u32]| Text::new(cp.to_vec()).repr();
+    let fits = |s: &str, w: isize| s.chars().count() as isize <= w;
+    let mut lines = Vec::new();
+    let mut start = 0;
+    let mut i = 0;
+    while i < points.len() {
+        let cp = points[i];
+        i += 1;
+        if matches!(cp, 10..=13 | 28..=30 | 0x85 | 0x2028 | 0x2029) {
+            if cp == 13 && points.get(i) == Some(&10) {
+                i += 1;
+            }
+            lines.push(&points[start..i]);
+            start = i;
+        }
+    }
+    if start < points.len() {
+        lines.push(&points[start..]);
+    }
+    let mut chunks = Vec::new();
+    let mut last_repr = text.repr();
+    for (i, line) in lines.iter().enumerate() {
+        last_repr = render(line);
+        let last = i + 1 == lines.len();
+        if fits(
+            &last_repr,
+            width - if last { allowance as isize } else { 0 },
+        ) {
+            chunks.push(last_repr.clone());
+            continue;
+        }
+        // Alternating non-space and space runs, as in Python's pprint regex.
+        let mut parts = Vec::new();
+        let mut j = 0;
+        while j < line.len() {
+            let start = j;
+            while j < line.len() && !space(line[j]) {
+                j += 1;
+            }
+            while j < line.len() && space(line[j]) {
+                j += 1;
+            }
+            parts.push(&line[start..j]);
+        }
+        let mut current = Vec::new();
+        for (j, part) in parts.iter().enumerate() {
+            let mut candidate = current.clone();
+            candidate.extend_from_slice(part);
+            let w = width
+                - if last && j + 1 == parts.len() {
+                    allowance as isize
+                } else {
+                    0
+                };
+            if !fits(&render(&candidate), w) {
+                if !current.is_empty() {
+                    chunks.push(render(&current));
+                }
+                current = part.to_vec();
+            } else {
+                current = candidate;
+            }
+        }
+        if !current.is_empty() {
+            chunks.push(render(&current));
+        }
+    }
+    if chunks.len() <= 1 {
+        return last_repr;
+    }
+    let body = chunks.join(&format!("\n{}", " ".repeat(indent)));
+    if top { format!("({body})") } else { body }
+}
 fn pp(v: &Value, indent: usize, allowance: usize) -> String {
     if v.repr().chars().count() + indent + allowance <= 72 {
         return v.repr();
     }
     match v {
+        Value::String(text) => pp_string(text, indent, allowance),
         Value::Object(m) if !m.is_empty() => {
             let n = m.len();
             let entries = m

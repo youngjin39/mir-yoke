@@ -1,16 +1,23 @@
 use super::*;
 use crate::mir_cli::bootstrap::ProductionHost;
 
-fn frozen(mode: &str) {
+fn frozen(mode: &str, case: &str) {
     let mut records: Vec<Value> =
         serde_json::from_str(include_str!("../../tests/fixtures/y-e16.json")).unwrap();
     records.extend(
         serde_json::from_str::<Vec<Value>>(include_str!("../../tests/fixtures/y-e16b.json"))
             .unwrap(),
     );
+    records.extend(
+        serde_json::from_str::<Vec<Value>>(include_str!("../../tests/fixtures/y-e16c.json"))
+            .unwrap(),
+    );
     let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/Y-E16");
     fs::create_dir_all(&scratch).unwrap();
-    for record in records.iter().filter(|r| r["mode"] == mode) {
+    for record in records
+        .iter()
+        .filter(|r| r["mode"] == mode && (case.is_empty() || r["case"] == case))
+    {
         let temp = tempfile::tempdir_in(&scratch).unwrap();
         let root = temp.path().canonicalize().unwrap();
         fs::create_dir(root.join("config")).unwrap();
@@ -47,9 +54,26 @@ fn frozen(mode: &str) {
 }
 #[test]
 fn y_e16_boundary() {
-    frozen("boundary");
+    frozen("boundary", "");
 }
 #[test]
 fn y_e16_payload() {
-    frozen("payload");
+    frozen("payload", "");
+}
+
+#[test]
+fn y_e16c_long_string() {
+    frozen("payload", "long-string");
+}
+#[test]
+fn y_e16c_long_list() {
+    frozen("payload", "long-list");
+}
+#[test]
+fn y_e16c_nested_dict() {
+    frozen("payload", "nested-dict");
+}
+#[test]
+fn y_e16c_unicode_long_string() {
+    frozen("payload", "unicode-long-string");
 }
