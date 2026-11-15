@@ -1,9 +1,47 @@
 {
+  "boundaries": {
+    "112": {
+      "citation": "https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-",
+      "unreachable": "Filling the shared volume or changing quotas is outside scratch authority."
+    },
+    "17": {
+      "citation": "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexw",
+      "unreachable": "Requires a second volume; oracle is confined to one scratch volume."
+    },
+    "19": {
+      "citation": "https://learn.microsoft.com/en-us/windows/win32/fileio/file-attribute-constants",
+      "unreachable": "File read-only attribute produces access denied (5), not a protected volume (19); changing volume protection is outside scratch authority."
+    },
+    "1920": {
+      "citation": "https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--1700-3999-",
+      "unreachable": "Requires a separately provisioned reparse/provider failure; admin and provider changes are outside this scratch-only capture."
+    },
+    "206": {
+      "citation": "https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file",
+      "unreachable": "A 256-character component returned WinError 123 on this host; 206 was not observed and is not substituted for that result."
+    },
+    "303": {
+      "citation": "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-deletefilew",
+      "unreachable": "Real delete-pending reopen returned WinError 2 on this host; 303 was not observed and is not substituted for that result."
+    },
+    "50": {
+      "citation": "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileinformationbyhandle",
+      "unreachable": "Ex support depends on OS/filesystem/flags; no pinned installer operation selects unsupported Ex requests. Requires a separate native Ex capability probe."
+    },
+    "87": {
+      "citation": "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileinformationbyhandle",
+      "unreachable": "Ex support depends on OS/filesystem/flags; no pinned installer operation selects unsupported Ex requests. Requires a separate native Ex capability probe."
+    },
+    "unknown": {
+      "citation": "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-formatmessagew",
+      "unreachable": "No arbitrary unknown code is inducible by a supported operation; constructed exceptions are not OS evidence. Native passthrough belongs to S7."
+    }
+  },
   "manifest": {
     "architecture": "AMD64",
     "filesystem": "NTFS",
     "filesystem_encoding": "utf-8",
-    "generator_sha256": "3114b099f44b54a766602fee1cc45c9f1c91b088e02f7a3aa0787f6d4b4ce8c6",
+    "generator_sha256": "8305694fc2eed885451db8f84b09c28a95b7e46d972a7288e08bb48078527494",
     "locale": "LC_COLLATE=C;LC_CTYPE=Korean_Korea.949;LC_MONETARY=C;LC_NUMERIC=C;LC_TIME=C",
     "os": "Windows-11-10.0.26200-SP0",
     "python": "3.12.13 (main, Aug  7 2026, 02:26:41) [MSC v.1944 64 bit (AMD64)]",
@@ -84,6 +122,52 @@
         {
           "operation": "remove_created_home",
           "phase": "return"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "crt-bad-fd": {
+      "error": {
+        "class": "OSError",
+        "errno": 9,
+        "filename": null,
+        "filename2": null,
+        "rendered": "[Errno 9] Bad file descriptor",
+        "strerror": "Bad file descriptor",
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "os.fsync",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "os.fsync",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "crt-lock-read": {
+      "error": {
+        "class": "PermissionError",
+        "errno": 13,
+        "filename": null,
+        "filename2": null,
+        "rendered": "[Errno 13] Permission denied",
+        "strerror": "Permission denied",
+        "winerror": null
+      },
+      "exit": null,
+      "operation": "os.read",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "os.read",
+          "phase": "entry"
         }
       ],
       "tree": {},
@@ -1749,6 +1833,213 @@
           "type": "file"
         }
       },
+      "value": null
+    },
+    "win32-delete-pending": {
+      "error": {
+        "class": "FileNotFoundError",
+        "errno": 2,
+        "filename": null,
+        "filename2": null,
+        "rendered": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.",
+        "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.",
+        "winerror": 2
+      },
+      "exit": null,
+      "operation": "CreateFileW(OPEN_EXISTING)",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "CreateFileW(OPEN_EXISTING)",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "win32-exists": {
+      "error": {
+        "class": "FileExistsError",
+        "errno": 17,
+        "filename": null,
+        "filename2": null,
+        "rendered": "[WinError 80] \ud30c\uc77c\uc774 \uc788\uc2b5\ub2c8\ub2e4.",
+        "strerror": "\ud30c\uc77c\uc774 \uc788\uc2b5\ub2c8\ub2e4.",
+        "winerror": 80
+      },
+      "exit": null,
+      "operation": "CreateFileW(CREATE_NEW)",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "CreateFileW(CREATE_NEW)",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "win32-invalid-handle": {
+      "error": {
+        "class": "OSError",
+        "errno": 9,
+        "filename": null,
+        "filename2": null,
+        "rendered": "[WinError 6] \ud578\ub4e4\uc774 \uc798\ubabb\ub418\uc5c8\uc2b5\ub2c8\ub2e4.",
+        "strerror": "\ud578\ub4e4\uc774 \uc798\ubabb\ub418\uc5c8\uc2b5\ub2c8\ub2e4.",
+        "winerror": 6
+      },
+      "exit": null,
+      "operation": "FlushFileBuffers",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "FlushFileBuffers",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "win32-invalid-name": {
+      "error": {
+        "class": "OSError",
+        "errno": 22,
+        "filename": "{ROOT}\\cases\\extended-os-errors\\bad<name",
+        "filename2": null,
+        "rendered": "[WinError 123] \ud30c\uc77c \uc774\ub984, \ub514\ub809\ud130\ub9ac \uc774\ub984 \ub610\ub294 \ubcfc\ub968 \ub808\uc774\ube14 \uad6c\ubb38\uc774 \uc798\ubabb\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\extended-os-errors\\\\bad<name'",
+        "strerror": "\ud30c\uc77c \uc774\ub984, \ub514\ub809\ud130\ub9ac \uc774\ub984 \ub610\ub294 \ubcfc\ub968 \ub808\uc774\ube14 \uad6c\ubb38\uc774 \uc798\ubabb\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+        "winerror": 123
+      },
+      "exit": null,
+      "operation": "os.mkdir",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "os.mkdir",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "win32-lock": {
+      "error": {
+        "class": "PermissionError",
+        "errno": 13,
+        "filename": null,
+        "filename2": null,
+        "rendered": "[WinError 33] \ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc758 \ud55c \ubd80\ubd84\uc744 \uc7a0\uac14\uc73c\ubbc0\ub85c, \ud504\ub85c\uc138\uc2a4\uac00 \ud574\ub2f9 \ud30c\uc77c\uc744 \uc561\uc138\uc2a4\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.",
+        "strerror": "\ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc758 \ud55c \ubd80\ubd84\uc744 \uc7a0\uac14\uc73c\ubbc0\ub85c, \ud504\ub85c\uc138\uc2a4\uac00 \ud574\ub2f9 \ud30c\uc77c\uc744 \uc561\uc138\uc2a4\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.",
+        "winerror": 33
+      },
+      "exit": null,
+      "operation": "ReadFile",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "ReadFile",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "win32-long-name": {
+      "error": {
+        "class": "OSError",
+        "errno": 22,
+        "filename": "{ROOT}\\cases\\extended-os-errors\\xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "filename2": null,
+        "rendered": "[WinError 123] \ud30c\uc77c \uc774\ub984, \ub514\ub809\ud130\ub9ac \uc774\ub984 \ub610\ub294 \ubcfc\ub968 \ub808\uc774\ube14 \uad6c\ubb38\uc774 \uc798\ubabb\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\extended-os-errors\\\\xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'",
+        "strerror": "\ud30c\uc77c \uc774\ub984, \ub514\ub809\ud130\ub9ac \uc774\ub984 \ub610\ub294 \ubcfc\ub968 \ub808\uc774\ube14 \uad6c\ubb38\uc774 \uc798\ubabb\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+        "winerror": 123
+      },
+      "exit": null,
+      "operation": "os.mkdir",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "os.mkdir",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "win32-not-directory": {
+      "error": {
+        "class": "NotADirectoryError",
+        "errno": 20,
+        "filename": "{ROOT}\\cases\\extended-os-errors\\file",
+        "filename2": null,
+        "rendered": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\extended-os-errors\\\\file'",
+        "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+        "winerror": 267
+      },
+      "exit": null,
+      "operation": "os.listdir",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "os.listdir",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "win32-path-missing": {
+      "error": {
+        "class": "FileNotFoundError",
+        "errno": 2,
+        "filename": "{ROOT}\\cases\\extended-os-errors\\absent\\child",
+        "filename2": null,
+        "rendered": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\extended-os-errors\\\\absent\\\\child'",
+        "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+        "winerror": 3
+      },
+      "exit": null,
+      "operation": "os.mkdir",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "os.mkdir",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
+      "value": null
+    },
+    "win32-sharing": {
+      "error": {
+        "class": "PermissionError",
+        "errno": 13,
+        "filename": "{ROOT}\\cases\\extended-os-errors\\file",
+        "filename2": "{ROOT}\\cases\\extended-os-errors\\renamed",
+        "rendered": "[WinError 32] \ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc744 \uc0ac\uc6a9 \uc911\uc774\uae30 \ub54c\ubb38\uc5d0 \ud504\ub85c\uc138\uc2a4\uac00 \uc561\uc138\uc2a4 \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '{ROOT}\\\\cases\\\\extended-os-errors\\\\file' -> '{ROOT}\\\\cases\\\\extended-os-errors\\\\renamed'",
+        "strerror": "\ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc744 \uc0ac\uc6a9 \uc911\uc774\uae30 \ub54c\ubb38\uc5d0 \ud504\ub85c\uc138\uc2a4\uac00 \uc561\uc138\uc2a4 \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+        "winerror": 32
+      },
+      "exit": null,
+      "operation": "os.replace",
+      "stderr_hex": "",
+      "stdout_hex": "",
+      "trace": [
+        {
+          "operation": "os.replace",
+          "phase": "entry"
+        }
+      ],
+      "tree": {},
       "value": null
     }
   }

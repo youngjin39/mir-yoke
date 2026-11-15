@@ -23,6 +23,8 @@ from pathlib import Path
 PIN = "0754c36a1bc5814d793984292aa9be6ae26d3001"
 SOURCE = "scripts/install_user_runtime_agents.py"
 GENERATOR = Path(__file__).resolve()
+if os.name == "nt":
+    import msvcrt  # noqa: F401 -- preload Windows CRT before restricting sys.path
 
 
 def inside(path, root):
@@ -66,6 +68,139 @@ def win_api():
                                            wintypes.LPWSTR, wintypes.DWORD]
     kernel.GetVolumeInformationW.restype = wintypes.BOOL
     return kernel
+
+
+def capture_error_seams(kernel, case, record):
+    """Real OS failures only; expected codes validate, never construct, the result."""
+    from ctypes import wintypes
+
+    # Signatures: Windows SDK fileapi.h / winbase.h (windows-sys 0.61.2).
+    for name, args in {
+        "FlushFileBuffers": [wintypes.HANDLE],
+        "DeleteFileW": [wintypes.LPCWSTR],
+        "LockFile": [wintypes.HANDLE] + [wintypes.DWORD] * 4,
+        "UnlockFile": [wintypes.HANDLE] + [wintypes.DWORD] * 4,
+        "ReadFile": [wintypes.HANDLE, ctypes.c_void_p, wintypes.DWORD,
+                     ctypes.POINTER(wintypes.DWORD), ctypes.c_void_p],
+    }.items():
+        getattr(kernel, name).argtypes = args
+        getattr(kernel, name).restype = wintypes.BOOL
+
+    def checked(function, *args):
+        result = function(*args)
+        if not result:
+            raise ctypes.WinError(ctypes.get_last_error())
+        return result
+
+    def opened(path, access=0x80000000, share=7, disposition=3):
+        handle = kernel.CreateFileW(str(path), access, share, None, disposition, 0x80, None)
+        if handle == ctypes.c_void_p(-1).value:
+            raise ctypes.WinError(ctypes.get_last_error())
+        return handle
+
+    root = case("extended-os-errors")
+    # Locked/delete-pending files cannot be traversed by tree(). These primitive
+    # probes snapshot a separate empty observation directory, not installer effects.
+    observation = case("extended-observation")
+    file = root / "file"
+    file.write_bytes(b"locked byte")
+
+    def win(name, operation, function, *args, codes):
+        outcome = record(name, operation, observation, function, *args)
+        assert outcome["error"] is not None, (name, "unexpected success")
+        assert outcome["error"]["winerror"] in codes, (name, outcome)
+        return outcome
+
+    win("win32-path-missing", "os.mkdir", os.mkdir, root / "absent/child", codes=(3,))
+    win("win32-not-directory", "os.listdir", os.listdir, file, codes=(267,))
+    win("win32-invalid-name", "os.mkdir", os.mkdir, root / "bad<name", codes=(123,))
+    # A component over 255 characters: observed WinError 123 on the owner PC (2026-11-15),
+    # 206 on hosts that report filename length instead. Record what the OS returns.
+    long_name = win("win32-long-name", "os.mkdir", os.mkdir, root / ("x" * 256), codes=(123, 206))
+    win("win32-exists", "CreateFileW(CREATE_NEW)", opened, file,
+        0x40000000, 7, 1, codes=(80,))
+    handle = opened(file, share=0)
+    try:
+        win("win32-sharing", "os.replace", os.replace, file, root / "renamed", codes=(32,))
+    finally:
+        checked(kernel.CloseHandle, handle)
+
+    # Lock one byte on one handle, read through distinct Win32 and CRT handles.
+    with contextlib.ExitStack() as cleanup:
+        handle = opened(file, access=0xC0000000)
+        cleanup.callback(checked, kernel.CloseHandle, handle)
+        reader = opened(file)
+        cleanup.callback(checked, kernel.CloseHandle, reader)
+        fd = os.open(file, os.O_RDONLY | os.O_BINARY)
+        cleanup.callback(os.close, fd)
+        checked(kernel.LockFile, handle, 0, 0, 1, 0)
+        cleanup.callback(checked, kernel.UnlockFile, handle, 0, 0, 1, 0)
+        buffer, count = ctypes.create_string_buffer(1), wintypes.DWORD()
+        win("win32-lock", "ReadFile", checked, kernel.ReadFile,
+            reader, buffer, 1, ctypes.byref(count), None, codes=(33,))
+        outcome = record("crt-lock-read", "os.read", observation, os.read, fd, 1)
+        error = outcome["error"]
+        assert error and error["errno"] == 13 and error["winerror"] is None, outcome
+        assert error["filename"] is None and error["filename2"] is None, outcome
+
+    handle = opened(file)
+    checked(kernel.CloseHandle, handle)
+    win("win32-invalid-handle", "FlushFileBuffers", checked,
+        kernel.FlushFileBuffers, handle, codes=(6,))
+    # Positive closed descriptor: CRT EBADF, not fsync(-1) argument validation.
+    fd = os.open(file, os.O_RDONLY | os.O_BINARY)
+    os.close(fd)
+    outcome = record("crt-bad-fd", "os.fsync", observation, os.fsync, fd)
+    error = outcome["error"]
+    assert error and error["errno"] == 9 and error["winerror"] is None, outcome
+    assert error["filename"] is None and error["filename2"] is None, outcome
+
+    pending = root / "pending"
+    pending.write_bytes(b"pending")
+    handle = opened(pending, access=0x00010000)  # DELETE, sharing includes delete.
+    try:
+        checked(kernel.DeleteFileW, str(pending))
+        # 2: POSIX delete semantics (Windows 10 1903+ NTFS removes the name at once).
+        outcome = win("win32-delete-pending", "CreateFileW(OPEN_EXISTING)", opened,
+                      pending, codes=(2, 5, 303))
+    finally:
+        checked(kernel.CloseHandle, handle)
+
+    boundaries = {
+        str(code): {"unreachable": reason, "citation": citation}
+        for codes, reason, citation in (
+            ((17,), "Requires a second volume; oracle is confined to one scratch volume.",
+             "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexw"),
+            ((19,), "File read-only attribute produces access denied (5), not a protected "
+             "volume (19); changing volume protection is outside scratch authority.",
+             "https://learn.microsoft.com/en-us/windows/win32/fileio/file-attribute-constants"),
+            ((112,), "Filling the shared volume or changing quotas is outside scratch authority.",
+             "https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-"),
+            ((50, 87), "Ex support depends on OS/filesystem/flags; no pinned installer operation "
+             "selects unsupported Ex requests. Requires a separate native Ex capability probe.",
+             "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileinformationbyhandle"),
+            ((1920,), "Requires a separately provisioned reparse/provider failure; admin and "
+             "provider changes are outside this scratch-only capture.",
+             "https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--1700-3999-"),
+            (("unknown",), "No arbitrary unknown code is inducible by a supported operation; "
+             "constructed exceptions are not OS evidence. Native passthrough belongs to S7.",
+             "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-formatmessagew"),
+        ) for code in codes
+    }
+    if long_name["error"]["winerror"] != 206:
+        boundaries["206"] = {
+            "unreachable": "A 256-character component returned WinError 123 on this host; "
+            "206 was not observed and is not substituted for that result.",
+            "citation": "https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file",
+        }
+    if outcome["error"]["winerror"] != 303:
+        boundaries["303"] = {
+            "unreachable": "Real delete-pending reopen returned WinError "
+            f"{outcome['error']['winerror']} on this host; 303 was not observed and is "
+            "not substituted for that result.",
+            "citation": "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-deletefilew",
+        }
+    return boundaries
 
 
 def capture(repo, scratch):
@@ -316,7 +451,9 @@ def capture(repo, scratch):
         outcome = record(name, operation, root, function, *args)
         assert outcome["error"] is not None, name
     audit(run)
-    return {"manifest": manifest, "records": records}
+    boundaries = capture_error_seams(kernel, case, record)
+    audit(run)
+    return {"manifest": manifest, "records": records, "boundaries": boundaries}
 
 
 def main():

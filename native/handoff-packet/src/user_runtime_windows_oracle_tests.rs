@@ -27,7 +27,7 @@ fn corpus() -> Value {
     .unwrap();
     assert_eq!(corpus["manifest"]["reference_pin"], PIN);
     let records = corpus["records"].as_object().unwrap();
-    assert_eq!(records.len(), 28);
+    assert_eq!(records.len(), 39); // 12 normal + 27 error (S6 FIX added 11 real-OS error records)
     let successful: Vec<_> = records
         .iter()
         .filter(|(_, r)| r["error"].is_null())
