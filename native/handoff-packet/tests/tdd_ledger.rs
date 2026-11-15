@@ -1,6 +1,9 @@
 //! Replay unmodified Yoke references; no interpreter or live Git repository.
 use serde_json::{Value, json};
 use std::{fs, path::Path, process::Command};
+#[path = "support/fake_git.rs"]
+mod fake_git;
+
 fn snapshot(root: &Path) -> Value {
     fn walk(root: &Path, dir: &Path, out: &mut serde_json::Map<String, Value>) {
         for entry in fs::read_dir(dir).unwrap() {
@@ -43,34 +46,37 @@ fn replay_fixture(fixture: &Value, mode: &str) -> usize {
         }
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_project-hooks"));
         cmd.current_dir(root).env("CLAUDE_PROJECT_DIR", root);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let tools = tempfile::tempdir().unwrap();
-            let git = tools.path().join("git");
-            let body = record["git_body"]
-                .as_str()
-                .map(str::to_owned)
-                .unwrap_or_else(|| {
-                    format!(
-                        "#!/bin/sh\nprintf '%s' '{}'\n",
-                        record["changed"].as_str().unwrap()
-                    )
-                });
-            fs::write(&git, body).unwrap();
-            fs::set_permissions(
-                &git,
-                fs::Permissions::from_mode(record["git_mode"].as_u64().unwrap_or(0o755) as u32),
-            )
-            .unwrap();
-            cmd.env("PATH", tools.path());
-            // Keep fake Git alive for the duration of the child.
-            run(&mut cmd, record, mode, &expand, root);
+        let tools = tempfile::tempdir().unwrap();
+        cmd.env("HOME", root)
+            .env("USERPROFILE", root)
+            .env("PATH", tools.path());
+        // Only this record models POSIX executable bits, not Windows permissions.
+        if record["git_mode"].as_u64().unwrap_or(0o755) != 0o755 {
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let git = tools.path().join("git");
+                fs::write(&git, "#!/bin/sh\n").unwrap();
+                fs::set_permissions(&git, fs::Permissions::from_mode(0o644)).unwrap();
+            }
+            #[cfg(not(unix))]
+            continue;
+        } else {
+            let mode = match record["id"].as_str().unwrap() {
+                "precommit-merge-git-invalid-stdout" => "invalid-stdout",
+                "precommit-merge-git-invalid-stderr" => "invalid-stderr",
+                "precommit-merge-git-timeout" => "timeout",
+                _ => "changed",
+            };
+            fake_git::install(
+                tools.path(),
+                &mut cmd,
+                record["changed"].as_str().unwrap(),
+                mode,
+            );
         }
-        #[cfg(not(unix))]
-        {
-            run(&mut cmd, record, mode, &expand, root);
-        }
+        // The executable and controlled PATH exist before launching the hook.
+        run(&mut cmd, record, mode, &expand, root);
         count += 1;
     }
     count
@@ -195,10 +201,43 @@ fn compatibility(select: impl Fn(&str) -> bool) {
         .retain(|r| select(r["id"].as_str().unwrap()));
     assert!(!fixture["records"].as_array().unwrap().is_empty());
     for mode in ["prewrite", "precommit", "precommit-merge"] {
-        #[cfg(not(unix))]
-        if mode == "precommit-merge" {
-            continue;
-        }
         replay_fixture(&fixture, mode);
+    }
+}
+
+#[test]
+fn native_fake_git_owns_child_path_and_preserves_bytes() {
+    let tools = tempfile::tempdir().unwrap();
+    let home = tempfile::tempdir().unwrap();
+    for (mode, stdout, stderr, code) in [
+        (
+            "changed",
+            b"src/a.rs\nsrc/space name.rs\n".as_slice(),
+            b"".as_slice(),
+            0,
+        ),
+        ("invalid-stdout", &[255], &[], 0),
+        ("invalid-stderr", &[], &[255], 0),
+        ("refusal", &[], b"fixture git refusal\n", 128),
+    ] {
+        let mut command = Command::new("git");
+        command
+            .current_dir(home.path())
+            .env("HOME", home.path())
+            .env("USERPROFILE", home.path());
+        command.env("PATH", "must never be inherited");
+        fake_git::install(
+            tools.path(),
+            &mut command,
+            "src/a.rs\nsrc/space name.rs\n",
+            mode,
+        );
+        let result = command
+            .args(["diff", "--name-only", "HEAD"])
+            .output()
+            .unwrap();
+        assert_eq!(result.stdout, stdout, "{mode}: stdout");
+        assert_eq!(result.stderr, stderr, "{mode}: stderr");
+        assert_eq!(result.status.code(), Some(code), "{mode}: exit");
     }
 }

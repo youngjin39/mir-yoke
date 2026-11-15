@@ -21,9 +21,15 @@ IDS = [str(i) * 32 for i in range(1, 9)]
 
 def git(repo, *args):
     env = dict(os.environ, GIT_AUTHOR_DATE=OLD, GIT_COMMITTER_DATE=OLD, GIT_OPTIONAL_LOCKS="0")
-    return subprocess.check_output(
-        ["git", "-C", str(repo), *args], stderr=subprocess.PIPE, env=env
-    ).decode()
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(repo), *args], stderr=subprocess.PIPE, env=env
+        ).decode()
+    except subprocess.CalledProcessError as error:
+        # Keep the original exception/exit and expose the otherwise lost Git cause.
+        sys.stderr.buffer.write(error.stderr)
+        sys.stderr.buffer.flush()
+        raise
 
 
 def write(path, text):
