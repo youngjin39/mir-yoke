@@ -33,12 +33,39 @@ pub struct NodeData {
     pub line: usize,
     pub column: usize,
     pub end_line: usize,
+    index: usize,
 }
 /// Arena indices preserve shared and cyclic aliases without reference-count cycles.
 #[derive(Debug)]
 pub struct Node {
     pub arena: Vec<NodeData>,
     pub root: usize,
+    chars: Vec<char>,
+}
+impl Node {
+    pub(crate) fn constructor_error(
+        &self,
+        index: usize,
+        context: Option<usize>,
+        problem: &str,
+    ) -> String {
+        let mark = |i: usize| {
+            let n = &self.arena[i];
+            Mark {
+                index: n.index,
+                line: n.line,
+                column: n.column,
+            }
+        };
+        marked(
+            "ConstructorError",
+            &self.chars,
+            context.map(|i| ("while constructing a mapping", mark(i))),
+            problem,
+            mark(index),
+        )
+        .message
+    }
 }
 const PREFIX: &str = "tag:yaml.org,2002:";
 // PyYAML raises RecursionError near 490 levels, a threshold that moves with the caller's
@@ -46,38 +73,79 @@ const PREFIX: &str = "tag:yaml.org,2002:";
 // known divergence band (PyYAML accepts from a shallow caller, this rejects).
 const DEPTH_LIMIT: usize = 450;
 fn reader(input: Input<'_>) -> Result<Vec<char>> {
+    let name = if matches!(input, Input::Text(_)) {
+        "<unicode string>"
+    } else {
+        "<byte string>"
+    };
+    let failure = |code: u32, pos: usize, reason: &str| YamlError {
+        class: "ReaderError",
+        message: format!(
+            "unacceptable character #x{code:04x}: {reason}\n  in \"{name}\", position {pos}"
+        ),
+    };
     let text = match input {
         Input::Text(s) => s.to_owned(),
         Input::Bytes(b) => {
             if b.starts_with(&[0xff, 0xfe]) || b.starts_with(&[0xfe, 0xff]) {
-                if b.len() % 2 != 0 {
-                    return Err(error("ReaderError"));
-                }
                 let le = b[0] == 0xff;
                 let units = b.as_chunks::<2>().0.iter().map(|p| {
                     if le {
-                        u16::from_le_bytes([p[0], p[1]])
+                        u16::from_le_bytes(*p)
                     } else {
-                        u16::from_be_bytes([p[0], p[1]])
+                        u16::from_be_bytes(*p)
                     }
                 });
-                char::decode_utf16(units)
-                    .collect::<std::result::Result<String, _>>()
-                    .map_err(|_| error("ReaderError"))?
+                let mut text = String::new();
+                let mut i = 0;
+                for decoded in char::decode_utf16(units) {
+                    let c = decoded.map_err(|e| {
+                        failure(
+                            b[i] as u32,
+                            i,
+                            if e.unpaired_surrogate() >= 0xdc00 {
+                                "illegal encoding"
+                            } else if i + 3 >= b.len() {
+                                "unexpected end of data"
+                            } else {
+                                "illegal UTF-16 surrogate"
+                            },
+                        )
+                    })?;
+                    i += c.len_utf16() * 2;
+                    text.push(c);
+                }
+                if i < b.len() {
+                    return Err(failure(b[i] as u32, i, "truncated data"));
+                }
+                text
             } else {
                 std::str::from_utf8(b)
-                    .map_err(|_| error("ReaderError"))?
+                    .map_err(|e| {
+                        let i = e.valid_up_to();
+                        failure(
+                            b[i] as u32,
+                            i,
+                            if e.error_len().is_none() {
+                                "unexpected end of data"
+                            } else if (0xc2..=0xf4).contains(&b[i]) {
+                                "invalid continuation byte"
+                            } else {
+                                "invalid start byte"
+                            },
+                        )
+                    })?
                     .to_owned()
             }
         }
     };
     let chars: Vec<_> = text.chars().collect();
-    if chars.iter().any(|&c| {
+    if let Some((i, &c)) = chars.iter().enumerate().find(|&(_, &c)| {
         !matches!(c as u32,
         0x9 | 0xa | 0xd | 0x20..=0x7e | 0x85 | 0xa0..=0xd7ff |
         0xe000..=0xfffd | 0x10000..=0x10ffff)
     }) {
-        return Err(error("ReaderError"));
+        return Err(failure(c as u32, i, "special characters are not allowed"));
     }
     Ok(chars)
 }
@@ -216,6 +284,12 @@ fn blank(c: char) -> bool {
     c == '\0' || c == ' ' || c == '\t' || br(c)
 }
 impl Scanner {
+    fn failure(&self, context: Option<(&str, Mark)>, problem: &str) -> YamlError {
+        marked("ScannerError", &self.chars, context, problem, self.mark)
+    }
+    fn found(&self) -> String {
+        crate::executor_text::repr(&self.peek(0).to_string())
+    }
     fn peek(&self, n: usize) -> char {
         self.chars.get(self.pos + n).copied().unwrap_or('\0')
     }
@@ -258,8 +332,11 @@ impl Scanner {
         });
     }
     fn remove_key(&mut self) -> Result<()> {
-        if self.keys.remove(&self.flow).is_some_and(|k| k.required) {
-            return Err(error("ScannerError"));
+        if let Some(k) = self.keys.remove(&self.flow).filter(|k| k.required) {
+            return Err(self.failure(
+                Some(("while scanning a simple key", k.mark)),
+                "could not find expected ':'",
+            ));
         }
         Ok(())
     }
@@ -329,8 +406,11 @@ impl Scanner {
                 .map(|(&level, _)| level)
                 .collect();
             for level in stale {
-                if self.keys.remove(&level).is_some_and(|k| k.required) {
-                    return Err(error("ScannerError"));
+                if let Some(k) = self.keys.remove(&level).filter(|k| k.required) {
+                    return Err(self.failure(
+                        Some(("while scanning a simple key", k.mark)),
+                        "could not find expected ':'",
+                    ));
                 }
             }
             self.unwind(self.mark.column as isize);
@@ -406,7 +486,14 @@ impl Scanner {
                 '-' | '?' if blank(self.peek(1)) || (c == '?' && self.flow > 0) => {
                     if self.flow == 0 {
                         if !self.allow {
-                            return Err(error("ScannerError"));
+                            return Err(self.failure(
+                                None,
+                                if c == '-' {
+                                    "sequence entries are not allowed here"
+                                } else {
+                                    "mapping keys are not allowed here"
+                                },
+                            ));
                         }
                         if self.add_indent(start.column) {
                             self.emit(
@@ -458,7 +545,7 @@ impl Scanner {
                         self.allow = false;
                     } else {
                         if self.flow == 0 && !self.allow {
-                            return Err(error("ScannerError"));
+                            return Err(self.failure(None, "mapping values are not allowed here"));
                         }
                         if self.flow == 0 && self.add_indent(start.column) {
                             self.emit(TokenKind::Map, start);
@@ -481,7 +568,20 @@ impl Scanner {
                     if value.is_empty()
                         || !(blank(self.peek(0)) || "?:,]}%@`".contains(self.peek(0)))
                     {
-                        return Err(error("ScannerError"));
+                        return Err(self.failure(
+                            Some((
+                                if c == '&' {
+                                    "while scanning an anchor"
+                                } else {
+                                    "while scanning an alias"
+                                },
+                                start,
+                            )),
+                            &format!(
+                                "expected alphabetic or numeric character, but found {}",
+                                self.found()
+                            ),
+                        ));
                     }
                     self.emit(
                         if c == '*' {
@@ -515,7 +615,13 @@ impl Scanner {
                         || "-?:,[]{}#&*!|>'\"%@`".contains(c)
                             && !("-?:".contains(c) && !blank(self.peek(1)))
                     {
-                        return Err(error("ScannerError"));
+                        return Err(self.failure(
+                            Some(("while scanning for the next token", start)),
+                            &format!(
+                                "found character {} that cannot start any token",
+                                self.found()
+                            ),
+                        ));
                     }
                     self.save_key()?;
                     self.allow = false;
@@ -618,12 +724,16 @@ impl Scanner {
         Ok(s)
     }
     fn quoted(&mut self, quote: char) -> Result<String> {
+        let start = self.mark;
         self.advance();
         let mut value = String::new();
         loop {
             let c = self.peek(0);
             if c == '\0' {
-                return Err(error("ScannerError"));
+                return Err(self.failure(
+                    Some(("while scanning a quoted scalar", start)),
+                    "found unexpected end of stream",
+                ));
             }
             if c == quote {
                 self.advance();
@@ -669,17 +779,22 @@ impl Scanner {
                             8
                         };
                         let mut code = 0u32;
+                        for k in 0..n {
+                            let digit = self.peek(k).to_digit(16).ok_or_else(|| self.failure(Some(("while scanning a double-quoted scalar", start)), &format!("expected escape sequence of {n} hexadecimal numbers, but found {}", crate::executor_text::repr(&self.peek(k).to_string()))))?;
+                            code = code * 16 + digit;
+                        }
                         for _ in 0..n {
-                            code = code
-                                .checked_mul(16)
-                                .and_then(|v| self.peek(0).to_digit(16).map(|d| v + d))
-                                .ok_or_else(|| error("ScannerError"))?;
                             self.advance();
                         }
                         value.push(char::from_u32(code).ok_or_else(|| error("ScannerError"))?);
                         continue;
                     }
-                    _ => return Err(error("ScannerError")),
+                    _ => {
+                        return Err(self.failure(
+                            Some(("while scanning a double-quoted scalar", start)),
+                            &format!("found unknown escape character {}", self.found()),
+                        ));
+                    }
                 };
                 value.push(replacement);
                 self.advance();
@@ -721,6 +836,7 @@ impl Scanner {
         s
     }
     fn block_scalar(&mut self, style: char) -> Result<String> {
+        let start = self.mark;
         self.advance();
         let mut chomp = ' ';
         let mut increment = None;
@@ -731,7 +847,10 @@ impl Scanner {
                 self.advance();
             } else if c.is_ascii_digit() && increment.is_none() {
                 if c == '0' {
-                    return Err(error("ScannerError"));
+                    return Err(self.failure(
+                        Some(("while scanning a block scalar", start)),
+                        "expected indentation indicator in the range 1-9, but found 0",
+                    ));
                 }
                 increment = c.to_digit(10).map(|n| n as usize);
                 self.advance();
@@ -740,7 +859,13 @@ impl Scanner {
             }
         }
         if !blank(self.peek(0)) {
-            return Err(error("ScannerError"));
+            return Err(self.failure(
+                Some(("while scanning a block scalar", start)),
+                &format!(
+                    "expected chomping or indentation indicators, but found {}",
+                    self.found()
+                ),
+            ));
         }
         while self.peek(0) == ' ' {
             self.advance();
@@ -751,7 +876,13 @@ impl Scanner {
             }
         }
         if self.peek(0) != '\0' && !br(self.peek(0)) {
-            return Err(error("ScannerError"));
+            return Err(self.failure(
+                Some(("while scanning a block scalar", start)),
+                &format!(
+                    "expected a comment or a line break, but found {}",
+                    self.found()
+                ),
+            ));
         }
         self.line_break();
         let minimum = (self.indent + 1).max(1) as usize;
@@ -803,14 +934,19 @@ impl Scanner {
         Ok(value)
     }
     fn tag(&mut self) -> Result<(String, String)> {
+        let start = self.mark;
         self.advance();
         let mut raw = String::new();
         if self.peek(0) == '<' {
             self.advance();
             while self.peek(0) != '>' {
                 if blank(self.peek(0)) {
-                    return Err(error("ScannerError"));
+                    return Err(self.failure(
+                        Some(("while parsing a tag", start)),
+                        &format!("expected '>', but found {}", self.found()),
+                    ));
                 }
+                self.uri_escape(start)?;
                 raw.push(self.peek(0));
                 self.advance();
             }
@@ -818,6 +954,7 @@ impl Scanner {
             return Ok((String::new(), uri(&raw)?));
         }
         while !blank(self.peek(0)) {
+            self.uri_escape(start)?;
             raw.push(self.peek(0));
             self.advance();
         }
@@ -829,6 +966,30 @@ impl Scanner {
         } else {
             Ok(("!".into(), uri(&raw)?))
         }
+    }
+    fn uri_escape(&self, start: Mark) -> Result<()> {
+        if self.peek(0) == '%' {
+            for k in 1..=2 {
+                if !self.peek(k).is_ascii_hexdigit() {
+                    let mark = Mark {
+                        index: self.pos + 1,
+                        column: self.mark.column + 1,
+                        ..self.mark
+                    };
+                    return Err(marked(
+                        "ScannerError",
+                        &self.chars,
+                        Some(("while scanning a tag", start)),
+                        &format!(
+                            "expected URI escape sequence of 2 hexadecimal numbers, but found {}",
+                            crate::executor_text::repr(&self.peek(k).to_string())
+                        ),
+                        mark,
+                    ));
+                }
+            }
+        }
+        Ok(())
     }
 }
 fn uri(s: &str) -> Result<String> {
@@ -956,6 +1117,7 @@ impl Composer {
             end_line: mark.line,
             line: mark.line,
             column: mark.column,
+            index: mark.index,
         });
         id
     }
@@ -1280,6 +1442,25 @@ fn compose_on_stack(input: Input<'_>) -> Result<Option<Node>> {
                     ));
                 }
                 let v = parts.get(1).ok_or_else(|| error("ScannerError"))?;
+                if !v.starts_with(|c: char| c.is_ascii_digit()) {
+                    let offset = 5 + text[5..].find(*v).unwrap_or(text.len() - 5);
+                    return Err(marked(
+                        "ScannerError",
+                        &c.chars,
+                        Some(("while scanning a directive", directive)),
+                        &format!(
+                            "expected a digit, but found {}",
+                            crate::executor_text::repr(
+                                &v.chars().next().unwrap_or('\0').to_string()
+                            )
+                        ),
+                        Mark {
+                            index: directive.index + offset,
+                            column: directive.column + offset,
+                            ..directive
+                        },
+                    ));
+                }
                 let (major, minor) = v.split_once('.').ok_or_else(|| error("ScannerError"))?;
                 if minor.parse::<u32>().is_err() {
                     return Err(error("ScannerError"));
@@ -1352,6 +1533,7 @@ fn compose_on_stack(input: Input<'_>) -> Result<Option<Node>> {
     Ok(Some(Node {
         arena: c.arena,
         root,
+        chars: c.chars,
     }))
 }
 

@@ -480,6 +480,16 @@ fn yaml_value(
         return Err("recursive YAML evidence".into());
     }
     let node = &doc.arena[index];
+    if !node.tag.starts_with("tag:yaml.org,2002:") {
+        return Err(doc.constructor_error(
+            index,
+            None,
+            &format!(
+                "could not determine a constructor for the tag {}",
+                crate::executor_text::repr(&node.tag)
+            ),
+        ));
+    }
     let value = match &node.kind {
         yaml::Kind::Sequence(items) => Value::Array(
             items
@@ -491,6 +501,9 @@ fn yaml_value(
             let mut result = Map::new();
             for (k, v) in items {
                 let key = yaml_value(doc, *k, active)?;
+                if matches!(key, Value::Array(_) | Value::Object(_)) {
+                    return Err(doc.constructor_error(*k, Some(index), "found unhashable key"));
+                }
                 let key = key
                     .as_str()
                     .map(str::to_string)
@@ -533,8 +546,13 @@ fn yaml_value(
             ),
             "tag:yaml.org,2002:str" | "tag:yaml.org,2002:timestamp" => json!(s),
             tag => {
-                return Err(format!(
-                    "could not determine a constructor for the tag {tag:?}"
+                return Err(doc.constructor_error(
+                    index,
+                    None,
+                    &format!(
+                        "could not determine a constructor for the tag {}",
+                        crate::executor_text::repr(tag)
+                    ),
                 ));
             }
         },
@@ -832,4 +850,32 @@ pub fn validate_phase2(
         "open_gaps":surface["open_gaps"],"full_review":full_review,
         "native_evidence":native_report,"exceptions":[]});
     Ok((errors, report))
+}
+
+#[cfg(test)]
+mod yaml_diagnostics {
+    use super::*;
+    #[test]
+    fn frozen_constructor_diagnostics() {
+        let rows: Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/y_e18_p3c.json")).unwrap();
+        let mut failures = Vec::new();
+        for r in rows
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|r| r["route"] == "value")
+        {
+            let observed = load_yaml(r["text"].as_str().unwrap()).err();
+            if r["implemented"] == true && observed.as_deref() != r["message"].as_str() {
+                failures.push(format!("{}: {observed:?} != {}", r["case"], r["message"]));
+            } else if r["implemented"] == false {
+                eprintln!(
+                    "MEASURE {}: {observed:?}; reference {}",
+                    r["case"], r["message"]
+                );
+            }
+        }
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+    }
 }

@@ -6,11 +6,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-yaml_diagnostics = '--yaml-diagnostics' in sys.argv
+yaml_fixture = 'y_e18_p3c.json' if '--yaml-p3c' in sys.argv else 'y_e18_p3b.json'
+yaml_diagnostics = '--yaml-diagnostics' in sys.argv or '--yaml-p3c' in sys.argv
 if yaml_diagnostics:
-    sys.argv.remove('--yaml-diagnostics')
+    sys.argv.remove('--yaml-p3c' if '--yaml-p3c' in sys.argv else '--yaml-diagnostics')
 yaml_cases = {r['case']: r['text'].encode() for r in json.loads(
-    Path(__file__).with_name('y_e18_p3b.json').read_text()) if r['implemented']}
+    Path(__file__).with_name(yaml_fixture).read_text()) if r['implemented'] and 'text' in r}
 yaml_probe = '--yaml-probe' in sys.argv
 if yaml_probe:
     sys.argv.remove('--yaml-probe')

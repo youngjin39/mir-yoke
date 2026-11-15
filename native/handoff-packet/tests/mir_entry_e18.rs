@@ -62,6 +62,7 @@ fn public_bootstrap_phase1_memory_receipts() {
 fn public_bootstrap_phase2_content() {
     replay_phase2(&[]);
     replay_phase2(&["--yaml-diagnostics"]);
+    replay_phase2(&["--yaml-p3c"]);
 }
 
 #[cfg(target_os = "macos")]
