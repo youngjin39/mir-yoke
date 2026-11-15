@@ -6,6 +6,8 @@
 )]
 #[allow(unsafe_code, dead_code)] // Reuse the reviewed descriptor-relative adoption boundary.
 mod adoption_fs;
+#[cfg(windows)]
+use handoff_packet::executor_text;
 mod runtime_manifest_args;
 mod runtime_verify;
 
