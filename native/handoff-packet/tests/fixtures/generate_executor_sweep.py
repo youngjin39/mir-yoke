@@ -21,9 +21,21 @@ IDS = [str(i) * 32 for i in range(1, 9)]
 
 def git(repo, *args):
     env = dict(os.environ, GIT_AUTHOR_DATE=OLD, GIT_COMMITTER_DATE=OLD, GIT_OPTIONAL_LOCKS="0")
+    # Git for Windows rejects verbatim drive paths; retain UNC/device spellings.
+    argv = [str(repo), *args]
+    argv = [
+        value[4:]
+        if value.startswith("\\\\?\\")
+        and len(value) >= 7
+        and value[4].isascii()
+        and value[4].isalpha()
+        and value[5:7] == ":\\"
+        else value
+        for value in argv
+    ]
     try:
         return subprocess.check_output(
-            ["git", "-C", str(repo), *args], stderr=subprocess.PIPE, env=env
+            ["git", "-C", *argv], stderr=subprocess.PIPE, env=env
         ).decode()
     except subprocess.CalledProcessError as error:
         # Keep the original exception/exit and expose the otherwise lost Git cause.

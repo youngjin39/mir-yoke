@@ -27,6 +27,10 @@ fn snapshot(root: &Path) -> Value {
     Value::Object(out)
 }
 fn replay_fixture(fixture: &Value, mode: &str) -> usize {
+    let started = std::time::Instant::now();
+    let mut setup_time = std::time::Duration::ZERO;
+    let mut hook_time = std::time::Duration::ZERO;
+    let tools = tempfile::tempdir().unwrap();
     let mut count = 0;
     for record in fixture["records"]
         .as_array()
@@ -34,6 +38,11 @@ fn replay_fixture(fixture: &Value, mode: &str) -> usize {
         .iter()
         .filter(|r| r["mode"] == mode)
     {
+        // The permission-refusal record must not alter the shared executable.
+        let private_tools = (record["git_mode"].as_u64().unwrap_or(0o755) != 0o755)
+            .then(|| tempfile::tempdir().unwrap());
+        let tools = private_tools.as_ref().unwrap_or(&tools);
+        let setup_started = std::time::Instant::now();
         let dir = tempfile::tempdir().unwrap();
         // Records were captured under a non-symlinked root; macOS temp dirs are symlinked.
         let root_buf = fs::canonicalize(dir.path()).unwrap();
@@ -46,7 +55,6 @@ fn replay_fixture(fixture: &Value, mode: &str) -> usize {
         }
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_project-hooks"));
         cmd.current_dir(root).env("CLAUDE_PROJECT_DIR", root);
-        let tools = tempfile::tempdir().unwrap();
         cmd.env("HOME", root)
             .env("USERPROFILE", root)
             .env("PATH", tools.path());
@@ -76,9 +84,16 @@ fn replay_fixture(fixture: &Value, mode: &str) -> usize {
             );
         }
         // The executable and controlled PATH exist before launching the hook.
+        setup_time += setup_started.elapsed();
+        let hook_started = std::time::Instant::now();
         run(&mut cmd, record, mode, &expand, root);
+        hook_time += hook_started.elapsed();
         count += 1;
     }
+    eprintln!(
+        "fixture replay {mode}: {count} records, setup={setup_time:?}, hooks={hook_time:?}, total={:?}",
+        started.elapsed()
+    );
     count
 }
 fn replay(mode: &str) {
@@ -240,4 +255,23 @@ fn native_fake_git_owns_child_path_and_preserves_bytes() {
         assert_eq!(result.stderr, stderr, "{mode}: stderr");
         assert_eq!(result.status.code(), Some(code), "{mode}: exit");
     }
+}
+
+#[test]
+fn native_fake_git_reuses_executable_without_rewriting() {
+    let tools = tempfile::tempdir().unwrap();
+    let mut command = Command::new("git");
+    fake_git::install(tools.path(), &mut command, "first", "changed");
+    let executable = tools
+        .path()
+        .join(format!("git{}", std::env::consts::EXE_SUFFIX));
+    let stamp = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(86400);
+    fs::File::options()
+        .write(true)
+        .open(&executable)
+        .unwrap()
+        .set_times(fs::FileTimes::new().set_modified(stamp))
+        .unwrap();
+    fake_git::install(tools.path(), &mut command, "second", "refusal");
+    assert_eq!(fs::metadata(executable).unwrap().modified().unwrap(), stamp);
 }
