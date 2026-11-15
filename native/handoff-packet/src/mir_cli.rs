@@ -18,6 +18,7 @@ pub mod bootstrap;
 #[forbid(unsafe_code)]
 pub mod bootstrap_adoption;
 pub mod capability;
+pub mod capability_manager;
 pub mod project_hooks;
 
 #[cfg(test)]

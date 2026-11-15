@@ -1,0 +1,166 @@
+#![cfg(unix)]
+use handoff_packet::mir_cli::{capability::Manager, capability_manager::*};
+use serde_json::{Value, json};
+use std::{
+    fs,
+    os::unix::ffi::OsStrExt,
+    os::unix::fs::{PermissionsExt, symlink},
+    path::{Path, PathBuf},
+};
+fn setup(source: Option<&str>) -> (tempfile::TempDir, PathBuf, PathBuf) {
+    let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/Y-E17b1");
+    fs::create_dir_all(&scratch).unwrap();
+    let temp = tempfile::tempdir_in(scratch).unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let python = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.venv/bin/python");
+    for dir in ["project", "outside"] {
+        fs::create_dir_all(root.join(dir)).unwrap();
+    }
+    let cli = root.join("mir-cli");
+    let bridge = include_str!("../../../src/mir/cli/capability_manager_bridge.py");
+    let bootstrap = format!(
+        r#"import os,sys,runpy,json,pathlib,shutil
+root = pathlib.Path({})
+source = json.loads({})
+if source is None:
+ shutil.copytree({}, root/'mir')
+else:
+ for p in ('mir','mir/cli','mir/core','mir/core/capabilities'):
+  (root/p).mkdir(parents=True,exist_ok=True); (root/p/'__init__.py').write_text('')
+ (root/'mir/core/capabilities/manager.py').write_text(source)
+(root/'mir/cli/capability_manager_bridge.py').write_text({})
+sys.path.insert(0,str(root))
+assert sys.argv[1:]==['run-python','--project-root',str(root),'--','-m','mir.cli.capability_manager_bridge']
+runpy.run_module('mir.cli.capability_manager_bridge',run_name='__main__')
+"#,
+        json!(root),
+        json!(json!(source).to_string()),
+        json!(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../src/mir")),
+        json!(bridge)
+    );
+    let shell = format!(
+        "#!/bin/sh\nexec /usr/bin/env -i HOME='{}' '{}' -I -c '{}' \"$@\"\n",
+        root.display(),
+        python.display(),
+        bootstrap.replace('\'', "'\\''")
+    );
+    fs::write(&cli, shell).unwrap();
+    fs::set_permissions(&cli, fs::Permissions::from_mode(0o755)).unwrap();
+    (temp, root, cli)
+}
+
+#[test]
+fn manager_boundary() {
+    let (_temp, root, cli) = setup(Some(
+        "import sys,os\nprint('import',end='')\nclass CapabilityManager:\n def __init__(self,*a,**kw): self.token=73\n def _finalize(self): return 999\n def status(self,*a,**kw):\n  print('out',end=''); print('err',end='',file=sys.stderr)\n  os.write(1,b'r'*100000+b'\\xff'); os.write(2,b's'*100000)\n  return [self.token,a,kw,os.getpid()]\n",
+    ));
+    let mut m = ProductionManager::start(&cli, &root).unwrap();
+    let import = m.request(json!({"op":"import"})).unwrap();
+    assert_eq!(import.events, vec![Event::Stdout(b"import".to_vec())]);
+    let invalid = Path::new(std::ffi::OsStr::from_bytes(b"\xff"));
+    assert!(m.initialize(invalid, None, None).is_err());
+    assert!(m.initialize(&root, Some(invalid), None).is_err());
+    m.initialize(&root.join("project"), None, None).unwrap();
+    let reply = m
+        .request(json!({"op":"call","method":"status","args":["p"],"kwargs":{"mcp":true}}))
+        .unwrap();
+    let expected = json!([73,["p"],{"mcp":true}]);
+    assert_eq!(
+        reply.value.as_array().unwrap()[..3],
+        expected.as_array().unwrap()[..]
+    );
+    assert_eq!(
+        serde_json::to_value(&reply.events[..2]).unwrap(),
+        json!([{"stream":"stdout","data":b"out"},{"stream":"stderr","data":b"err"}])
+    );
+    for (request, class) in [
+        (json!({"op":"call","method":"_finalize"}), "ValueError"),
+        (json!({"op":"initialize"}), "RuntimeError"),
+        (json!({"op":"unknown"}), "ValueError"),
+    ] {
+        assert_eq!(m.request(request).unwrap().error.unwrap().class, class);
+    }
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    for event in &reply.events {
+        match event {
+            Event::Stdout(b) => stdout.extend_from_slice(b),
+            Event::Stderr(b) => stderr.extend_from_slice(b),
+        }
+    }
+    let expected = [b"out".as_slice(), &vec![b'r'; 100000], &[255]].concat();
+    assert_eq!(stdout, expected);
+    assert_eq!(stderr, [b"err".as_slice(), &vec![b's'; 100000]].concat());
+    let pid = reply.value[3].to_string();
+    drop(m);
+    let mut probe = std::process::Command::new("/bin/kill");
+    let status = probe.args(["-0", &pid]).output().unwrap().status;
+    assert!(!status.success());
+    let (_temp, root, cli) = setup(Some("raise ImportError('missing provider')"));
+    let mut m = ProductionManager::start(&cli, &root).unwrap();
+    let error = m.request(json!({"op":"import"})).unwrap().error.unwrap();
+    assert_eq!(error.message, "missing provider");
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/y-e17b1.json")).unwrap();
+    for record in fixture["records"].as_array().unwrap() {
+        let (_temp, root, cli) = setup(None);
+        let case = record["case"].as_str().unwrap();
+        let config = fixture["config"].as_str().unwrap();
+        let config = if case == "constructor" { "{}" } else { config };
+        fs::write(root.join("config.json"), config).unwrap();
+        let mut m = ProductionManager::start(&cli, &root).unwrap();
+        let init = m.initialize(
+            &root.join("project"),
+            Some(&root.join("config.json")),
+            Some(&root.join("cap")),
+        );
+        if case == "constructor" {
+            assert!(init.is_err());
+        } else {
+            init.unwrap();
+            if case == "identity" {
+                fs::rename(root.join("project"), root.join("old")).unwrap();
+                symlink(root.join("outside"), root.join("project")).unwrap();
+            }
+            let call = &record["call"];
+            let args = serde_json::from_value(call["args"].clone()).unwrap();
+            let kwargs = serde_json::from_value(call["kwargs"].clone()).unwrap();
+            assert!(
+                m.call(call["method"].as_str().unwrap(), args, kwargs)
+                    .is_err()
+            );
+        }
+        let root_text = root.to_str().unwrap();
+        let actual = json!(m.last_reply).to_string().replace(root_text, "{ROOT}");
+        assert_eq!(actual, record["reply"].to_string(), "{case}");
+        assert_eq!(fs::read_dir(root.join("outside")).unwrap().count(), 0);
+    }
+    let (_temp, root, cli) = setup(Some(""));
+    let error = ProductionManager::start(&root.join("absent"), &root)
+        .err()
+        .unwrap();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    let faults = r#"[["read line\necho launcher >&2\nexit 23\n","eof"],["read line\nexit 0\n","eof"],["read line\necho garbage\n","malformed"],["read x\necho '{\"events\":[]}'\n","malformed"],["read line\nexec 1>&-\nwhile :; do :; done\n","eof"],["read x\necho '{\"value\":null,\"error\":null,\"events\":[]}'\nexit 23\n","child"]]"#;
+    let faults: Vec<(String, Failure)> = serde_json::from_str(faults).unwrap();
+    for (body, kind) in faults {
+        fs::write(&cli, format!("#!/bin/sh\n{body}")).unwrap();
+        let mut m = ProductionManager::start(&cli, &root).unwrap();
+        let reply = m.request(json!({"op":"import"}));
+        let e = if kind == Failure::Child {
+            reply.unwrap();
+            m.finish().unwrap_err()
+        } else {
+            reply.unwrap_err()
+        };
+        assert_eq!(e.kind, kind);
+        if body.contains("launcher") {
+            assert_eq!(e.stderr.unwrap().unwrap().unwrap(), b"launcher\n");
+            assert_eq!(e.status.unwrap().code(), Some(23));
+        }
+    }
+    fs::write(&cli, "#!/bin/sh\nread line\nexec 0<&-\necho '{\"value\":null,\"error\":null,\"events\":[]}'\nwhile :; do :; done\n").unwrap();
+    let mut m = ProductionManager::start(&cli, &root).unwrap();
+    m.request(json!({"op":"import"})).unwrap();
+    assert_eq!(
+        m.request(json!("x".repeat(1000000))).unwrap_err().kind,
+        Failure::Io
+    );
+}
