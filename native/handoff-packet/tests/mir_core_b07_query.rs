@@ -367,12 +367,59 @@ fn scenario(name: &str, root: &Path) -> Value {
         &o,
     ))
 }
+fn expected_record(oracle: &Value, name: &str, windows: bool) -> Value {
+    if windows && name.starts_with("path.") {
+        let captured: Value = serde_json::from_str(include_str!(
+            "fixtures/w2/b07-relations-query-windows-paths.json"
+        ))
+        .unwrap();
+        let record = &captured["records"][name];
+        assert!(!record.is_null(), "missing Windows capture: {name}");
+        return serde_json::from_str(
+            &serde_json::to_string(record)
+                .unwrap()
+                .replace("{ROOT}", "<tmp>"),
+        )
+        .unwrap();
+    }
+    oracle[name].clone()
+}
+
+#[test]
+fn windows_path_expectations_preserve_captured_suffixes() {
+    let oracle: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b07-relations-query.json")).unwrap();
+    let windows: Value = serde_json::from_str(include_str!(
+        "fixtures/w2/b07-relations-query-windows-paths.json"
+    ))
+    .unwrap();
+    assert_eq!(windows["platform"], "win32");
+    assert_eq!(windows["python"], "3.12.13");
+    assert_eq!(
+        windows["reference_pin"],
+        "f2a9dbf942585e0e02ed095db492d031c682d0e9"
+    );
+    assert_eq!(windows["records"].as_object().unwrap().len(), 5);
+    for (name, record) in oracle.as_object().unwrap() {
+        assert_eq!(expected_record(&oracle, name, false), *record, "{name}");
+        if name.starts_with("path.") {
+            let captured = serde_json::to_string(&windows["records"][name]).unwrap();
+            let captured: Value =
+                serde_json::from_str(&captured.replace("{ROOT}", "<tmp>")).unwrap();
+            assert_eq!(expected_record(&oracle, name, true), captured, "{name}");
+        } else {
+            assert_eq!(expected_record(&oracle, name, true), *record, "{name}");
+        }
+    }
+}
+
 #[test]
 fn frozen_records() {
     let oracle: Value =
         serde_json::from_str(include_str!("fixtures/w2/b07-relations-query.json")).unwrap();
     let mut counts = [0, 0, 0];
-    for (name, expected) in oracle.as_object().unwrap() {
+    let mut mismatches = Vec::new();
+    for name in oracle.as_object().unwrap().keys() {
         if ["query.7", "bundle.7"].contains(&name.as_str()) {
             // Python-only duplicate keyword binding errors occur before either library function.
             counts[2] += 1;
@@ -393,10 +440,21 @@ fn frozen_records() {
             "<tmp>",
         ))
         .unwrap();
-        assert_eq!(compact(actual), *expected, "{name}");
+        let actual = compact(actual);
+        let expected = expected_record(&oracle, name, cfg!(windows));
+        if actual != expected {
+            mismatches.push(format!("{name}: actual={actual}\nexpected={expected}"));
+        }
         counts[0] += 1;
     }
     assert_eq!(counts, [69, 0, 2]);
+    assert!(
+        mismatches.is_empty(),
+        "replayed all {} native records; {} mismatches:\n{}",
+        counts[0],
+        mismatches.len(),
+        mismatches.join("\n")
+    );
 }
 
 #[test]

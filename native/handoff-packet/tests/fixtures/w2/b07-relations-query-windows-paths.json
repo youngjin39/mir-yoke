@@ -1,0 +1,41 @@
+{
+  "reference_pin": "f2a9dbf942585e0e02ed095db492d031c682d0e9",
+  "platform": "win32",
+  "python": "3.12.13",
+  "records": {
+    "path.missing": {
+      "error": [
+        "RelationError",
+        "memory database is unavailable"
+      ]
+    },
+    "path.directory": {
+      "error": [
+        "RelationError",
+        "memory database must be a regular canonical file"
+      ]
+    },
+    "path.symlink": {
+      "error": [
+        "RelationError",
+        "memory database must be a regular canonical file"
+      ]
+    },
+    "path.regular": {
+      "value": "{ROOT}\\.mir\\memory.db"
+    },
+    "path.parent": {
+      "error": [
+        "RelationError",
+        "memory database escapes its canonical project path"
+      ]
+    }
+  },
+  "source_sha256": {
+    "src/mir/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/mir/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/mir/core/memory_relations.py": "e63df667076e7a29a562c11ff8deebe181f9b5fefe21fc2cbf2b5c9ed2af7e48",
+    "src/mir/core/relations.py": "7dad16430965e56dbc561ef86f50c05620c29cf925728da47ad3d6443cc87d9b",
+    "tests/test_w2_b07_relations_query_frozen.py": "4c57e124ebb03dc89d0cad2d83363fbd0f559319b203505c3cc891a95706535a"
+  }
+}
