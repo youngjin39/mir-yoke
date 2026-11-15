@@ -41,7 +41,7 @@ fn py_json(v: &Value) -> String {
             .collect(),
     }
 }
-fn observe(v: Value, root: &Path) -> Value {
+fn raw_observation(v: Value, root: &Path) -> Value {
     fn normalize(v: Value, root: &str) -> Value {
         match v {
             Value::String(s) => json!(s.replace(root, "<tmp>")),
@@ -54,14 +54,31 @@ fn observe(v: Value, root: &Path) -> Value {
         }
     }
     let root_text = root.to_str().unwrap();
-    let mut v = normalize(v, root_text);
+    let v = normalize(v, root_text);
     #[cfg(windows)]
+    let mut v = normalize(
+        v,
+        &root_text.trim_start_matches("\\\\?\\").replace('\\', "/"),
+    );
+    // Path-valued installer mock arguments use the same spelling as validator
+    // mocks. Receipt bytes and arbitrary text are checked without this conversion.
+    #[cfg(windows)]
+    if let Some(installs) = v
+        .pointer_mut("/value/installs")
+        .and_then(Value::as_array_mut)
     {
-        v = normalize(
-            v,
-            &root_text.trim_start_matches("\\\\?\\").replace('\\', "/"),
-        );
+        for install in installs {
+            for key in ["source_root", "local_source"] {
+                if let Some(path) = install[1][key].as_str() {
+                    install[1][key] = json!(path.replace('\\', "/"));
+                }
+            }
+        }
     }
+    v
+}
+fn observe(v: Value, root: &Path) -> Value {
+    let mut v = raw_observation(v, root);
     if let Some(value) = v.get_mut("value") {
         let text = py_json(value);
         if text.len() > 512 {
@@ -375,10 +392,62 @@ fn main_case(root: &Path, mode: &str, apply: bool, as_json: bool) -> Value {
     let mut receipts = json!({});
     let receipt = root.join(".mir/bootstrap-receipt.json");
     if receipt.exists() {
-        receipts[".mir/bootstrap-receipt.json"] = json!(fs::read_to_string(receipt).unwrap());
+        // Python Path.read_text uses universal newlines. Raw bytes are separately
+        // asserted in windows_p3_calls_and_file_effects, including every CR.
+        receipts[".mir/bootstrap-receipt.json"] = json!(
+            fs::read_to_string(receipt)
+                .unwrap()
+                .replace("\r\n", "\n")
+                .replace('\r', "\n")
+        );
     }
     json!({"value":{"result":result, "stdout":host.stdout, "stderr":host.stderr,
         "calls":host.calls, "installs":host.installs, "receipts":receipts}})
+}
+fn unhex(text: &str) -> Vec<u8> {
+    text.as_bytes()
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|b| u8::from_str_radix(std::str::from_utf8(b).unwrap(), 16).unwrap())
+        .collect()
+}
+#[test]
+fn windows_p3_calls_and_file_effects() {
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/w2/unify2-s4.json")).unwrap();
+    for (mode, expected) in fixture["records"].as_object().unwrap() {
+        let tmp = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
+        let root = handoff_packet::supply::plain(tmp.path().to_path_buf());
+        let actual = raw_observation(main_case(&root, mode, true, true), &root);
+        assert_eq!(
+            actual["value"], expected["value"],
+            "{mode}: full observation"
+        );
+        let mut files: Vec<_> = handoff_packet::mir_cli::changes::snapshot_project(&root)
+            .unwrap()
+            .into_keys()
+            .collect();
+        files.sort();
+        let mut expected_files: Vec<_> = expected["files"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect();
+        expected_files.sort();
+        assert_eq!(files, expected_files, "{mode}: complete file set");
+        for (name, bytes) in expected["files"].as_object().unwrap() {
+            let mut bytes = unhex(bytes.as_str().unwrap());
+            if !cfg!(windows) && name == ".mir/bootstrap-receipt.json" {
+                // Derived Unix Path.write_text representation; Windows stays byte-exact.
+                bytes = String::from_utf8(bytes)
+                    .unwrap()
+                    .replace("\r\n", "\n")
+                    .into_bytes();
+            }
+            assert_eq!(fs::read(root.join(name)).unwrap(), bytes, "{mode}: {name}");
+        }
+    }
 }
 #[test]
 fn every_frozen_record_replays_exactly() {
@@ -431,7 +500,19 @@ fn every_frozen_record_replays_exactly() {
             main_case(root, mode, apply, as_json)
         };
         let actual = observe(actual, root);
-        assert_eq!(&actual, expected, "record {name}");
+        let mut expected = expected.clone();
+        if cfg!(windows) && matches!(name.as_str(), "atomic.new" | "atomic.overwrite") {
+            // Pinned _atomic_write_json uses Path.write_text(newline=None).
+            let body = String::from_utf8(unhex(expected["value"][1].as_str().unwrap())).unwrap();
+            expected["value"][1] = json!(
+                body.replace('\n', "\r\n")
+                    .as_bytes()
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>()
+            );
+        }
+        assert_eq!(actual, expected, "record {name}");
         replayed += 1;
         eprintln!("REPLAY {name}");
     }
