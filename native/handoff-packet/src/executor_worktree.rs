@@ -140,6 +140,9 @@ pub(crate) struct DispatchPath {
 }
 impl DispatchPath {
     pub(crate) fn root(caller: &Path) -> Result<Self> {
+        // Python constructs Path before str() for Git argv; keep aliases intact.
+        #[cfg(windows)]
+        let caller = &caller.components().collect::<PathBuf>();
         Ok(Self {
             caller: caller.to_owned(),
             io: selected_root(caller)?,
