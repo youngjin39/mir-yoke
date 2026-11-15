@@ -50,9 +50,13 @@ fn setup(root: &Path) -> (Doc, Doc) {
 fn clean(v: Value, root: &Path) -> Value {
     match v {
         Value::String(s) => {
+            let parent = root.parent().unwrap().to_str().unwrap();
             let s = s
+                // Handoff stdout contains JSON inside a string; replace its escaped root first.
+                .replace(&root.to_str().unwrap().replace('\\', "\\\\"), "<tmp>")
                 .replace(root.to_str().unwrap(), "<tmp>")
-                .replace(root.parent().unwrap().to_str().unwrap(), "<parent>");
+                .replace(&parent.replace('\\', "\\\\"), "<parent>")
+                .replace(parent, "<parent>");
             let chars = s.chars().collect::<Vec<_>>();
             if chars.len() > 240 {
                 json!({"length":chars.len(),"sha256":digest::sha256(s.as_bytes()),
@@ -520,6 +524,10 @@ fn refs(root: &Path, guarded: bool) -> Value {
 }
 fn cli(root: &Path, args: &[&str], payload: Option<&str>) -> Value {
     setup(root);
+    #[cfg(windows)]
+    if args == ["mapping", "--handoff", "a.py"] {
+        fs::write(root.join("a.py"), b"def alpha():\r\n    pass\r\n").unwrap();
+    }
     if let Some(payload) = payload {
         let p = root.join(".mir/ontology-map.json");
         if payload == "missing" {
@@ -741,6 +749,23 @@ fn frozen_records() {
     for (name, expected) in records.as_object().unwrap() {
         let tmp = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
         let actual = observe(Ok(replay(name, tmp.path())), tmp.path());
+        #[cfg(windows)]
+        let windows_expected = {
+            let mut e = expected.clone();
+            if name == "main" {
+                let capture: Value =
+                    serde_json::from_str(include_str!("fixtures/wt-path-records-windows.json"))
+                        .unwrap();
+                let stdout = capture["records"][9]["stdout"]
+                    .as_str()
+                    .unwrap()
+                    .replace("{ROOT}\\\\plugin-capture\\\\ontology-main-1", "<tmp>");
+                e["value"][1]["value"][1] = clean(json!(stdout), tmp.path());
+            }
+            e
+        };
+        #[cfg(windows)]
+        let expected = &windows_expected;
         #[cfg(windows)]
         if ["refs", "refs_codes", "paths"].contains(&name.as_str()) {
             // Unix symlinks and POSIX absolute-path cells cannot run as native Windows fixtures.

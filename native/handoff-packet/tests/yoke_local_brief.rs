@@ -2,6 +2,10 @@ use handoff_packet::{executor_command_hooks::CommandHooks, local_bridge::BridgeC
 use serde_json::{Value, json};
 use std::{collections::BTreeMap, fs, path::PathBuf, time::Duration};
 
+mod path_records {
+    include!("support/path_records.rs");
+}
+
 #[test]
 fn disabled_parser_extensions_do_not_control_execute_or_resume() {
     let scratch = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
@@ -213,12 +217,21 @@ fn yoke_local_brief_frozen_hook_parity_without_python() {
             json!({"value":reply["result"]})
         } else {
             json!({"kind":reply["error"]["type"],"message":reply["error"]["message"]
-                .as_str().unwrap().replace(root.path().to_str().unwrap(), "<ROOT>")})
+                .as_str().map(|s| path_records::root_token(s, root.path(), "<ROOT>")).unwrap()})
         };
         let expected = if case.get("kind").is_some() {
             json!({"kind":case["kind"],"message":case["message"]})
         } else {
             json!({"value":case["value"]})
+        };
+        #[cfg(windows)]
+        let expected = if matches!(case["name"].as_str(), Some("missing_file" | "directory")) {
+            let name = case["name"].as_str().unwrap();
+            let record = path_records::record(&format!("yoke_local_brief.{name}"));
+            json!({"kind":record["error"]["kind"],"message":record["error"]["message"]
+                .as_str().unwrap().replace(&format!("{{ROOT}}\\\\{name}"), "<ROOT>")})
+        } else {
+            expected
         };
         if actual != expected {
             mismatches.push(format!(

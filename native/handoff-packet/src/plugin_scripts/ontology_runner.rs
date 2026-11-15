@@ -20,6 +20,8 @@ pub struct Distribution {
 }
 impl Distribution {
     pub fn new(version: &str, checker: PathBuf, reason: &str) -> Self {
+        #[cfg(windows)]
+        let checker = crate::executor_admission::lexical(&checker);
         Self {
             version: version.into(),
             checker,
@@ -115,7 +117,10 @@ fn compare(a: &str, b: &str) -> Ordering {
     aa.len().cmp(&bb.len())
 }
 pub fn cache_root(home: &Path, runtime: &str) -> PathBuf {
-    home.join(runtime).join("plugins/cache/mir-yoke/mir-core")
+    let path = home.join(runtime).join("plugins/cache/mir-yoke/mir-core");
+    #[cfg(windows)]
+    let path = crate::executor_admission::lexical(&path);
+    path
 }
 pub fn cached_versions(home: &Path, runtime: &str) -> Result<Vec<PathBuf>> {
     let entries = match fs::read_dir(cache_root(home, runtime)) {
@@ -137,16 +142,21 @@ pub fn cached_versions(home: &Path, runtime: &str) -> Result<Vec<PathBuf>> {
     Ok(out)
 }
 pub(crate) fn expand(path: &str, home: &Path) -> PathBuf {
-    if path == "~" {
+    let path = if path == "~" {
         home.to_path_buf()
     } else if let Some(tail) = path.strip_prefix("~/") {
         home.join(tail)
     } else {
         PathBuf::from(path)
-    }
+    };
+    #[cfg(windows)]
+    let path = crate::executor_admission::lexical(&path);
+    path
 }
 pub fn claude_active(home: &Path) -> Result<Vec<Distribution>> {
     let metadata = home.join(".claude/plugins/installed_plugins.json");
+    #[cfg(windows)]
+    let metadata = crate::executor_admission::lexical(&metadata);
     if !metadata.is_file() {
         return Ok(vec![]);
     }
@@ -216,6 +226,8 @@ pub fn codex_fields(config: &Path) -> Result<BTreeMap<String, String>> {
 }
 pub fn codex_active(home: &Path) -> Result<Vec<Distribution>> {
     let config = home.join(".codex/config.toml");
+    #[cfg(windows)]
+    let config = crate::executor_admission::lexical(&config);
     if !config.is_file() {
         return Ok(vec![]);
     }

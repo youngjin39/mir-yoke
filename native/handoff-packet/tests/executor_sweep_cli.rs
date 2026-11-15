@@ -409,7 +409,7 @@ fn cross_root_policy_admission_and_legacy_decline() {
         String::from_utf8(refused.stderr).unwrap(),
         format!(
             "[mir_executor] authorize_target refused {}: ValueError: current Git root only\n",
-            fixture.repo().display()
+            handoff_packet::supply::plain(fixture.repo()).display()
         )
         .replace('\n', if cfg!(windows) { "\r\n" } else { "\n" })
     );

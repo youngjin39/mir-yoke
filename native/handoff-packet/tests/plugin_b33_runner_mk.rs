@@ -26,6 +26,82 @@ fn attempted<T>(value: Result<T>, convert: impl FnOnce(T) -> Value) -> Value {
         Err(e) => json!({"error": [e.class, e.message]}),
     }
 }
+fn clean(v: Value, home: &Path) -> Value {
+    match v {
+        Value::String(mut s) => {
+            let root = home.to_str().unwrap();
+            let plain = root.strip_prefix(r"\\?\").unwrap_or(root);
+            for alias in [
+                root.to_owned(),
+                root.replace('\\', "/"),
+                plain.into(),
+                plain.replace('\\', "/"),
+            ] {
+                s = s.replace(&alias, "<tmp>");
+            }
+            json!(s)
+        }
+        Value::Array(a) => Value::Array(a.into_iter().map(|v| clean(v, home)).collect()),
+        Value::Object(m) => {
+            Value::Object(m.into_iter().map(|(k, v)| (k, clean(v, home))).collect())
+        }
+        v => v,
+    }
+}
+fn expected_snapshot(mut v: Value) -> Value {
+    if !cfg!(windows) {
+        return v;
+    }
+    let mut paths = Vec::new();
+    for runtime in [".codex", ".claude"] {
+        for version in ["1.0.0", "2.0.0"] {
+            for tool in ["ontology_check.py", "mk_query.py"] {
+                paths.push(format!("<tmp>/{runtime}/plugins/cache/mir-yoke/mir-core/{version}/skills/ontology/scripts/{tool}"));
+            }
+        }
+        paths.push(format!("<tmp>/{runtime}/plugins/cache/mir-yoke/mir-core"));
+    }
+    for suffix in [
+        "repo",
+        "missing",
+        "absent",
+        "config.json",
+        ".mir/knowledge-supply.json",
+        ".codex/config.toml",
+        ".claude/plugins/installed_plugins.json",
+    ] {
+        paths.push(format!("<tmp>/{suffix}"));
+    }
+    let paths = paths
+        .into_iter()
+        .map(|p| {
+            let native = p.replace('/', "\\");
+            (p, native)
+        })
+        .collect::<Vec<_>>();
+    fn replace(v: &mut Value, paths: &[(String, String)]) {
+        match v {
+            Value::String(s) => {
+                for (old, new) in paths {
+                    *s = s.replace(old, new);
+                }
+            }
+            Value::Array(a) => {
+                for v in a {
+                    replace(v, paths);
+                }
+            }
+            Value::Object(m) => {
+                for v in m.values_mut() {
+                    replace(v, paths);
+                }
+            }
+            _ => {}
+        }
+    }
+    replace(&mut v, &paths);
+    v
+}
 fn dist(d: runner::Distribution) -> Value {
     json!([d.version, d.checker, d.reason])
 }
@@ -396,17 +472,7 @@ fn observe(name: &str, home: &Path) -> Value {
         })
     })();
     let observed = json!({"value":[attempted(value,|v|v),stdout,stderr,calls]});
-    // Only the synthetic root is replaced, exactly as in the frozen test.
-    let normalized = serde_json::to_string(&observed).unwrap().replace(
-        &serde_json::to_string(home).unwrap()[1..serde_json::to_string(home).unwrap().len() - 1],
-        "<tmp>",
-    );
-    let normalized = if cfg!(windows) {
-        normalized.replace("\\\\", "/")
-    } else {
-        normalized
-    };
-    serde_json::from_str(&normalized).unwrap()
+    clean(observed, home)
 }
 #[test]
 fn replay_all_67_frozen_records() {
@@ -415,7 +481,14 @@ fn replay_all_67_frozen_records() {
     assert_eq!(records.len(), 67);
     for (name, expected) in records {
         let root = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
-        assert_eq!(observe(&name, root.path()), expected, "record {name}");
+        assert_eq!(
+            observe(
+                &name,
+                &handoff_packet::supply::plain(root.path().to_path_buf())
+            ),
+            expected_snapshot(expected),
+            "record {name}"
+        );
     }
 }
 
