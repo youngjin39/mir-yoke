@@ -2,7 +2,11 @@
 #![forbid(unsafe_code)]
 use regex::bytes::Regex;
 use serde_json::Value;
-use std::{collections::HashSet, fs, path::Path};
+use std::{
+    collections::HashSet,
+    fs,
+    path::{Path, PathBuf},
+};
 
 fn field(value: &Value, keys: &[&str]) -> String {
     keys.iter()
@@ -16,6 +20,10 @@ fn field(value: &Value, keys: &[&str]) -> String {
         .trim_end_matches('\n')
         .replace('\0', "")
         .to_owned()
+}
+
+fn lookup_path(project: &Path, raw: &str) -> PathBuf {
+    project.join(raw)
 }
 
 pub fn scan(project: &Path, input: &[u8]) -> String {
@@ -47,6 +55,7 @@ pub fn scan(project: &Path, input: &[u8]) -> String {
         if raw.trim().is_empty() || !seen.insert(raw) {
             continue;
         }
+        let lookup = lookup_path(project, raw);
         // Shell prefix stripping preserves textual path spelling.
         let project = project.to_string_lossy();
         let path = if Path::new(raw).is_absolute() {
@@ -54,10 +63,10 @@ pub fn scan(project: &Path, input: &[u8]) -> String {
         } else {
             format!("{project}/{raw}")
         };
-        if !Path::new(&path).is_file() {
+        if !lookup.is_file() {
             continue;
         }
-        let Ok(bytes) = fs::read(&path) else {
+        let Ok(bytes) = fs::read(&lookup) else {
             continue;
         };
         let display = path.strip_prefix(&format!("{project}/")).unwrap_or(&path);
@@ -98,4 +107,22 @@ pub fn scan(project: &Path, input: &[u8]) -> String {
         }
     }
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lookup_uses_native_path_join_without_changing_display_spelling() {
+        // A trailing separator exposes string concatenation on every platform.
+        let project = Path::new("project/");
+        assert_eq!(
+            lookup_path(project, "app.ts").as_os_str(),
+            project.join("app.ts").as_os_str()
+        );
+        assert_eq!(lookup_path(Path::new(""), "app.ts"), Path::new("app.ts"));
+        let absolute = std::env::current_dir().unwrap().join("app.ts");
+        assert_eq!(lookup_path(project, absolute.to_str().unwrap()), absolute);
+    }
 }
