@@ -782,14 +782,34 @@ fn main8_expectation_selector_matches_capture() {
 fn frozen_records() {
     let records: Value =
         serde_json::from_str(include_str!("fixtures/w2/b33-ontology-check.json")).unwrap();
+    let mut failures = vec![];
     let mut replayed = 0;
+    macro_rules! check {
+        ($actual:expr, $expected:expr, $path:expr) => {
+            collect_differences(
+                &serde_json::to_value($actual).unwrap(),
+                &serde_json::to_value($expected).unwrap(),
+                &$path,
+                &mut failures,
+            )
+        };
+    }
     #[cfg(windows)]
     let mut exempt = 0;
     #[cfg(unix)]
     let exempt = 0;
     for (name, expected) in records.as_object().unwrap() {
         let tmp = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
-        let actual = observe(Ok(replay(name, tmp.path())), tmp.path());
+        let actual = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            observe(Ok(replay(name, tmp.path())), tmp.path())
+        })) {
+            Ok(actual) => actual,
+            Err(_) => {
+                failures.push(format!("record {name}: replay panicked (see panic output)"));
+                replayed += 1;
+                continue;
+            }
+        };
         #[cfg(windows)]
         let windows_expected = {
             let mut e = expected.clone();
@@ -813,17 +833,25 @@ fn frozen_records() {
             // Unix symlinks and POSIX absolute-path cells cannot run as native Windows fixtures.
             if name == "paths" {
                 for i in [0, 1, 2, 4] {
-                    assert_eq!(actual["value"][i], expected["value"][i]);
+                    check!(
+                        &actual["value"][i],
+                        &expected["value"][i],
+                        format!("{name}[{i}]")
+                    );
                 }
             } else {
                 for i in (0..16).filter(|i| *i != 7) {
-                    assert_eq!(actual["value"][0][i], expected["value"][0][i]);
+                    check!(
+                        &actual["value"][0][i],
+                        &expected["value"][0][i],
+                        format!("{name}[0][{i}]")
+                    );
                 }
                 let a = actual["value"][1].as_array().unwrap();
                 let e = expected["value"][1].as_array().unwrap();
                 if name == "refs" {
                     for i in (0..e.len()).filter(|i| *i != 7) {
-                        assert_eq!(a[i], e[i]);
+                        check!(&a[i], &e[i], format!("{name}[1][{i}]"));
                     }
                 } else {
                     let a = a
@@ -832,7 +860,7 @@ fn frozen_records() {
                         .filter(|(i, _)| *i != 7)
                         .map(|(_, v)| v)
                         .collect::<Vec<_>>();
-                    assert_eq!(a, e.iter().collect::<Vec<_>>());
+                    check!(a, e.iter().collect::<Vec<_>>(), format!("{name}[1]"));
                 }
                 for key in [
                     "changed_paths",
@@ -841,26 +869,37 @@ fn frozen_records() {
                     "undeclared_check_links",
                     "revalidate",
                 ] {
-                    assert_eq!(actual["value"][4][key], expected["value"][4][key]);
+                    check!(
+                        &actual["value"][4][key],
+                        &expected["value"][4][key],
+                        format!("{name}[4].{key}")
+                    );
                 }
-                assert_eq!(actual["value"][2], expected["value"][2]);
-                assert_eq!(actual["value"][3], expected["value"][3]);
+                check!(
+                    &actual["value"][2],
+                    &expected["value"][2],
+                    format!("{name}[2]")
+                );
+                check!(
+                    &actual["value"][3],
+                    &expected["value"][3],
+                    format!("{name}[3]")
+                );
             }
             eprintln!("EXEMPT {name}: Unix path/symlink cells; representable cells replayed");
             exempt += 1;
             continue;
         }
-        if actual != *expected {
-            if let (Some(a), Some(e)) = (actual["value"].as_array(), expected["value"].as_array()) {
-                for (i, (a, e)) in a.iter().zip(e).enumerate() {
-                    assert_eq!(a, e, "{name}[{i}]");
-                }
-            }
-            assert_eq!(actual, *expected, "record {name}");
-        }
+        check!(&actual, expected, format!("record {name}"));
         eprintln!("REPLAYED {name}");
         replayed += 1;
     }
+    assert!(
+        failures.is_empty(),
+        "{} mismatches:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
     assert_eq!(replayed + exempt, 19);
     #[cfg(unix)]
     {
@@ -870,4 +909,33 @@ fn frozen_records() {
     {
         assert_eq!((replayed, exempt), (16, 3));
     }
+}
+
+fn collect_differences(actual: &Value, expected: &Value, path: &str, failures: &mut Vec<String>) {
+    if actual == expected {
+        return;
+    }
+    match (actual, expected) {
+        (Value::Array(a), Value::Array(e)) if a.len() == e.len() => {
+            for (i, (a, e)) in a.iter().zip(e).enumerate() {
+                collect_differences(a, e, &format!("{path}[{i}]"), failures);
+            }
+        }
+        (Value::Object(a), Value::Object(e)) if a.keys().eq(e.keys()) => {
+            for (key, a) in a {
+                collect_differences(a, &e[key], &format!("{path}.{key}"), failures);
+            }
+        }
+        _ => failures.push(format!("{path}: actual={actual}, expected={expected}")),
+    }
+}
+#[test]
+fn collect_all_reports_later_cells() {
+    let mut failures = vec![];
+    collect_differences(&json!([1, 2]), &json!([0, 0]), "first", &mut failures);
+    collect_differences(&json!(3), &json!(0), "later", &mut failures);
+    assert_eq!(failures.len(), 3, "{failures:#?}");
+    assert!(failures[0].starts_with("first[0]:"), "{failures:#?}");
+    assert!(failures[1].starts_with("first[1]:"), "{failures:#?}");
+    assert!(failures[2].starts_with("later:"), "{failures:#?}");
 }
