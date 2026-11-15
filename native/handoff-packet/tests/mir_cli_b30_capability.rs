@@ -139,6 +139,7 @@ fn every_frozen_record_replays_exactly() {
     let records = records.as_object().unwrap();
     assert_eq!(records.len(), 60);
     let (mut replayed, mut exempt) = (0, 0);
+    let mut failures = Vec::new();
     for (name, expected) in records {
         if let Some(reason) = windows_exemption(name) {
             eprintln!("EXEMPT {name}: {reason}");
@@ -153,17 +154,24 @@ fn every_frozen_record_replays_exactly() {
             root.path()
                 .starts_with(std::env::temp_dir().canonicalize().unwrap())
         );
-        let observed = if name.starts_with("native.") {
-            native::replay(name, root.path())
-        } else if name.starts_with("hooks.") {
-            hooks::replay(name, root.path())
-        } else if name.starts_with("capability.") {
-            capability::replay(name, root.path())
-        } else if name == "changes.excluded" {
-            excluded_case(root.path())
-        } else {
-            assert_eq!(name, "changes.snapshot_and_diff");
-            snapshot_case(root.path())
+        let observed = std::panic::catch_unwind(|| {
+            if name.starts_with("native.") {
+                native::replay(name, root.path())
+            } else if name.starts_with("hooks.") {
+                hooks::replay(name, root.path())
+            } else if name.starts_with("capability.") {
+                capability::replay(name, root.path())
+            } else if name == "changes.excluded" {
+                excluded_case(root.path())
+            } else {
+                assert_eq!(name, "changes.snapshot_and_diff");
+                snapshot_case(root.path())
+            }
+        });
+        let Ok(observed) = observed else {
+            failures.push(format!("record {name}: replay panicked"));
+            replayed += 1;
+            continue;
         };
         // Match observe(): serialize first, then replace only the case's temporary root.
         let actual = serde_json::to_string(&observed).unwrap();
@@ -175,9 +183,15 @@ fn every_frozen_record_replays_exactly() {
             root.path().to_str().unwrap(),
         );
         let actual: Value = observe_paths(name, actual);
-        assert_eq!(&actual, expected, "record {name}");
+        let expected = platform_expected(name, expected, cfg!(windows));
+        if actual != expected {
+            failures.push(format!(
+                "record {name}: actual={actual}, expected={expected}"
+            ));
+        }
         replayed += 1;
     }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
     assert_eq!(replayed + exempt, 60);
     assert_eq!(exempt, if cfg!(windows) { 5 } else { 0 });
     eprintln!("B30: replayed={replayed}, deferred=0, exempt={exempt}, total=60");
@@ -260,4 +274,35 @@ fn wt_core_a_c_paths() {
     input["value"][4][0]["argv"][0] = json!(r"elsewhere\project\.mir\bin\project-hooks");
     input["value"][4][0]["cwd"] = json!(r"<tmp>\project-other");
     assert_eq!(observe_paths("hooks.check.normal", input.clone()), input);
+}
+
+fn platform_expected(name: &str, expected: &Value, windows: bool) -> Value {
+    if windows && name == "hooks.check.uninstalled" {
+        serde_json::from_str::<Value>(
+            &include_str!("fixtures/w2/b30-capability-windows.json").replace("{ROOT}", "<tmp>"),
+        )
+        .unwrap()
+    } else {
+        expected.clone()
+    }
+}
+
+#[test]
+fn wt_core_a_e_expectations() {
+    let unix: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b30-capability.json")).unwrap();
+    let captured: Value = serde_json::from_str(
+        &include_str!("fixtures/w2/b30-capability-windows.json").replace("{ROOT}", "<tmp>"),
+    )
+    .unwrap();
+    for (name, expected) in unix.as_object().unwrap() {
+        assert_eq!(platform_expected(name, expected, false), *expected);
+        let wanted = if name == "hooks.check.uninstalled" {
+            &captured
+        } else {
+            expected
+        };
+        assert_eq!(platform_expected(name, expected, true), *wanted, "{name}");
+    }
+    assert_ne!(captured, unix["hooks.check.uninstalled"]);
 }

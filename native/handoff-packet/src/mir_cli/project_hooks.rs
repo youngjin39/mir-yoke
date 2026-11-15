@@ -412,8 +412,17 @@ fn check(
 ) -> Result<(), String> {
     let binary = project_path(root, relative)?;
     let receipt = project_path(root, ".mir/bin/project-hooks.json")?;
-    let bytes = fs::read(&receipt)
-        .map_err(|error| super::bootstrap_adoption::io_error(&receipt, error).to_string())?;
+    let bytes = fs::read(&receipt).map_err(|error| {
+        let message = super::bootstrap_adoption::io_error(&receipt, error).to_string();
+        // a61c3013 project_hooks.py:61: read_text uses str(Path), not as_posix.
+        // Preserve the shared errno mapping; replace only its filename repr.
+        let filename = receipt.to_string_lossy();
+        let filename = filename.strip_prefix(r"\\?\").unwrap_or(&filename);
+        message.replace(
+            &crate::executor_execute::repr(&super::bootstrap_adoption::wire(&receipt)),
+            &crate::executor_execute::repr(filename),
+        )
+    })?;
     let points = super::bootstrap_adoption::json_bytes_codepoints(&bytes)
         .map_err(|error| error.to_string())?;
     let receipt_value =

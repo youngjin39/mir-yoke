@@ -368,18 +368,31 @@ fn frozen_records() {
         serde_json::from_str(include_str!("fixtures/w2/b14-gc-doctor.json")).unwrap();
     assert_eq!(records.as_object().unwrap().len(), 40);
     let mut replayed = 0;
+    let mut failures = Vec::new();
     for (name, expected) in records.as_object().unwrap() {
         let tmp = tempfile::Builder::new()
             .prefix("b14-")
             .tempdir_in(std::env::temp_dir())
             .unwrap();
         let root = tmp.path().canonicalize().unwrap();
-        let actual = observe_root(name, replay(name, &root), root.to_str().unwrap());
+        let actual = std::panic::catch_unwind(|| replay(name, &root));
+        let Ok(actual) = actual else {
+            failures.push(format!("record {name}: replay panicked"));
+            replayed += 1;
+            continue;
+        };
+        let actual = observe_root(name, actual, root.to_str().unwrap());
         let actual = observe_paths(name, normalize(actual, &root));
-        assert_eq!(&actual, expected, "{name}");
+        let expected = platform_expected(name, expected, cfg!(windows));
+        if actual != expected {
+            failures.push(format!(
+                "record {name}: actual={actual}, expected={expected}"
+            ));
+        }
         replayed += 1;
         println!("{name}: replayed");
     }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
     assert_eq!(replayed, 40);
     println!("replayed={replayed} exempt=0 total=40");
 }
@@ -496,4 +509,34 @@ fn wt_core_a_c_paths() {
     assert_eq!(observe_paths("doctor.missing.True", input.clone()), input);
     input["value"]["command"]["stdout"] = json!(r"keep <tmp>\.mir\db");
     assert_eq!(observe_paths("doctor.missing.False", input.clone()), input);
+}
+
+fn platform_expected(name: &str, expected: &Value, windows: bool) -> Value {
+    if windows && name == "doctor.missing.True" {
+        serde_json::from_str::<Value>(
+            &include_str!("fixtures/w2/b14-gc-doctor-windows.json").replace("{ROOT}", "<tmp>"),
+        )
+        .unwrap()
+    } else {
+        expected.clone()
+    }
+}
+
+#[test]
+fn wt_core_a_e_expectations() {
+    let unix: Value = serde_json::from_str(include_str!("fixtures/w2/b14-gc-doctor.json")).unwrap();
+    let captured: Value = serde_json::from_str(
+        &include_str!("fixtures/w2/b14-gc-doctor-windows.json").replace("{ROOT}", "<tmp>"),
+    )
+    .unwrap();
+    for (name, expected) in unix.as_object().unwrap() {
+        assert_eq!(platform_expected(name, expected, false), *expected);
+        let wanted = if name == "doctor.missing.True" {
+            &captured
+        } else {
+            expected
+        };
+        assert_eq!(platform_expected(name, expected, true), *wanted, "{name}");
+    }
+    assert_ne!(captured, unix["doctor.missing.True"]);
 }
