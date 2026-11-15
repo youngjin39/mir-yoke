@@ -226,6 +226,39 @@ fn git_command(root: &Path, args: &[&OsStr]) -> Result<Vec<String>> {
         })
         .collect()
 }
+#[cfg(windows)]
+pub(crate) fn path_io(error: io::Error, path: &Path) -> Error {
+    windows_path_io(error, path, crate::executor_text::IoOperation::Win32)
+}
+#[cfg(windows)]
+fn windows_path_io(
+    error: io::Error,
+    path: &Path,
+    operation: crate::executor_text::IoOperation,
+) -> Error {
+    if error.raw_os_error().is_none() {
+        return Error::Io(error);
+    }
+    let rendered = crate::executor_text::io_error(error, path, operation);
+    let (class, text) = rendered.split_once(": ").unwrap_or(("OSError", &rendered));
+    let kind = match class {
+        "FileNotFoundError" => "FileNotFoundError",
+        "PermissionError" => "PermissionError",
+        "FileExistsError" => "FileExistsError",
+        "NotADirectoryError" => "NotADirectoryError",
+        _ => "OSError",
+    };
+    let suffix = format!(
+        ": {}",
+        crate::executor_text::repr_points(&crate::executor_text::os_points(path.as_os_str()))
+    );
+    Error::PathIo {
+        kind,
+        message: text.strip_suffix(&suffix).unwrap_or(text).into(),
+        path: path.to_owned(),
+    }
+}
+#[cfg(not(windows))]
 pub(crate) fn path_io(error: io::Error, path: &Path) -> Error {
     let Some(errno) = error.raw_os_error() else {
         return Error::Io(error);
@@ -505,10 +538,18 @@ fn read_text(path: &DispatchPath) -> Result<String> {
     let mut options = fs::OpenOptions::new();
     options.read(true);
     nofollow(&mut options)?;
-    let mut file = options.open(&path.io)?;
+    let read_error = |error: io::Error| {
+        // Missing evidence is deliberately degraded by status/artifact callers.
+        #[cfg(windows)]
+        if error.kind() != io::ErrorKind::NotFound {
+            return windows_path_io(error, &path.caller, crate::executor_text::IoOperation::Read);
+        }
+        Error::Io(error)
+    };
+    let mut file = options.open(&path.io).map_err(read_error)?;
     regular_file(&file)?;
     let mut text = String::new();
-    file.read_to_string(&mut text)?;
+    file.read_to_string(&mut text).map_err(read_error)?;
     Ok(text)
 }
 fn regular_file(file: &fs::File) -> Result<()> {
@@ -1407,6 +1448,54 @@ mod spelling_tests {
             assert!(!error.to_string().contains("alias/alias"));
             assert!(
                 matches!(error, Error::Git { code: Some(73), stderr, .. } if stderr == "/repo/raw stderr")
+            );
+        }
+    }
+}
+
+#[cfg(all(test, windows))]
+mod windows_error_tests {
+    use super::*;
+
+    #[test]
+    fn windows_worktree_errors_match_pinned_python() {
+        let records: Value = serde_json::from_str(
+            &fs::read_to_string(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/fixtures/executor_worktree_errors-windows.json"
+            ))
+            .expect("run capture_worktree_errors.py on CPython 3.12.13 first"),
+        )
+        .unwrap();
+        assert_eq!(records["os"], "nt");
+        let scratch = tempfile::tempdir().unwrap();
+        let root = scratch.path();
+        fs::write(root.join("blocked"), "keep").unwrap();
+        fs::create_dir(root.join("directory")).unwrap();
+        for (name, suffix) in [
+            ("mkdir_collision", "blocked"),
+            ("blocked_parent", "blocked/child"),
+            ("read_directory", "directory"),
+            ("status_directory", "directory"),
+        ] {
+            let path = DispatchPath {
+                caller: root.join(suffix),
+                io: root.join(suffix),
+            };
+            let error = if name.starts_with("mkdir") || name == "blocked_parent" {
+                ensure_dir(&path).unwrap_err()
+            } else {
+                read_text(&path).unwrap_err()
+            };
+            let expected = &records["records"][name];
+            assert_eq!(error.kind(), expected["class"].as_str().unwrap(), "{name}");
+            assert_eq!(
+                error.to_string(),
+                expected["text"]
+                    .as_str()
+                    .unwrap()
+                    .replace("<ROOT>", &root.display().to_string().replace('\\', "\\\\")),
+                "{name}"
             );
         }
     }
