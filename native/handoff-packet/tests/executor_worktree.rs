@@ -7,6 +7,10 @@ use std::{
     process::Command,
 };
 
+#[path = "support/worktree_errors.rs"]
+mod worktree_errors;
+use worktree_errors::path_repr;
+
 struct Fixture(PathBuf);
 impl Fixture {
     fn new() -> Self {
@@ -188,13 +192,24 @@ fn seed_failure_retains_git_registration_branch_and_tree_like_reference() {
     let trees = fixture.0.join("trees");
     let error =
         create_dispatch_worktree(&repo, "failure", "HEAD", "brief", Some(&trees)).unwrap_err();
-    assert_eq!(error.kind(), "FileExistsError");
+    assert_eq!(error.kind(), "FileExistsError", "{error:?}");
+    #[cfg(windows)]
+    assert_eq!(
+        error.to_string(),
+        worktree_errors::frozen(
+            "mkdir_collision",
+            &trees.join("failure").join(".mir-dispatch")
+        ),
+        "{error:?}"
+    );
+    #[cfg(not(windows))]
     assert_eq!(
         error.to_string(),
         format!(
             "[Errno 17] File exists: '{}'",
             trees.join("failure/.mir-dispatch").display()
-        )
+        ),
+        "{error:?}"
     );
     assert!(trees.join("failure").exists());
     assert!(!git(&repo, &["branch", "--list", "mir-dispatch/failure"]).is_empty());
@@ -617,29 +632,49 @@ fn selected_alias_errors_preserve_caller_spelling_case(nested: bool) {
     fs::write(real.join("blocked"), "keep").unwrap();
     let file = alias.join("blocked/child/evidence.md");
     let error = secure_write(&file, "probe", false).unwrap_err();
-    assert_eq!(error.kind(), "NotADirectoryError");
+    #[cfg(windows)]
+    assert_eq!(error.kind(), "FileExistsError", "{error:?}");
+    #[cfg(windows)]
+    assert_eq!(
+        error.to_string(),
+        worktree_errors::frozen("blocked_parent", &alias.join("blocked")),
+        "{error:?}"
+    );
+    #[cfg(not(windows))]
+    assert_eq!(error.kind(), "NotADirectoryError", "{error:?}");
+    #[cfg(not(windows))]
     assert_eq!(
         error.to_string(),
         format!(
             "[Errno 20] Not a directory: '{}'",
             file.parent().unwrap().display()
-        )
+        ),
+        "{error:?}"
     );
     let file = alias.join("blocked");
     let error = secure_write(&file.join("evidence.md"), "probe", false).unwrap_err();
-    assert_eq!(error.kind(), "FileExistsError");
+    assert_eq!(error.kind(), "FileExistsError", "{error:?}");
+    #[cfg(windows)]
     assert_eq!(
         error.to_string(),
-        format!("[Errno 17] File exists: '{}'", file.display())
+        worktree_errors::frozen("mkdir_collision", &file),
+        "{error:?}"
+    );
+    #[cfg(not(windows))]
+    assert_eq!(
+        error.to_string(),
+        format!("[Errno 17] File exists: '{}'", file.display()),
+        "{error:?}"
     );
     let error = write_private_text(&alias.join("missing/evidence.md"), "probe", false).unwrap_err();
-    assert_eq!(error.kind(), "FileNotFoundError");
+    assert_eq!(error.kind(), "FileNotFoundError", "{error:?}");
     assert_eq!(
         error.to_string(),
         format!(
-            "[Errno 2] No such file or directory: '{}'",
-            alias.join("missing/evidence.md").display()
-        )
+            "[Errno 2] No such file or directory: {}",
+            path_repr(&alias.join("missing").join("evidence.md"))
+        ),
+        "{error:?}"
     );
 }
 
@@ -671,22 +706,16 @@ fn git_refusal_uses_caller_alias_in_command_case(nested: bool) {
         Some(&alias.join("trees")),
     )
     .unwrap_err();
-    assert_eq!(error.kind(), "CalledProcessError");
-    assert!(matches!(
-        &error,
-        Error::Git {
-            code: Some(255),
-            ..
-        }
-    ));
+    assert_eq!(error.kind(), "CalledProcessError", "{error:?}");
     assert_eq!(
         error.to_string(),
         format!(
-            "Command '['git', '-C', '{}', 'worktree', 'add', '-b', 'mir-dispatch/existing', '{}', '{}']' returned non-zero exit status 255.",
-            alias.join("repo").display(),
-            alias.join("trees/existing").display(),
+            "Command '['git', '-C', {}, 'worktree', 'add', '-b', 'mir-dispatch/existing', {}, '{}']' returned non-zero exit status 255.",
+            path_repr(&alias.join("repo")),
+            path_repr(&alias.join("trees").join("existing")),
             git(&repo, &["rev-parse", "HEAD"])
-        )
+        ),
+        "{error:?}"
     );
     // An explicit physical worktree root must not inherit the repo alias.
     let physical_trees = fs::canonicalize(&repo).unwrap().join("trees");
@@ -701,12 +730,16 @@ fn git_refusal_uses_caller_alias_in_command_case(nested: bool) {
     let Error::Git {
         command: Some(command),
         ..
-    } = error
+    } = &error
     else {
-        panic!("expected Git refusal");
+        panic!("expected Git refusal: {error:?}");
     };
-    assert_eq!(Path::new(&command[2]), alias.join("repo"));
-    assert_eq!(Path::new(&command[7]), physical_trees.join("existing"));
+    assert_eq!(Path::new(&command[2]), alias.join("repo"), "{error:?}");
+    assert_eq!(
+        Path::new(&command[7]),
+        physical_trees.join("existing"),
+        "{error:?}"
+    );
 }
 
 #[test]
@@ -738,26 +771,21 @@ fn alias_status_inspection_and_event_errors_keep_spelling_case(nested: bool) {
     assert_eq!(
         error.to_string(),
         format!(
-            "[Errno 2] No such file or directory: '{}'",
-            trees.join("inspect/.mir-dispatch/status.json").display()
-        )
+            "[Errno 2] No such file or directory: {}",
+            path_repr(&wt.status_path)
+        ),
+        "{error:?}"
     );
     fs::remove_file(wt.path.join(".git")).unwrap();
     let error = inspect_worktree(&wt).unwrap_err();
-    assert_eq!(error.kind(), "CalledProcessError");
-    assert!(matches!(
-        &error,
-        Error::Git {
-            code: Some(128),
-            ..
-        }
-    ));
+    assert_eq!(error.kind(), "CalledProcessError", "{error:?}");
     assert_eq!(
         error.to_string(),
         format!(
-            "Command '['git', '-C', '{}', 'rev-parse', 'HEAD']' returned non-zero exit status 128.",
-            trees.join("inspect").display()
-        )
+            "Command '['git', '-C', {}, 'rev-parse', 'HEAD']' returned non-zero exit status 128.",
+            path_repr(&trees.join("inspect"))
+        ),
+        "{error:?}"
     );
     for mode in ["default", "explicit", "artifacts"] {
         let mut options = DispatchOptions::new(&repo, mode);
@@ -783,11 +811,21 @@ fn alias_status_inspection_and_event_errors_keep_spelling_case(nested: bool) {
             },
         )
         .unwrap_err();
-        assert_eq!(error.kind(), "IsADirectoryError", "{mode}");
+        #[cfg(windows)]
+        assert_eq!(error.kind(), "PermissionError", "{mode}: {error:?}");
+        #[cfg(windows)]
+        assert_eq!(
+            error.to_string(),
+            worktree_errors::frozen("read_directory", &expected),
+            "{mode}: {error:?}"
+        );
+        #[cfg(not(windows))]
+        assert_eq!(error.kind(), "IsADirectoryError", "{mode}: {error:?}");
+        #[cfg(not(windows))]
         assert_eq!(
             error.to_string(),
             format!("[Errno 21] Is a directory: '{}'", expected.display()),
-            "{mode}"
+            "{mode}: {error:?}"
         );
     }
 }
@@ -804,23 +842,25 @@ fn nested_alias_cleanup_and_merge_errors_keep_spelling() {
     let wt = create_dispatch_worktree(&alias, "locked", "HEAD", "", Some(&trees)).unwrap();
     git(&repo, &["worktree", "lock", wt.path.to_str().unwrap()]);
     let error = cleanup_worktree(&wt, false).unwrap_err();
-    assert_eq!(error.kind(), "CalledProcessError");
+    assert_eq!(error.kind(), "CalledProcessError", "{error:?}");
     assert_eq!(
         error.to_string(),
         format!(
-            "Command '['git', '-C', '{}', 'worktree', 'remove', '--force', '{}']' returned non-zero exit status 128.",
-            alias.display(),
-            trees.join("locked").display()
-        )
+            "Command '['git', '-C', {}, 'worktree', 'remove', '--force', {}]' returned non-zero exit status 128.",
+            path_repr(&alias),
+            path_repr(&trees.join("locked"))
+        ),
+        "{error:?}"
     );
     let error = merge_result(&wt, Some("missing-ref"), None, false).unwrap_err();
-    assert_eq!(error.kind(), "CalledProcessError");
+    assert_eq!(error.kind(), "CalledProcessError", "{error:?}");
     assert_eq!(
         error.to_string(),
         format!(
-            "Command '['git', '-C', '{}', 'diff', '--no-renames', '--name-only', '-z', '{}', 'missing-ref']' returned non-zero exit status 128.",
-            alias.display(),
+            "Command '['git', '-C', {}, 'diff', '--no-renames', '--name-only', '-z', '{}', 'missing-ref']' returned non-zero exit status 128.",
+            path_repr(&alias),
             wt.base_commit
-        )
+        ),
+        "{error:?}"
     );
 }

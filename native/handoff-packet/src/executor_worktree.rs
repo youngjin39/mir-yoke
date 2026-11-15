@@ -141,6 +141,9 @@ pub(crate) struct DispatchPath {
 }
 impl DispatchPath {
     pub(crate) fn root(caller: &Path) -> Result<Self> {
+        // Python constructs Path before str() for Git argv; keep aliases intact.
+        #[cfg(windows)]
+        let caller = &caller.components().collect::<PathBuf>();
         Ok(Self {
             caller: caller.to_owned(),
             io: selected_root(caller)?,
@@ -237,6 +240,40 @@ fn io_kind(kind: io::ErrorKind) -> &'static str {
         _ => "OSError",
     }
 }
+#[cfg(windows)]
+pub(crate) fn path_io(error: io::Error, path: &Path) -> Error {
+    windows_path_io(error, path, crate::executor_text::IoOperation::Win32)
+}
+#[cfg(windows)]
+fn windows_path_io(
+    error: io::Error,
+    path: &Path,
+    operation: crate::executor_text::IoOperation,
+) -> Error {
+    if error.raw_os_error().is_none() {
+        return Error::Io(error);
+    }
+    let path = &path.components().collect::<PathBuf>();
+    let rendered = crate::executor_text::io_error(error, path, operation);
+    let (class, text) = rendered.split_once(": ").unwrap_or(("OSError", &rendered));
+    let kind = match class {
+        "FileNotFoundError" => "FileNotFoundError",
+        "PermissionError" => "PermissionError",
+        "FileExistsError" => "FileExistsError",
+        "NotADirectoryError" => "NotADirectoryError",
+        _ => "OSError",
+    };
+    let suffix = format!(
+        ": {}",
+        crate::executor_text::repr_points(&crate::executor_text::os_points(path.as_os_str()))
+    );
+    Error::PathIo {
+        kind,
+        message: text.strip_suffix(&suffix).unwrap_or(text).into(),
+        path: path.to_owned(),
+    }
+}
+#[cfg(not(windows))]
 pub(crate) fn path_io(error: io::Error, path: &Path) -> Error {
     let Some(errno) = error.raw_os_error() else {
         return Error::Io(error);
@@ -397,7 +434,24 @@ fn ensure_dir(path: &DispatchPath) -> Result<()> {
             }
         }
     }
-    #[cfg(not(unix))]
+    #[cfg(windows)]
+    match fs::create_dir(&path.io) {
+        Ok(()) => {}
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            // pathlib.mkdir(parents=True) reports the ancestor that refused mkdir.
+            if let Some(parent) = path.parent() {
+                ensure_dir(&parent)?;
+            }
+            if let Err(e) = fs::create_dir(&path.io)
+                && !path.io.is_dir()
+            {
+                return Err(path_io(e, &path.caller));
+            }
+        }
+        Err(e) if !path.io.is_dir() => return Err(path_io(e, &path.caller)),
+        Err(_) => {}
+    }
+    #[cfg(not(any(unix, windows)))]
     fs::create_dir_all(&path.io).map_err(|e| path_io(e, &path.caller))?;
     reject_links(path)
 }
@@ -509,10 +563,26 @@ fn read_text(path: &DispatchPath) -> Result<String> {
     let mut options = fs::OpenOptions::new();
     options.read(true);
     nofollow(&mut options)?;
-    let mut file = options.open(&path.io)?;
-    regular_file(&file)?;
+    let mut file = options.open(&path.io).map_err(|e| read_error(e, path))?;
+    finish_read(path, &mut file)
+}
+fn read_error(error: io::Error, _path: &DispatchPath) -> Error {
+    // Missing evidence is deliberately degraded by status/artifact callers.
+    #[cfg(windows)]
+    if error.kind() != io::ErrorKind::NotFound {
+        return windows_path_io(
+            error,
+            &_path.caller,
+            crate::executor_text::IoOperation::Read,
+        );
+    }
+    Error::Io(error)
+}
+fn finish_read(path: &DispatchPath, file: &mut fs::File) -> Result<String> {
+    regular_file(file)?;
     let mut text = String::new();
-    file.read_to_string(&mut text)?;
+    file.read_to_string(&mut text)
+        .map_err(|e| read_error(e, path))?;
     Ok(text)
 }
 fn regular_file(file: &fs::File) -> Result<()> {
@@ -671,7 +741,13 @@ fn private_write(path: &DispatchPath, text: &str, append: bool) -> Result<()> {
         let mut file = match options.open(&temp) {
             Ok(file) => file,
             Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
-            Err(e) => return Err(e.into()),
+            Err(e) => {
+                return Err(windows_path_io(
+                    e,
+                    &path.caller,
+                    crate::executor_text::IoOperation::Handle,
+                ));
+            }
         };
         let result = (|| {
             regular_file(&file)?;
@@ -680,7 +756,9 @@ fn private_write(path: &DispatchPath, text: &str, append: bool) -> Result<()> {
             file.sync_all()?;
             drop(file);
             reject_links(path)?;
-            fs::rename(&temp, &path.io)?;
+            fs::rename(&temp, &path.io).map_err(|e| {
+                windows_path_io(e, &path.caller, crate::executor_text::IoOperation::Handle)
+            })?;
             Ok(())
         })();
         if result.is_err() {
@@ -1411,6 +1489,108 @@ mod spelling_tests {
             assert!(!error.to_string().contains("alias/alias"));
             assert!(
                 matches!(error, Error::Git { code: Some(73), stderr, .. } if stderr == "/repo/raw stderr")
+            );
+        }
+    }
+}
+
+#[cfg(all(test, windows))]
+mod windows_error_tests {
+    use super::*;
+
+    mod expected {
+        use crate as handoff_packet;
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/support/worktree_errors.rs"
+        ));
+    }
+
+    #[test]
+    fn windows_worktree_errors_match_pinned_python() {
+        let records: Value = serde_json::from_str(
+            &fs::read_to_string(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/fixtures/executor_worktree_errors-windows.json"
+            ))
+            .expect("run capture_worktree_errors.py on CPython 3.12.13 first"),
+        )
+        .unwrap();
+        assert_eq!(records["os"], "nt");
+        let scratch = tempfile::tempdir().unwrap();
+        let root = scratch.path();
+        fs::write(root.join("blocked"), "keep").unwrap();
+        fs::create_dir(root.join("directory")).unwrap();
+        for (name, suffix) in [
+            ("mkdir_collision", "blocked"),
+            ("blocked_parent", "blocked/child"),
+            ("read_directory", "directory"),
+            ("status_directory", "directory"),
+        ] {
+            let path = DispatchPath {
+                caller: root.join(suffix),
+                io: root.join(suffix),
+            };
+            let error = if name.starts_with("mkdir") || name == "blocked_parent" {
+                ensure_dir(&path).unwrap_err()
+            } else {
+                read_text(&path).unwrap_err()
+            };
+            let failed = if name == "blocked_parent" {
+                root.join("blocked")
+            } else {
+                path.caller
+            };
+            assert_eq!(
+                error.to_string(),
+                expected::frozen(name, &failed),
+                "{name}: {error:?}"
+            );
+            let expected = &records["records"][name];
+            assert_eq!(
+                error.kind(),
+                expected["class"].as_str().unwrap(),
+                "{name}: {error:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn windows_private_and_late_read_errors_match_crt() {
+        let scratch = tempfile::tempdir().unwrap();
+        for mode in ["late-read", "missing", "directory"] {
+            let path = DispatchPath {
+                caller: scratch.path().join(mode).join("file"),
+                io: scratch.path().join(mode).join("file"),
+            };
+            let error = match mode {
+                "late-read" => {
+                    fs::create_dir(path.io.parent().unwrap()).unwrap();
+                    finish_read(&path, &mut fs::File::create(&path.io).unwrap()).unwrap_err()
+                }
+                "directory" => {
+                    fs::create_dir_all(&path.io).unwrap();
+                    private_write(&path, "probe", false).unwrap_err()
+                }
+                _ => private_write(&path, "probe", false).unwrap_err(),
+            };
+            let expected = if mode == "missing" {
+                format!(
+                    "[Errno 2] No such file or directory: {}",
+                    expected::path_repr(&path.caller)
+                )
+            } else {
+                expected::frozen("read_directory", &path.caller)
+            };
+            assert_eq!(error.to_string(), expected, "{mode}: {error:?}");
+            assert_eq!(
+                error.kind(),
+                if mode == "missing" {
+                    "FileNotFoundError"
+                } else {
+                    "PermissionError"
+                },
+                "{mode}: {error:?}"
             );
         }
     }
