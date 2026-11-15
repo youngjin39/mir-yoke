@@ -475,18 +475,21 @@ fn yaml_value(
     doc: &yaml::Node,
     index: usize,
     active: &mut BTreeSet<usize>,
-) -> Result<Value, String> {
+) -> Result<Value, Error> {
     if !active.insert(index) {
-        return Err("recursive YAML evidence".into());
+        return Err(yaml_error("YAMLError", "recursive YAML evidence".into()));
     }
     let node = &doc.arena[index];
     if !node.tag.starts_with("tag:yaml.org,2002:") {
-        return Err(doc.constructor_error(
-            index,
-            None,
-            &format!(
-                "could not determine a constructor for the tag {}",
-                crate::executor_text::repr(&node.tag)
+        return Err(yaml_error(
+            "YAMLError",
+            doc.constructor_error(
+                index,
+                None,
+                &format!(
+                    "could not determine a constructor for the tag {}",
+                    crate::executor_text::repr(&node.tag)
+                ),
             ),
         ));
     }
@@ -502,7 +505,10 @@ fn yaml_value(
             for (k, v) in items {
                 let key = yaml_value(doc, *k, active)?;
                 if matches!(key, Value::Array(_) | Value::Object(_)) {
-                    return Err(doc.constructor_error(*k, Some(index), "found unhashable key"));
+                    return Err(yaml_error(
+                        "YAMLError",
+                        doc.constructor_error(*k, Some(index), "found unhashable key"),
+                    ));
                 }
                 let key = key
                     .as_str()
@@ -517,41 +523,19 @@ fn yaml_value(
             "tag:yaml.org,2002:bool" => {
                 json!(matches!(s.to_lowercase().as_str(), "true" | "yes" | "on"))
             }
-            "tag:yaml.org,2002:int" => {
-                let text = s.replace('_', "");
-                let (negative, text) = if let Some(s) = text.strip_prefix('-') {
-                    (true, s)
-                } else {
-                    (false, text.strip_prefix('+').unwrap_or(&text))
-                };
-                let parsed = if let Some(s) = text.strip_prefix("0x") {
-                    i64::from_str_radix(s, 16)
-                } else if let Some(s) = text.strip_prefix("0b") {
-                    i64::from_str_radix(s, 2)
-                } else if text.len() > 1 && text.starts_with('0') {
-                    i64::from_str_radix(text, 8)
-                } else {
-                    text.parse::<i64>()
-                };
-                json!(
-                    parsed
-                        .map(|n| if negative { -n } else { n })
-                        .map_err(|e| e.to_string())?
-                )
-            }
-            "tag:yaml.org,2002:float" => json!(
-                s.replace('_', "")
-                    .parse::<f64>()
-                    .map_err(|e| e.to_string())?
-            ),
+            "tag:yaml.org,2002:int" => json!(yaml_int(s)?),
+            "tag:yaml.org,2002:float" => json!(yaml_float(s)?),
             "tag:yaml.org,2002:str" | "tag:yaml.org,2002:timestamp" => json!(s),
             tag => {
-                return Err(doc.constructor_error(
-                    index,
-                    None,
-                    &format!(
-                        "could not determine a constructor for the tag {}",
-                        crate::executor_text::repr(tag)
+                return Err(yaml_error(
+                    "YAMLError",
+                    doc.constructor_error(
+                        index,
+                        None,
+                        &format!(
+                            "could not determine a constructor for the tag {}",
+                            crate::executor_text::repr(tag)
+                        ),
                     ),
                 ));
             }
@@ -560,8 +544,107 @@ fn yaml_value(
     active.remove(&index);
     Ok(value)
 }
-pub(crate) fn load_yaml(text: &str) -> Result<Value, String> {
-    let doc = yaml::compose(yaml::Input::Text(text)).map_err(|e| e.message)?;
+fn yaml_error(class: &'static str, message: String) -> Error {
+    Error::Yaml { class, message }
+}
+// PyYAML removes underscores and the leading sign before calling int()/float().
+fn yaml_number_text(s: &str, float: bool) -> Result<(bool, String), Error> {
+    let text = s.replace('_', "");
+    if text.is_empty() {
+        return Err(yaml_error("IndexError", "string index out of range".into()));
+    }
+    let negative = text.starts_with('-');
+    let text = text.strip_prefix(['+', '-']).unwrap_or(&text);
+    Ok((
+        negative,
+        if float {
+            text.to_lowercase()
+        } else {
+            text.into()
+        },
+    ))
+}
+fn yaml_int_part(text: &str, base: u32) -> Result<i64, Error> {
+    i64::from_str_radix(text.trim_matches(char::is_whitespace), base).map_err(|_| {
+        let digits = text.trim_matches(char::is_whitespace);
+        let digits = digits.strip_prefix(['+', '-']).unwrap_or(digits);
+        let count = digits.chars().count();
+        if base == 10 && count > 4300
+            && digits.chars().all(|c| crate::python_decimal::decimal_digit(c).is_some())
+        {
+            return yaml_error("ValueError", format!(
+                "Exceeds the limit (4300 digits) for integer string conversion: value has {count} digits; use sys.set_int_max_str_digits() to increase the limit"));
+        }
+        // CPython's int diagnostic limits the repr (not the input) to 200 characters.
+        let repr: String = crate::executor_text::repr(text).chars().take(200).collect();
+        yaml_error(
+            "ValueError",
+            format!("invalid literal for int() with base {base}: {repr}"),
+        )
+    })
+}
+fn yaml_int(s: &str) -> Result<i64, Error> {
+    let (negative, text) = yaml_number_text(s, false)?;
+    let value = if let Some(text) = text.strip_prefix("0b") {
+        yaml_int_part(text, 2)?
+    } else if let Some(text) = text.strip_prefix("0x") {
+        yaml_int_part(text, 16)?
+    } else if text.is_empty() {
+        return Err(yaml_error("IndexError", "string index out of range".into()));
+    } else if text.starts_with('0') {
+        yaml_int_part(&text, 8)?
+    } else if text.contains(':') {
+        let digits = text
+            .split(':')
+            .map(|p| yaml_int_part(p, 10))
+            .collect::<Result<Vec<_>, _>>()?;
+        digits
+            .into_iter()
+            .try_fold(0i64, |sum, digit| {
+                sum.checked_mul(60).and_then(|sum| sum.checked_add(digit))
+            })
+            .map(Ok)
+            .unwrap_or_else(|| yaml_int_part(&text, 10))?
+    } else {
+        yaml_int_part(&text, 10)?
+    };
+    Ok(if negative { -value } else { value })
+}
+fn yaml_float(s: &str) -> Result<f64, Error> {
+    let (negative, text) = yaml_number_text(s, true)?;
+    let part = |text: &str| {
+        text.trim_matches(char::is_whitespace)
+            .parse::<f64>()
+            .map_err(|_| {
+                yaml_error(
+                    "ValueError",
+                    format!(
+                        "could not convert string to float: {}",
+                        crate::executor_text::repr(text)
+                    ),
+                )
+            })
+    };
+    let value = if text.contains(':') {
+        let mut base = 1.0;
+        text.split(':')
+            .map(part)
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .rev()
+            .fold(0.0, |sum, digit| {
+                let sum = sum + digit * base;
+                base *= 60.0;
+                sum
+            })
+    } else {
+        part(&text)?
+    };
+    Ok(if negative { -value } else { value })
+}
+pub(crate) fn load_yaml(text: &str) -> Result<Value, Error> {
+    let doc =
+        yaml::compose(yaml::Input::Text(text)).map_err(|e| yaml_error("YAMLError", e.message))?;
     doc.map(|doc| yaml_value(&doc, doc.root, &mut BTreeSet::new()))
         .unwrap_or(Ok(Value::Null))
 }
@@ -691,11 +774,14 @@ pub fn validate_phase2(
                     "phase2_spec native evidence must be listed in evidence_paths: {normalized}"
                 ));
             }
-            let document = match read_text(&path, host)
-                .map_err(|e| e.to_string())
-                .and_then(|text| load_yaml(&text))
-            {
+            let document = match read_text(&path, host).and_then(|text| load_yaml(&text)) {
                 Ok(doc) => doc,
+                Err(
+                    e @ Error::Yaml {
+                        class: "ValueError" | "IndexError",
+                        ..
+                    },
+                ) => return Err(e),
                 Err(e) => {
                     errors.push(format!(
                         "phase2_spec native evidence is unreadable: {normalized}: {e}"
@@ -856,6 +942,46 @@ pub fn validate_phase2(
 mod yaml_diagnostics {
     use super::*;
     #[test]
+    fn frozen_numeric_diagnostics() {
+        struct FilesOnly;
+        impl Host for FilesOnly {}
+        let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/Y-E18-p3d");
+        fs::create_dir_all(&scratch).unwrap();
+        let tmp = tempfile::tempdir_in(scratch).unwrap();
+        let rows: Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/y_e18_p3d.json")).unwrap();
+        let mut failures = Vec::new();
+        for row in rows.as_array().unwrap() {
+            let observed = load_yaml(row["text"].as_str().unwrap())
+                .map_err(|e| (e.class().to_owned(), e.to_string()));
+            let expected = if let Some(message) = row["message"].as_str() {
+                Err((
+                    row["error"].as_str().unwrap().to_owned(),
+                    message.to_owned(),
+                ))
+            } else {
+                Ok(row["value"].clone())
+            };
+            if observed != expected {
+                failures.push(format!("{}: {observed:?} != {expected:?}", row["case"]));
+            }
+            if expected.is_err() {
+                fs::write(tmp.path().join("meta.yaml"), row["text"].as_str().unwrap()).unwrap();
+                let surface = json!({"native_evidence": {"meta_path":"meta.yaml"}});
+                let observed = validate_phase2(tmp.path(), &surface, &mut FilesOnly)
+                    .map(|_| Value::Null)
+                    .map_err(|e| (e.class().to_owned(), e.to_string()));
+                if observed != expected {
+                    failures.push(format!(
+                        "phase2 {}: {observed:?} != {expected:?}",
+                        row["case"]
+                    ));
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+    }
+    #[test]
     fn frozen_constructor_diagnostics() {
         let rows: Value =
             serde_json::from_str(include_str!("../../tests/fixtures/y_e18_p3c.json")).unwrap();
@@ -866,7 +992,9 @@ mod yaml_diagnostics {
             .iter()
             .filter(|r| r["route"] == "value")
         {
-            let observed = load_yaml(r["text"].as_str().unwrap()).err();
+            let observed = load_yaml(r["text"].as_str().unwrap())
+                .err()
+                .map(|e| e.to_string());
             if r["implemented"] == true && observed.as_deref() != r["message"].as_str() {
                 failures.push(format!("{}: {observed:?} != {}", r["case"], r["message"]));
             } else if r["implemented"] == false {

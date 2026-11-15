@@ -89,6 +89,10 @@ pub enum Error {
     Adoption(AdoptionError),
     Unicode(String),
     Json(String),
+    Yaml {
+        class: &'static str,
+        message: String,
+    },
     Io {
         class: &'static str,
         message: String,
@@ -101,7 +105,7 @@ impl Error {
             Self::Adoption(_) => "AdoptionError",
             Self::Unicode(_) => "UnicodeDecodeError",
             Self::Json(_) => "JSONDecodeError",
-            Self::Io { class, .. } => class,
+            Self::Io { class, .. } | Self::Yaml { class, .. } => class,
         }
     }
 }
@@ -110,7 +114,10 @@ impl fmt::Display for Error {
         match self {
             Self::SystemExit(code) => code.fmt(f),
             Self::Adoption(e) => e.fmt(f),
-            Self::Unicode(s) | Self::Json(s) | Self::Io { message: s, .. } => f.write_str(s),
+            Self::Unicode(s)
+            | Self::Json(s)
+            | Self::Io { message: s, .. }
+            | Self::Yaml { message: s, .. } => f.write_str(s),
         }
     }
 }

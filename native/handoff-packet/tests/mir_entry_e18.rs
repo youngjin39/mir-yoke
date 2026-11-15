@@ -65,6 +65,12 @@ fn public_bootstrap_phase2_content() {
     replay_phase2(&["--yaml-p3c"]);
 }
 
+#[test]
+#[cfg(target_os = "macos")]
+fn public_bootstrap_numeric_diagnostics() {
+    replay_phase2(&["--yaml-p3d"]);
+}
+
 #[cfg(target_os = "macos")]
 fn replay_phase2(extra: &[&str]) {
     let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

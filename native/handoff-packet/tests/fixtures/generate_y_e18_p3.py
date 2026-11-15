@@ -7,11 +7,18 @@ import sys
 from pathlib import Path
 
 yaml_fixture = 'y_e18_p3c.json' if '--yaml-p3c' in sys.argv else 'y_e18_p3b.json'
-yaml_diagnostics = '--yaml-diagnostics' in sys.argv or '--yaml-p3c' in sys.argv
+if '--yaml-p3d' in sys.argv:
+    yaml_fixture = 'y_e18_p3d.json'
+yaml_diagnostics = any(f in sys.argv for f in ('--yaml-diagnostics', '--yaml-p3c', '--yaml-p3d'))
 if yaml_diagnostics:
-    sys.argv.remove('--yaml-p3c' if '--yaml-p3c' in sys.argv else '--yaml-diagnostics')
-yaml_cases = {r['case']: r['text'].encode() for r in json.loads(
-    Path(__file__).with_name(yaml_fixture).read_text()) if r['implemented'] and 'text' in r}
+    sys.argv.remove(next(f for f in ('--yaml-diagnostics', '--yaml-p3c', '--yaml-p3d')
+                         if f in sys.argv))
+yaml_rows = json.loads(Path(__file__).with_name(yaml_fixture).read_text())
+yaml_cases = {r['case']: r['text'].encode() for r in yaml_rows
+    if r.get('implemented', r.get('error') is not None) and 'text' in r}
+yaml_paths = {r['case']: r.get('path', 'spec/gaps.yaml') for r in yaml_rows}
+numeric_errors = {r['case']: f"{r['error']}: {r['message']}\n".encode() for r in yaml_rows
+                  if r['error']}
 yaml_probe = '--yaml-probe' in sys.argv
 if yaml_probe:
     sys.argv.remove('--yaml-probe')
@@ -24,6 +31,16 @@ scope = {'__file__': __file__}
 exec(Path(__file__).with_name('generate_y_e18_p2.py').read_text().split('records = []')[0], scope)
 a, oracle, wrapper, binary, clock = (scope[k] for k in
                                      ('a', 'oracle', 'wrapper', 'binary', 'clock'))
+if yaml_fixture == 'y_e18_p3d.json':
+    entropy = clock.with_name('numeric.dylib')
+    subprocess.run(['/usr/bin/clang', '-dynamiclib',
+        str(Path(__file__).with_name('e18_numeric.c')), '-o', str(entropy)], check=True)
+    clock = f'{clock}:{entropy}'
+    # fastrand 2.5.0 seed 0 yields lAFSES. Both create the same synthetic pathname;
+    # no actual file name, database byte or wire byte is normalized after capture.
+    wrapper.write_text(wrapper.read_text().replace('try: code = bootstrap.main',
+        "import tempfile, itertools\ntempfile._get_candidate_names = "
+        "lambda: itertools.repeat('lAFSES')\ntry: code = bootstrap.main"))
 provider = scope['provider'].replace(
     "profile == 'code_app'", "profile in ('code_app', 'content_workspace')")
 provider = provider.replace("return {'ready': True}", """import json
@@ -224,7 +241,7 @@ requires_global_capabilities = true
         if name == 'gap-json':
             initial['spec/gaps.yaml'] = b'[broken\n'
         if yaml_diagnostics:
-            initial['spec/gaps.yaml'] = yaml_cases[name]
+            initial[yaml_paths[name]] = yaml_cases[name]
         if name == 'index':
             initial['spec/index.yaml'] = b'requirements: [{status: incomplete}]\n'
         if name == 'graph':
@@ -249,11 +266,14 @@ requires_global_capabilities = true
                   files=files(), links=links())
     records.append(record)
     a.output.write_text(json.dumps(records)+'\n')
-    receipt = json.loads(out.stdout)
+    numeric_error = numeric_errors.get(name) if yaml_fixture == 'y_e18_p3d.json' else None
+    receipt = {} if numeric_error else json.loads(out.stdout)
     success = name in ('ready', 'content-ready', 'content-allow',
                        'content-restart', 'content-generated')
     assert out.returncode == (0 if success else 2 if name == 'content-stale' else 1), (name, out)
-    if not success:
+    if numeric_error:
+        assert out.stdout == b'' and out.stderr == numeric_error, (name, out)
+    elif not success:
         assert any(reasons[name] in error for error in receipt['errors']), (name, receipt['errors'])
     if success:
         assert not out.stderr and receipt['errors'] == [], (name, out)
