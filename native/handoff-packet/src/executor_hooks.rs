@@ -11,7 +11,7 @@ use std::{
     process::{Child, Command, Stdio},
     sync::mpsc::{self, Receiver, Sender},
     thread::{self, JoinHandle},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 pub const PROTOCOL: &str = "mir-executor.hooks@1";
@@ -19,6 +19,29 @@ pub const MAX_FRAME_BYTES: usize = 1024 * 1024;
 pub const MAX_JSON_DEPTH: usize = 64;
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 type Result<T> = std::result::Result<T, BridgeError>;
+
+// Temporary startup/transport diagnostics; never part of the hook wire protocol.
+struct PhaseProbe(Option<(&'static str, Instant)>);
+impl PhaseProbe {
+    fn new(phase: &'static str) -> Self {
+        Self(
+            (std::env::var_os("MIR_HOOK_PHASE_PROBE").as_deref() == Some("1".as_ref()))
+                .then(|| (phase, Instant::now())),
+        )
+    }
+}
+impl Drop for PhaseProbe {
+    fn drop(&mut self) {
+        if let Some((phase, start)) = self.0 {
+            // A diagnostic write failure must not change transport behavior.
+            let _ = writeln!(
+                std::io::stderr().lock(),
+                "mir-hook phase={phase} elapsed_ns={}",
+                start.elapsed().as_nanos()
+            );
+        }
+    }
+}
 
 #[derive(Debug)]
 struct HookResponse {
@@ -78,6 +101,7 @@ impl HookSession {
         environment: Option<&BTreeMap<OsString, OsString>>,
         timeout: Duration,
     ) -> Result<Self> {
+        let validation = PhaseProbe::new("validation/canonicalisation");
         let executable = Path::new(&config.executable);
         let expected: BTreeSet<&str> = config.hooks.iter().map(String::as_str).collect();
         if !root.is_absolute()
@@ -108,9 +132,16 @@ impl HookSession {
                 ));
             }
         }
-        if !path.is_file()
-            || !crate::digest::sha256(&fs::read(&path)?).eq_ignore_ascii_case(&config.sha256)
-        {
+        let is_file = path.is_file();
+        drop(validation);
+        let valid_pin = is_file && {
+            let read = PhaseProbe::new("executable-read");
+            let bytes = fs::read(&path)?;
+            drop(read);
+            let _sha = PhaseProbe::new("sha256");
+            crate::digest::sha256(&bytes).eq_ignore_ascii_case(&config.sha256)
+        };
+        if !valid_pin {
             return Err(BridgeError::Configuration(
                 "native hook executable SHA-256 mismatch".into(),
             ));
@@ -132,18 +163,25 @@ impl HookSession {
         }
         #[cfg(windows)]
         let job = {
+            let _phase = PhaseProbe::new("process-job");
             use std::os::windows::process::CommandExt;
             // Assign the suspended process before any target code can spawn.
             command.creation_flags(0x00000004 | 0x00000200);
             crate::executor_hooks_windows::ProcessJob::new()?
         };
-        let mut child = command.spawn()?;
+        let mut child = {
+            let _phase = PhaseProbe::new("spawn");
+            command.spawn()?
+        };
         #[cfg(windows)]
-        if let Err(error) = job.assign_and_resume(&child) {
-            drop(job);
-            let _ = child.kill();
-            let _ = child.wait();
-            return Err(error.into());
+        {
+            let _phase = PhaseProbe::new("assignment/resume");
+            if let Err(error) = job.assign_and_resume(&child) {
+                drop(job);
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(error.into());
+            }
         }
         let Some(mut stdin) = child.stdin.take() else {
             stop_tree(&mut child);
@@ -260,10 +298,13 @@ impl HookSession {
         Ok(response)
     }
     fn receive(&mut self) -> Result<Value> {
-        let result = match self.responses.recv_timeout(self.timeout) {
-            Ok(result) => result,
-            Err(mpsc::RecvTimeoutError::Timeout) => Err(BridgeError::Timeout),
-            Err(mpsc::RecvTimeoutError::Disconnected) => Err(BridgeError::Closed),
+        let result = {
+            let _phase = PhaseProbe::new("receive");
+            match self.responses.recv_timeout(self.timeout) {
+                Ok(result) => result,
+                Err(mpsc::RecvTimeoutError::Timeout) => Err(BridgeError::Timeout),
+                Err(mpsc::RecvTimeoutError::Disconnected) => Err(BridgeError::Closed),
+            }
         };
         if result.is_err() {
             self.close();
@@ -277,6 +318,7 @@ impl HookSession {
         if self.closed {
             return;
         }
+        let _phase = PhaseProbe::new("close");
         self.closed = true;
         self.requests.take();
         #[cfg(windows)]
