@@ -9,9 +9,28 @@ pub const FOOTER: &str = "\n=== END MIR COMPACTION RECOVERY CONTEXT ===\n";
 pub const TRUNCATION: &str = "\n[mir] recovery context truncated at 8192 bytes\n";
 pub const MAX_CONTEXT_BYTES: usize = 8192;
 
+#[cfg(test)]
+std::thread_local! {
+    pub(crate) static IO_DIAGNOSTICS: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+#[cfg(test)]
+pub(crate) fn trace_io_error(stage: &str, path: &Path, error: &io::Error) {
+    let row = format!(
+        "[checkpoint I/O] thread={:?} stage={stage} path={path:?} kind={:?} raw_os_error={:?} error={error:?}",
+        std::thread::current().id(),
+        error.kind(),
+        error.raw_os_error()
+    );
+    eprintln!("{row}");
+    IO_DIAGNOSTICS.with(|log| log.borrow_mut().push(row));
+}
+
 /// Match Python's UTF-8 text reader, including universal newline translation.
 pub fn read_handoff(path: &Path) -> Result<String, String> {
     let bytes = fs::read(path).map_err(|error| {
+        #[cfg(test)]
+        trace_io_error("read", path, &error);
         if error.kind() == io::ErrorKind::NotFound {
             "canonical handoff is missing".to_owned()
         } else {

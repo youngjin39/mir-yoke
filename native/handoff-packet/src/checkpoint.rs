@@ -11,6 +11,18 @@ use std::{
 
 const SCAFFOLD: &str = "# Session Handoff — Current\n\n## Completed Work\n- Add only completed outcomes useful to the next session.\n\n## Decisions\n- Add only durable decisions needed by the next session.\n\n## Unresolved Issues\n- Add only unresolved work or blockers.\n\n## Next Actions\n- Add only the next actions needed to resume.\n\n## Modified Files\n- Add only files or groups needed to understand the handoff.\n\n## Verification Results\n- Add the checks run and their observed results.\n\n## Key Risks\n- Add only risks that remain relevant to the next session.\n";
 
+// Preserve the result unchanged; diagnostics exist only in the unit-test binary.
+macro_rules! checkpoint_io {
+    ($stage:expr, $path:expr, $result:expr) => {{
+        let result = $result;
+        #[cfg(test)]
+        if let Err(error) = &result {
+            crate::compact_snapshot::trace_io_error($stage, $path, error);
+        }
+        result
+    }};
+}
+
 pub fn replace_section(body: &str, snapshot: &str) -> Result<String, (usize, &'static str)> {
     let count = body.matches(BEGIN).count();
     if count != body.matches(END).count() {
@@ -58,13 +70,21 @@ pub fn atomic_write(
     let parent = path
         .parent()
         .ok_or_else(|| io::Error::other("missing parent"))?;
-    let mut temp = tempfile::Builder::new()
-        .prefix(".session-handoff-LATEST.md.")
-        .tempfile_in(parent)?;
-    temp.write_all(body)?;
-    temp.flush()?;
-    before_commit()?;
-    temp.persist(path).map_err(|error| error.error)?;
+    let mut temp = checkpoint_io!(
+        "tempfile",
+        path,
+        tempfile::Builder::new()
+            .prefix(".session-handoff-LATEST.md.")
+            .tempfile_in(parent)
+    )?;
+    checkpoint_io!("write", path, temp.write_all(body))?;
+    checkpoint_io!("flush", path, temp.flush())?;
+    checkpoint_io!("before_commit", path, before_commit())?;
+    checkpoint_io!(
+        "persist",
+        path,
+        temp.persist(path).map_err(|error| error.error)
+    )?;
     Ok(())
 }
 
@@ -275,14 +295,14 @@ pub fn pre_compact(project: &Path) -> (String, String) {
 fn checkpoint(project: &Path, deadline: Instant) -> (String, String) {
     let dir = project.join("tasks/handoffs");
     let path = dir.join("session-handoff-LATEST.md");
-    if fs::create_dir_all(&dir).is_err() {
+    if checkpoint_io!("mkdir", &dir, fs::create_dir_all(&dir)).is_err() {
         return (
             format!("[PreCompact] ERROR: Cannot create {}\n", dir.display()),
             String::new(),
         );
     }
     if !path.is_file() {
-        let _ = fs::write(&path, SCAFFOLD);
+        let _ = checkpoint_io!("scaffold", &path, fs::write(&path, SCAFFOLD));
     }
     let (snapshot, mut stderr) = snapshot(project, deadline);
     let rendered = read_handoff(&path)
@@ -353,6 +373,106 @@ mod tests {
     use super::*;
 
     #[test]
+    fn diagnostics_preserve_real_read_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("tasks/handoffs/session-handoff-LATEST.md");
+        fs::create_dir_all(&path).unwrap();
+        let error = fs::read(&path).unwrap_err();
+        crate::compact_snapshot::IO_DIAGNOSTICS.with(|log| log.borrow_mut().clear());
+        let (stdout, stderr) = checkpoint(dir.path(), Instant::now());
+        assert_eq!(
+            stdout,
+            "[PreCompact] ERROR: Failed to refresh canonical handoff.\n"
+        );
+        assert!(stderr.contains("ValueError: canonical handoff is unreadable\n"));
+        crate::compact_snapshot::IO_DIAGNOSTICS.with(|log| {
+            let log = log.borrow();
+            assert!(
+                log.iter().any(|row| row.contains("stage=read")
+                    && row.contains(&format!("raw_os_error={:?}", error.raw_os_error()))),
+                "{log:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn diagnostics_preserve_real_persist_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("handoff.md");
+        fs::create_dir(&path).unwrap();
+        fs::write(path.join("original"), "curated").unwrap();
+        crate::compact_snapshot::IO_DIAGNOSTICS.with(|log| log.borrow_mut().clear());
+        let error = atomic_write(&path, b"replacement", || Ok(())).unwrap_err();
+        assert!(error.raw_os_error().is_some());
+        crate::compact_snapshot::IO_DIAGNOSTICS.with(|log| {
+            let log = log.borrow();
+            assert!(
+                log.iter().any(|row| row.contains("stage=persist")
+                    && row.contains(&format!("raw_os_error={:?}", error.raw_os_error()))),
+                "{log:?}"
+            );
+        });
+        assert_eq!(
+            fs::read_to_string(path.join("original")).unwrap(),
+            "curated"
+        );
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_read_persist_overlap() {
+        use std::{os::windows::fs::OpenOptionsExt, sync::Barrier};
+        use windows_sys::Win32::Storage::FileSystem::{FILE_SHARE_READ, FILE_SHARE_WRITE};
+
+        for no_delete_share in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("handoff.md");
+            fs::write(&path, "curated original").unwrap();
+            let held = Barrier::new(2);
+            let finished = Barrier::new(2);
+            // Hold a real reader across the entire persist, without sleeps/retries.
+            let result = std::thread::scope(|scope| {
+                let reader = scope.spawn(|| -> io::Result<String> {
+                    let mut options = fs::OpenOptions::new();
+                    options.read(true);
+                    if no_delete_share {
+                        options.share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE);
+                    }
+                    let opened = options.open(&path);
+                    held.wait();
+                    finished.wait();
+                    let mut file = opened?;
+                    let mut body = String::new();
+                    file.read_to_string(&mut body)?;
+                    Ok(body)
+                });
+                held.wait();
+                let result = atomic_write(&path, b"replacement", || Ok(()));
+                finished.wait();
+                assert_eq!(reader.join().unwrap().unwrap(), "curated original");
+                result
+            });
+            eprintln!("read/persist overlap: no_delete_share={no_delete_share} result={result:?}");
+            // The explicit restricted handle is a negative control, not a claim
+            // that read_handoff uses this share mode. Print the default outcome.
+            if no_delete_share {
+                let error = result.as_ref().unwrap_err();
+                assert!(error.raw_os_error().is_some());
+            }
+            assert_eq!(
+                fs::read_to_string(&path).unwrap(),
+                if result.is_ok() {
+                    "replacement"
+                } else {
+                    "curated original"
+                }
+            );
+            assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+        }
+    }
+
+    #[test]
     fn curated_text_survives_replacement_and_duplicate_collapse() {
         let original = format!(
             "curated before\n{BEGIN}old{END}\ncurated between\n{BEGIN}old{END}\ncurated after\n"
@@ -401,7 +521,8 @@ mod tests {
             for _ in 0..16 {
                 let project = dir.path();
                 scope.spawn(move || {
-                    assert!(pre_compact(project).0.contains("Canonical handoff updated"));
+                    let result = pre_compact(project);
+                    assert!(result.0.contains("Canonical handoff updated"), "{result:?}");
                 });
             }
         });
