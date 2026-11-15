@@ -1,4 +1,6 @@
 #![cfg(unix)]
+#[path = "support/e17_production_replays.rs"]
+mod original_bootstrap_replays;
 use handoff_packet::mir_cli::{bootstrap as b, capability_manager::Output};
 use serde_json::{Value, json};
 use std::{fs, os::unix::fs::PermissionsExt, path::PathBuf, process::Command};
