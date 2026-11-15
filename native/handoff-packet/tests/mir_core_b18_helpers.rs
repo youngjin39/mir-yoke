@@ -405,10 +405,38 @@ fn parity(cell: &Value) -> Value {
     json!({"value": {"input": cell, "output": output}})
 }
 
+fn records(windows: bool) -> Value {
+    let mut records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b18-archive-helpers.json")).unwrap();
+    if windows {
+        let capture: Value =
+            serde_json::from_str(include_str!("fixtures/w2/wt-core-c-windows.json")).unwrap();
+        for (name, record) in capture["b18"].as_object().unwrap() {
+            records[name] = record.clone();
+        }
+    }
+    records
+}
+
+#[test]
+fn windows_capture_selector() {
+    let windows = records(true);
+    let unix = records(false);
+    for name in [
+        "parity.fnmatch_11",
+        "parity.fnmatch_15",
+        "parity.fnmatch_16",
+    ] {
+        assert_ne!(windows[name], unix[name], "{name}");
+    }
+    assert_eq!(windows["parity.fnmatch_15"]["value"]["output"][12], true);
+    assert_eq!(unix["parity.fnmatch_15"]["value"]["output"][12], false);
+    assert_eq!(windows.as_object().unwrap().len(), 118);
+}
+
 #[test]
 fn frozen_archive_helpers() {
-    let records: Value =
-        serde_json::from_str(include_str!("fixtures/w2/b18-archive-helpers.json")).unwrap();
+    let records = records(cfg!(windows));
     let mut replayed = 0;
     let mut exempt = 0;
     for (name, expected) in records.as_object().unwrap() {
@@ -443,8 +471,7 @@ fn frozen_archive_helpers() {
 
 #[test]
 fn parity_witnesses() {
-    let records: Value =
-        serde_json::from_str(include_str!("fixtures/w2/b18-archive-helpers.json")).unwrap();
+    let records = records(cfg!(windows));
     let mut failures = Vec::new();
     for (name, expected) in records.as_object().unwrap() {
         if !name.starts_with("parity.") {

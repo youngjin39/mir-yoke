@@ -305,10 +305,40 @@ fn replay(name: &str, conn: &Connection, root: &Path) -> Value {
     json!({"results":results,"stdout":stdout,"stderr":stderr,
         "file":std::fs::read_to_string(&output).ok()})
 }
+// The PC capture covers this render route only; do not invent Windows records
+// for the other Unix scenarios. The full Unix corpus remains unchanged.
+fn records(windows: bool) -> Value {
+    if windows {
+        let capture: Value =
+            serde_json::from_str(include_str!("fixtures/w2/wt-core-c-windows.json")).unwrap();
+        capture["b15"].clone()
+    } else {
+        serde_json::from_str(include_str!("fixtures/w2/b15-render.json")).unwrap()
+    }
+}
+
+#[test]
+fn windows_capture_selector() {
+    let windows = records(true);
+    let record = &windows["cli.None.True.True"];
+    assert_eq!(record["byte_length"], 558);
+    assert_eq!(record["character_length"], 549);
+    assert_eq!(
+        record["sha256"],
+        "276f78da771ee415532e3851631079337365d61dc9edb2781954b37fc65e7942"
+    );
+    assert_eq!(
+        record["observation"]["value"]["stdout"],
+        "render applied \u{2192} {ROOT}\\out\\nested\\projection.md\n"
+    );
+    assert_eq!(records(false).as_object().unwrap().len(), 53);
+}
+
 #[test]
 fn frozen_records() {
-    let oracle: Value = serde_json::from_str(include_str!("fixtures/w2/b15-render.json")).unwrap();
-    assert_eq!(oracle.as_object().unwrap().len(), 53);
+    let oracle = records(cfg!(windows));
+    let total = if cfg!(windows) { 1 } else { 53 };
+    assert_eq!(oracle.as_object().unwrap().len(), total);
     let (mut replayed, mut exempt) = (0, 0);
     for (name, expected) in oracle.as_object().unwrap() {
         if cfg!(windows) && name == "cli.in_place" {
@@ -327,10 +357,30 @@ fn frozen_records() {
             .execute("UPDATE schema_migrations SET applied_at=?", [CLOCK])
             .unwrap();
         let actual = normalize(json!({"value":replay(name, &db.conn, &root)}), &root);
-        assert_eq!(&actual, expected, "render:{name}");
+        if cfg!(windows) {
+            let bytes = std::fs::read(root.join("out/nested/projection.md")).unwrap();
+            let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+            assert_eq!(hex, expected["file_hex"], "render:{name}: bytes");
+            assert_eq!(
+                bytes.len(),
+                expected["byte_length"].as_u64().unwrap() as usize
+            );
+            assert_eq!(digest::sha256(&bytes), expected["sha256"]);
+            assert_eq!(
+                String::from_utf8(bytes).unwrap().chars().count(),
+                expected["character_length"].as_u64().unwrap() as usize
+            );
+            assert_eq!(
+                actual,
+                normalize(expected["observation"].clone(), Path::new("{ROOT}")),
+                "render:{name}"
+            );
+        } else {
+            assert_eq!(&actual, expected, "render:{name}");
+        }
         replayed += 1;
         println!("render:{name}: replayed");
     }
-    assert_eq!(replayed + exempt, 53);
-    println!("replayed={replayed} exempt={exempt} total=53");
+    assert_eq!(replayed + exempt, total);
+    println!("replayed={replayed} exempt={exempt} total={total}");
 }

@@ -497,16 +497,17 @@ pub fn ingest_with_observer(
 ) -> WriteResult<IngestResult> {
     let root = root.canonicalize()?;
     let resolved = resolve_lenient(path)?;
+    // Python str(Path) keeps native separators for these filters. Only the
+    // subsequent safe_source_relative_path call produces POSIX metadata paths.
     let rel = resolved
         .strip_prefix(&root)
         .unwrap_or(path)
         .to_str()
-        .ok_or_else(|| std::io::Error::other("non-UTF-8 source"))?
-        .replace('\\', "/");
-    if _is_never_ingested(&rel) {
+        .ok_or_else(|| std::io::Error::other("non-UTF-8 source"))?;
+    if _is_never_ingested(rel) {
         return Ok(skipped("", "archive"));
     }
-    if !_matches_whitelist(&rel, globs).map_err(WriteError::Pattern)? {
+    if !_matches_whitelist(rel, globs).map_err(WriteError::Pattern)? {
         return Ok(skipped("", "whitelist"));
     }
     let Ok(rel) = relations::safe_source_relative_path(path, &root) else {
