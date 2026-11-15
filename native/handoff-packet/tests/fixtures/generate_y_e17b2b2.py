@@ -59,4 +59,39 @@ for r in json.loads(Path(__file__).with_name('y-e17b2b1a.json').read_text()):
                                   cwd=root, env={'HOME': str(root), 'PATH': str(root)})
     records.append(dict(mode='console-exception', stage=r['stage'],
                         case=r.get('case'), line=json.loads(out)))
+# Closing observations remain additive to every earlier frozen record.
+for case in ('paths', 'cwd', 'qualified'):
+    work = root / ('closing-' + case)
+    work.mkdir(exist_ok=True)
+    (work / 'project').mkdir(exist_ok=True)
+    argv = ['status', '--project-root', '.', '--json']
+    body = "def __init__(self,*a,**kw): raise OddProviderError('refused')"
+    if case == 'paths':
+        argv = ['status', '--project-root', 'project_\udcff', '--config=config_\udcfe',
+                '--capability-home', 'cache_\udcfd', '--json']
+        body = ("def __init__(self,p,config_path=None,capability_home=None):\n  e=os.fsencode\n"
+                "  self.v=dict(project=list(e(p.name)),config=list(e(config_path)),"
+                "home=list(e(capability_home)))\n def status(self,*a,**kw): return self.v")
+    elif case == 'cwd':
+        body = ("def __init__(self,*a,**kw):\n"
+                "  raise CapabilityError(str(default_capability_home().resolve()"
+                ".relative_to(Path.home())))")
+    provider = "class OddProviderError(Exception): pass\nclass CapabilityManager:\n " + body + '\n'
+    manager.write_text(original + '\n' + provider)
+    call = ("capability.main(" + repr(argv) + ")" if case == 'paths' else
+            "bootstrap._activate_capabilities(pathlib.Path('project').resolve(), 'code_app')")
+    wrapper.write_text(prefix + "import traceback\ntry:\n value = " + call +
+                       "\n print(json.dumps(dict(value=value)))\nexcept Exception as e:\n"
+                       " print(json.dumps(dict(klass=type(e).__name__, message=str(e), "
+                       "mro=[c.__module__+'.'+c.__qualname__ for c in type(e).__mro__], "
+                       "line=traceback.format_exception_only(type(e),e)[-1])))\n")
+    out = subprocess.check_output([scope['scope']['sys'].executable, '-I', str(wrapper)],
+                                  cwd=work, env={'HOME': str(work), 'PATH': str(work),
+                                                 'MIR_CAPABILITY_HOME': 'cache'})
+    records.append(dict(closing=case, source=provider, mode='activate', target='project',
+                        argv=[list(v.encode('utf-8', 'surrogateescape')) for v in argv],
+                        stdout=out.decode()))
+assert json.loads(records[-2]['stdout'])['value'] == ['failed', {'reason': 'ERROR: cache'}]
+assert json.loads(records[-1]['stdout'])['line'] == (
+    'mir.core.capabilities.manager.OddProviderError: refused\n')
 a.output.write_text(json.dumps(records, sort_keys=True) + '\n')

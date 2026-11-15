@@ -75,11 +75,11 @@ impl ProductionManager {
     }
     /// Same JSON lines over duplex stdin, leaving fd1/2 on the caller's streams.
     #[cfg(unix)]
-    pub fn start_with_output(cli: &Path, root: &Path, output: Output) -> std::io::Result<Self> {
+    pub fn start_with_output(cli: &Path, _root: &Path, output: Output) -> std::io::Result<Self> {
         let (duplex, child_socket) = std::os::unix::net::UnixStream::pair()?;
         let input = duplex.try_clone()?;
         let reader = duplex.try_clone()?;
-        let child = Self::command(cli, root)
+        let child = Self::command(cli, &std::env::current_dir()?)
             .arg(match output {
                 Output::Console => "console",
                 Output::Activate => "activate",
@@ -120,6 +120,9 @@ impl ProductionManager {
         })
     }
     pub fn request(&mut self, request: Value) -> Result<Reply, Error> {
+        self.request_wire(&request.to_string())
+    }
+    fn request_wire(&mut self, request: &str) -> Result<Reply, Error> {
         let exchange = || -> std::io::Result<String> {
             #[cfg(unix)]
             if let Some(socket) = &self.duplex {
@@ -196,9 +199,15 @@ impl ProductionManager {
         self.invoke(json!({"op":"import"})).map(|_| ())
     }
     fn invoke(&mut self, request: Value) -> Result<Value, super::capability::Error> {
+        self.invoke_wire(&request.to_string(), request["op"] == "call")
+    }
+    fn invoke_wire(
+        &mut self,
+        request: &str,
+        terminal: bool,
+    ) -> Result<Value, super::capability::Error> {
         self.last_reply = None;
-        let terminal = request["op"] == "call";
-        let reply = self.request(request).map_err(Self::transport)?;
+        let reply = self.request_wire(request).map_err(Self::transport)?;
         let result = match &reply.error {
             Some(e) => Err(super::capability::Error {
                 class: e.class.clone(),
@@ -230,18 +239,24 @@ impl Manager for ProductionManager {
         h: Option<&Path>,
     ) -> Result<(), super::capability::Error> {
         let encode = |path: &Path| {
-            serde_json::to_value(path)
-                .map_err(|e| super::capability::Error::new("UnicodeEncodeError", e.to_string()))
+            crate::python_json::Value::String(crate::python_json::Text::new(
+                crate::executor_text::os_points(path.as_os_str()),
+            ))
+            .json_sorted(false)
         };
-        let mut kwargs = Map::new();
+        let mut kwargs = std::collections::BTreeMap::new();
         for (name, path) in [("config_path", c), ("capability_home", h)] {
             if let Some(path) = path {
-                kwargs.insert(name.into(), encode(path)?);
+                kwargs.insert(name, encode(path));
             }
         }
-        let root = encode(p)?;
-        self.invoke(json!({"op":"initialize", "args":[root], "path_args":[0], "path_kwargs":kwargs.keys().collect::<Vec<_>>(), "kwargs":kwargs}))
-            .map(|_| ())
+        let fields = kwargs
+            .iter()
+            .map(|(k, v)| format!("{k:?}:{v}"))
+            .collect::<Vec<_>>()
+            .join(",");
+        self.invoke_wire(&format!("{{\"op\":\"initialize\",\"args\":[{}],\"path_args\":[0],\"path_kwargs\":{},\"kwargs\":{{{fields}}}}}",
+            encode(p), json!(kwargs.keys().collect::<Vec<_>>())), false).map(|_| ())
     }
     fn call(
         &mut self,

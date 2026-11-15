@@ -3,7 +3,6 @@ use handoff_packet::mir_cli::{capability::Manager, capability_manager::*};
 use serde_json::{Value, json};
 use std::{
     fs,
-    os::unix::ffi::OsStrExt,
     os::unix::fs::{PermissionsExt, symlink},
     path::{Path, PathBuf},
 };
@@ -30,7 +29,8 @@ else:
  (root/'mir/core/capabilities/manager.py').write_text(source)
 (root/'mir/cli/capability_manager_bridge.py').write_text({})
 sys.path.insert(0,str(root))
-assert sys.argv[1:7]==['run-python','--project-root',str(root),'--','-m','mir.cli.capability_manager_bridge']
+assert sys.argv[1:7]==['run-python','--project-root',str(root if len(sys.argv)==7 else pathlib.Path.cwd()),'--','-m','mir.cli.capability_manager_bridge']
+os.chdir(root)
 sys.argv = ['bridge', *sys.argv[7:]]
 runpy.run_module('mir.cli.capability_manager_bridge',run_name='__main__')
 "#,
@@ -121,15 +121,6 @@ fn manager_boundary() {
     let mut m = ProductionManager::start(&cli, &root).unwrap();
     let import = m.request(json!({"op":"import"})).unwrap();
     assert_eq!(import.events, vec![Event::Stdout(b"import".to_vec())]);
-    let invalid = Path::new(std::ffi::OsStr::from_bytes(b"\xff"));
-    assert_eq!(
-        m.initialize(invalid, None, None).unwrap_err().class,
-        "UnicodeEncodeError"
-    );
-    assert_eq!(
-        m.initialize(&root, Some(invalid), None).unwrap_err().class,
-        "UnicodeEncodeError"
-    );
     m.initialize(&root.join("project"), None, None).unwrap();
     let reply = m
         .request(json!({"op":"call","method":"status","args":["p"],"kwargs":{"mcp":true}}))

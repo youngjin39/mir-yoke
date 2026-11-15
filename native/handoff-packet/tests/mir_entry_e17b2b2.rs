@@ -109,9 +109,10 @@ fn bootstrap_child() {
     let root = std::env::current_dir().unwrap();
     let mut host = b::ProductionHost::default();
     assert!(b::Host::capability_main(&mut host, &[]).is_err());
+    let target = root.join(r["target"].as_str().unwrap_or("."));
     host.import_capabilities(
         &root.join("mir"),
-        &root,
+        &target,
         if r["mode"] == "activate" {
             Output::Activate
         } else {
@@ -121,7 +122,7 @@ fn bootstrap_child() {
     .unwrap();
     let prior = json!({"status":"restart_required"});
     let result = if r["mode"] == "activate" {
-        b::activate_capabilities(&root, "code_app", &mut host)
+        b::activate_capabilities(&target, "code_app", &mut host)
     } else {
         b::finalize_capabilities(&root, Some(&prior), &mut host)
     };
@@ -226,4 +227,55 @@ fn finalize_stderr_os_failure() {
     assert_eq!(result["class"], "OSError");
     assert_eq!(result["message"], "[Errno 9] Bad file descriptor");
     reaped(&root);
+}
+
+fn closing_replay(case: &str) {
+    use std::os::unix::ffi::OsStringExt;
+    let records: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/y-e17b2b2.json")).unwrap();
+    let r = records.iter().find(|r| r["closing"] == case).unwrap();
+    let (_tmp, root) = setup(r["source"].as_str().unwrap());
+    fs::create_dir(root.join("project")).unwrap();
+    let program = if case == "paths" {
+        root.join("mir")
+    } else {
+        std::env::current_exe().unwrap()
+    };
+    let mut cmd = Command::new(program);
+    cmd.env_clear();
+    if case == "paths" {
+        cmd.arg("capability")
+            .args(r["argv"].as_array().unwrap().iter().map(|v| {
+                std::ffi::OsString::from_vec(serde_json::from_value::<Vec<u8>>(v.clone()).unwrap())
+            }));
+    } else {
+        cmd.args(["--exact", "bootstrap_child", "--nocapture", "--quiet"])
+            .env("Y_E17B2B2", r.to_string());
+    }
+    let out = cmd
+        .envs([("HOME", &root), ("PATH", &root)])
+        .env("MIR_CAPABILITY_HOME", "cache")
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "{:?}", out);
+    if case == "paths" {
+        let expected = r["stdout"].as_str().unwrap().lines().next().unwrap();
+        assert_eq!(out.stdout, [expected.as_bytes(), b"\n"].concat());
+    } else {
+        let actual: Value =
+            serde_json::from_slice(&fs::read(root.join("result.json")).unwrap()).unwrap();
+        let expected: Value = serde_json::from_str(r["stdout"].as_str().unwrap()).unwrap();
+        assert_eq!(actual, expected["value"]);
+    }
+    assert!(out.stderr.is_empty());
+    reaped(&root);
+}
+#[test]
+fn closing_paths() {
+    closing_replay("paths");
+}
+#[test]
+fn closing_cwd() {
+    closing_replay("cwd");
 }

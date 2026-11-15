@@ -141,6 +141,13 @@ fn ascii_json(value: &Value, pretty: bool) -> Result<String, Error> {
 }
 /// Dispatch without discovering or creating a provider.
 pub fn main(argv: &[&str], manager: &mut impl Manager) -> Result<Output, Error> {
+    main_with_paths(argv, manager, Path::to_owned)
+}
+pub fn main_with_paths(
+    argv: &[&str],
+    manager: &mut impl Manager,
+    path: impl Fn(&Path) -> std::path::PathBuf,
+) -> Result<Output, Error> {
     let Some(&command) = argv.first() else {
         return Ok(diag("", "the following arguments are required: command"));
     };
@@ -292,29 +299,30 @@ pub fn main(argv: &[&str], manager: &mut impl Manager) -> Result<Output, Error> 
         ));
     }
     let mut run = || -> Result<Value, Error> {
-        let cwd = std::env::current_dir().map_err(|e| Error::new("OSError", e.to_string()))?;
-        let home = std::env::var_os("HOME")
-            .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| cwd.clone());
-        let root = crate::mir_core::config::loader::resolve_path(
-            &cwd,
+        use super::bootstrap::Host;
+        let mut host = super::bootstrap::ProductionHost::default();
+        let root = path(Path::new(
             values
                 .get("--project-root")
                 .and_then(Value::as_str)
                 .unwrap_or("."),
-            &home,
-        )
-        .map_err(|e| Error::new("OSError", e.to_string()))?;
+        ));
+        let root = host.expanduser(&root)?;
+        let root = host.resolve(&root)?;
         manager.initialize(
             &root,
             values
                 .get("--config")
                 .and_then(Value::as_str)
-                .map(Path::new),
+                .map(Path::new)
+                .map(&path)
+                .as_deref(),
             values
                 .get("--capability-home")
                 .and_then(Value::as_str)
-                .map(Path::new),
+                .map(Path::new)
+                .map(&path)
+                .as_deref(),
         )?;
         let before = if command == "status" {
             None

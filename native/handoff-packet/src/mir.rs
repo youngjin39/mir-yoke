@@ -53,22 +53,16 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
                 .map_err(|e| mir_cli::bootstrap::Error::new("OSError", e.to_string()))?;
             let mut host = mir_cli::bootstrap::ProductionHost::default();
             let manager = host.import_capabilities(&cli, &root, Output::Console)?;
-            mir_cli::bootstrap::CapabilityOutput::run(&args, manager)
+            let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
+            mir_cli::capability::main_with_paths(&refs, manager, |p| scalar_path(p, &replacements))
         })();
         return match result {
-            Ok(out) => (
-                out.code,
-                restore(out.stdout.py_str(), &replacements),
-                restore(out.stderr.py_str(), &replacements),
+            Ok((code, out, err)) => (
+                code,
+                restore(String::from_utf8_lossy(&out).into(), &replacements),
+                restore(String::from_utf8_lossy(&err).into(), &replacements),
             ),
-            Err(e) => {
-                let class = e
-                    .mro
-                    .first()
-                    .filter(|c| !c.starts_with("builtins.") && !c.starts_with("__main__."))
-                    .unwrap_or(&e.class);
-                (1, String::new(), format!("{class}: {}\n", e.message))
-            }
+            Err(e) => bootstrap_failure(&e),
         };
     }
     if argv[0] == "bootstrap" {
@@ -86,11 +80,7 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
                     output.stdout.py_str(),
                     output.stderr,
                 ),
-                Err(error) => (
-                    1,
-                    String::new(),
-                    format!("{}: {}\n", error.class, error.message),
-                ),
+                Err(error) => bootstrap_failure(&error),
             };
         return (
             code,
@@ -327,6 +317,15 @@ fn scalar_path(path: &std::path::Path, replacements: &[(String, u32)]) -> std::p
     executor_text::points_text(&points).into()
 }
 
+fn bootstrap_failure(error: &mir_cli::bootstrap::Error) -> (i32, String, String) {
+    let class = error
+        .mro
+        .first()
+        .filter(|c| !c.starts_with("builtins.") && !c.starts_with("__main__."))
+        .unwrap_or(&error.class);
+    (1, String::new(), format!("{class}: {}\n", error.message))
+}
+
 fn stdout_error(error: std::io::Error) -> String {
     if error.kind() == std::io::ErrorKind::BrokenPipe {
         return "BrokenPipeError: [Errno 32] Broken pipe".into();
@@ -337,6 +336,20 @@ fn stdout_error(error: std::io::Error) -> String {
 
 #[cfg(all(test, unix))]
 mod tests {
+    #[test]
+    fn bootstrap_qualified_exception() {
+        let records: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../tests/fixtures/y-e17b2b2.json")).unwrap();
+        let r = records.last().unwrap();
+        let e: serde_json::Value = serde_json::from_str(r["stdout"].as_str().unwrap()).unwrap();
+        let error = super::mir_cli::bootstrap::Error {
+            class: e["klass"].as_str().unwrap().into(),
+            message: e["message"].as_str().unwrap().into(),
+            mro: serde_json::from_value(e["mro"].clone()).unwrap(),
+        };
+        assert_eq!(super::bootstrap_failure(&error).2, e["line"]);
+    }
+
     #[test]
     fn injected_stdout_dup_child() {
         if std::env::var_os("MIR_TEST_STDOUT_DUP_EMFILE").is_some() {
