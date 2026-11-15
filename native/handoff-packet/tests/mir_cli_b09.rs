@@ -345,7 +345,7 @@ fn frozen_records() {
     for (name, expected) in records.as_object().unwrap() {
         let tmp = tempfile::tempdir().unwrap();
         assert!(tmp.path().starts_with(std::env::temp_dir()));
-        let actual = replay(name, tmp.path());
+        let actual = observe_paths(name, replay(name, tmp.path()));
         assert_eq!(&actual, expected, "{name}");
         replayed += 1;
     }
@@ -370,4 +370,38 @@ fn rows(c: &Connection, sql: &str) -> Value {
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
     json!(data)
+}
+
+fn observe_paths(name: &str, mut value: Value) -> Value {
+    // Python 11932e9f:src/mir/cli/context.py:735 prints this Path on stdout.
+    // Only the synthetic missing-database path differs across platforms.
+    if name == "pull.missing_db"
+        && let Some(text) = value["value"]["stdout"].as_str()
+    {
+        value["value"]["stdout"] = json!(text.replace(r"<tmp>\db.sqlite", "<tmp>/db.sqlite"));
+    }
+    value
+}
+
+#[test]
+fn wt_core_a_paths() {
+    let records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b09-context-pull.json")).unwrap();
+    let expected = &records["pull.missing_db"];
+    let mut input = expected.clone();
+    input["value"]["stdout"] = json!(
+        expected["value"]["stdout"]
+            .as_str()
+            .unwrap()
+            .replace("<tmp>/db.sqlite", r"<tmp>\db.sqlite")
+    );
+    input["value"]["stderr"] = json!(r"keep <tmp>\db.sqlite");
+    let mut wanted = expected.clone();
+    wanted["value"]["stderr"] = input["value"]["stderr"].clone();
+    assert_eq!(observe_paths("pull.missing_db", input.clone()), wanted);
+    assert_eq!(observe_paths("pull.human", input.clone()), input);
+    assert_eq!(
+        observe_paths("pull.missing_db", expected.clone()),
+        *expected
+    );
 }

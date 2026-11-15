@@ -104,11 +104,50 @@ fn every_frozen_record_replays_exactly() {
         let actual = serde_json::to_string(&observed).unwrap();
         let prefix = serde_json::to_string(root.path().to_str().unwrap()).unwrap();
         let actual = actual.replace(&prefix[1..prefix.len() - 1], "<tmp>");
-        let actual: Value = serde_json::from_str(&actual).unwrap();
+        let actual: Value = observe_paths(name, serde_json::from_str(&actual).unwrap());
         assert_eq!(&actual, expected, "record {name}");
         replayed += 1;
     }
     assert_eq!(replayed + exempt, 60);
     assert_eq!(exempt, if cfg!(windows) { 5 } else { 0 });
     eprintln!("B30: replayed={replayed}, deferred=0, exempt={exempt}, total=60");
+}
+
+fn observe_paths(name: &str, mut value: Value) -> Value {
+    // Python a61c3013:src/mir/cli/capability.py:90-94 passes Path kwargs;
+    // tests/test_w2_b30_capability_frozen.py:250 serializes them with default=str.
+    // Normalize only the two synthetic init kwargs, never payload/error text.
+    if name.starts_with("capability.") && value["value"][4][0][0] == "init" {
+        for (key, leaf) in [("config_path", "config"), ("capability_home", "home")] {
+            if value["value"][4][0][2][key] == format!(r"<tmp>\{leaf}") {
+                value["value"][4][0][2][key] = json!(format!("<tmp>/{leaf}"));
+            }
+        }
+    }
+    value
+}
+
+#[test]
+fn wt_core_a_paths() {
+    let records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b30-capability.json")).unwrap();
+    for (name, expected) in records.as_object().unwrap() {
+        assert_eq!(observe_paths(name, expected.clone()), *expected);
+        if !name.starts_with("capability.") || expected["value"][4][0][0] != "init" {
+            continue;
+        }
+        let mut input = expected.clone();
+        for key in ["config_path", "capability_home"] {
+            if let Some(text) = input["value"][4][0][2][key].as_str() {
+                input["value"][4][0][2][key] = json!(text.replace('/', r"\"));
+            }
+        }
+        input["value"][2] = json!(r"keep <tmp>\config");
+        input["value"][4][0][2]["other"] = json!(r"<tmp>\home");
+        let mut wanted = expected.clone();
+        wanted["value"][2] = input["value"][2].clone();
+        wanted["value"][4][0][2]["other"] = input["value"][4][0][2]["other"].clone();
+        assert_eq!(observe_paths(name, input.clone()), wanted, "{name}");
+        assert_eq!(observe_paths("hooks.path.normal", input.clone()), input);
+    }
 }

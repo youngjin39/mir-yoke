@@ -316,7 +316,7 @@ fn frozen_records() {
             .tempdir_in(std::env::temp_dir())
             .unwrap();
         let root = tmp.path().canonicalize().unwrap();
-        let actual = normalize(replay(name, &root), &root);
+        let actual = observe_paths(name, normalize(replay(name, &root), &root));
         assert_eq!(&actual, expected, "{name}");
         replayed += 1;
         println!("{name}: replayed");
@@ -371,4 +371,38 @@ fn options_before_database_access() {
     let output = cli::main_with_clock(&["doctor", "--project-root"], &db, root, clock).unwrap();
     assert_eq!(output.0, 2);
     assert!(!db.exists());
+}
+
+fn observe_paths(name: &str, mut value: Value) -> Value {
+    // Python 6b8796fa:src/mir/cli/memory.py:188-220 rejects --db via argparse.
+    // Only its synthetic argv path is platform-dependent; keep the refusal intact.
+    if matches!(name, "doctor.db_option.False" | "doctor.db_option.True")
+        && let Some(text) = value["value"]["command"]["stderr"].as_str()
+    {
+        value["value"]["command"]["stderr"] =
+            json!(text.replace("--db <tmp>\\.mir\\db\n", "--db <tmp>/.mir/db\n"));
+    }
+    value
+}
+
+#[test]
+fn wt_core_a_paths() {
+    let records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b14-gc-doctor.json")).unwrap();
+    for name in ["doctor.db_option.False", "doctor.db_option.True"] {
+        let expected = &records[name];
+        let mut input = expected.clone();
+        input["value"]["command"]["stderr"] = json!(
+            expected["value"]["command"]["stderr"]
+                .as_str()
+                .unwrap()
+                .replace("<tmp>/.mir/db", r"<tmp>\.mir\db")
+        );
+        input["value"]["command"]["stdout"] = json!("keep --db <tmp>\\.mir\\db\n");
+        let mut wanted = expected.clone();
+        wanted["value"]["command"]["stdout"] = input["value"]["command"]["stdout"].clone();
+        assert_eq!(observe_paths(name, input.clone()), wanted);
+        assert_eq!(observe_paths("gc.False.True", input.clone()), input);
+        assert_eq!(observe_paths(name, expected.clone()), *expected);
+    }
 }
