@@ -73,7 +73,8 @@ fn observe(mut value: Value, tmp: &Path) -> Value {
         strip_verbatim(&mut value);
     }
     let text = serde_json::to_string(&value).unwrap();
-    let escaped = serde_json::to_string(tmp.to_str().unwrap()).unwrap();
+    let plain_tmp = handoff_packet::supply::plain(tmp.to_owned());
+    let escaped = serde_json::to_string(plain_tmp.to_str().unwrap()).unwrap();
     value = serde_json::from_str(&text.replace(&escaped[1..escaped.len() - 1], "<tmp>")).unwrap();
     #[cfg(windows)]
     {
@@ -102,6 +103,22 @@ fn observe(mut value: Value, tmp: &Path) -> Value {
         }
     }
     value
+}
+
+#[cfg(windows)]
+#[test]
+fn wt_path_observe_root_spellings() {
+    let root = Path::new(r"\\?\C:\synthetic\b30-bootstrap-test");
+    for path in [
+        r"C:\synthetic\b30-bootstrap-test\project\notes\a.md",
+        r"\\?\C:\synthetic\b30-bootstrap-test\project\notes\a.md",
+        "C:/synthetic/b30-bootstrap-test/project/notes/a.md",
+    ] {
+        assert_eq!(
+            observe(json!({"value": [path]}), root),
+            json!({"value": ["<tmp>/project/notes/a.md"]})
+        );
+    }
 }
 
 struct StorageHost<'a> {
@@ -509,4 +526,68 @@ fn every_frozen_record_replays_exactly() {
     assert_eq!(replayed + exempt, 118);
     assert_eq!(exempt, if cfg!(windows) { 5 } else { 0 });
     eprintln!("B30 bootstrap identity: replayed={replayed}, exempt={exempt}, total=118");
+}
+
+#[cfg(windows)]
+#[test]
+fn wt_path_content_root_spellings_keep_containment() {
+    let temp = tempfile::tempdir().unwrap();
+    let verbatim = temp.path().canonicalize().unwrap();
+    let plain = handoff_packet::supply::plain(verbatim.clone());
+    fs::create_dir(plain.join("notes")).unwrap();
+    for root in [&plain, &verbatim] {
+        let (path, relative) = m::project_relative(root, "notes").unwrap();
+        assert_eq!(path, root.join("notes"));
+        assert_eq!(relative, "notes");
+        for raw in [".", "../outside", plain.to_str().unwrap()] {
+            assert!(m::project_relative(root, raw).is_err(), "{root:?}: {raw}");
+        }
+    }
+    let outside = tempfile::tempdir().unwrap();
+    let result = std::process::Command::new("cmd.exe")
+        .args(["/D", "/C", "mklink", "/J"])
+        .arg(plain.join("escape"))
+        .arg(handoff_packet::supply::plain(outside.path().to_owned()))
+        .current_dir(&plain)
+        .env("HOME", &plain)
+        .output()
+        .unwrap();
+    assert!(result.status.success(), "{result:?}");
+    assert!(m::project_relative(&verbatim, "escape").is_err());
+}
+
+#[cfg(windows)]
+#[path = "support/wt_path.rs"]
+mod wt_path_frozen;
+
+#[cfg(windows)]
+#[test]
+fn wt_path_content_matches_windows_capture() {
+    let (_temp, root, records) = wt_path_frozen::setup();
+    let verbatim = root.canonicalize().unwrap();
+    let mut checked = 0;
+    for record in records {
+        let Some(raw) = record["route"].as_str().unwrap().strip_prefix("content.") else {
+            continue;
+        };
+        let (base, raw) = match raw {
+            "verbatim_root" => (&verbatim, "notes"),
+            "canonical_root" => (&root, "notes"),
+            _ => (&root, raw),
+        };
+        match m::project_relative(base, raw) {
+            Ok((path, relative)) => assert_eq!(
+                json!([path.to_str().unwrap(), relative]),
+                record["value"],
+                "{raw}"
+            ),
+            Err(error) => {
+                assert_eq!(error.class, record["error"].as_str().unwrap(), "{raw}");
+                assert_eq!(error.message, record["message"].as_str().unwrap(), "{raw}");
+                assert!(record["errno"].is_null() && record["winerror"].is_null());
+            }
+        }
+        checked += 1;
+    }
+    assert_eq!(checked, 11);
 }
