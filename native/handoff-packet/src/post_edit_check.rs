@@ -23,6 +23,12 @@ fn field(value: &Value, keys: &[&str]) -> String {
 }
 
 fn lookup_path(project: &Path, raw: &str) -> PathBuf {
+    // Verbatim Windows paths do not interpret '/' as a separator. Keep the
+    // original spelling for display; normalize only the filesystem lookup.
+    #[cfg(windows)]
+    if raw.starts_with(r"\\?\") {
+        return project.join(raw.replace('/', r"\"));
+    }
     project.join(raw)
 }
 
@@ -124,5 +130,21 @@ mod tests {
         assert_eq!(lookup_path(Path::new(""), "app.ts"), Path::new("app.ts"));
         let absolute = std::env::current_dir().unwrap().join("app.ts");
         assert_eq!(lookup_path(project, absolute.to_str().unwrap()), absolute);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn absolute_windows_lookup_accepts_verbatim_and_drive_paths() {
+        let dir = tempfile::tempdir().unwrap();
+        let project = dir.path().canonicalize().unwrap();
+        fs::write(project.join("app.ts"), "console.log(1);\n").unwrap();
+        let verbatim = project.to_str().unwrap();
+        let drive = verbatim.strip_prefix(r"\\?\").unwrap();
+        for root in [verbatim, drive] {
+            for separator in ["/", r"\"] {
+                let raw = format!("{root}{separator}app.ts");
+                assert!(lookup_path(&project, &raw).is_file(), "{raw}");
+            }
+        }
     }
 }
