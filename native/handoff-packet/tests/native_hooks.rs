@@ -12,12 +12,28 @@ use std::{
 #[path = "../src/digest.rs"]
 mod digest;
 
+// Windows phase marks distinguish hashing/build/startup from operation time.
+struct Timing(&'static str, Instant);
+impl Timing {
+    fn new(label: &'static str) -> Self {
+        Self(label, Instant::now())
+    }
+}
+impl Drop for Timing {
+    fn drop(&mut self) {
+        if cfg!(windows) || std::env::var_os("MIR_HOOK_TEST_TIMING").is_some() {
+            eprintln!("timing {}: {:?}", self.0, self.1.elapsed());
+        }
+    }
+}
+
 struct Fixture {
     root: PathBuf,
     config: HooksConfig,
 }
 impl Fixture {
     fn new(mode: &str) -> Self {
+        let _timing = Timing::new("fixture/setup");
         static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
             .map(PathBuf::from)
@@ -30,8 +46,18 @@ impl Fixture {
         fs::create_dir_all(root.join("cwd")).unwrap();
         let name = format!("fixture{}", std::env::consts::EXE_SUFFIX);
         let example = fixture_binary();
+        let copy_timing = Timing::new("fixture/copy");
         fs::copy(&example, root.join(&name))
             .expect("build fixture first: cargo build --offline --locked --example hook_fixture");
+        drop(copy_timing);
+        let hash_timing = Timing::new("fixture/hash");
+        // This target builds the immutable fixture once; production still
+        // verifies each copied executable independently.
+        static SHA256: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+        let sha256 = SHA256
+            .get_or_init(|| digest::sha256(&fs::read(&example).unwrap()))
+            .clone();
+        drop(hash_timing);
         let config = HooksConfig {
             executable: name,
             argv: vec![
@@ -39,12 +65,13 @@ impl Fixture {
                 root.join("parent.pid").to_str().unwrap().into(),
                 root.join("child.pid").to_str().unwrap().into(),
             ],
-            sha256: digest::sha256(&fs::read(&example).unwrap()),
+            sha256,
             hooks: vec!["writer_scope".into(), "on_job_event".into()],
         };
         Self { root, config }
     }
     fn start(&self) -> Result<HookSession, BridgeError> {
+        let _timing = Timing::new("fixture/verify+spawn+hello");
         HookSession::start_with_timeout(
             &self.root,
             &self.root.join("cwd"),
@@ -55,12 +82,14 @@ impl Fixture {
 }
 impl Drop for Fixture {
     fn drop(&mut self) {
+        let _timing = Timing::new("fixture/cleanup");
         let _ = fs::remove_dir_all(&self.root);
     }
 }
 
 #[test]
 fn persistent_child_uses_exact_argv_cwd_and_request_ids() {
+    let _timing = Timing::new("test/persistent_child_uses_exact_argv_cwd_and_request_ids");
     let f = Fixture::new("echo");
     let mut session = f.start().unwrap();
     assert!(session.serves("writer_scope"));
@@ -83,6 +112,7 @@ fn persistent_child_uses_exact_argv_cwd_and_request_ids() {
 }
 #[test]
 fn pin_and_repository_path_are_checked_before_spawn() {
+    let _timing = Timing::new("test/pin_and_repository_path_are_checked_before_spawn");
     for path in ["../fixture", "/absolute/fixture"] {
         let mut f = Fixture::new("echo");
         f.config.executable = path.into();
@@ -96,6 +126,7 @@ fn pin_and_repository_path_are_checked_before_spawn() {
 }
 #[test]
 fn hello_requires_version_and_exact_hook_set() {
+    let _timing = Timing::new("test/hello_requires_version_and_exact_hook_set");
     for mode in ["bad-hello", "missing-hook", "extra-hook"] {
         let f = Fixture::new(mode);
         assert!(matches!(f.start(), Err(BridgeError::Protocol(_))), "{mode}");
@@ -103,6 +134,7 @@ fn hello_requires_version_and_exact_hook_set() {
 }
 #[test]
 fn faults_close_session_without_retry() {
+    let _timing = Timing::new("test/faults_close_session_without_retry");
     for mode in [
         "wrong-id",
         "bad-version",
@@ -126,6 +158,7 @@ fn faults_close_session_without_retry() {
 }
 #[test]
 fn timeout_covers_hello_response_and_blocked_stdin() {
+    let _timing = Timing::new("test/timeout_covers_hello_response_and_blocked_stdin");
     let f = Fixture::new("hello-hang");
     let t = Instant::now();
     assert!(matches!(f.start(), Err(BridgeError::Timeout)));
@@ -169,6 +202,7 @@ fn timeout_covers_hello_response_and_blocked_stdin() {
 }
 #[test]
 fn request_size_depth_and_unserved_hook_are_rejected() {
+    let _timing = Timing::new("test/request_size_depth_and_unserved_hook_are_rejected");
     let f = Fixture::new("echo");
     let mut s = f.start().unwrap();
     assert!(matches!(
@@ -189,13 +223,32 @@ fn request_size_depth_and_unserved_hook_are_rejected() {
 }
 #[test]
 fn timeout_and_crash_reap_descendants_on_every_supported_platform() {
+    let _timing =
+        Timing::new("test/timeout_and_crash_reap_descendants_on_every_supported_platform");
     for mode in ["tree-hang", "tree-crash"] {
-        let f = Fixture::new(mode);
+        let mut f = Fixture::new(mode);
+        // Startup may exceed the transport timeout; it must precede the request.
+        f.config.argv.push("2200".into());
         let mut s = f.start().unwrap();
+        let ready = f.root.join("child.ready");
+        let startup = Instant::now();
+        loop {
+            match fs::read(&ready) {
+                Ok(bytes) if bytes == b"R" => break,
+                Ok(bytes) => assert!(bytes.is_empty(), "invalid readiness: {bytes:?}"),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => panic!("{mode}: {}: {error:?}", ready.display()),
+            }
+            assert!(
+                startup.elapsed() < Duration::from_secs(30),
+                "{mode}: descendant readiness"
+            );
+            std::thread::sleep(Duration::from_millis(10));
+        }
         let heartbeat = f.root.join("child.heartbeat");
         assert!(
             !fs::read(&heartbeat).unwrap_or_default().is_empty(),
-            "{mode}: hello must follow the descendant's first flushed heartbeat"
+            "{mode}: request must follow the descendant's first flushed heartbeat"
         );
         let t = Instant::now();
         assert!(s.call("on_job_event", json!({})).is_err());
@@ -228,6 +281,7 @@ fn fixture_binary() -> PathBuf {
                 .unwrap()
                 .join("examples")
                 .join(format!("hook_fixture{}", std::env::consts::EXE_SUFFIX));
+            let _timing = Timing::new("fixture/build");
             let output = std::process::Command::new(env!("CARGO"))
                 .args([
                     "build",
@@ -252,6 +306,7 @@ fn fixture_binary() -> PathBuf {
 
 #[test]
 fn exact_one_mib_frames_include_the_newline() {
+    let _timing = Timing::new("test/exact_one_mib_frames_include_the_newline");
     let f = Fixture::new("ack");
     let mut s = f.start().unwrap();
     let overhead = serde_json::to_vec(
@@ -282,6 +337,7 @@ fn exact_one_mib_frames_include_the_newline() {
 
 #[test]
 fn explicit_environment_and_writer_scope_pair_are_supported() {
+    let _timing = Timing::new("test/explicit_environment_and_writer_scope_pair_are_supported");
     let f = Fixture::new("echo");
     let env =
         std::collections::BTreeMap::from([("MIR_HOOK_FIXTURE_ENV".into(), "forwarded".into())]);
@@ -333,6 +389,8 @@ fn command(f: &Fixture) -> CommandHooks {
 
 #[test]
 fn writer_token_is_paired_with_clean_unclean_and_abandoned_teardown() {
+    let _timing =
+        Timing::new("test/writer_token_is_paired_with_clean_unclean_and_abandoned_teardown");
     for outcome in ["clean", "unclean", "uncertain"] {
         let mut f = Fixture::new("command");
         // The command fixture receives log and lease locations through its
@@ -392,6 +450,7 @@ fn writer_token_is_paired_with_clean_unclean_and_abandoned_teardown() {
 
 #[test]
 fn writer_enter_requires_a_nonempty_opaque_token() {
+    let _timing = Timing::new("test/writer_enter_requires_a_nonempty_opaque_token");
     let mut f = Fixture::new("command-missing-token");
     f.config.argv.truncate(1);
     let mut hooks = command(&f);

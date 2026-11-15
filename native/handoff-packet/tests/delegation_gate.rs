@@ -82,6 +82,7 @@ fn decision_fixtures() {
             .unwrap()
             .write_all(input.as_bytes())
             .unwrap();
+        let gate_pid = child.id();
         let output = child.wait_with_output().unwrap();
         assert_eq!(
             output.status.code(),
@@ -138,7 +139,14 @@ fn decision_fixtures() {
                 }
             }
             remaining(&path);
-            panic!("cleanup after reaped gate: {error:?}");
+            panic!(
+                "cleanup case={} root={} runner_pid={} gate_pid={} cwd={:?}: {error:?} ({error})",
+                case["name"],
+                path.display(),
+                std::process::id(),
+                gate_pid,
+                std::env::current_dir()
+            );
         });
     }
 }
