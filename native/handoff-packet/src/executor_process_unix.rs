@@ -1,6 +1,41 @@
 //! Signal only an unreaped subprocess represented by an owned std Child.
 use std::{io, process::Child};
 
+pub(crate) fn process_alive(pid: libc::pid_t) -> io::Result<bool> {
+    // SAFETY: signal zero checks existence/permission without delivering a signal.
+    if unsafe { libc::kill(pid, 0) } == 0 {
+        return Ok(true);
+    }
+    let error = io::Error::last_os_error();
+    match error.raw_os_error() {
+        Some(libc::ESRCH) => Ok(false),
+        Some(libc::EPERM) => Ok(true),
+        _ => Err(error),
+    }
+}
+
+pub(crate) fn path_access(path: &std::path::Path, mode: i32) -> bool {
+    use std::os::unix::ffi::OsStrExt;
+    let Ok(path) = std::ffi::CString::new(path.as_os_str().as_bytes()) else {
+        return false;
+    };
+    // SAFETY: path is a live NUL-terminated string; access only observes permissions.
+    unsafe { libc::access(path.as_ptr(), mode) == 0 }
+}
+
+pub(crate) fn platform_release() -> io::Result<String> {
+    let mut name = std::mem::MaybeUninit::<libc::utsname>::zeroed();
+    // SAFETY: name points to writable storage of the required size.
+    if unsafe { libc::uname(name.as_mut_ptr()) } != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: uname initialized the structure and NUL-terminated its release field.
+    let name = unsafe { name.assume_init() };
+    Ok(unsafe { std::ffi::CStr::from_ptr(name.release.as_ptr()) }
+        .to_string_lossy()
+        .into_owned())
+}
+
 pub(crate) fn terminate_owned_child(child: &mut Child) -> io::Result<()> {
     if child.try_wait()?.is_some() {
         return Ok(());

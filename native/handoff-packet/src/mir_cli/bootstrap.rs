@@ -5,7 +5,10 @@ mod authored;
 mod core_adoption;
 #[path = "bootstrap_main_host.rs"]
 mod main_host;
+#[path = "bootstrap_process_host.rs"]
+mod process_host;
 pub use core_adoption::core_adoption_operation;
+pub use process_host::ProductionHost;
 #[path = "bootstrap_main.rs"]
 mod main_port;
 #[path = "bootstrap_memory.rs"]

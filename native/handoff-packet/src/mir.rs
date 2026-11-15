@@ -42,6 +42,31 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
             restore(String::from_utf8_lossy(&err).into(), &replacements),
         );
     }
+    if argv[0] == "bootstrap" {
+        let (args, replacements) = scalar_args(&argv[1..], "");
+        let (code, out, err) =
+            match mir_cli::bootstrap::main(&mut mir_cli::bootstrap::ProductionHost, &args) {
+                Ok(output) => (
+                    output
+                        .exit
+                        .as_i64()
+                        .or_else(|| output.exit.get(1).and_then(serde_json::Value::as_i64))
+                        .unwrap_or(1) as i32,
+                    output.stdout,
+                    output.stderr,
+                ),
+                Err(error) => (
+                    1,
+                    String::new(),
+                    format!("{}: {}\n", error.class, error.message),
+                ),
+            };
+        return (
+            code,
+            restore(out, &replacements),
+            restore(err, &replacements),
+        );
+    }
     if argv[0] == "bootstrap-adoption" {
         let (args, replacements) = scalar_args(&argv[1..], "");
         let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
