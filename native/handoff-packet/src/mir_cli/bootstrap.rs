@@ -200,6 +200,9 @@ pub trait Host: Sized {
     fn python_version(&mut self) -> String {
         String::new()
     }
+    fn python_runtime(&mut self) -> Result<(String, bool), Error> {
+        Ok((self.python_version(), self.in_virtualenv()))
+    }
     fn in_virtualenv(&mut self) -> bool {
         // A Rust caller supplies Python prefix attestation by overriding this boundary.
         self.env("VIRTUAL_ENV")
