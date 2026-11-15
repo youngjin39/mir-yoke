@@ -1,9 +1,9 @@
 //! Native process fixture for the hook transport; never installed or shipped.
 use serde_json::{Value, json};
 use std::{
-    io::{self, BufRead, Write},
+    io::{self, BufRead, Read, Write},
     process::{Command, Stdio},
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 fn emit(value: Value) {
@@ -22,6 +22,12 @@ fn main() {
             .append(true)
             .open(args.get(2).unwrap())
             .unwrap();
+        heartbeat.write_all(b".").unwrap();
+        heartbeat.flush().unwrap();
+        // Private readiness pipe: acknowledge a flushed heartbeat, not merely
+        // file creation. Never write this byte to the hook protocol stdout.
+        io::stdout().write_all(b"R").unwrap();
+        io::stdout().flush().unwrap();
         loop {
             heartbeat.write_all(b".").unwrap();
             heartbeat.flush().unwrap();
@@ -32,6 +38,15 @@ fn main() {
         std::fs::write(marker, std::process::id().to_string()).unwrap();
     }
     if mode == "hello-hang" {
+        std::fs::write(
+            std::path::Path::new(args.get(2).unwrap()).with_extension("ready"),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+                .to_string(),
+        )
+        .unwrap();
         std::thread::sleep(Duration::from_secs(60));
         return;
     }
@@ -42,6 +57,31 @@ fn main() {
     emit(
         json!({"version":if mode == "bad-hello" {"wrong"} else {"mir-executor.hooks@1"},"hooks":if mode == "missing-hook" {json!([])} else if mode == "extra-hook" {json!(["writer_scope","on_job_event","other"])} else {hooks}}),
     );
+    // Hello admits the transport; the test waits separately for descendant
+    // readiness before starting its bounded operation and reap assertions.
+    if matches!(mode, "tree-hang" | "tree-crash") {
+        // A deterministic slow-start seam models descendant startup on Windows.
+        if let Some(delay) = args.get(4) {
+            std::thread::sleep(Duration::from_millis(delay.parse().unwrap()));
+        }
+        #[allow(clippy::zombie_processes)] // The transport owns and kills this tree.
+        let mut child = Command::new(std::env::current_exe().unwrap())
+            .arg("descendant")
+            .arg(std::path::Path::new(args.get(3).unwrap()).with_extension("heartbeat"))
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        std::fs::write(args.get(3).unwrap(), child.id().to_string()).unwrap();
+        let mut ready = [0];
+        child.stdout.take().unwrap().read_exact(&mut ready).unwrap();
+        assert_eq!(ready, *b"R");
+        std::fs::write(
+            std::path::Path::new(args.get(3).unwrap()).with_extension("ready"),
+            b"R",
+        )
+        .unwrap();
+    }
     if mode == "blocked-stdin" {
         std::thread::sleep(Duration::from_secs(60));
         return;
@@ -101,21 +141,7 @@ fn main() {
             "eof" => return,
             "hang" => std::thread::sleep(Duration::from_secs(60)),
             "tree-hang" | "tree-crash" => {
-                // The root intentionally exits while its descendant runs; the
-                // transport must own and kill the complete process tree.
-                #[allow(clippy::zombie_processes)]
-                let child = Command::new(std::env::current_exe().unwrap())
-                    .arg("descendant")
-                    .arg(std::path::Path::new(args.get(3).unwrap()).with_extension("heartbeat"))
-                    .stdin(Stdio::null())
-                    .spawn()
-                    .unwrap();
-                std::fs::write(args.get(3).unwrap(), child.id().to_string()).unwrap();
-                let heartbeat =
-                    std::path::Path::new(args.get(3).unwrap()).with_extension("heartbeat");
-                while !heartbeat.is_file() {
-                    std::thread::sleep(Duration::from_millis(2));
-                }
+                // The descendant acknowledged readiness before hello.
                 if mode == "tree-crash" {
                     std::process::exit(7);
                 }
