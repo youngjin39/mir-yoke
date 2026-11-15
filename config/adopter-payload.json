@@ -3215,13 +3215,19 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli.rs",
-      "sha256": "005af590c7f3b4f6df1f51957aa391b90ff585d143e2e21400e84fd054c0f18c"
+      "sha256": "8963b4bdc5286c964b541dd5f4800844f3854d6c58010d333d4387e3d989c298"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/adoption_native.rs",
       "sha256": "93f6b737edb9dc17995b564c231cf05392549ba443bb6e9fbab3706515a6bec5"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/mir_cli/argparse.rs",
+      "sha256": "9b0ef07cfc69b46f8edb1c6843f25a23cc396e2c6a414d61bcdea088c7d859cb"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3371,13 +3377,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/project_hooks.rs",
-      "sha256": "ffe337c085b702d2dd24404ee53460535c78834be9cb5f950dfdce9839e5524c"
+      "sha256": "bdb56a672af64b6b8b6d69610eddaeabb14a40f5fb309e20f1bad688a5e943dd"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/relations.rs",
-      "sha256": "4dc0339a8b58c353f3e3f6831c85a8390707767b12beaa3b74cf7739e68abc39"
+      "sha256": "8517393271b19853d8662bf109ab57a8c0f0a874e129dfebe288c9830a17760e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4457,7 +4463,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e13.py",
-      "sha256": "05fd6e0e55c6ebd75f7a9d731acd4ffc19a523d64cd1309e76081a58367a6bd5"
+      "sha256": "e539b8b3e1754e5e84864223f38fe2c3a8f30150426709a6a4a940f79a84d254"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4955,7 +4961,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e13.json",
-      "sha256": "0857c0b76469006f970497e1f325bf972eae2dd6f79e0a160ac97955cbd159e0"
+      "sha256": "e2f0580253f11db5ac6067171f04f535260512ef474c7394b7aa2a5165cbc5d4"
     },
     {
       "classification": "template-maintainer-tool",

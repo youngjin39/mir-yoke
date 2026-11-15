@@ -1,5 +1,6 @@
 //! Library-only CLI ports; no dispatch or live caller.
 #![forbid(unsafe_code)]
+mod argparse;
 pub mod context;
 pub mod context_sync;
 pub mod memory;

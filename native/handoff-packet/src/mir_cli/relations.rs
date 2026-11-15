@@ -79,7 +79,20 @@ pub fn main(
     let Some(&command) = argv.first() else {
         return diag("", "the following arguments are required: command");
     };
-    if matches!(command, "--help" | "-h") {
+    if super::argparse::resolve(command, &["--help"])
+        .ok()
+        .flatten()
+        == Some("--help")
+    {
+        if let Some((_, value)) = command.split_once('=') {
+            return diag(
+                "",
+                &format!(
+                    "argument -h/--help: ignored explicit argument {}",
+                    repr(value)
+                ),
+            );
+        }
         return help("");
     }
     if !matches!(command, "query" | "bundle") {
@@ -108,35 +121,25 @@ pub fn main(
             anchors.push(token);
             continue;
         }
-        let (name, explicit) = token
+        let (_, explicit) = token
             .split_once('=')
             .map_or((token, None), |(a, b)| (a, Some(b)));
-        let name = if name == "-h" { "--help" } else { name };
-        let exact = OPTIONS.iter().find(|o| o.0 == name);
-        let matches: Vec<_> = OPTIONS
-            .iter()
-            .filter(|o| name.starts_with("--") && o.0.starts_with(name))
-            .collect();
-        let option = match (exact, matches.as_slice()) {
-            (Some(o), _) => o,
-            (None, [o]) => *o,
-            (None, []) => {
+        let names: Vec<_> = OPTIONS.iter().map(|o| o.0).collect();
+        let name = match super::argparse::resolve(token, &names) {
+            Ok(Some(name)) => name,
+            Ok(None) => {
                 unknown.push(token);
                 continue;
             }
-            (None, _) => {
-                return err(&format!(
-                    "ambiguous option: {name} could match {}",
-                    matches.iter().map(|o| o.0).collect::<Vec<_>>().join(", ")
-                ));
-            }
+            Err(message) => return err(&message),
         };
-        let value = if option.1.is_some() {
+        let takes_value = OPTIONS.iter().any(|o| o.0 == name && o.1.is_some());
+        let value = if takes_value {
             if let Some(v) = explicit {
                 v
             } else {
                 let Some(&v) = argv.get(i).filter(|v| !option_like(v)) else {
-                    return err(&format!("argument {}: expected one argument", option.0));
+                    return err(&format!("argument {}: expected one argument", name));
                 };
                 i += 1;
                 v
@@ -145,13 +148,13 @@ pub fn main(
             if let Some(v) = explicit {
                 return err(&format!(
                     "argument {}: ignored explicit argument {}",
-                    option.0,
+                    if name == "--help" { "-h/--help" } else { name },
                     repr(v)
                 ));
             }
             ""
         };
-        match option.0 {
+        match name {
             "--help" => return help(command),
             "--purpose" => {
                 if !r::PURPOSES.contains(&value) {
@@ -185,11 +188,11 @@ pub fn main(
                 let Ok(n) = value.parse::<i64>() else {
                     return err(&format!(
                         "argument {}: invalid int value: {}",
-                        option.0,
+                        name,
                         repr(value)
                     ));
                 };
-                match option.0 {
+                match name {
                     "--depth" => depth = json!(n),
                     "--max-edges" => max_edges = json!(n),
                     _ => max_bytes = json!(n),

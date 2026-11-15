@@ -95,6 +95,30 @@ cases += [('graph', ['relations', action, 'x', '--purpose', 'implementation', '-
           for action in ['query', 'bundle']]
 cases.append(('valid', ['relations', 'query', 'x', '--purpose', 'impact',
                          '--root', '{ROOT}', '--memory', '--json']))
+# Exercise every option with argparse's inline and prefix spellings.
+for action in ['query', 'bundle']:
+    base = ['relations', action, 'x', '--purpose', 'impact']
+    for option, prefix, value in [('--purpose', '--p', 'impact'),
+                                ('--root', '--r', '.'), ('--graph', '--g', 'spec/graph.yaml'),
+                                ('--depth', '--d', '1'), ('--max-edges', '--max-e', '2'),
+                                ('--max-bytes', '--max-b', '6000')]:
+        cases += [('graph', [*base, option + '=' + value]),
+                  ('graph', [*base, prefix, value]),
+                  ('graph', [*base, prefix + '=' + value])]
+    for option, prefix in [('--help', '--he'), ('--memory', '--me'), ('--json', '--j')]:
+        cases += [('empty', [*base, prefix]), ('empty', [*base, option + '=yes']),
+                  ('empty', [*base, prefix + '=yes'])]
+    for tail in [['--m'], ['--max=1'], ['--m=1'], ['--depth'],
+                 ['--depth', '--json'], ['--depth=-1']]:
+        cases.append(('graph', [*base, *tail]))
+for action in ['install', 'check']:
+    for tail in [['--project-root=.'], ['--project-r', '.'], ['--p=.'],
+                 ['--he'], ['--help=yes'], ['--he=yes'], ['--project-r'],
+                 ['--project-r', '--unknown'], ['--project-r='],
+                 ['--project-r', '-1'], ['--project-root', '.', '--unknown'],
+                 ['--unknown'], ['--', '--project-root', '.']]:
+        cases.append(('empty', ['project-hooks', action, *tail]))
+cases += [('empty', ['relations', '--he']), ('empty', ['relations', '--help=yes'])]
 records = []
 for mode, argv in cases:
     work = root / ('case-' + str(len(records)))
