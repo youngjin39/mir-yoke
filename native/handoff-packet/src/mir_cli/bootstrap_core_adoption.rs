@@ -711,6 +711,16 @@ fn safe_directory(root: &Path, path: &Path, label: &str) -> Result<(), Error> {
     for part in relative.components() {
         current.push(part);
         let metadata = fs::symlink_metadata(&current).map_err(|e| {
+            // pathlib.lstat uses Win32 diagnostics; Path.open uses CRT errno text.
+            #[cfg(windows)]
+            if let Some(code) = e.raw_os_error() {
+                return slim(format!(
+                    "{label} is unavailable: [WinError {code}] {}: {}",
+                    crate::executor_brief_profile::python_os_error_text(&e)
+                        .trim_end_matches(['.', ' ', '\r', '\n']),
+                    crate::executor_execute::repr(&current.display().to_string())
+                ));
+            }
             slim(format!(
                 "{label} is unavailable: {}",
                 path_error(&current, e)
@@ -1644,6 +1654,12 @@ pub(super) fn apply_adopter_slim(
 
 #[cfg(test)]
 mod tests {
+    mod path_records {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/support/path_records.rs"
+        ));
+    }
     use super::*;
 
     #[test]
@@ -1803,10 +1819,19 @@ mod tests {
             let actual = match result {
                 Ok(value) => json!({"value":value}),
                 Err(error) => {
-                    json!({"error":[error.class,error.message.replace(root_text,"<root>")]})
+                    json!({"error":[error.class,path_records::root_token(&error.message, root,"<root>")]})
                 }
             };
-            assert_eq!(actual, case["expected"].to_serde(), "{}", case["name"]);
+            let expected = case["expected"].to_serde();
+            #[cfg(windows)]
+            let expected = if case["name"].as_str() == Some("safe_directory.unavailable") {
+                let record = path_records::record("adoption.safe_directory.unavailable");
+                json!({"error":[record["error"]["kind"], record["error"]["message"]
+                    .as_str().unwrap().replace("{ROOT}\\\\adoption", "<root>")]})
+            } else {
+                expected
+            };
+            assert_eq!(actual, expected, "{}", case["name"]);
         }
         drop_json(fixture);
     }

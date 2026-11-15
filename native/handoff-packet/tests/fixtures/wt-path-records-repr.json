@@ -1,0 +1,33 @@
+{
+  "pin": "33feb31a64082b472ee908b2c7f72d74c946cecc",
+  "records": [
+    {
+      "value": "C:\\scratch\\contract.json",
+      "repr": "'C:\\\\scratch\\\\contract.json'",
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: ontology_check.py [-h] {contract,mapping,impact,lookup} ...\nontology_check.py: error: argument command: invalid choice: 'C:\\\\scratch\\\\contract.json' (choose from contract, mapping, impact, lookup)\n"
+    },
+    {
+      "value": "can't",
+      "repr": "\"can't\"",
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: ontology_check.py [-h] {contract,mapping,impact,lookup} ...\nontology_check.py: error: argument command: invalid choice: \"can't\" (choose from contract, mapping, impact, lookup)\n"
+    },
+    {
+      "value": "both'\"quotes",
+      "repr": "'both\\'\"quotes'",
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: ontology_check.py [-h] {contract,mapping,impact,lookup} ...\nontology_check.py: error: argument command: invalid choice: 'both\\'\"quotes' (choose from contract, mapping, impact, lookup)\n"
+    },
+    {
+      "value": "/scratch/contract.json",
+      "repr": "'/scratch/contract.json'",
+      "exit": 2,
+      "stdout": "",
+      "stderr": "usage: ontology_check.py [-h] {contract,mapping,impact,lookup} ...\nontology_check.py: error: argument command: invalid choice: '/scratch/contract.json' (choose from contract, mapping, impact, lookup)\n"
+    }
+  ]
+}

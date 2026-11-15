@@ -43,6 +43,12 @@ fn setup(root: &Path) -> (Doc, Doc) {
         ("contract.json", c.dump(false, None)),
         (".mir/ontology-map.json", m.dump(false, None)),
     ] {
+        // Python capture setup uses write_text with platform newline translation.
+        let text = if cfg!(windows) {
+            text.replace('\n', "\r\n")
+        } else {
+            text
+        };
         fs::write(root.join(name), text).unwrap();
     }
     (c, m)
@@ -50,9 +56,13 @@ fn setup(root: &Path) -> (Doc, Doc) {
 fn clean(v: Value, root: &Path) -> Value {
     match v {
         Value::String(s) => {
+            let parent = root.parent().unwrap().to_str().unwrap();
             let s = s
+                // Handoff stdout contains JSON inside a string; replace its escaped root first.
+                .replace(&root.to_str().unwrap().replace('\\', "\\\\"), "<tmp>")
                 .replace(root.to_str().unwrap(), "<tmp>")
-                .replace(root.parent().unwrap().to_str().unwrap(), "<parent>");
+                .replace(&parent.replace('\\', "\\\\"), "<parent>")
+                .replace(parent, "<parent>");
             let chars = s.chars().collect::<Vec<_>>();
             if chars.len() > 240 {
                 json!({"length":chars.len(),"sha256":digest::sha256(s.as_bytes()),
@@ -99,13 +109,50 @@ impl Reader for Io<'_> {
             self.0.join(p)
         };
         if path.is_dir() {
-            return Err(q::error(
-                "IsADirectoryError",
-                format!("[Errno 21] Is a directory: '{}'", path.display()),
-            ));
+            return q::read(&path);
         }
         fs::read(&path).map_err(|e| q::error("OSError", e.to_string()))
     }
+}
+#[test]
+fn reader_directory_errno_uses_python_repr() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("directory'quoted");
+    fs::create_dir(&path).unwrap();
+    let failure = Io(&path).read(".").unwrap_err();
+    assert_eq!(
+        json!([failure.class, failure.message]),
+        json!([
+            if cfg!(windows) {
+                "PermissionError"
+            } else {
+                "IsADirectoryError"
+            },
+            format!(
+                "{}: {}",
+                if cfg!(windows) {
+                    "[Errno 13] Permission denied"
+                } else {
+                    "[Errno 21] Is a directory"
+                },
+                serde_json::to_string(path.to_str().unwrap()).unwrap()
+            )
+        ])
+    );
+}
+#[cfg(windows)]
+#[test]
+fn windows_reader_directory_errno_matches_capture() {
+    let root = tempfile::tempdir().unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("fixtures/wt-path-records-b33-windows.json")).unwrap();
+    assert_eq!(
+        clean(
+            observe(Io(root.path()).read(".").map(|_| Value::Null), root.path()),
+            root.path()
+        ),
+        capture["records"]["core"]["refs_codes"]["value"][0][9]
+    );
 }
 fn run(
     root: &Path,
@@ -520,6 +567,10 @@ fn refs(root: &Path, guarded: bool) -> Value {
 }
 fn cli(root: &Path, args: &[&str], payload: Option<&str>) -> Value {
     setup(root);
+    #[cfg(windows)]
+    if args == ["mapping", "--handoff", "a.py"] {
+        fs::write(root.join("a.py"), b"def alpha():\r\n    pass\r\n").unwrap();
+    }
     if let Some(payload) = payload {
         let p = root.join(".mir/ontology-map.json");
         if payload == "missing" {
@@ -729,34 +780,112 @@ fn replay(name: &str, root: &Path) -> Value {
         _ => panic!("unhandled {name}"),
     }
 }
+fn record_expected<'a>(
+    unix: &'a Value,
+    capture: &'a Value,
+    name: &str,
+    windows: bool,
+) -> &'a Value {
+    if windows {
+        capture["records"]["core"]
+            .get(name)
+            .expect("missing Windows record")
+    } else {
+        unix.get(name).expect("missing Unix record")
+    }
+}
+#[test]
+fn windows_expectation_selector_matches_capture() {
+    let unix: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b33-ontology-check.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("fixtures/wt-path-records-b33-windows.json")).unwrap();
+    for copy in ["core", "mcp"] {
+        let records = capture["records"][copy].as_object().unwrap();
+        assert_eq!(records.len(), unix.as_object().unwrap().len());
+        for (name, expected) in records {
+            assert_eq!(
+                record_expected(&unix, &capture, name, true),
+                expected,
+                "{copy}/{name}"
+            );
+            assert_eq!(
+                record_expected(&unix, &capture, name, false),
+                &unix[name],
+                "Unix {name}"
+            );
+        }
+    }
+    assert_ne!(
+        record_expected(&unix, &capture, "pins", true),
+        &unix["pins"]
+    );
+}
+#[test]
+#[should_panic(expected = "missing Windows record")]
+fn windows_expectation_selector_refuses_missing_record() {
+    record_expected(&json!({"missing": 1}), &json!({}), "missing", true);
+}
 #[test]
 fn frozen_records() {
     let records: Value =
         serde_json::from_str(include_str!("fixtures/w2/b33-ontology-check.json")).unwrap();
+    let mut failures = vec![];
     let mut replayed = 0;
+    macro_rules! check {
+        ($actual:expr, $expected:expr, $path:expr) => {
+            collect_differences(
+                &serde_json::to_value($actual).unwrap(),
+                &serde_json::to_value($expected).unwrap(),
+                &$path,
+                &mut failures,
+            )
+        };
+    }
     #[cfg(windows)]
     let mut exempt = 0;
     #[cfg(unix)]
     let exempt = 0;
-    for (name, expected) in records.as_object().unwrap() {
+    for name in records.as_object().unwrap().keys() {
         let tmp = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
-        let actual = observe(Ok(replay(name, tmp.path())), tmp.path());
+        let actual = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            observe(Ok(replay(name, tmp.path())), tmp.path())
+        })) {
+            Ok(actual) => actual,
+            Err(_) => {
+                failures.push(format!("record {name}: replay panicked (see panic output)"));
+                replayed += 1;
+                continue;
+            }
+        };
+        let capture: Value =
+            serde_json::from_str(include_str!("fixtures/wt-path-records-b33-windows.json"))
+                .unwrap();
+        let expected = record_expected(&records, &capture, name, cfg!(windows));
         #[cfg(windows)]
         if ["refs", "refs_codes", "paths"].contains(&name.as_str()) {
             // Unix symlinks and POSIX absolute-path cells cannot run as native Windows fixtures.
             if name == "paths" {
                 for i in [0, 1, 2, 4] {
-                    assert_eq!(actual["value"][i], expected["value"][i]);
+                    check!(
+                        &actual["value"][i],
+                        &expected["value"][i],
+                        format!("{name}[{i}]")
+                    );
                 }
             } else {
                 for i in (0..16).filter(|i| *i != 7) {
-                    assert_eq!(actual["value"][0][i], expected["value"][0][i]);
+                    check!(
+                        &actual["value"][0][i],
+                        &expected["value"][0][i],
+                        format!("{name}[0][{i}]")
+                    );
                 }
                 let a = actual["value"][1].as_array().unwrap();
                 let e = expected["value"][1].as_array().unwrap();
                 if name == "refs" {
                     for i in (0..e.len()).filter(|i| *i != 7) {
-                        assert_eq!(a[i], e[i]);
+                        check!(&a[i], &e[i], format!("{name}[1][{i}]"));
                     }
                 } else {
                     let a = a
@@ -765,7 +894,7 @@ fn frozen_records() {
                         .filter(|(i, _)| *i != 7)
                         .map(|(_, v)| v)
                         .collect::<Vec<_>>();
-                    assert_eq!(a, e.iter().collect::<Vec<_>>());
+                    check!(a, e.iter().collect::<Vec<_>>(), format!("{name}[1]"));
                 }
                 for key in [
                     "changed_paths",
@@ -774,26 +903,37 @@ fn frozen_records() {
                     "undeclared_check_links",
                     "revalidate",
                 ] {
-                    assert_eq!(actual["value"][4][key], expected["value"][4][key]);
+                    check!(
+                        &actual["value"][4][key],
+                        &expected["value"][4][key],
+                        format!("{name}[4].{key}")
+                    );
                 }
-                assert_eq!(actual["value"][2], expected["value"][2]);
-                assert_eq!(actual["value"][3], expected["value"][3]);
+                check!(
+                    &actual["value"][2],
+                    &expected["value"][2],
+                    format!("{name}[2]")
+                );
+                check!(
+                    &actual["value"][3],
+                    &expected["value"][3],
+                    format!("{name}[3]")
+                );
             }
             eprintln!("EXEMPT {name}: Unix path/symlink cells; representable cells replayed");
             exempt += 1;
             continue;
         }
-        if actual != *expected {
-            if let (Some(a), Some(e)) = (actual["value"].as_array(), expected["value"].as_array()) {
-                for (i, (a, e)) in a.iter().zip(e).enumerate() {
-                    assert_eq!(a, e, "{name}[{i}]");
-                }
-            }
-            assert_eq!(actual, *expected, "record {name}");
-        }
+        check!(&actual, expected, format!("record {name}"));
         eprintln!("REPLAYED {name}");
         replayed += 1;
     }
+    assert!(
+        failures.is_empty(),
+        "{} mismatches:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
     assert_eq!(replayed + exempt, 19);
     #[cfg(unix)]
     {
@@ -803,4 +943,33 @@ fn frozen_records() {
     {
         assert_eq!((replayed, exempt), (16, 3));
     }
+}
+
+fn collect_differences(actual: &Value, expected: &Value, path: &str, failures: &mut Vec<String>) {
+    if actual == expected {
+        return;
+    }
+    match (actual, expected) {
+        (Value::Array(a), Value::Array(e)) if a.len() == e.len() => {
+            for (i, (a, e)) in a.iter().zip(e).enumerate() {
+                collect_differences(a, e, &format!("{path}[{i}]"), failures);
+            }
+        }
+        (Value::Object(a), Value::Object(e)) if a.keys().eq(e.keys()) => {
+            for (key, a) in a {
+                collect_differences(a, &e[key], &format!("{path}.{key}"), failures);
+            }
+        }
+        _ => failures.push(format!("{path}: actual={actual}, expected={expected}")),
+    }
+}
+#[test]
+fn collect_all_reports_later_cells() {
+    let mut failures = vec![];
+    collect_differences(&json!([1, 2]), &json!([0, 0]), "first", &mut failures);
+    collect_differences(&json!(3), &json!(0), "later", &mut failures);
+    assert_eq!(failures.len(), 3, "{failures:#?}");
+    assert!(failures[0].starts_with("first[0]:"), "{failures:#?}");
+    assert!(failures[1].starts_with("first[1]:"), "{failures:#?}");
+    assert!(failures[2].starts_with("later:"), "{failures:#?}");
 }

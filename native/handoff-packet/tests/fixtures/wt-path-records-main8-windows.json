@@ -1,0 +1,64 @@
+{
+  "python": "3.12.13 (main, Aug  7 2026, 02:26:41) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "win32",
+  "sources": [
+    {
+      "pin": "33feb31a64082b472ee908b2c7f72d74c946cecc",
+      "path": "plugins/mir-core/skills/ontology/scripts/ontology_check.py",
+      "sha256": "9823e9d2dc2607a13407040917d1b8c6284a7de97cfeca8a5d2312f17e09e110"
+    },
+    {
+      "pin": "33feb31a64082b472ee908b2c7f72d74c946cecc",
+      "path": "tests/test_w2_b33_ontology_check_frozen.py",
+      "sha256": "c68f182e35e51ed4901ba11beb08a5849deb8a530473cd4f2c75c0666ab0ad16"
+    }
+  ],
+  "records": [
+    {
+      "case": "plugin_b33_ontology_check::frozen_records/main[8]",
+      "reference_pin": "33feb31a64082b472ee908b2c7f72d74c946cecc",
+      "argv": [
+        "--contract",
+        "{ROOT}\\ontology-main-8\\contract.json"
+      ],
+      "generator_argv": [
+        "--contract",
+        "{ROOT}\\ontology-main-8\\contract.json"
+      ],
+      "argv_repr": "['--contract', '{ROOT}\\\\ontology-main-8\\\\contract.json']",
+      "system_exit": {
+        "kind": "SystemExit",
+        "code": 2,
+        "message": "2"
+      },
+      "observation": [
+        [
+          {
+            "value": 2
+          },
+          []
+        ],
+        "",
+        "usage: ontology_check.py [-h] {contract,mapping,impact,lookup} ...\nontology_check.py: error: argument command: invalid choice: '{ROOT}\\\\ontology-main-8\\\\contract.json' (choose from contract, mapping, impact, lookup)\n"
+      ],
+      "pathname": {
+        "path": "{ROOT}\\ontology-main-8\\contract.json",
+        "path_repr": "'{ROOT}\\\\ontology-main-8\\\\contract.json'",
+        "path_posix": "{ROOT}/ontology-main-8/contract.json",
+        "drive": "{DRIVE}"
+      },
+      "stdout": "",
+      "stderr": "usage: ontology_check.py [-h] {contract,mapping,impact,lookup} ...\nontology_check.py: error: argument command: invalid choice: '{ROOT}\\\\ontology-main-8\\\\contract.json' (choose from contract, mapping, impact, lookup)\n",
+      "stderr_repr": "\"usage: ontology_check.py [-h] {contract,mapping,impact,lookup} ...\\nontology_check.py: error: argument command: invalid choice: '{ROOT}\\\\\\\\ontology-main-8\\\\\\\\contract.json' (choose from contract, mapping, impact, lookup)\\n\"",
+      "stdout_bytes": {
+        "tokenized_hex": "",
+        "tokenized_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr_bytes": {
+        "tokenized_hex": "75736167653a206f6e746f6c6f67795f636865636b2e7079205b2d685d207b636f6e74726163742c6d617070696e672c696d706163742c6c6f6f6b75707d202e2e2e0a6f6e746f6c6f67795f636865636b2e70793a206572726f723a20617267756d656e7420636f6d6d616e643a20696e76616c69642063686f6963653a20277b524f4f547d5c5c6f6e746f6c6f67792d6d61696e2d385c5c636f6e74726163742e6a736f6e27202863686f6f73652066726f6d20636f6e74726163742c206d617070696e672c20696d706163742c206c6f6f6b7570290a",
+        "tokenized_sha256": "ab4291c0e3097fa000f40cf8e24afb973737f060457fa3bdac9cefbf7926faf7"
+      }
+    }
+  ],
+  "bytes_contract": "Root-tokenized UTF-8 StringIO application text, not process CRLF framing. Hashes cover tokenized text; raw hashes are not persisted."
+}

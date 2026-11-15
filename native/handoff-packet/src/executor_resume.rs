@@ -374,6 +374,13 @@ impl PreparedResume {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(windows)]
+    mod path_records {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/support/path_records.rs"
+        ));
+    }
 
     fn fixture() -> (tempfile::TempDir, Value, Value) {
         let scratch =
@@ -432,13 +439,25 @@ mod tests {
         row["dispatch_options_json"] = json!(options.to_string());
         let error = prepare(&row, &json!({}), None).unwrap_err();
         assert!(matches!(error, Error::Invalid(_)));
-        assert_eq!(
-            error.to_string(),
-            format!(
-                "[Errno 2] No such file or directory: {}",
-                crate::executor_execute::repr(&missing.display().to_string())
-            )
+        let actual = error.to_string();
+        #[cfg(not(windows))]
+        let expected = format!(
+            "[Errno 2] No such file or directory: {}",
+            crate::executor_execute::repr(&missing.display().to_string())
         );
+        #[cfg(windows)]
+        let (actual, expected) = (
+            path_records::root_token(
+                &actual,
+                &root.path().components().collect::<PathBuf>(),
+                "{ROOT}",
+            ),
+            path_records::record("resume.2")["error"]["message"]
+                .as_str()
+                .unwrap()
+                .replace("{ROOT}\\\\target\\\\mig-scratch\\\\resume", "{ROOT}"),
+        );
+        assert_eq!(actual, expected);
     }
 
     #[test]
@@ -450,9 +469,18 @@ mod tests {
         ] {
             options["dispatch_brief"] = json!(raw);
             row["dispatch_options_json"] = json!(options.to_string());
+            #[cfg(not(windows))]
+            let expected =
+                "[Errno 2] No such file or directory: '__b1_review_missing__/brief.json'";
+            #[cfg(windows)]
+            let expected = path_records::record("resume.0")["error"]["message"]
+                .as_str()
+                .unwrap()
+                .to_owned();
             assert_eq!(
                 prepare(&row, &json!({}), None).unwrap_err().to_string(),
-                "[Errno 2] No such file or directory: '__b1_review_missing__/brief.json'"
+                expected,
+                "{raw}"
             );
         }
         assert_eq!(python_path(""), Path::new("."));

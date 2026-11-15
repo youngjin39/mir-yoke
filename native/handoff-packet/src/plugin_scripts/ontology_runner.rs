@@ -20,6 +20,8 @@ pub struct Distribution {
 }
 impl Distribution {
     pub fn new(version: &str, checker: PathBuf, reason: &str) -> Self {
+        #[cfg(windows)]
+        let checker = crate::executor_admission::lexical(&checker);
         Self {
             version: version.into(),
             checker,
@@ -115,7 +117,10 @@ fn compare(a: &str, b: &str) -> Ordering {
     aa.len().cmp(&bb.len())
 }
 pub fn cache_root(home: &Path, runtime: &str) -> PathBuf {
-    home.join(runtime).join("plugins/cache/mir-yoke/mir-core")
+    let path = home.join(runtime).join("plugins/cache/mir-yoke/mir-core");
+    #[cfg(windows)]
+    let path = crate::executor_admission::lexical(&path);
+    path
 }
 pub fn cached_versions(home: &Path, runtime: &str) -> Result<Vec<PathBuf>> {
     let entries = match fs::read_dir(cache_root(home, runtime)) {
@@ -136,17 +141,30 @@ pub fn cached_versions(home: &Path, runtime: &str) -> Result<Vec<PathBuf>> {
     }
     Ok(out)
 }
+// Construct from text: pushing components into a verbatim PathBuf collapses `..`.
+#[cfg(any(windows, test))]
+fn windows_path_spelling(path: &str) -> String {
+    path.replace('/', "\\")
+}
 pub(crate) fn expand(path: &str, home: &Path) -> PathBuf {
-    if path == "~" {
+    let path = if path == "~" {
         home.to_path_buf()
     } else if let Some(tail) = path.strip_prefix("~/") {
         home.join(tail)
     } else {
         PathBuf::from(path)
-    }
+    };
+    #[cfg(windows)]
+    let path = match path.to_str() {
+        Some(text) => PathBuf::from(windows_path_spelling(text)),
+        None => path,
+    };
+    path
 }
 pub fn claude_active(home: &Path) -> Result<Vec<Distribution>> {
     let metadata = home.join(".claude/plugins/installed_plugins.json");
+    #[cfg(windows)]
+    let metadata = crate::executor_admission::lexical(&metadata);
     if !metadata.is_file() {
         return Ok(vec![]);
     }
@@ -216,6 +234,8 @@ pub fn codex_fields(config: &Path) -> Result<BTreeMap<String, String>> {
 }
 pub fn codex_active(home: &Path) -> Result<Vec<Distribution>> {
     let config = home.join(".codex/config.toml");
+    #[cfg(windows)]
+    let config = crate::executor_admission::lexical(&config);
     if !config.is_file() {
         return Ok(vec![]);
     }
@@ -525,4 +545,36 @@ pub fn main(argv: &[String], ctx: &Context, dispatch: &mut dyn Dispatch) -> Outp
         Err(e) => out.stderr.push_str(&format!("mir_ontology: {e}\n")),
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn windows_explicit_path_preserves_parent_spelling() {
+        let path = r"\\?\C:\fixture/a\..\absent";
+        assert_eq!(windows_path_spelling(path), r"\\?\C:\fixture\a\..\absent");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_missing_explicit_checker_preserves_parent_spelling() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = tmp.path().canonicalize().unwrap();
+        fs::create_dir(home.join("a")).unwrap();
+        let explicit = format!(r"{}\a\..\absent", home.display());
+        let ctx = Context {
+            homes: vec![home.clone()],
+            explicit: Some(explicit.clone()),
+            repo: home,
+            python: "unused".into(),
+        };
+        let err = select_distribution(&ctx, &mut String::new()).unwrap_err();
+        assert_eq!(err.class, "OSError");
+        assert_eq!(
+            err.message,
+            format!("MIR_ONTOLOGY_CHECKER is not a file: {explicit}")
+        );
+    }
 }
