@@ -110,11 +110,24 @@ fixture.setup(root, 'artifact')
 fn normalize(value: serde_json::Value, root: &std::path::Path) -> serde_json::Value {
     match value {
         serde_json::Value::String(s) => {
-            let normalized = s.replace(root.to_str().unwrap(), "$ROOT");
-            serde_json::json!(if normalized.contains("$ROOT") {
-                normalized.replace('\\', "/")
+            // Match cc468eee's generator: only synthetic root/path aliases.
+            let plain = |path: &str| {
+                let path = path.replace('\\', "/");
+                match path.strip_prefix("//?/") {
+                    Some(candidate) if candidate.as_bytes().get(1..3) == Some(b":/") => {
+                        candidate.to_owned()
+                    }
+                    _ => path,
+                }
+            };
+            let root = plain(root.to_str().unwrap());
+            let candidate = plain(&s);
+            serde_json::json!(if candidate == root {
+                "$ROOT".to_owned()
+            } else if let Some(tail) = candidate.strip_prefix(&(root + "/")) {
+                format!("$ROOT/{tail}")
             } else {
-                normalized
+                s
             })
         }
         serde_json::Value::Array(a) => {
@@ -135,6 +148,26 @@ fn normalize(value: serde_json::Value, root: &std::path::Path) -> serde_json::Va
                 .collect(),
         ),
         v => v,
+    }
+}
+#[test]
+fn normalize_only_synthetic_root_aliases() {
+    for root in [r"C:\fixture", r"\\?\C:\fixture"] {
+        for (input, expected) in [
+            (r"C:\fixture", "$ROOT"),
+            (r"\\?\C:\fixture\repo\job", "$ROOT/repo/job"),
+            (r"C:\fixture\repo\job", "$ROOT/repo/job"),
+            ("C:/fixture/repo/job", "$ROOT/repo/job"),
+            (r"C:\fixture-other\job", r"C:\fixture-other\job"),
+            (r"prefix C:\fixture\job", r"prefix C:\fixture\job"),
+            (r"D:\elsewhere\job", r"D:\elsewhere\job"),
+        ] {
+            assert_eq!(
+                normalize(serde_json::json!(input), std::path::Path::new(root)),
+                serde_json::json!(expected),
+                "root={root:?}, input={input:?}"
+            );
+        }
     }
 }
 fn parity(apply: bool) {
