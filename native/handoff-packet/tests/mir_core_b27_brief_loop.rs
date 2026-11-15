@@ -490,7 +490,9 @@ fn frozen_brief_loop_records() {
     let mut failures = Vec::new();
     for (name, expected) in records.as_object().unwrap() {
         let temp = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
-        let actual = observed(replay(name, temp.path()), temp.path());
+        // Match fs_resolve for mock cwd containment and error root substitution.
+        let root = handoff_packet::supply::plain(temp.path().to_path_buf());
+        let actual = observed(replay(name, &root), &root);
         if actual != *expected {
             failures.push(name.clone());
             eprintln!("{name}\nactual: {actual}\nexpected: {expected}");

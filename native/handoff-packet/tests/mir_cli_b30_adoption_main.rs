@@ -395,7 +395,9 @@ fn every_frozen_record_replays_exactly() {
             tmp.path()
                 .starts_with(std::env::temp_dir().canonicalize().unwrap())
         );
-        let root = tmp.path();
+        // Match Python-compatible runtime paths before Observer containment checks.
+        let root = handoff_packet::supply::plain(tmp.path().to_path_buf());
+        let root = root.as_path();
         let actual = if let Some(mode) = name.strip_prefix("digest.") {
             digest_case(root, mode)
         } else if let Some(mode) = name.strip_prefix("atomic.") {
