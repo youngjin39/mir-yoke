@@ -2,10 +2,10 @@
 
 import contextlib
 import importlib
-import io
 import json
 import os
-import threading
+import sys
+import tempfile
 from pathlib import Path
 
 METHODS = frozenset({"status", "check", "sync", "update", "finalize", "attest"})
@@ -13,38 +13,25 @@ METHODS = frozenset({"status", "check", "sync", "update", "finalize", "attest"})
 
 @contextlib.contextmanager
 def capture():
-    events, threads, saved = [], [], []
-
-    class Stream(io.FileIO):
-        def write(self, data):
-            if data:
-                events.append({"stream": ("stdout", "stderr")[self.name - 1], "data": list(data)})
-            return len(data)
-
-    def drain(fd, stream):
-        with os.fdopen(fd, "rb") as pipe:
-            while data := pipe.read1(65536):
-                events.append({"stream": stream, "data": list(data)})
-
+    events, saved, files = [], [], []
     try:
-        for fd, name in [(1, "stdout"), (2, "stderr")]:
+        for fd, stream in [(1, sys.stdout), (2, sys.stderr)]:
+            stream.flush()
             saved.append(os.dup(fd))
-            read, write = os.pipe()
-            os.dup2(write, fd)
-            os.close(write)
-            thread = threading.Thread(target=drain, args=(read, name))
-            thread.start()
-            threads.append(thread)
-        out, err = (io.TextIOWrapper(Stream(fd, "wb", closefd=False), encoding="utf-8",
-                                    write_through=True) for fd in (1, 2))
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            yield events
+            files.append(tempfile.TemporaryFile())
+            os.dup2(files[-1].fileno(), fd)
+        yield events
     finally:
-        for fd, prior in zip((1, 2), saved, strict=True):
+        for fd, prior, file, stream, name in zip(
+                (1, 2), saved, files, (sys.stdout, sys.stderr), ("stdout", "stderr"), strict=True):
+            stream.flush()
             os.dup2(prior, fd)
             os.close(prior)
-        for thread in threads:
-            thread.join()
+            file.seek(0)
+            data = file.read(os.fstat(file.fileno()).st_size)
+            file.close()
+            if data:
+                events.append({"stream": name, "data": list(data)})
 
 
 def main():
@@ -85,6 +72,7 @@ def main():
                 response = {"value": None, "error": error}
         replies.write(json.dumps(dict(response, events=events)) + "\n")
         replies.flush()
+    os._exit(0)  # Replies are flushed; provider threads cannot hold shutdown open.
 
 
 if __name__ == "__main__":

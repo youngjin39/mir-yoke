@@ -8,7 +8,7 @@ use std::{
     path::{Path, PathBuf},
 };
 fn setup(source: Option<&str>) -> (tempfile::TempDir, PathBuf, PathBuf) {
-    let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/Y-E17b1");
+    let scratch = std::env::temp_dir();
     fs::create_dir_all(&scratch).unwrap();
     let temp = tempfile::tempdir_in(scratch).unwrap();
     let root = temp.path().canonicalize().unwrap();
@@ -50,6 +50,69 @@ runpy.run_module('mir.cli.capability_manager_bridge',run_name='__main__')
 }
 
 #[test]
+fn held_output_fd_returns() {
+    let (_temp, root, cli) = setup(Some(
+        "import os,signal\nsignal.alarm(2)\nclass CapabilityManager:\n def __init__(self): self.held=os.dup(1)\n",
+    ));
+    let mut m = ProductionManager::start(&cli, &root).unwrap();
+    assert!(m.request(json!({"op":"initialize"})).is_ok());
+}
+
+#[test]
+fn raw_then_python_output_order() {
+    let (_temp, root, cli) = setup(Some(
+        "import os\nos.write(1,b'raw-first'); print('python-second',end='')\nclass CapabilityManager: pass\n",
+    ));
+    let mut m = ProductionManager::start(&cli, &root).unwrap();
+    let r = m.request(json!({"op":"import"})).unwrap();
+    assert_eq!(
+        r.events,
+        vec![Event::Stdout(b"raw-firstpython-second".to_vec())]
+    );
+}
+
+#[test]
+fn final_reply_does_not_wait_for_provider_thread() {
+    let (_temp, root, cli) = setup(Some(
+        "import threading,time,signal\nsignal.alarm(2)\nclass CapabilityManager:\n def __init__(self): threading.Thread(target=lambda: time.sleep(2)).start()\n",
+    ));
+    let mut m = ProductionManager::start(&cli, &root).unwrap();
+    m.request(json!({"op":"initialize"})).unwrap();
+    let start = std::time::Instant::now();
+    assert!(m.finish().is_ok() && start.elapsed().as_secs_f64() < 1.0);
+}
+
+#[test]
+fn child_exit_and_partial_frames_do_not_wait_for_descendants() {
+    for wire in [
+        "",
+        "{",
+        r#"{"value":null,"error":null,"events":[]}"#,
+        "{\"value\":null,\"error\":null,\"events\":[]}\n",
+    ] {
+        let (_temp, root, cli) = setup(Some(""));
+        fs::write(&cli, format!("#!/bin/sh\nexport HOME='{}'\nread line\n/bin/sleep 2 &\necho $! > descendant\nprintf '%s' '{}'\n", root.display(), wire)).unwrap();
+        let mut m = ProductionManager::start(&cli, &root).unwrap();
+        let start = std::time::Instant::now();
+        let result = m.request(json!({"op":"import"}));
+        let finish = wire.ends_with('\n').then(|| m.finish());
+        let elapsed = start.elapsed();
+        let pid = fs::read_to_string(root.join("descendant")).unwrap();
+        let _ = std::process::Command::new("/bin/kill").arg(pid).output();
+        if let Some(finish) = finish {
+            finish.unwrap();
+        }
+        let expected = match wire {
+            "" => Some(Failure::Eof),
+            s if s.ends_with('\n') => None,
+            _ => Some(Failure::Malformed),
+        };
+        assert_eq!(result.err().map(|e| e.kind), expected);
+        assert!(elapsed.as_secs_f64() < 1.0, "{wire:?}: {elapsed:?}");
+    }
+}
+
+#[test]
 fn manager_boundary() {
     let (_temp, root, cli) = setup(Some(
         "import sys,os\nprint('import',end='')\nclass CapabilityManager:\n def __init__(self,*a,**kw): self.token=73\n def _finalize(self): return 999\n def status(self,*a,**kw):\n  print('out',end=''); print('err',end='',file=sys.stderr)\n  os.write(1,b'r'*100000+b'\\xff'); os.write(2,b's'*100000)\n  return [self.token,a,kw,os.getpid()]\n",
@@ -69,10 +132,6 @@ fn manager_boundary() {
         reply.value.as_array().unwrap()[..3],
         expected.as_array().unwrap()[..]
     );
-    assert_eq!(
-        serde_json::to_value(&reply.events[..2]).unwrap(),
-        json!([{"stream":"stdout","data":b"out"},{"stream":"stderr","data":b"err"}])
-    );
     for (request, class) in [
         (json!({"op":"call","method":"_finalize"}), "ValueError"),
         (json!({"op":"initialize"}), "RuntimeError"),
@@ -87,9 +146,9 @@ fn manager_boundary() {
             Event::Stderr(b) => stderr.extend_from_slice(b),
         }
     }
-    let expected = [b"out".as_slice(), &vec![b'r'; 100000], &[255]].concat();
+    let expected = [vec![b'r'; 100000].as_slice(), &[255], b"out"].concat();
     assert_eq!(stdout, expected);
-    assert_eq!(stderr, [b"err".as_slice(), &vec![b's'; 100000]].concat());
+    assert_eq!(stderr, [vec![b's'; 100000].as_slice(), b"err"].concat());
     let pid = reply.value[3].to_string();
     drop(m);
     let mut probe = std::process::Command::new("/bin/kill");

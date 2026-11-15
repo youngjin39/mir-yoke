@@ -1,10 +1,11 @@
 use super::capability::Manager;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Read, Seek, Write};
+#[cfg(unix)]
+use std::os::fd::AsRawFd;
 use std::path::Path;
 use std::process::{Child, ChildStdin, ChildStdout, Command, ExitStatus, Stdio};
-use std::thread::JoinHandle;
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(tag = "stream", content = "data")]
 #[serde(rename_all = "lowercase", deny_unknown_fields)]
@@ -46,11 +47,12 @@ pub struct ProductionManager {
     child: Child,
     input: Option<ChildStdin>,
     output: BufReader<ChildStdout>,
-    stderr: Option<JoinHandle<std::io::Result<Vec<u8>>>>,
+    stderr: std::fs::File,
     pub last_reply: Option<Reply>,
 }
 impl ProductionManager {
     pub fn start(cli: &Path, root: &Path) -> std::io::Result<Self> {
+        let stderr = tempfile::tempfile()?;
         let mut child = Command::new(cli)
             .args(["run-python", "--project-root"])
             .arg(root)
@@ -58,18 +60,17 @@ impl ProductionManager {
             .current_dir(root)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stderr(stderr.try_clone()?)
             .spawn()?;
         let input = child.stdin.take();
         let output = BufReader::new(child.stdout.take().ok_or(std::io::ErrorKind::BrokenPipe)?);
-        let stderr = child.stderr.take().ok_or(std::io::ErrorKind::BrokenPipe)?;
+        #[cfg(unix)]
+        crate::executor_process_unix::nonblocking(output.get_ref().as_raw_fd())?;
         Ok(Self {
             child,
             input,
             output,
-            stderr: Some(std::thread::spawn(move || {
-                BufReader::new(stderr).bytes().collect()
-            })),
+            stderr,
             last_reply: None,
         })
     }
@@ -79,43 +80,53 @@ impl ProductionManager {
             writeln!(input, "{request}")?;
             input.flush()?;
             let mut line = String::new();
-            self.output.read_line(&mut line)?;
+            loop {
+                let exited = self.child.try_wait()?.is_some();
+                match self.output.read_line(&mut line) {
+                    Ok(_) => break,
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock && exited => break,
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    Err(e) => return Err(e),
+                }
+            }
             Ok(line)
         }();
         let result = match exchange {
             Err(e) => Err((Failure::Io, e.to_string())),
             Ok(line) if line.is_empty() => Err((Failure::Eof, "manager reply EOF".into())),
+            Ok(line) if !line.ends_with('\n') => Err((Failure::Malformed, "partial reply".into())),
             Ok(line) => {
                 serde_json::from_str(&line).map_err(|e| (Failure::Malformed, e.to_string()))
             }
         };
-        result.map_err(|(kind, message)| {
-            self.input.take();
-            for _ in 0..50 {
-                if self.child.try_wait().ok().flatten().is_some() {
-                    break;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(1));
+        result.map_err(|(kind, message)| self.stop(kind, message))
+    }
+    fn stop(&mut self, kind: Failure, message: String) -> Error {
+        self.input.take();
+        for _ in 0..50 {
+            if self.child.try_wait().ok().flatten().is_some() {
+                break;
             }
-            let _ = self.child.kill();
-            let status = self.child.wait();
-            let stderr = self.stderr.take().map(|h| h.join());
-            Error {
-                kind,
-                message,
-                status,
-                stderr,
-            }
-        })
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        let _ = self.child.kill();
+        let status = self.child.wait();
+        let stderr = self.stderr.rewind().and_then(|()| {
+            let size = self.stderr.metadata()?.len();
+            let reader = BufReader::new(&mut self.stderr);
+            reader.take(size).bytes().collect()
+        });
+        Error {
+            kind,
+            message,
+            status,
+            stderr: Some(Ok(stderr)),
+        }
     }
     pub fn finish(&mut self) -> Result<(), Error> {
-        self.input.take();
-        let error = Error {
-            kind: Failure::Child,
-            message: "manager child failed".into(),
-            status: self.child.wait(),
-            stderr: self.stderr.take().map(|h| h.join()),
-        };
+        let error = self.stop(Failure::Child, "manager child failed".into());
         let success = error.status.as_ref().is_ok_and(ExitStatus::success);
         let clean = !matches!(error.stderr, Some(Err(_) | Ok(Err(_))));
         if success && clean { Ok(()) } else { Err(error) }
@@ -157,8 +168,5 @@ impl Drop for ProductionManager {
         self.input.take();
         let _ = self.child.kill();
         let _ = self.child.wait();
-        if let Some(stderr) = self.stderr.take() {
-            let _ = stderr.join();
-        }
     }
 }
