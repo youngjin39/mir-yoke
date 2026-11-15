@@ -336,8 +336,11 @@ fn windows_capture_selector() {
 
 #[test]
 fn frozen_records() {
-    let oracle = records(cfg!(windows));
-    let total = if cfg!(windows) { 1 } else { 53 };
+    // Every Unix scenario is replayed on every platform; a Windows capture
+    // replaces the expectation only for the routes it covers.
+    let oracle = records(false);
+    let windows = records(true);
+    let total = 53;
     assert_eq!(oracle.as_object().unwrap().len(), total);
     let (mut replayed, mut exempt) = (0, 0);
     for (name, expected) in oracle.as_object().unwrap() {
@@ -357,7 +360,7 @@ fn frozen_records() {
             .execute("UPDATE schema_migrations SET applied_at=?", [CLOCK])
             .unwrap();
         let actual = normalize(json!({"value":replay(name, &db.conn, &root)}), &root);
-        if cfg!(windows) {
+        if let Some(expected) = windows.get(name).filter(|_| cfg!(windows)) {
             let bytes = std::fs::read(root.join("out/nested/projection.md")).unwrap();
             let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
             assert_eq!(hex, expected["file_hex"], "render:{name}: bytes");
