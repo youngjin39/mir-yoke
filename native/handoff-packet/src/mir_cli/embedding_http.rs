@@ -53,6 +53,14 @@ impl HttpTransport {
                 } else if location.starts_with('?') {
                     format!("{}{location}", url.split(['?', '#']).next().unwrap_or(&url))
                 } else {
+                    if location
+                        .split(['?', '#'])
+                        .next()
+                        .unwrap_or("")
+                        .contains("//")
+                    {
+                        return Err(unsupported("Embedding URL normalization is not supported"));
+                    }
                     let path = url[end..].split(['?', '#']).next().unwrap_or("");
                     let directory = path.rsplit_once('/').map(|(p, _)| p).unwrap_or("");
                     format!("{origin}{directory}/{location}")
@@ -60,7 +68,11 @@ impl HttpTransport {
                 if !url.starts_with("http://") {
                     continue;
                 }
-                if let Some(end) = url[7..].find('/').map(|n| n + 7) {
+                if let Some(end) = url[7..]
+                    .find(['/', '?', '#'])
+                    .map(|n| n + 7)
+                    .filter(|&n| url.as_bytes()[n] == b'/')
+                {
                     let suffix = url[end..]
                         .find(['?', '#'])
                         .map(|n| n + end)

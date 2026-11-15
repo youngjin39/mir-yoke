@@ -23,7 +23,7 @@ def connect(self, address):
 socket.socket.connect = connect; records = []
 for mode in ['200','204','300','400','500','301','302','303','307','308',
              'absolute','relative','query','scheme-relative','fragment','empty','dot','cookie',
-             'slashes','loop','missing','304','404','short','https','proxy']:
+             'slashes','loop','missing','304','404','short','https','proxy','relative-empty','absolute-query']:
     listener = socket.socket()
     listener.bind(('127.0.0.1', 0)); listener.listen(); listener.settimeout(1)
     port = str(listener.getsockname()[1])
@@ -48,6 +48,7 @@ for mode in ['200','204','300','400','500','301','302','303','307','308',
                     if len(requests) == 1 or mode == 'loop':
                         status = (mode if mode.isdigit() else '302') + ' Test'
                         location = {'absolute':base+'/artifact', 'relative':'../artifact',
+                                    'relative-empty':'a//b', 'absolute-query':base+'?next=/a/../b',
                                     'query':'?x=1', 'scheme-relative':base[5:]+'/artifact',
                                 'fragment':'#x', 'empty':'', 'dot':'../dir/.', 'slashes':base+'//a',
                                     'https':base.replace('http:', 'https:')+'/artifact',

@@ -40,10 +40,11 @@ fn frozen_artifact_redirects() {
         });
         let actual = HttpTransport::default().artifact(&format!("{base}/dir/start"), 8);
         let requests = server.join().unwrap();
-        if matches!(mode, "https" | "proxy" | "cookie") {
+        if matches!(mode, "https" | "proxy" | "cookie" | "relative-empty") {
+            assert_eq!(requests.len(), 1, "{mode}: refused before next connect");
             let e = actual.unwrap_err();
             assert_eq!(e.class, "UnsupportedProtocol", "{mode}");
-            assert_eq!(e.message, if mode == "https" { "HTTPS embedding transport is not supported" } else if mode == "cookie" { "Artifact response cookies are not supported" } else { "Environment proxy embedding transport is not supported" });
+            assert_eq!(e.message, if mode == "relative-empty" { "Embedding URL normalization is not supported" } else if mode == "https" { "HTTPS embedding transport is not supported" } else if mode == "cookie" { "Artifact response cookies are not supported" } else { "Environment proxy embedding transport is not supported" });
         } else {
             assert_eq!(serde_json::json!(requests), r["requests"], "{mode}");
             if let Some(body) = r["result"]["body"].as_str() { assert_eq!(actual.unwrap().body, body.as_bytes(), "{mode}"); }
