@@ -514,11 +514,12 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
                 } else {
                     let result = host.finalize_capabilities(&root, prior_receipt.as_ref())?;
                     architecture_attested = result.0 == "ready";
-                    result
+                    (result.0, super::scalar_evidence(&result.1)?)
                 }
             }
         } else {
-            host.activate_capabilities(&root, profile)?
+            let (status, evidence) = host.activate_capabilities(&root, profile)?;
+            (status, super::scalar_evidence(&evidence)?)
         };
         capability = merged(
             if !finalize && status == "ready" {

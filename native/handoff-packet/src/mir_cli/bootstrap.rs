@@ -40,7 +40,7 @@ pub use authored_text::{
 };
 pub use capabilities::{
     CATALOG_TEMPLATE_BY_PROFILE, CapabilityOutput, activate_capabilities, capability_lock_evidence,
-    compile_adopter_agent_catalog, finalize_capabilities, load_capability_sources,
+    compile_adopter_agent_catalog, finalize_capabilities, load_capability_sources, scalar_evidence,
 };
 pub use release::{
     is_raw_provider_checkout, is_safe_existing_project_file, normalise_git_url,
@@ -326,14 +326,14 @@ pub trait Host: Sized {
         &mut self,
         root: &Path,
         profile: &str,
-    ) -> Result<(String, Value), Error> {
+    ) -> Result<(String, crate::python_json::Value), Error> {
         activate_capabilities(root, profile, self)
     }
     fn finalize_capabilities(
         &mut self,
         root: &Path,
         prior: Option<&Value>,
-    ) -> Result<(String, Value), Error> {
+    ) -> Result<(String, crate::python_json::Value), Error> {
         finalize_capabilities(root, prior, self)
     }
     fn apply_adopter_slim(

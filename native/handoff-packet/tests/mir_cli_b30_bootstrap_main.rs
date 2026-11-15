@@ -499,8 +499,20 @@ impl Host for Observer {
         (root: &Path, db: &Path) -> BTreeMap<PathBuf, String>);
     script!(validate_content_memory_acceptance, "_validate_content_memory_acceptance",
         (root: &Path, db: &Path, slug: &str, onboarding: &Value) -> Evidence);
-    script!(activate_capabilities, "_activate_capabilities",
-        (root: &Path, profile: &str) -> (String, Value));
+    fn activate_capabilities(
+        &mut self,
+        root: &Path,
+        profile: &str,
+    ) -> Result<(String, handoff_packet::python_json::Value), Error> {
+        if let Some(value) = self.scripted("_activate_capabilities") {
+            let (status, evidence): (String, Value) = serde_json::from_value(value?).unwrap();
+            return Ok((
+                status,
+                handoff_packet::python_json::parse(&evidence.to_string()).unwrap(),
+            ));
+        }
+        self.boundary.activate_capabilities(root, profile)
+    }
     script!(validate_architecture_evidence, "_validate_architecture_evidence",
         (root: &Path) -> Evidence);
     script!(build_content_onboarding, "_build_content_onboarding",
@@ -516,12 +528,16 @@ impl Host for Observer {
         &mut self,
         root: &Path,
         prior: Option<&Value>,
-    ) -> Result<(String, Value), Error> {
+    ) -> Result<(String, handoff_packet::python_json::Value), Error> {
         if let Some(value) = self.scripted("_finalize_capabilities") {
             if self.boundary.scenario == "prior_receipt" {
                 self.helpers.push(json!({"prior_receipt":prior}));
             }
-            return Ok(serde_json::from_value(value?).unwrap());
+            let (status, evidence): (String, Value) = serde_json::from_value(value?).unwrap();
+            return Ok((
+                status,
+                handoff_packet::python_json::parse(&evidence.to_string()).unwrap(),
+            ));
         }
         self.boundary.finalize_capabilities(root, prior)
     }

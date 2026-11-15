@@ -798,3 +798,14 @@ pub fn parse_stdin(bytes: &[u8]) -> Result<Value, Error> {
     }
     parse_codes(chars)
 }
+
+impl From<String> for Text {
+    fn from(value: String) -> Self {
+        Self::new(value.chars().map(u32::from).collect())
+    }
+}
+impl From<&str> for Text {
+    fn from(value: &str) -> Self {
+        value.to_owned().into()
+    }
+}

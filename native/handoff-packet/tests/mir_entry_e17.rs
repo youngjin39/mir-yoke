@@ -1,5 +1,6 @@
 //! Y-E17A: acquisition replay. Real provider/session binding remains OPEN in split.md.
 use handoff_packet::mir_cli::{bootstrap as b, capability};
+use handoff_packet::python_json::{self as py, Text};
 use serde_json::{Map, Value, json};
 use std::{
     fs,
@@ -34,8 +35,15 @@ impl capability::Manager for Provider {
             assert_eq!(method, "status");
             assert!(kwargs.is_empty());
         }
-        if self.case == "console-error" {
-            return Err(b::Error::new("CapabilityError", "provider refused"));
+        if self.case.starts_with("console-error") {
+            return Err(b::Error::new(
+                "CapabilityError",
+                if self.case == "console-error-cr" {
+                    "provider\r\nrefused\r"
+                } else {
+                    "provider refused"
+                },
+            ));
         }
         if self.case == "console-change" {
             fs::write(self.root.join(".mir/capability-lock.json"), "{}").unwrap();
@@ -71,10 +79,18 @@ impl b::Host for Host {
     }
     fn capability_main(&mut self, argv: &[String]) -> Result<b::CapabilityOutput, b::Error> {
         self.calls.push(json!(argv));
+        let text = |key: &str| {
+            let bytes =
+                serde_json::from_value::<Vec<u8>>(self.record[format!("{key}_bytes")].clone())
+                    .unwrap_or_else(|_| {
+                        self.record[key].as_str().unwrap_or("").as_bytes().to_vec()
+                    });
+            Text::from_wtf8(&bytes).unwrap()
+        };
         Ok(b::CapabilityOutput {
             code: self.record["code"].as_i64().unwrap_or(0) as i32,
-            stdout: self.record["out"].as_str().unwrap_or("").into(),
-            stderr: self.record["err"].as_str().unwrap_or("").into(),
+            stdout: text("out"),
+            stderr: text("err"),
         })
     }
 }
@@ -103,16 +119,18 @@ fn frozen_capability_acquisition() {
         let mut stdout = String::new();
         let mut stderr = String::new();
         let result: Result<Value, b::Error> = match r["mode"].as_str().unwrap() {
-            "activate" => b::activate_capabilities(&root, "code_app", &mut host).map(|v| json!(v)),
+            "activate" => b::activate_capabilities(&root, "code_app", &mut host)
+                .map(|v| json!([v.0, b::scalar_evidence(&v.1).unwrap()])),
             "finalize" => {
-                let value =
-                    b::finalize_capabilities(&root, r.get("prior"), &mut host).map(|v| json!(v));
+                let value = b::finalize_capabilities(&root, r.get("prior"), &mut host)
+                    .map(|v| json!([v.0, b::scalar_evidence(&v.1).unwrap()]));
                 if !host.calls.is_empty() {
                     stderr = r["err"].as_str().unwrap_or("").into();
                 }
                 value
             }
-            "lock" => b::capability_lock_evidence(&root, &mut host).map(|v| json!(v)),
+            "lock" => b::capability_lock_evidence(&root, &mut host)
+                .map(|v| json!([v.0, b::scalar_evidence(&v.1).unwrap()])),
             "config" => b::Host::capability_config_plugins(
                 &mut b::ProductionHost::default(),
                 &root.join("config/capability-sources.json"),
@@ -140,8 +158,8 @@ fn frozen_capability_acquisition() {
                     case: r["case"].as_str().unwrap().into(),
                 };
                 let output = b::CapabilityOutput::run(&argv, &mut provider).unwrap();
-                stdout = output.stdout;
-                stderr = output.stderr;
+                stdout = output.stdout.as_str().unwrap().into();
+                stderr = output.stderr.as_str().unwrap().into();
                 Ok(json!(output.code))
             }
             mode => panic!("unhandled {mode}"),
@@ -167,4 +185,99 @@ fn frozen_capability_acquisition() {
         checked += 1;
     }
     assert_eq!(checked, 20);
+}
+
+fn replay(mode: &str) {
+    let records = py::parse(include_str!("fixtures/y-e17b2b1b2a.json")).unwrap();
+    for r in records
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|r| r["mode"].as_str() == Some(mode))
+    {
+        let temp = tempfile::tempdir().unwrap();
+        fs::create_dir(temp.path().join(".mir")).unwrap();
+        if let Some(body) = r["files"].get(".mir/capability-lock.json") {
+            let path = temp.path().join(".mir/capability-lock.json");
+            fs::write(path, body.as_str().unwrap()).unwrap();
+        }
+        let bytes = |key| {
+            r[key]
+                .as_text()
+                .map(|s| s.render().unwrap())
+                .unwrap_or_default()
+        };
+        let mut host = Host {
+            record: json!({"code":if r.get("code").is_some() {7} else {0},
+            "out_bytes":bytes("out"), "err_bytes":bytes("err")}),
+            calls: vec![],
+        };
+        let prior = serde_json::json!({"status":"restart_required"});
+        let (status, evidence) = match mode {
+            "activate" => b::activate_capabilities(temp.path(), "code_app", &mut host),
+            "finalize" => b::finalize_capabilities(temp.path(), Some(&prior), &mut host),
+            _ => b::capability_lock_evidence(temp.path(), &mut host),
+        }
+        .unwrap();
+        let expected = r["result"]["value"].as_array().unwrap();
+        assert_eq!(Some(status.as_str()), expected[0].as_str());
+        assert_eq!(evidence.json_sorted(false), expected[1].json_sorted(false));
+        assert!(b::scalar_evidence(&evidence).is_err());
+    }
+}
+#[test]
+fn activate() {
+    replay("activate");
+}
+#[test]
+fn finalize() {
+    replay("finalize");
+}
+#[test]
+fn lock() {
+    replay("lock");
+}
+
+#[test]
+fn output_admission() {
+    let records = py::parse(include_str!("fixtures/y-e17b2b1b2a.json")).unwrap();
+    let r = b::scalar_evidence(records.as_array().unwrap().last().unwrap()).unwrap();
+    let temp = tempfile::tempdir().unwrap();
+    let mut provider = Provider {
+        root: temp.path().canonicalize().unwrap(),
+        case: "console-error-cr".into(),
+    };
+    let argv = vec![
+        "sync".into(),
+        "--profile".into(),
+        "code_app".into(),
+        "--project-root".into(),
+        provider.root.display().to_string(),
+        "--json".into(),
+        "--apply".into(),
+    ];
+    let out = b::CapabilityOutput::run(&argv, &mut provider).unwrap();
+    assert_eq!(out.code, r["result"]["value"].as_i64().unwrap() as i32);
+    assert_eq!(
+        out.stdout.render().unwrap(),
+        r["stdout"].as_str().unwrap().as_bytes()
+    );
+    assert_eq!(
+        out.stderr.render().unwrap(),
+        r["stderr"].as_str().unwrap().as_bytes()
+    );
+}
+
+#[test]
+fn lock_decode_failure() {
+    let temp = tempfile::tempdir().unwrap();
+    fs::create_dir(temp.path().join(".mir")).unwrap();
+    fs::write(temp.path().join(".mir/capability-lock.json"), [0xff]).unwrap();
+    let mut host = Host {
+        record: json!({}),
+        calls: vec![],
+    };
+    let err = b::capability_lock_evidence(temp.path(), &mut host).unwrap_err();
+    assert_eq!(err.class, "UnicodeDecodeError");
+    assert!(host.calls.is_empty());
 }

@@ -129,9 +129,9 @@ impl Host for Fake<'_> {
             stdout: if self.mode == "output" {
                 "sync refused\n".into()
             } else {
-                String::new()
+                "".into()
             },
-            stderr: String::new(),
+            stderr: "".into(),
         })
     }
     fn validate_artifacts(&mut self, records: &Value, plugins: &Value) -> Result<(), Error> {
@@ -425,6 +425,7 @@ fn case(root: &Path, name: &str, host: &mut Fake<'_>) -> Result<Value, Error> {
                 "finalize" => m::finalize_capabilities(root, receipt.as_ref(), host)?,
                 _ => m::capability_lock_evidence(root, host)?,
             };
+            let value = (value.0, m::scalar_evidence(&value.1).unwrap());
             Ok(json!([value, host.cli_calls]))
         }
         _ => panic!("unmapped record {name}"),
@@ -561,7 +562,10 @@ fn failed_activation_cannot_be_finalized() {
         cli_calls: vec![],
     };
     let activation = m::activate_capabilities(&root, "code_app", &mut host).unwrap();
-    assert_eq!(json!(activation), records["activate.output"]["value"][0]);
+    assert_eq!(
+        json!([activation.0, m::scalar_evidence(&activation.1).unwrap()]),
+        records["activate.output"]["value"][0]
+    );
     assert_eq!(
         normalise(json!(host.cli_calls), &root),
         records["activate.output"]["value"][1]
@@ -572,7 +576,10 @@ fn failed_activation_cannot_be_finalized() {
     let result = m::finalize_capabilities(&root, Some(&prior), &mut host).unwrap();
     // The frozen rejection cell covers any prior status other than restart_required.
     assert_eq!(
-        json!([result, host.cli_calls]),
+        json!([
+            (result.0, m::scalar_evidence(&result.1).unwrap()),
+            host.cli_calls
+        ]),
         records["finalize.prior_ready"]["value"]
     );
 }
@@ -617,7 +624,10 @@ fn native_lock_with_tracked_configuration_uses_frozen_evidence() {
     };
     let evidence = m::capability_lock_evidence(&root, &mut host).unwrap();
     assert_eq!(
-        json!([evidence, host.cli_calls]),
+        json!([
+            (evidence.0, m::scalar_evidence(&evidence.1).unwrap()),
+            host.cli_calls
+        ]),
         records["lock.native_valid"]["value"]
     );
 }

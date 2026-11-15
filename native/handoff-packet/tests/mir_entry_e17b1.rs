@@ -434,11 +434,11 @@ fn check_provider_classes(case: Option<&str>) {
                 match CapabilityOutput::run(&args, m) {
                     Ok(out) => {
                         assert_eq!(
-                            out.stdout.as_bytes(),
+                            out.stdout.render().unwrap(),
                             serde_json::from_value::<Vec<u8>>(r["stdout"].clone()).unwrap()
                         );
                         assert_eq!(
-                            out.stderr.as_bytes(),
+                            out.stderr.render().unwrap(),
                             serde_json::from_value::<Vec<u8>>(r["stderr"].clone()).unwrap()
                         );
                         json!({"code":out.code})
