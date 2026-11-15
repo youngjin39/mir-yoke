@@ -5,6 +5,10 @@ use std::{
     process::{Command, Output},
 };
 
+#[cfg(windows)]
+#[path = "support/executor_text.rs"]
+mod executor_text;
+
 struct Fixture(PathBuf);
 impl Fixture {
     fn new() -> Self {
@@ -151,18 +155,34 @@ fn parity(apply: bool) {
         "{}",
         String::from_utf8_lossy(&native.stderr)
     );
+    #[cfg(windows)]
+    let windows_record = executor_text::record("sweep", &apply.to_string());
+    #[cfg(windows)]
     assert_eq!(
-        native.stderr,
-        expected["stderr"].as_str().unwrap().as_bytes()
+        native.status.code(),
+        windows_record["exit"].as_i64().map(|v| v as i32)
+    );
+    #[cfg(windows)]
+    let expected_stderr = executor_text::bytes(&windows_record, "stderr");
+    #[cfg(not(windows))]
+    let expected_stderr = expected["stderr"].as_str().unwrap().as_bytes();
+    assert_eq!(
+        native.stderr, expected_stderr,
+        "sweep stderr bytes, apply={apply}"
     );
     assert_eq!(native.stdout.iter().filter(|b| **b == b'\n').count(), 1);
     let escaped_root = fixture.0.to_str().unwrap().replace('\\', "\\\\");
     let stdout = String::from_utf8(native.stdout.clone())
         .unwrap()
         .replace(&escaped_root, "$ROOT");
+    #[cfg(windows)]
+    let expected_stdout = executor_text::bytes(&windows_record, "stdout");
+    #[cfg(not(windows))]
+    let expected_stdout = expected["stdout"].as_str().unwrap().as_bytes();
     assert_eq!(
         stdout.as_bytes(),
-        expected["stdout"].as_str().unwrap().as_bytes()
+        expected_stdout,
+        "sweep stdout bytes, apply={apply}"
     );
     let result = serde_json::from_slice(&native.stdout).unwrap();
     assert_eq!(normalize(result, &fixture.0), expected["result"]);
