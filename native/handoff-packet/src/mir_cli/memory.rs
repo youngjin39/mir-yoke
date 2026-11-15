@@ -1224,10 +1224,12 @@ pub fn run_doctor(
             }
         }
         let configured_db = loader::resolve_memory_db(root, &cfg, home)?;
+        let display_db = crate::supply::plain(configured_db.clone());
+        let display_root = crate::supply::plain(root.to_owned());
         report["memory"]["db_path"] = json!(
-            configured_db
-                .strip_prefix(root)
-                .unwrap_or(&configured_db)
+            display_db
+                .strip_prefix(&display_root)
+                .unwrap_or(&display_db)
                 .to_str()
                 .ok_or_else(|| std::io::Error::other("non-UTF-8 DB path"))?
                 .replace('\\', "/")
@@ -1457,6 +1459,37 @@ pub fn run_doctor(
 #[cfg(all(test, windows))]
 mod display_tests {
     use super::*;
+
+    #[test]
+    fn wt_core_a_h_relative_db_display() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = crate::supply::plain(tmp.path().canonicalize().unwrap());
+        std::fs::create_dir(root.join(".mir")).unwrap();
+        std::fs::create_dir(root.join("docs")).unwrap();
+        std::fs::write(
+            root.join("harness_a.toml"),
+            "[memory]\nenabled=true\nrequired=true\nbackend=\"sqlite_fts5\"\n\
+             db_path=\".mir/db\"\nvector_mode=\"off\"\n[memory.embedding]\n\
+             enabled=false\nrequired=false\n[[memory.external_archives]]\n\
+             slug=\"docs\"\nroot=\"docs\"\n",
+        )
+        .unwrap();
+        // resolve_memory_db canonicalises the existing parent to a verbatim path.
+        // Python 6b8796fa memory.py:363-367,432 uses relative_to(root).as_posix().
+        let (code, report) = run_doctor(&root, None, &root, std::time::SystemTime::now, |_| {
+            panic!("missing synthetic DB must return before connecting")
+        })
+        .unwrap();
+        assert_eq!(code, 1);
+        assert!(
+            report["errors"][0]
+                .as_str()
+                .unwrap()
+                .starts_with("memory database is missing:")
+        );
+        assert_eq!(report["memory"]["db_path"], ".mir/db");
+        assert!(!root.join(".mir/db").exists());
+    }
 
     #[test]
     fn wt_core_a_g_missing_root_display() {

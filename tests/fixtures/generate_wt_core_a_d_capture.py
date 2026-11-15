@@ -28,7 +28,10 @@ p.add_argument('--scratch', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
 p.add_argument('--dependencies', type=Path)
 p.add_argument('--all-records', action='store_true')
+p.add_argument('--relative-link-record', action='store_true')
 a = p.parse_args()
+if a.relative_link_record and (a.case != 'b14' or a.all_records):
+    p.error('--relative-link-record requires --case b14 without --all-records')
 assert sys.version_info[:3] == (3, 12, 13), sys.version
 bundle = Path(__file__).resolve().parent
 root = a.scratch.resolve()
@@ -59,7 +62,7 @@ def provenance():
         if name == 'mir' or name.startswith('mir.'):
             path = getattr(module, '__file__', None)
             assert path and Path(path).resolve().is_relative_to(root), (name, path)
-probe = 'oracle-all.py' if a.all_records else 'oracle.py'
+probe = 'oracle-all.py' if a.all_records or a.relative_link_record else 'oracle.py'
 spec = importlib.util.spec_from_file_location('oracle', source / probe)
 oracle = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(oracle)
@@ -71,6 +74,8 @@ exempt = {'changes.snapshot_and_diff', 'native.project_hooks.linked',
           'native.project_hooks.linked-parent', 'hooks.path.normal',
           'hooks.check.not-executable'} if a.case == 'b30' else {'doctor.relative_link.True'}
 names = sorted(set(oracle.CASES) - exempt) if a.all_records else [case]
+if a.relative_link_record:
+    names = ['doctor.relative_link.True']
 records = {}
 for index, name in enumerate(names):
     tmp = root / ('case-' + str(index) if a.all_records else 'case')
@@ -79,6 +84,14 @@ for index, name in enumerate(names):
     provenance()
     record = oracle.observe(oracle.CASES[name], tmp)
     provenance()
+    if a.relative_link_record:
+        # The pinned observer catches OS errors. Never freeze a failed symlink.
+        assert (tmp / 'alias').is_symlink(), 'relative_link symlink creation failed'
+        assert (tmp / 'alias').resolve() == tmp.resolve(), 'relative_link target mismatch'
+        assert 'value' in record, record
+        command = record['value']['command']
+        assert command['exit'] == 0, command
+        assert json.loads(command['stdout'])['memory']['db_path'] == '.mir/db', command
     if name == 'hooks.check.uninstalled':
         assert record['value'][0] == 1 and 'project-hooks.json' in record['value'][1]
         assert record['value'][3:] == [{}, []]
@@ -99,9 +112,10 @@ for index, name in enumerate(names):
         text = text.replace(root.drive, '{DRIVE}')
     assert str(Path.home()) not in text
     records[name] = json.loads(text)
-if a.all_records:
-    text = json.dumps({'records': records, 'exempt': sorted(exempt)},
-                      ensure_ascii=True, sort_keys=True)
+if a.all_records or a.relative_link_record:
+    text = json.dumps(
+        {'records': records, 'exempt': [] if a.relative_link_record else sorted(exempt)},
+        ensure_ascii=True, sort_keys=True)
 a.output.parent.mkdir(parents=True, exist_ok=True)
 a.output.write_text(text + '\n', encoding='utf-8')
 '''
