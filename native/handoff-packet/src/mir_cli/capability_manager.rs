@@ -61,6 +61,7 @@ pub struct ProductionManager {
     #[cfg(unix)]
     duplex: Option<std::os::unix::net::UnixStream>,
     pub last_reply: Option<Reply>,
+    pub captured: Vec<u8>,
 }
 impl ProductionManager {
     fn command(cli: &Path, root: &Path) -> Command {
@@ -93,6 +94,7 @@ impl ProductionManager {
             stderr: None,
             duplex: Some(duplex),
             last_reply: None,
+            captured: Vec::new(),
         })
     }
     pub fn start(cli: &Path, root: &Path) -> std::io::Result<Self> {
@@ -114,6 +116,7 @@ impl ProductionManager {
             #[cfg(unix)]
             duplex: None,
             last_reply: None,
+            captured: Vec::new(),
         })
     }
     pub fn request(&mut self, request: Value) -> Result<Reply, Error> {
@@ -204,6 +207,11 @@ impl ProductionManager {
             }),
             None => Ok(reply.value.clone()),
         };
+        for event in &reply.events {
+            match event {
+                Event::Stdout(bytes) | Event::Stderr(bytes) => self.captured.extend(bytes),
+            }
+        }
         self.last_reply = Some(reply);
         if terminal || result.is_err() {
             let finished = self.finish().map_err(Self::transport);

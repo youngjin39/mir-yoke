@@ -42,6 +42,35 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
             restore(String::from_utf8_lossy(&err).into(), &replacements),
         );
     }
+    #[cfg(unix)]
+    if argv[0] == "capability" {
+        use mir_cli::capability_manager::Output;
+        let (args, replacements) = scalar_args(&argv[1..], "");
+        let result = (|| {
+            let root = std::env::current_dir()
+                .map_err(|e| mir_cli::bootstrap::Error::new("OSError", e.to_string()))?;
+            let cli = std::env::current_exe()
+                .map_err(|e| mir_cli::bootstrap::Error::new("OSError", e.to_string()))?;
+            let mut host = mir_cli::bootstrap::ProductionHost::default();
+            let manager = host.import_capabilities(&cli, &root, Output::Console)?;
+            mir_cli::bootstrap::CapabilityOutput::run(&args, manager)
+        })();
+        return match result {
+            Ok(out) => (
+                out.code,
+                restore(out.stdout.py_str(), &replacements),
+                restore(out.stderr.py_str(), &replacements),
+            ),
+            Err(e) => {
+                let class = e
+                    .mro
+                    .first()
+                    .filter(|c| !c.starts_with("builtins.") && !c.starts_with("__main__."))
+                    .unwrap_or(&e.class);
+                (1, String::new(), format!("{class}: {}\n", e.message))
+            }
+        };
+    }
     if argv[0] == "bootstrap" {
         let (args, replacements) = scalar_args(&argv[1..], "");
         let retained_production_bootstrap_host = &mut mir_cli::bootstrap::ProductionHost::default();
@@ -53,7 +82,7 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
                         .as_i64()
                         .or_else(|| output.exit.get(1).and_then(serde_json::Value::as_i64))
                         .unwrap_or(1) as i32,
-                    // The public Text/byte binding remains in B2b2.
+                    // Print boundaries remain in the measured B2b2 follow-up.
                     output.stdout.py_str(),
                     output.stderr,
                 ),

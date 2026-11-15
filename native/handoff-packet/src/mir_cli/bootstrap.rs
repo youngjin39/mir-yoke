@@ -154,6 +154,9 @@ pub trait Host: Sized {
     fn capability_import(&mut self) -> Result<(), Error> {
         Ok(())
     }
+    fn capability_import_for(&mut self, _root: &Path, _finalize: bool) -> Result<(), Error> {
+        self.capability_import()
+    }
     /// Caller-supplied provider execution; CapabilityOutput::run uses the B30-P01 CLI.
     fn capability_main(&mut self, _argv: &[String]) -> Result<CapabilityOutput, Error> {
         Err(Error::new(

@@ -12,7 +12,7 @@ pub struct ProductionHost {
     manager: Option<crate::mir_cli::capability_manager::ProductionManager>,
 }
 impl ProductionHost {
-    /// Explicit session boundary; public Host dispatch is bound in a later slice.
+    /// Import once before the caller redirects text or initializes the provider.
     #[cfg(unix)]
     pub fn import_capabilities(
         &mut self,
@@ -44,6 +44,58 @@ fn os_error(path: &Path, error: std::io::Error) -> Error {
 }
 
 impl Host for ProductionHost {
+    #[cfg(unix)]
+    fn capability_import_for(&mut self, root: &Path, finalize: bool) -> Result<(), Error> {
+        use crate::mir_cli::capability_manager::Output;
+        if self.manager.is_none() {
+            let cli = std::env::current_exe().map_err(|e| os_error(Path::new("."), e))?;
+            self.import_capabilities(
+                &cli,
+                root,
+                if finalize {
+                    Output::Finalize
+                } else {
+                    Output::Activate
+                },
+            )?;
+        }
+        Ok(())
+    }
+    #[cfg(unix)]
+    fn capability_main(&mut self, argv: &[String]) -> Result<super::CapabilityOutput, Error> {
+        let mut manager = self
+            .manager
+            .take()
+            .ok_or_else(|| Error::new("RuntimeError", "capability manager was not imported"))?;
+        let mut output = super::CapabilityOutput::run(argv, &mut manager)?;
+        let captured = crate::python_json::Text::from_wtf8(&manager.captured)
+            .map_err(authored::adopt_error)?;
+        output.stdout = captured.concat(&output.stdout);
+        if argv.first().is_some_and(|s| s == "finalize") && !output.stderr.is_empty() {
+            use std::io::Write;
+            use std::os::fd::AsFd;
+            let stream_error = |e| {
+                let mut error = os_error(Path::new(""), e);
+                error.message = error
+                    .message
+                    .strip_suffix(": ''")
+                    .unwrap_or(&error.message)
+                    .to_owned();
+                error
+            };
+            let bytes = crate::executor_text::encode_console(&output.stderr.py_str(), true)
+                .map_err(|e| Error::new("UnicodeEncodeError", e))?;
+            let descriptor = std::io::stderr()
+                .as_fd()
+                .try_clone_to_owned()
+                .map_err(stream_error)?;
+            std::fs::File::from(descriptor)
+                .write_all(&bytes)
+                .map_err(stream_error)?;
+            output.stderr = "".into();
+        }
+        Ok(output)
+    }
     fn validate_boundary_schema(
         &mut self,
         value: &serde_json::Value,

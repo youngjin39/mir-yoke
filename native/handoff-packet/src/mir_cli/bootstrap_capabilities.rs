@@ -110,8 +110,12 @@ pub fn scalar_evidence(value: &PyValue) -> Result<Value, Error> {
     serde_json::from_str(&value.json_sorted(false))
         .map_err(|e| value_error(format!("scalar-only bootstrap boundary: {e}")))
 }
-fn import(host: &mut impl Host) -> Result<Option<(String, PyValue)>, Error> {
-    match host.capability_import() {
+fn import(
+    host: &mut impl Host,
+    root: &Path,
+    finalize: bool,
+) -> Result<Option<(String, PyValue)>, Error> {
+    match host.capability_import_for(root, finalize) {
         Ok(()) => Ok(None),
         Err(e) if ["ImportError", "ModuleNotFoundError"].contains(&e.class.as_str()) => {
             Ok(Some(failed(format!("capability CLI unavailable: {e}"))))
@@ -124,7 +128,7 @@ pub fn activate_capabilities(
     profile: &str,
     host: &mut impl Host,
 ) -> Result<(String, PyValue), Error> {
-    if let Some(result) = import(host)? {
+    if let Some(result) = import(host, root, false)? {
         return Ok(result);
     }
     let argv = [
@@ -285,7 +289,7 @@ pub fn finalize_capabilities(
             "--finalize requires a prior restart_required bootstrap receipt",
         ));
     }
-    if let Some(result) = import(host)? {
+    if let Some(result) = import(host, root, true)? {
         return Ok(result);
     }
     let argv = [
