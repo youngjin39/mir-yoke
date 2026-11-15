@@ -19,13 +19,37 @@ PINS = {
 }
 
 
+def freeze_capture(payload):
+    """Remove only the scratch spelling, including Python's escaped path repr."""
+    root = next(r["value"] for r in payload["records"]
+                if r["route"] == "absent_selector.root").rsplit("\\", 1)[0]
+    drive = str(pathlib.PureWindowsPath(root).anchor)
+    def scrub(value):
+        if isinstance(value, str):
+            return value.replace(root.replace("\\", "\\\\"), "{ROOT}").replace(
+                root, "{ROOT}").replace(drive, "{DRIVE}")
+        if isinstance(value, dict):
+            return {k: scrub(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [scrub(v) for v in value]
+        return value
+    return json.dumps(scrub(payload), ensure_ascii=True) + "\n"
+
+
 def main():
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("--repo", type=pathlib.Path, required=True)
-    parser.add_argument("--scratch", type=pathlib.Path, required=True)
+    parser.add_argument("--repo", type=pathlib.Path)
+    parser.add_argument("--scratch", type=pathlib.Path)
+    parser.add_argument("--freeze-capture", type=pathlib.Path)
     parser.add_argument("--output", type=pathlib.Path, required=True)
     args = parser.parse_args()
     assert sys.flags.isolated, "invoke with python -I"
+    if args.freeze_capture:
+        args.output.write_text(freeze_capture(json.loads(args.freeze_capture.read_text())),
+                               encoding="utf-8")
+        return
+    if args.repo is None or args.scratch is None:
+        parser.error("--repo and --scratch are required for reference capture")
     repo, scratch, output = (p.resolve() for p in (args.repo, args.scratch, args.output))
     scratch.mkdir(parents=True, exist_ok=False)
     home = scratch / "home"

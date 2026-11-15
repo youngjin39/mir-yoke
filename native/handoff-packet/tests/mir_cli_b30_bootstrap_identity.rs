@@ -520,7 +520,7 @@ fn wt_path_content_root_spellings_keep_containment() {
     fs::create_dir(plain.join("notes")).unwrap();
     for root in [&plain, &verbatim] {
         let (path, relative) = m::project_relative(root, "notes").unwrap();
-        assert_eq!(path, plain.join("notes"));
+        assert_eq!(path, root.join("notes"));
         assert_eq!(relative, "notes");
         for raw in [".", "../outside", plain.to_str().unwrap()] {
             assert!(m::project_relative(root, raw).is_err(), "{root:?}: {raw}");
@@ -537,4 +537,40 @@ fn wt_path_content_root_spellings_keep_containment() {
         .unwrap();
     assert!(result.status.success(), "{result:?}");
     assert!(m::project_relative(&verbatim, "escape").is_err());
+}
+
+#[cfg(windows)]
+#[path = "support/wt_path.rs"]
+mod wt_path_frozen;
+
+#[cfg(windows)]
+#[test]
+fn wt_path_content_matches_windows_capture() {
+    let (_temp, root, records) = wt_path_frozen::setup();
+    let verbatim = root.canonicalize().unwrap();
+    let mut checked = 0;
+    for record in records {
+        let Some(raw) = record["route"].as_str().unwrap().strip_prefix("content.") else {
+            continue;
+        };
+        let (base, raw) = match raw {
+            "verbatim_root" => (&verbatim, "notes"),
+            "canonical_root" => (&root, "notes"),
+            _ => (&root, raw),
+        };
+        match m::project_relative(base, raw) {
+            Ok((path, relative)) => assert_eq!(
+                json!([path.to_str().unwrap(), relative]),
+                record["value"],
+                "{raw}"
+            ),
+            Err(error) => {
+                assert_eq!(error.class, record["error"].as_str().unwrap(), "{raw}");
+                assert_eq!(error.message, record["message"].as_str().unwrap(), "{raw}");
+                assert!(record["errno"].is_null() && record["winerror"].is_null());
+            }
+        }
+        checked += 1;
+    }
+    assert_eq!(checked, 11);
 }

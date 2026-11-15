@@ -3167,7 +3167,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_status_windows_tests.rs",
-      "sha256": "7879a5faea15abc1d07e4f8f0842775fa678e90428f2d76a70b63c70eada48c7"
+      "sha256": "b1c40efc5db83f40a2d626c4d1030cf09e2826102f65bfa171382521ff8c2d39"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3299,7 +3299,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/bootstrap_content.rs",
-      "sha256": "d0889d2e5f30ddd1bb8d58149eecc7db210652364ce84a1cf0c24c88aabd3176"
+      "sha256": "bdabc12f615074731ead15dfe66ca04c436759857c9ae1fb21a49ea2b770bd3f"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4852,6 +4852,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/wt-path-windows.json",
+      "sha256": "62cbbf9421d7e9e9bfafca818d87133ff097497a29c82b3febd01062fcab7eb3"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e1-fix.json",
       "sha256": "7e382b488a629405530b59e1304686234ea5dd288855a4d18a651bfb8d4ff19e"
     },
@@ -4961,7 +4967,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_cli_b30_bootstrap_identity.rs",
-      "sha256": "b998691b122311d6ac2cdfe02863fe8253f92e62bdd40671b8862ed852e2c4ea"
+      "sha256": "d003d02c9dacc0d1195d90d39db2cab1c8113daa199dae99897026330ced0227"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5244,6 +5250,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/support/replay.rs",
       "sha256": "4ea9902786f81e2570ea2160417d2c0894a219d94581804ce5af8c10eb6e5fba"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/support/wt_path.rs",
+      "sha256": "baf4267f50d44257e3d5c1007543ac795c6eb1794a8b02c9ddc671ac0d31abc6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7481,7 +7493,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/generate_wt_path.py",
-      "sha256": "e1dfb4e8b2b68955533705b517d9b371ea6132b735176cb06dc8e75e3f186ea3"
+      "sha256": "2f133bb7570f477ebe6e6980240da704d14baf2aa0fa35611ab8e87b89ce1476"
     },
     {
       "classification": "template-maintainer-tool",

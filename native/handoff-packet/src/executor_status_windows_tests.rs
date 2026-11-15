@@ -1,6 +1,53 @@
 //! Windows-only real filesystem path tests, separate from the child-free runtime.
 use super::*;
 
+#[path = "../tests/support/wt_path.rs"]
+mod frozen;
+
+#[test]
+fn wt_path_status_matches_windows_capture() {
+    let (_temp, root, records) = frozen::setup();
+    let mut checked = 0;
+    for record in records {
+        let route = record["route"].as_str().unwrap();
+        if let Some(name) = route.strip_prefix("readlink.") {
+            let actual = fs::read_link(root.join(if name == "ordinary" { "notes" } else { name }));
+            if record.get("error").is_some() {
+                assert_eq!(
+                    actual.unwrap_err().raw_os_error(),
+                    record["winerror"].as_i64().map(|n| n as i32)
+                );
+            } else {
+                assert_eq!(
+                    serde_json::json!(actual.unwrap()),
+                    record["value"],
+                    "{route}"
+                );
+            }
+        } else if route.starts_with("status.") || route == "absent_selector.root" {
+            let relative = match route {
+                "status.ordinary" => "notes",
+                "status.missing" => "missing/leaf",
+                "status.missing_parent" => "missing/../notes",
+                "status.file_child" => "file/child",
+                "status.default_db" => "tasks/jobs.db",
+                "absent_selector.root" => "",
+                "status.alias" => "alias/leaf",
+                "status.escape" => "escape/leaf",
+                "status.dangling" => "dangling/leaf",
+                "status.drive_root" => record["value"].as_str().unwrap(),
+                _ => panic!("uncaptured status route: {route}"),
+            };
+            let actual = serde_json::json!(resolve(&root.join(relative)).unwrap());
+            assert_eq!(actual, record["value"], "{route}");
+        } else {
+            continue;
+        }
+        checked += 1;
+    }
+    assert_eq!(checked, 14);
+}
+
 #[test]
 fn wt_path_drive_missing_and_junction() {
     let temp = tempfile::tempdir().unwrap();

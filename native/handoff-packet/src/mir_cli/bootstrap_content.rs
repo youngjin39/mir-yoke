@@ -92,6 +92,9 @@ pub fn project_relative(root: &Path, raw: &str) -> Result<(PathBuf, String), Err
     let relative = resolved
         .strip_prefix(crate::supply::plain(root.to_owned()))
         .map_err(|_| value_error(format!("content archive path escapes the project: {raw}")))?;
+    // Python retains a verbatim root's spelling in the returned absolute path.
+    #[cfg(windows)]
+    let resolved = root.join(relative);
     let relative = wire(relative);
     if relative.is_empty() || relative == "." {
         return Err(value_error(
