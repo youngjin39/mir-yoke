@@ -743,3 +743,7 @@ pub mod user_runtime_transaction;
 
 #[cfg(unix)]
 pub mod user_runtime_cli;
+
+#[cfg(test)]
+#[allow(unsafe_code)] // Scratch-only owned-handle Windows locking probes.
+pub(crate) mod user_runtime_windows_race_tests;

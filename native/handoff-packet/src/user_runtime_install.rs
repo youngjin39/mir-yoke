@@ -661,3 +661,44 @@ pub fn verified_target(identity: &HomeIdentity, relative: &Path) -> Result<PathB
 #[cfg(all(test, windows))]
 #[path = "user_runtime_windows_core_tests.rs"]
 mod user_runtime_windows_core_tests;
+
+#[cfg(test)]
+mod shared_receipt_tests {
+    use super::*;
+    use serde_json::Value as J;
+    #[test]
+    fn receipt_target_posix_separator() {
+        use std::ffi::OsStr;
+        let points = |s: &str| s.chars().map(u32::from).collect::<Vec<_>>();
+        // Exercise Windows spelling even on Unix; Unix backslashes remain literal.
+        assert_eq!(
+            posix_path_points(OsStr::new(r"agents\한.md"), '\\'),
+            points("agents/한.md")
+        );
+        assert_eq!(
+            posix_path_points(OsStr::new(r"agents\한.md"), '/'),
+            points(r"agents\한.md")
+        );
+        let target = Path::new("agents").join("z.md");
+        let item = ManagedFile {
+            source_relative: python_json::Text::new(points(".claude/agents/z.md")),
+            target_relative: target,
+            content: b"old".to_vec(),
+            sha256: sha256_bytes(b"old"),
+        };
+        let receipt = make_receipt("claude", "commit", std::slice::from_ref(&item));
+        let decoded: J = serde_json::from_slice(&receipt).unwrap();
+        assert_eq!(
+            decoded["files"][".claude/agents/z.md"]["target"],
+            "agents/z.md"
+        );
+        let home = tempfile::tempdir().unwrap();
+        let root = home.path().canonicalize().unwrap();
+        fs::write(root.join(RECEIPT_NAME), receipt).unwrap();
+        let target = root.join(&item.target_relative);
+        fs::create_dir(target.parent().unwrap()).unwrap();
+        fs::write(&target, b"old").unwrap();
+        let (_, loaded) = load_receipt(&root, "claude").unwrap();
+        assert!(receipt_allows_update(loaded.as_ref(), &item, &target).unwrap());
+    }
+}

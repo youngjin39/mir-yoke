@@ -1158,3 +1158,11 @@ pub(crate) fn short_path(path: &Path) -> std::path::PathBuf {
     );
     std::path::PathBuf::from(OsString::from_wide(&output[..count]))
 }
+
+#[test]
+#[rustfmt::skip]
+fn full_identity_keeps_all_id_bytes_and_the_volume() {
+    let id = Identity { volume: 1, id: [0;16] };
+    for bit in 0..128 { let mut other = id; other.id[bit/8]=1 << (bit%8); assert_ne!(id,other,"bit {bit}"); }
+    assert_ne!(id, Identity { volume: 2, ..id });
+}
