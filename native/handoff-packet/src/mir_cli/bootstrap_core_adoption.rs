@@ -96,9 +96,7 @@ fn json_with_repr(path: &Path) -> Result<(Value, String), Error> {
     admit_file_type(path)?;
     let text = read_text(path)?;
     let value = parse_json(&text)?;
-    let ordered =
-        crate::python_json::parse(&text).map_err(|e| Error::new(e.exception, e.to_string()))?;
-    Ok((value, ordered.repr()))
+    Ok((value, text))
 }
 
 fn read_text(path: &Path) -> Result<String, Error> {
@@ -466,7 +464,7 @@ pub(super) fn load_boundary(root: &Path, host: &mut impl Host) -> Result<Value, 
         ));
     }
     if let Some(schema_ref) = boundary["$schema"].as_str() {
-        let schema = json_text(
+        let (schema, schema_source) = json_with_repr(
             &path
                 .parent()
                 .ok_or_else(|| slim("missing parent directory"))?
@@ -479,7 +477,7 @@ pub(super) fn load_boundary(root: &Path, host: &mut impl Host) -> Result<Value, 
                 e
             }
         })?;
-        host.validate_boundary_schema_repr(&boundary, &schema, &instance_repr)
+        host.validate_boundary_schema_source(&boundary, &schema, &instance_repr, &schema_source)
             .map_err(|e| {
                 if e.class == "ValidationError" {
                     Error::new("BoundaryError", format!("invalid {}: {e}", path.display()))
@@ -1150,7 +1148,7 @@ fn payload(root: &Path, boundary: &Value, host: &mut impl Host) -> Result<Value,
         ));
     }
     if let Some(schema_ref) = payload["$schema"].as_str() {
-        let schema = json_text(
+        let (schema, schema_source) = json_with_repr(
             &path
                 .parent()
                 .ok_or_else(|| slim("missing parent directory"))?
@@ -1163,7 +1161,7 @@ fn payload(root: &Path, boundary: &Value, host: &mut impl Host) -> Result<Value,
                 e
             }
         })?;
-        host.validate_boundary_schema_repr(&payload, &schema, &instance_repr)
+        host.validate_boundary_schema_source(&payload, &schema, &instance_repr, &schema_source)
             .map_err(|e| {
                 if caught_json(&e) || e.class == "ValidationError" {
                     slim(format!("invalid adopter payload manifest: {e}"))

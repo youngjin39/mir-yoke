@@ -19,7 +19,11 @@ root = a.scratch.resolve() / 'oracle'
 root.mkdir(parents=True, exist_ok=True)
 pin = '5f8f69f94e09b64c5e4d07d329ed17797c35e6cb'
 with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(
-        ['git', 'archive', pin, 'src/mir', 'config/project-hooks-provider.json']))) as tar:
+        ['/usr/bin/git', '-C', str(Path(__file__).resolve().parents[4]),
+         'archive', pin, 'src/mir', 'config/project-hooks-provider.json',
+         'config/adopter-boundary.schema.json', 'config/adopter-payload.schema.json'],
+        env={'HOME': str(root), 'PATH': '/usr/bin:/bin', 'GIT_CONFIG_NOSYSTEM': '1',
+             'GIT_CONFIG_GLOBAL': '/dev/null'}))) as tar:
     tar.extractall(root, filter='data')
 packages = ('pydantic pydantic_core typing_extensions typing_inspection annotated_types '
             'yaml sqlite_vec jsonschema attrs attr referencing rpds jsonschema_specifications '

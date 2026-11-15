@@ -2,11 +2,14 @@ use super::*;
 use crate::mir_cli::bootstrap::ProductionHost;
 
 fn frozen(mode: &str) {
-    let records: Vec<Value> =
+    let mut records: Vec<Value> =
         serde_json::from_str(include_str!("../../tests/fixtures/y-e16.json")).unwrap();
+    records.extend(
+        serde_json::from_str::<Vec<Value>>(include_str!("../../tests/fixtures/y-e16b.json"))
+            .unwrap(),
+    );
     let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/Y-E16");
     fs::create_dir_all(&scratch).unwrap();
-    diagnostics_without_source_order_stay_refused();
     for record in records.iter().filter(|r| r["mode"] == mode) {
         let temp = tempfile::tempdir_in(&scratch).unwrap();
         let root = temp.path().canonicalize().unwrap();
@@ -32,15 +35,6 @@ fn frozen(mode: &str) {
                 &mut ProductionHost,
             )
         };
-        if record["refused"] == true {
-            let error = result.expect_err("unmeasured schema must remain refused");
-            assert_eq!(error.class, "NotImplementedError");
-            assert_eq!(
-                error.message,
-                "bootstrap boundary schema validator is not connected"
-            );
-            continue;
-        }
         let actual = match result {
             Ok(value) => json!({"value":value}),
             Err(e) => {
@@ -58,18 +52,4 @@ fn y_e16_boundary() {
 #[test]
 fn y_e16_payload() {
     frozen("payload");
-}
-
-fn diagnostics_without_source_order_stay_refused() {
-    for (value, schema) in [
-        (json!({}), json!({"required":["x"]})),
-        (json!(null), json!({"required":["x"]})),
-        (json!({}), json!({"required":["x","y"]})),
-        (json!({}), json!({"type":"object","required":["x"]})),
-    ] {
-        let error = ProductionHost
-            .validate_boundary_schema(&value, &schema)
-            .unwrap_err();
-        assert_eq!(error.class, "NotImplementedError");
-    }
 }

@@ -7,6 +7,8 @@ mod core_adoption;
 mod main_host;
 #[path = "bootstrap_process_host.rs"]
 mod process_host;
+#[path = "bootstrap_schema.rs"]
+mod schema;
 pub use core_adoption::core_adoption_operation;
 pub use process_host::ProductionHost;
 #[path = "bootstrap_main.rs"]
@@ -117,6 +119,17 @@ pub trait Host: Sized {
         _instance_repr: &str,
     ) -> Result<(), Error> {
         self.validate_boundary_schema(value, schema)
+    }
+    fn validate_boundary_schema_source(
+        &mut self,
+        value: &Value,
+        schema: &Value,
+        instance: &str,
+        _schema_source: &str,
+    ) -> Result<(), Error> {
+        let ordered = crate::python_json::parse(instance)
+            .map_err(|e| Error::new(e.exception, e.to_string()))?;
+        self.validate_boundary_schema_repr(value, schema, &ordered.repr())
     }
     /// The real compiler is the default; callers can still inject this boundary.
     fn compile_adopter_agent_catalog(

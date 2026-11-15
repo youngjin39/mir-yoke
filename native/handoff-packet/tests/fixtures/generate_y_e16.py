@@ -84,3 +84,38 @@ for mode in ['boundary', 'payload']:
 assert 'value' in records[0]['result']
 assert records[8]['result']['class'] == 'BoundaryError'
 a.output.write_text('[\n' + ',\n'.join(json.dumps(r, sort_keys=True) for r in records) + '\n]\n')
+# Keep the original 42 records byte-identical; capture shipped composite schemas separately.
+shipped = []
+for mode in ['boundary', 'payload']:
+    schema = (root / f'config/adopter-{mode}.schema.json').read_text()
+    value = dict(schema_version=1, **{'$schema': 's'})
+    value.update(dict(provider_owners=[dict(slug='test', repository_types=['test'])],
+                      provider_markers=['a'], provider_text_markers=[], ephemeral_globs=['x'],
+                      source_asset_manifest='a', payload_manifest='p',
+                      remove_classifications=['historical']) if mode == 'boundary' else
+                 dict(generated_from='config/template-assets.json', files=[]))
+    mutations = ([{'provider_markers': []}, {'provider_markers': ['a', 'a']},
+                  {'provider_markers': ['']}, {'provider_owners': [1]},
+                  {'provider_markers': [1]}, {'remove_classifications': ['bad']}]
+                 if mode == 'boundary' else [{'generated_from': 'bad'}, {'files': [1]},
+                 {'files': [dict(path='', sha256='bad', classification='bad', disposition='bad')]},
+                 {'files': [dict(path='a', sha256='bad', classification='starter',
+                                 disposition='remove')]}])
+    for valid in [True, False, *mutations, {'extra': 1}]:
+        work = root / f'shipped-{mode}-{valid}'
+        (work / 'config').mkdir(parents=True, exist_ok=True)
+        document = json.dumps(value | valid if isinstance(valid, dict) else
+                              value if valid else {'schema_version': 1, '$schema': 's'})
+        path = 'config/adopter-boundary.json' if mode == 'boundary' else 'config/p.json'
+        (work / path).write_text(document)
+        (work / 'config/s').write_text(schema)
+        out = subprocess.run([str(scope['sys'].executable), '-I', str(wrapper), mode],
+                             cwd=work, env={'HOME': str(work), 'PATH': '/usr/bin:/bin'},
+                             capture_output=True, check=True)
+        assert not out.stderr, out.stderr
+        result = json.loads(out.stdout.replace(str(work).encode(), b'{ROOT}'))
+        assert ('value' in result) == (valid is True), result
+        shipped.append(dict(mode=mode, case=f'shipped-{valid}', document=document,
+                            schema=schema, result=result))
+a.output.with_name('y-e16b.json').write_text(
+    json.dumps(shipped, sort_keys=True, separators=(',', ':')) + '\n')
