@@ -30,7 +30,8 @@ else:
  (root/'mir/core/capabilities/manager.py').write_text(source)
 (root/'mir/cli/capability_manager_bridge.py').write_text({})
 sys.path.insert(0,str(root))
-assert sys.argv[1:]==['run-python','--project-root',str(root),'--','-m','mir.cli.capability_manager_bridge']
+assert sys.argv[1:7]==['run-python','--project-root',str(root),'--','-m','mir.cli.capability_manager_bridge']
+sys.argv = ['bridge', *sys.argv[7:]]
 runpy.run_module('mir.cli.capability_manager_bridge',run_name='__main__')
 "#,
         json!(root),
@@ -222,4 +223,99 @@ fn manager_boundary() {
         m.request(json!("x".repeat(1000000))).unwrap_err().kind,
         Failure::Io
     );
+}
+
+#[test]
+fn output_boundary_child() {
+    use std::io::Write;
+    let Ok(data) = std::env::var("Y_E17B2A_RECORD") else {
+        return;
+    };
+    let r: Value = serde_json::from_str(&data).unwrap();
+    let root = std::env::current_dir().unwrap();
+    std::io::stdout().write_all(b"<boundary>").unwrap();
+    std::io::stdout().flush().unwrap();
+    std::io::stderr().write_all(b"<boundary>").unwrap();
+    let mode = r["mode"].as_str().unwrap();
+    let output = match if mode == "import" {
+        r["case"].as_str().unwrap()
+    } else {
+        mode
+    } {
+        "activate" => Output::Activate,
+        "finalize" => Output::Finalize,
+        _ => Output::Console,
+    };
+    let mut m = ProductionManager::start_with_output(&root.join("mir-cli"), &root, output).unwrap();
+    m.request(json!({"op":"import"})).unwrap();
+    let mut start = std::time::Instant::now();
+    let mut captured = String::new();
+    if mode != "import" {
+        m.request(json!({"op":"initialize"})).unwrap();
+        start = std::time::Instant::now();
+        let reply = m
+            .request(json!({"op":"call","method":if mode=="finalize" {"finalize"} else {"sync"}}))
+            .unwrap();
+        for event in reply.events {
+            match event {
+                Event::Stdout(b) | Event::Stderr(b) => {
+                    captured.push_str(std::str::from_utf8(&b).unwrap())
+                }
+            }
+        }
+        let error = format!("ERROR: {}\n", reply.error.unwrap().message);
+        if mode == "activate" {
+            captured.push_str(&error);
+        } else {
+            eprint!("{error}");
+        }
+    }
+    m.finish().unwrap();
+    assert!(start.elapsed().as_secs_f64() < 1.0);
+    let value = if mode == "import" {
+        Value::Null
+    } else if mode == "console" {
+        json!(1)
+    } else {
+        json!(["failed", {"reason":captured.trim()}])
+    };
+    fs::write(root.join("result.json"), value.to_string()).unwrap();
+    std::process::exit(0);
+}
+
+#[test]
+fn pinned_output_semantics() {
+    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e17b2a.json")).unwrap();
+    for r in records {
+        let source = r["source"].as_str().unwrap().replace(
+            "from mir.core.capabilities.manager import CapabilityError",
+            "class CapabilityError(RuntimeError): pass",
+        );
+        let source = source.replace(
+            "def __init__(self,*a,**kw): pass",
+            "def __init__(self,*a,**kw): self.held=os.dup(1); __import__('threading').Thread(target=lambda: __import__('time').sleep(2)).start()",
+        );
+        let (_temp, root, _cli) = setup(Some(&source));
+        let out = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "output_boundary_child", "--nocapture"])
+            .current_dir(&root)
+            .env_clear()
+            .env("HOME", &root)
+            .env("Y_E17B2A_RECORD", r.to_string())
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{:?}", out);
+        let suffix = |b: &[u8]| {
+            b.windows(10)
+                .position(|s| s == b"<boundary>")
+                .map(|i| b[i + 10..].to_vec())
+                .unwrap()
+        };
+        let value: Value =
+            serde_json::from_slice(&fs::read(root.join("result.json")).unwrap()).unwrap();
+        let actual =
+            json!({"stdout":suffix(&out.stdout),"stderr":suffix(&out.stderr),"value":value});
+        let expected = json!({"stdout":r["stdout"],"stderr":r["stderr"],"value":r["value"]});
+        assert_eq!(actual, expected, "{}/{}", r["mode"], r["case"]);
+    }
 }

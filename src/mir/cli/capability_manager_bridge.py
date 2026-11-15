@@ -2,6 +2,7 @@
 
 import contextlib
 import importlib
+import io
 import json
 import os
 import sys
@@ -12,7 +13,20 @@ METHODS = frozenset({"status", "check", "sync", "update", "finalize", "attest"})
 
 
 @contextlib.contextmanager
-def capture():
+def capture(mode=None):
+    if mode is not None:
+        events, output = [], io.StringIO()
+        try:
+            with contextlib.ExitStack() as stack:
+                if mode in {"activate", "finalize"}:
+                    stack.enter_context(contextlib.redirect_stdout(output))
+                if mode == "activate":
+                    stack.enter_context(contextlib.redirect_stderr(output))
+                yield events
+        finally:
+            if output.getvalue():
+                events.append({"stream": "stdout", "data": list(output.getvalue().encode())})
+        return
     events, saved, files = [], [], []
     try:
         for fd, stream in [(1, sys.stdout), (2, sys.stderr)]:
@@ -36,18 +50,25 @@ def capture():
 
 def main():
     # Private RPC descriptors are never the provider's stdin/stdout/stderr.
+    mode = sys.argv[1] if len(sys.argv) == 2 else None
     requests = os.fdopen(os.dup(0), encoding="utf-8")
-    replies = os.fdopen(os.dup(1), "w", encoding="utf-8")
+    replies = os.fdopen(os.dup(0 if mode else 1), "w", encoding="utf-8")
     with open(os.devnull) as null:
         os.dup2(null.fileno(), 0)
-        os.dup2(null.fileno(), 1)
+        if mode is None:
+            os.dup2(null.fileno(), 1)
     cls = manager = None
+    terminal_stdout, terminal_stderr = sys.stdout, sys.stderr
     for line in requests:
-        with capture() as events:
+        with capture(mode) as events:
             try:
                 request = json.loads(line)
                 if cls is None:
-                    cls = importlib.import_module("mir.core.capabilities.manager").CapabilityManager
+                    # Import precedes the bootstrap caller's text redirects.
+                    with contextlib.redirect_stdout(terminal_stdout if mode else sys.stdout), \
+                            contextlib.redirect_stderr(terminal_stderr if mode else sys.stderr):
+                        module = importlib.import_module("mir.core.capabilities.manager")
+                        cls = module.CapabilityManager
                 op = request["op"]
                 args, kwargs = request.get("args", []), request.get("kwargs", {})
                 for key in request.get("path_args", []):
@@ -70,8 +91,13 @@ def main():
             except BaseException as exc:
                 error = {"class": type(exc).__name__, "message": str(exc)}
                 response = {"value": None, "error": error}
+        if mode and (response["error"] is not None or request["op"] == "call"):
+            sys.stdout.flush()
+            sys.stderr.flush()
         replies.write(json.dumps(dict(response, events=events)) + "\n")
         replies.flush()
+    sys.stdout.flush()
+    sys.stderr.flush()
     os._exit(0)  # Replies are flushed; provider threads cannot hold shutdown open.
 
 

@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader, Read, Seek, Write};
 #[cfg(unix)]
 use std::os::fd::AsRawFd;
 use std::path::Path;
-use std::process::{Child, ChildStdin, ChildStdout, Command, ExitStatus, Stdio};
+use std::process::{Child, Command, ExitStatus, Stdio};
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(tag = "stream", content = "data")]
 #[serde(rename_all = "lowercase", deny_unknown_fields)]
@@ -43,42 +43,90 @@ pub struct Error {
     pub status: std::io::Result<ExitStatus>,
     pub stderr: Option<std::thread::Result<std::io::Result<Vec<u8>>>>,
 }
+/// Text redirection performed by the pinned caller; raw fd writes inherit.
+#[cfg(unix)]
+#[derive(Clone, Copy)]
+pub enum Output {
+    Console,
+    Activate,
+    Finalize,
+}
 pub struct ProductionManager {
     child: Child,
-    input: Option<ChildStdin>,
-    output: BufReader<ChildStdout>,
-    stderr: std::fs::File,
+    input: Option<Box<dyn Write>>,
+    output: BufReader<Box<dyn Read>>,
+    stderr: Option<std::fs::File>,
+    #[cfg(unix)]
+    duplex: Option<std::os::unix::net::UnixStream>,
     pub last_reply: Option<Reply>,
 }
 impl ProductionManager {
-    pub fn start(cli: &Path, root: &Path) -> std::io::Result<Self> {
-        let stderr = tempfile::tempfile()?;
-        let mut child = Command::new(cli)
+    fn command(cli: &Path, root: &Path) -> Command {
+        let mut command = Command::new(cli);
+        command
             .args(["run-python", "--project-root"])
             .arg(root)
             .args(["--", "-m", "mir.cli.capability_manager_bridge"])
-            .current_dir(root)
+            .current_dir(root);
+        command
+    }
+    /// Same JSON lines over duplex stdin, leaving fd1/2 on the caller's streams.
+    #[cfg(unix)]
+    pub fn start_with_output(cli: &Path, root: &Path, output: Output) -> std::io::Result<Self> {
+        let (duplex, child_socket) = std::os::unix::net::UnixStream::pair()?;
+        let input = duplex.try_clone()?;
+        let reader = duplex.try_clone()?;
+        let child = Self::command(cli, root)
+            .arg(match output {
+                Output::Console => "console",
+                Output::Activate => "activate",
+                Output::Finalize => "finalize",
+            })
+            .stdin(Stdio::from(std::os::fd::OwnedFd::from(child_socket)))
+            .spawn()?;
+        Ok(Self {
+            child,
+            input: Some(Box::new(input)),
+            output: BufReader::new(Box::new(reader)),
+            stderr: None,
+            duplex: Some(duplex),
+            last_reply: None,
+        })
+    }
+    pub fn start(cli: &Path, root: &Path) -> std::io::Result<Self> {
+        let stderr = tempfile::tempfile()?;
+        let mut child = Self::command(cli, root)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(stderr.try_clone()?)
             .spawn()?;
-        let input = child.stdin.take();
-        let output = BufReader::new(child.stdout.take().ok_or(std::io::ErrorKind::BrokenPipe)?);
+        let input = child.stdin.take().map(|s| Box::new(s) as Box<dyn Write>);
+        let output = child.stdout.take().ok_or(std::io::ErrorKind::BrokenPipe)?;
         #[cfg(unix)]
-        crate::executor_process_unix::nonblocking(output.get_ref().as_raw_fd())?;
+        crate::executor_process_unix::nonblocking(output.as_raw_fd())?;
         Ok(Self {
             child,
             input,
-            output,
-            stderr,
+            output: BufReader::new(Box::new(output)),
+            stderr: Some(stderr),
+            #[cfg(unix)]
+            duplex: None,
             last_reply: None,
         })
     }
     pub fn request(&mut self, request: Value) -> Result<Reply, Error> {
         let exchange = || -> std::io::Result<String> {
+            #[cfg(unix)]
+            if let Some(socket) = &self.duplex {
+                socket.set_nonblocking(false)?;
+            }
             let input = self.input.as_mut().ok_or(std::io::ErrorKind::BrokenPipe)?;
             writeln!(input, "{request}")?;
             input.flush()?;
+            #[cfg(unix)]
+            if let Some(socket) = &self.duplex {
+                socket.set_nonblocking(true)?;
+            }
             let mut line = String::new();
             loop {
                 let exited = self.child.try_wait()?.is_some();
@@ -105,6 +153,10 @@ impl ProductionManager {
     }
     fn stop(&mut self, kind: Failure, message: String) -> Error {
         self.input.take();
+        #[cfg(unix)]
+        if let Some(socket) = &self.duplex {
+            let _ = socket.shutdown(std::net::Shutdown::Write);
+        }
         for _ in 0..50 {
             if self.child.try_wait().ok().flatten().is_some() {
                 break;
@@ -113,16 +165,17 @@ impl ProductionManager {
         }
         let _ = self.child.kill();
         let status = self.child.wait();
-        let stderr = self.stderr.rewind().and_then(|()| {
-            let size = self.stderr.metadata()?.len();
-            let reader = BufReader::new(&mut self.stderr);
-            reader.take(size).bytes().collect()
+        let stderr = self.stderr.as_mut().map(|stderr| {
+            Ok(stderr.rewind().and_then(|()| {
+                let size = stderr.metadata()?.len();
+                BufReader::new(stderr).take(size).bytes().collect()
+            }))
         });
         Error {
             kind,
             message,
             status,
-            stderr: Some(Ok(stderr)),
+            stderr,
         }
     }
     pub fn finish(&mut self) -> Result<(), Error> {
