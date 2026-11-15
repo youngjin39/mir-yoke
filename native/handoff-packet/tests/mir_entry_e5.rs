@@ -1,6 +1,9 @@
 use serde_json::Value;
 use std::{fs, process::Command};
 
+#[path = "support/unify2_s6.rs"]
+mod platform;
+
 #[test]
 fn context_sync_console() {
     let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e5.json")).unwrap();
@@ -50,8 +53,16 @@ fn check_record(i: usize, r: &Value) {
             .unwrap()
             .replace(root.to_str().unwrap(), "@ROOT@")
     };
-    assert_eq!(normalize(out.stdout), r["stdout"], "stdout {i}");
-    assert_eq!(normalize(out.stderr), r["stderr"], "stderr {i}");
+    assert_eq!(
+        normalize(out.stdout),
+        platform::expected_text(r["stdout"].as_str().unwrap(), cfg!(windows)),
+        "stdout {i}"
+    );
+    assert_eq!(
+        normalize(out.stderr),
+        platform::expected_text(r["stderr"].as_str().unwrap(), cfg!(windows)),
+        "stderr {i}"
+    );
     if i == 15 {
         fs::write(root.join("harness_a.toml"), format!(
                 "{}\n[memory]\nvector_mode='optional'\n[memory.embedding]\nenabled=true\nfingerprint='synthetic'\n", r["config"].as_str().unwrap()
@@ -67,7 +78,11 @@ fn check_record(i: usize, r: &Value) {
         assert!(pending.stdout.is_empty());
         assert_eq!(
             pending.stderr,
-            b"mir: native embedding provider unavailable (pending Y-E6)\n"
+            platform::expected_text(
+                "mir: native embedding provider unavailable (pending Y-E6)\n",
+                cfg!(windows)
+            )
+            .as_bytes()
         );
         let c = rusqlite::Connection::open(root.join("memory.db")).unwrap();
         assert_eq!(

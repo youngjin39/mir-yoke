@@ -1,17 +1,9 @@
 use serde_json::Value;
 use std::{fs, process::Command};
 
-fn check_family(family: &str) {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e2.json")).unwrap();
-    for r in records.iter().filter(|r| r["argv"][0] == family) {
-        let temp = tempfile::tempdir().unwrap();
-        let root = fs::canonicalize(temp.path()).unwrap();
-        let bin = root.join("bin");
-        fs::create_dir(&bin).unwrap();
-        let mir = bin.join(format!("mir{}", std::env::consts::EXE_SUFFIX));
-        fs::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
-        // Installed console binds the interpreter beside its own executable.
-        let python = std::env::var_os("Y_E2_PYTHON").unwrap_or_else(|| {
+fn fixture_python() -> std::path::PathBuf {
+    std::env::var_os("Y_E2_PYTHON").map_or_else(
+        || {
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../.venv")
                 .join(if cfg!(windows) {
@@ -19,12 +11,79 @@ fn check_family(family: &str) {
                 } else {
                     "bin/python"
                 })
-                .into_os_string()
-        });
-        #[cfg(unix)]
-        std::os::unix::fs::symlink(&python, bin.join("python")).unwrap();
+        },
+        Into::into,
+    )
+}
+
+fn provision_interpreter(source: &std::path::Path, root: &std::path::Path) -> std::path::PathBuf {
+    let target = root.join("interpreter");
+    assert!(
+        source.is_file() && root.is_dir(),
+        "fixture source={source:?}, destination={target:?}, parent_exists={}; set Y_E2_PYTHON to an existing interpreter",
+        root.is_dir()
+    );
+    eprintln!("fixture source={source:?}, destination={target:?}, parent_exists=true");
+    // A Windows venv launcher cannot be relocated by copying python.exe alone.
+    // Let the installed interpreter supply pyvenv.cfg and its launcher/DLL layout.
+    let out = isolated_command(source, root)
+        .args(["-I", "-m", "venv", "--without-pip"])
+        .arg(&target)
+        .output()
+        .unwrap_or_else(|e| panic!("venv source={source:?}, destination={target:?}: {e}"));
+    assert!(out.status.success(), "venv source={source:?}: {out:?}");
+    target.join(if cfg!(windows) { "Scripts" } else { "bin" })
+}
+
+fn isolated_command(executable: &std::path::Path, root: &std::path::Path) -> Command {
+    let mut command = Command::new(executable);
+    command
+        .env_clear()
+        .env("HOME", root)
+        .env("USERPROFILE", root)
+        .env("PYTHONIOENCODING", "utf-8")
+        .current_dir(root);
+    // Keep only the Windows loader's OS location, never host Python/PATH settings.
+    #[cfg(windows)]
+    for name in ["SystemRoot", "WINDIR"] {
+        if let Some(value) = std::env::var_os(name) {
+            command.env(name, value);
+        }
+    }
+    command
+}
+
+#[test]
+fn fixture_interpreter_starts_with_its_own_prefix_and_stdlib() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    let bin = provision_interpreter(&fixture_python(), &root);
+    let out = isolated_command(&bin.join(format!("python{}", std::env::consts::EXE_SUFFIX)), &root)
+        .args(["-I", "-c", "import argparse, ctypes, runpy, sqlite3, sys; from pathlib import Path; assert Path(sys.prefix).resolve() == Path(sys.argv[1]).resolve(), sys.prefix; assert sys.prefix != sys.base_prefix"])
+        .arg(root.join("interpreter"))
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "{out:?}");
+    assert!(out.stdout.is_empty());
+    assert!(out.stderr.is_empty());
+}
+
+fn check_family(family: &str) {
+    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e2.json")).unwrap();
+    for r in records.iter().filter(|r| r["argv"][0] == family) {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
         #[cfg(windows)]
-        fs::copy(&python, bin.join("python.exe")).unwrap();
+        let bin = provision_interpreter(&fixture_python(), &root);
+        #[cfg(unix)]
+        let bin = {
+            let bin = root.join("bin");
+            fs::create_dir(&bin).unwrap();
+            std::os::unix::fs::symlink(fixture_python(), bin.join("python")).unwrap();
+            bin
+        };
+        let mir = bin.join(format!("mir{}", std::env::consts::EXE_SUFFIX));
+        fs::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
         fs::create_dir(root.join("config")).unwrap();
         fs::write(
             root.join("config/model-routing.lock.json"),
@@ -49,7 +108,7 @@ fn check_family(family: &str) {
                 handoff_packet::mir_core::memory::store::apply_migrations(&c.conn).unwrap();
             }
         }
-        let output = Command::new(&mir)
+        let output = isolated_command(&mir, &root)
             .args(
                 r["argv"]
                     .as_array()
@@ -57,10 +116,6 @@ fn check_family(family: &str) {
                     .iter()
                     .map(|a| a.as_str().unwrap()),
             )
-            .env_clear()
-            .env("HOME", &root)
-            .env("PYTHONIOENCODING", "utf-8")
-            .current_dir(&root)
             .output()
             .unwrap();
         let normalize = |bytes: Vec<u8>| {
