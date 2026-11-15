@@ -77,8 +77,9 @@ fn production_host_process_boundaries() {
         .unwrap();
     assert!(
         result.status.success(),
-        "{}",
-        String::from_utf8_lossy(&result.stdout)
+        "{}{}",
+        String::from_utf8_lossy(&result.stdout),
+        String::from_utf8_lossy(&result.stderr)
     );
 }
 
@@ -90,6 +91,7 @@ fn host_child() {
     if std::env::var("Y_E15_CHILD").is_err() {
         return;
     }
+    assert!(std::env::var_os("Y_E15_ENV_POISON").is_none());
     let root = std::env::current_dir().unwrap();
     let mut host = ProductionHost;
     assert_eq!(
@@ -172,6 +174,18 @@ fn host_child() {
     request.argv = vec![fake.to_str().unwrap().into()];
     fs::set_permissions(&fake, fs::Permissions::from_mode(0o644)).unwrap();
     assert_eq!(host.run(&request).err().unwrap().class, "PermissionError");
+    fs::set_permissions(&fake, fs::Permissions::from_mode(0o755)).unwrap();
+    let denied = root.join("denied");
+    fs::create_dir(&denied).unwrap();
+    fs::set_permissions(&denied, fs::Permissions::from_mode(0o0)).unwrap();
+    request.argv = vec![fake.to_str().unwrap().into()];
+    request.cwd = denied.clone();
+    let error = host.slim_run_clean(&request).err().unwrap();
+    fs::set_permissions(&denied, fs::Permissions::from_mode(0o700)).unwrap();
+    assert_eq!(
+        format!("{}: {}\n", error.class, error.message).replace(root.to_str().unwrap(), "{ROOT}"),
+        records[7]["stderr"]
+    );
     request.cwd = fake;
     assert_eq!(
         host.run(&request).err().unwrap().class,

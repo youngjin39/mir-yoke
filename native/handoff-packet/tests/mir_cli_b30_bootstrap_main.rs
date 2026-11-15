@@ -287,8 +287,11 @@ impl Host for BoundaryHost {
         }
         .into()
     }
-    fn platform_release(&mut self) -> String {
-        "test".into()
+    fn platform_release(&mut self) -> Result<String, Error> {
+        if self.scenario == "uname_failure" {
+            return Err(Error::new("OSError", "uname failed"));
+        }
+        Ok("test".into())
     }
     fn python_version(&mut self) -> String {
         "test".into()
@@ -474,7 +477,7 @@ impl Host for Observer {
     forward!(run(request: &m::CommandRequest) -> Result<m::CommandOutput, Error>);
     forward!(cwd() -> Result<PathBuf, Error>);
     forward!(platform_system() -> String);
-    forward!(platform_release() -> String);
+    forward!(platform_release() -> Result<String, Error>);
     forward!(python_version() -> String);
     forward!(in_virtualenv() -> bool);
     forward!(python_argv0() -> PathBuf);
@@ -799,4 +802,24 @@ fn replay(root: &Path, name: &str) -> Value {
             json!({"error":[error.class,error.message.replace(root.to_str().unwrap(),"<tmp>")]})
         }
     }
+}
+
+#[test]
+fn uname_failure_propagates() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/Y-E15");
+    fs::create_dir_all(&root).unwrap();
+    let temp = tempfile::tempdir_in(root).unwrap();
+    let root = temp.path();
+    let mut host = Observer {
+        boundary: BoundaryHost::new(root, "ready", Some("uname_failure")),
+        helpers: vec![],
+    };
+    let args = case_args(root, "ready", false, "");
+    let Err(error) = m::main(&mut host, &args) else {
+        panic!("uname failure must propagate");
+    };
+    assert_eq!(
+        (error.class, error.message.as_str()),
+        ("OSError", "uname failed")
+    );
 }

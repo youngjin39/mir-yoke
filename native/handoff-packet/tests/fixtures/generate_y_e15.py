@@ -1,6 +1,5 @@
 """Freeze Y-E15 from the isolated 5f8f69f console; no network or real DB."""
 import json
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -23,10 +22,22 @@ for name, module in list(sys.modules.items()):
 def forbidden(*args, **kwargs):
     raise AssertionError('network forbidden')
 socket.socket = forbidden
+assert set(os.environ) <= {'HOME', 'PATH', 'PYTHONPATH', 'VIRTUAL_ENV',
+                           'UV_PROJECT_ENVIRONMENT', 'GIT_CONFIG_NOSYSTEM',
+                           'GIT_CONFIG_GLOBAL', 'LC_CTYPE', '__CF_USER_TEXT_ENCODING'}
 try:
     if sys.argv[1] == 'clean':
         result = slim._default_verify(pathlib.Path('./fake').resolve(), pathlib.Path.cwd())
         print(json.dumps(result))
+        code = 0
+    elif sys.argv[1] == 'inaccessible':
+        denied = pathlib.Path.cwd() / 'denied'
+        denied.mkdir()
+        try:
+            denied.chmod(0)
+            slim._default_verify(pathlib.Path('./fake').resolve(), denied)
+        finally:
+            denied.chmod(0o700)
         code = 0
     elif sys.argv[1] == 'alive':
         child = subprocess.Popen([sys.executable, '-I', '-c', 'import time; time.sleep(30)'])
@@ -49,6 +60,7 @@ cases = [('public', v) for v in [ ['--help'], ['--profile', 'code_app'],
     ['--project-root', 'absent', '--profile', 'code_app'],
     ['--profile', 'bad'], ['--profile', 'code_app', '--slug', '!'] ]]
 cases += [('clean', []), ('alive', [])]
+cases += [('inaccessible', [])]
 for mode, tail in cases:
     work = root / ('case-' + str(len(records)))
     if work.exists():
@@ -69,7 +81,7 @@ for mode, tail in cases:
 printf '%s' '{"ready":true,"changed_paths":[]}'
 ''')
     fake.chmod(0o755)
-    env = dict(os.environ, HOME=str(work), PATH='/usr/bin:/bin',
+    env = dict(HOME=str(work), PATH='/usr/bin:/bin',
                PYTHONPATH='poison', VIRTUAL_ENV='poison', UV_PROJECT_ENVIRONMENT='poison',
                GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL='/dev/null')
     out = subprocess.run([str(scope['sys'].executable), '-I', str(wrapper), mode,
@@ -78,6 +90,7 @@ printf '%s' '{"ready":true,"changed_paths":[]}'
                         stdout=out.stdout.decode().replace(str(work), '{ROOT}'),
                         stderr=out.stderr.decode().replace(str(work), '{ROOT}')))
 assert records[0]['exit'] == 0 and 'usage: mir bootstrap' in records[0]['stdout']
-assert json.loads(records[-1]['stdout']) == [True, False]
-assert json.loads(records[-2]['stdout']) == [True, 'ready']
+assert json.loads(records[6]['stdout']) == [True, False]
+assert json.loads(records[5]['stdout']) == [True, 'ready']
+assert records[7]['exit'] == 1 and records[7]['stderr'].startswith('PermissionError: ')
 a.output.write_text(json.dumps(records, indent=2) + '\n')

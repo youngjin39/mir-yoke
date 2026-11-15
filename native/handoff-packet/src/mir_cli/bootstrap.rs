@@ -156,8 +156,8 @@ pub trait Host: Sized {
         }
         .into()
     }
-    fn platform_release(&mut self) -> String {
-        String::new()
+    fn platform_release(&mut self) -> Result<String, Error> {
+        Ok(String::new())
     }
     fn python_version(&mut self) -> String {
         String::new()

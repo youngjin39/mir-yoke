@@ -92,5 +92,16 @@
     "exit": 0,
     "stdout": "[true, false]\n",
     "stderr": ""
+  },
+  {
+    "mode": "inaccessible",
+    "argv": [],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 1,
+    "stdout": "",
+    "stderr": "PermissionError: [Errno 13] Permission denied: PosixPath('{ROOT}/denied')\n"
   }
 ]

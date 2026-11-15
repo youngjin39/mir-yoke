@@ -56,6 +56,7 @@ fn unbound_families_are_explicit() {
         if matches!(
             name,
             "bootstrap-adoption"
+                | "bootstrap"
                 | "relations"
                 | "project-hooks"
                 | "context"

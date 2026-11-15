@@ -669,7 +669,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
     memory["shared_database_or_vector_service"] = json!("unsupported");
     let mut receipt = json!({"schema_version":1,"status":status,"project_slug":slug,
         "profile":profile,"platform":{"os":host.platform_system().to_lowercase(),
-            "release":host.platform_release(),"python":host.python_version(),
+            "release":host.platform_release()?,"python":host.python_version(),
             "hook_runtime":hook_runtime},"storage":storage_report,"source_control":ownership_report,
         "cli":cli,"slim":slim_report,"memory":memory,"content_onboarding":content_acceptance,
         "vector":memory_report.get("vector").cloned().unwrap_or_else(|| json!({})),

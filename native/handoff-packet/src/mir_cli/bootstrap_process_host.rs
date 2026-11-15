@@ -140,14 +140,26 @@ impl Host for ProductionHost {
             ))
         }
     }
-    fn platform_release(&mut self) -> String {
+    fn platform_release(&mut self) -> Result<String, Error> {
         #[cfg(unix)]
         {
-            crate::executor_process_unix::platform_release().unwrap_or_default()
+            crate::executor_process_unix::platform_release().map_err(|e| {
+                Error::new(
+                    "OSError",
+                    format!(
+                        "[Errno {}] {}",
+                        e.raw_os_error().unwrap_or(0),
+                        crate::executor_brief_profile::python_os_error_text(&e)
+                    ),
+                )
+            })
         }
         #[cfg(not(unix))]
         {
-            String::new()
+            Err(Error::new(
+                "NotImplementedError",
+                "bootstrap platform release requires Unix",
+            ))
         }
     }
     // A native executable has no Python interpreter version/prefix to attest.
@@ -233,12 +245,23 @@ fn execute(request: &CommandRequest, clean: bool) -> Result<CommandOutput, Error
         }
     }
     let output = command.output().map_err(|e| {
-        let path = if request.cwd.is_dir() {
-            Path::new(executable)
+        let mut cwd_accessible = request.cwd.is_dir();
+        #[cfg(unix)]
+        {
+            cwd_accessible &= crate::executor_process_unix::path_access(&request.cwd, libc::X_OK);
+        }
+        if cwd_accessible {
+            os_error(Path::new(executable), e)
         } else {
-            &request.cwd
-        };
-        os_error(path, e)
+            let error = os_error(&request.cwd, e);
+            let path = crate::executor_execute::repr(&request.cwd.to_string_lossy());
+            Error::new(
+                error.class,
+                error
+                    .message
+                    .replace(&format!(": {path}"), &format!(": PosixPath({path})")),
+            )
+        }
     })?;
     #[cfg(unix)]
     let returncode = {
