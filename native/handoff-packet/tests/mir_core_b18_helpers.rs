@@ -411,8 +411,15 @@ fn records(windows: bool) -> Value {
     if windows {
         let capture: Value =
             serde_json::from_str(include_str!("fixtures/w2/wt-core-c-windows.json")).unwrap();
-        for (name, record) in capture["b18"].as_object().unwrap() {
-            records[name] = record.clone();
+        assert_eq!(capture["b18"].as_object().unwrap().len(), 23);
+        for i in 0..23 {
+            let name = format!("parity.fnmatch_{i}");
+            let record = capture["b18"].get(&name).expect("missing Windows witness");
+            assert!(
+                records.get(&name).is_some(),
+                "unknown captured route: {name}"
+            );
+            records[&name] = record.clone();
         }
     }
     records
@@ -422,6 +429,13 @@ fn records(windows: bool) -> Value {
 fn windows_capture_selector() {
     let windows = records(true);
     let unix = records(false);
+    let capture: Value =
+        serde_json::from_str(include_str!("fixtures/w2/wt-core-c-windows.json")).unwrap();
+    assert_eq!(capture["b18"].as_object().unwrap().len(), 23);
+    for (name, record) in capture["b18"].as_object().unwrap() {
+        assert!(unix.get(name).is_some(), "unknown captured route: {name}");
+        assert_eq!(windows[name], *record, "{name}");
+    }
     for name in [
         "parity.fnmatch_11",
         "parity.fnmatch_15",
@@ -437,6 +451,7 @@ fn windows_capture_selector() {
 #[test]
 fn frozen_archive_helpers() {
     let records = records(cfg!(windows));
+    let mut failures = Vec::new();
     let mut replayed = 0;
     let mut exempt = 0;
     for (name, expected) in records.as_object().unwrap() {
@@ -452,16 +467,33 @@ fn frozen_archive_helpers() {
             println!("{name}: exempt ({reason})");
             exempt += 1;
         } else {
-            let actual = if name.starts_with("parity.") {
-                parity(&expected["value"]["input"])
-            } else {
-                replay(name)
-            };
-            assert_eq!(actual, *expected, "{name}");
+            let result = std::panic::catch_unwind(|| {
+                let actual = if name.starts_with("parity.") {
+                    parity(&expected["value"]["input"])
+                } else {
+                    replay(name)
+                };
+                if actual != *expected {
+                    Some(format!("{name}: actual={actual} expected={expected}"))
+                } else {
+                    None
+                }
+            });
+            match result {
+                Ok(Some(failure)) => failures.push(failure),
+                Err(_) => failures.push(format!("{name}: replay panicked")),
+                Ok(None) => {}
+            }
             println!("{name}: replayed");
             replayed += 1;
         }
     }
+    assert!(
+        failures.is_empty(),
+        "{} mismatches:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
     assert_eq!(replayed + exempt, 118);
     assert_eq!(
         (replayed, exempt),

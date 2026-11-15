@@ -1,4 +1,4 @@
-//! Replay the 49 frozen Python B15 render records against synthetic databases.
+//! Replay the 53 frozen Python B15 render records against synthetic databases.
 #[path = "../src/digest.rs"]
 mod digest;
 use handoff_packet::{
@@ -41,7 +41,10 @@ fn rows(conn: &Connection, sql: &str) -> Value {
 fn normalize(value: Value, root: &Path) -> Value {
     match value {
         Value::String(s) => {
-            let s = s.replace(root.to_str().unwrap(), "<tmp>");
+            let root = root.to_str().unwrap();
+            let s = s
+                .replace(&root.replace('\\', "\\\\"), "<tmp>")
+                .replace(root, "<tmp>");
             let chars: Vec<char> = s.chars().collect();
             if chars.len() > 256 {
                 json!({"length":chars.len(), "sha256":digest::sha256(s.as_bytes()),
@@ -63,6 +66,14 @@ fn normalize(value: Value, root: &Path) -> Value {
         ),
         v => v,
     }
+}
+fn write_text(path: &Path, text: &str) {
+    let text = if cfg!(windows) {
+        text.replace('\n', "\r\n")
+    } else {
+        text.into()
+    };
+    std::fs::write(path, text).unwrap();
 }
 fn populate(conn: &Connection, root: &Path) -> Vec<Value> {
     let mut ingests = Vec::new();
@@ -88,17 +99,16 @@ fn populate(conn: &Connection, root: &Path) -> Vec<Value> {
     ] {
         let path = root.join(rel);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(&path, format!("---\n{fields}\n---\nbody\n")).unwrap();
+        write_text(&path, &format!("---\n{fields}\n---\nbody\n"));
         ingests.push(json!(
             d::ingest_markdown_file(&path, conn, root, &["**"], clock).unwrap()
         ));
     }
     let path = root.join("docs/decisions/adr-z.md");
-    std::fs::write(
+    write_text(
         &path,
         "---\ntitle: updated\nkeywords: [z, c]\nlesson: replaced\n---\nbody2\n",
-    )
-    .unwrap();
+    );
     ingests.push(json!(
         d::ingest_markdown_file(&path, conn, root, d::DEFAULT_WHITELIST, clock).unwrap()
     ));
@@ -225,7 +235,7 @@ fn replay(name: &str, conn: &Connection, root: &Path) -> Value {
     };
     if let Some(body) = body {
         std::fs::create_dir_all(output.parent().unwrap()).unwrap();
-        std::fs::write(&output, body).unwrap();
+        write_text(&output, &body);
     }
     let parts: Vec<&str> = name.split('.').collect();
     let direct = parts[0] == "direct";
@@ -305,22 +315,37 @@ fn replay(name: &str, conn: &Connection, root: &Path) -> Value {
     json!({"results":results,"stdout":stdout,"stderr":stderr,
         "file":std::fs::read_to_string(&output).ok()})
 }
-// The PC capture covers this render route only; do not invent Windows records
-// for the other Unix scenarios. The full Unix corpus remains unchanged.
+fn capture() -> Value {
+    serde_json::from_str(include_str!("fixtures/w2/wt-core-c-windows.json")).unwrap()
+}
 fn records(windows: bool) -> Value {
-    if windows {
-        let capture: Value =
-            serde_json::from_str(include_str!("fixtures/w2/wt-core-c-windows.json")).unwrap();
-        capture["b15"].clone()
-    } else {
-        serde_json::from_str(include_str!("fixtures/w2/b15-render.json")).unwrap()
+    let unix: Value = serde_json::from_str(include_str!("fixtures/w2/b15-render.json")).unwrap();
+    if !windows {
+        return unix;
     }
+    let capture = capture();
+    let captured = capture["b15"].as_object().unwrap();
+    assert_eq!(captured.len(), unix.as_object().unwrap().len());
+    unix.as_object()
+        .unwrap()
+        .keys()
+        .map(|name| {
+            let record = captured
+                .get(name)
+                .unwrap_or_else(|| panic!("missing Windows record: {name}"));
+            (
+                name.clone(),
+                normalize(record["observation"].clone(), Path::new("{ROOT}")),
+            )
+        })
+        .collect::<serde_json::Map<_, _>>()
+        .into()
 }
 
 #[test]
 fn windows_capture_selector() {
-    let windows = records(true);
-    let record = &windows["cli.None.True.True"];
+    let windows = capture();
+    let record = &windows["b15"]["cli.None.True.True"];
     assert_eq!(record["byte_length"], 558);
     assert_eq!(record["character_length"], 549);
     assert_eq!(
@@ -335,55 +360,112 @@ fn windows_capture_selector() {
 }
 
 #[test]
-fn frozen_records() {
-    // Every Unix scenario is replayed on every platform; a Windows capture
-    // replaces the expectation only for the routes it covers.
-    let oracle = records(false);
+fn every_windows_record_maps_without_fallback() {
+    let capture: Value =
+        serde_json::from_str(include_str!("fixtures/w2/wt-core-c-windows.json")).unwrap();
     let windows = records(true);
+    let unix = records(false);
+    assert_eq!(capture["b15"].as_object().unwrap().len(), 53);
+    assert_eq!(
+        windows.as_object().unwrap().keys().collect::<Vec<_>>(),
+        unix.as_object().unwrap().keys().collect::<Vec<_>>()
+    );
+    for (name, record) in capture["b15"].as_object().unwrap() {
+        assert_eq!(
+            windows[name],
+            normalize(record["observation"].clone(), Path::new("{ROOT}")),
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn frozen_records() {
+    // Every scenario uses its own captured Windows expectation; Unix is unchanged.
+    let oracle = records(false);
+    let windows = capture();
+    let selected = records(cfg!(windows));
+    let mut failures = Vec::new();
     let total = 53;
     assert_eq!(oracle.as_object().unwrap().len(), total);
     let (mut replayed, mut exempt) = (0, 0);
-    for (name, expected) in oracle.as_object().unwrap() {
+    for (name, _) in oracle.as_object().unwrap() {
+        let expected = &selected[name];
         if cfg!(windows) && name == "cli.in_place" {
             // Unix mode bits and an unprivileged symlink have no Windows equivalent.
+            println!("{name}: exempt (Windows symlink/mode privilege)");
             exempt += 1;
             continue;
         }
-        let temp = tempfile::Builder::new()
-            .prefix("b15-")
-            .tempdir_in(std::env::temp_dir())
-            .unwrap();
-        let root = temp.path().canonicalize().unwrap();
-        let db = store::connect(&root.join("synthetic.db"), None).unwrap();
-        store::apply_migrations(&db.conn).unwrap();
-        db.conn
-            .execute("UPDATE schema_migrations SET applied_at=?", [CLOCK])
-            .unwrap();
-        let actual = normalize(json!({"value":replay(name, &db.conn, &root)}), &root);
-        if let Some(expected) = windows.get(name).filter(|_| cfg!(windows)) {
-            let bytes = std::fs::read(root.join("out/nested/projection.md")).unwrap();
-            let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
-            assert_eq!(hex, expected["file_hex"], "render:{name}: bytes");
-            assert_eq!(
-                bytes.len(),
-                expected["byte_length"].as_u64().unwrap() as usize
-            );
-            assert_eq!(digest::sha256(&bytes), expected["sha256"]);
-            assert_eq!(
-                String::from_utf8(bytes).unwrap().chars().count(),
-                expected["character_length"].as_u64().unwrap() as usize
-            );
-            assert_eq!(
-                actual,
-                normalize(expected["observation"].clone(), Path::new("{ROOT}")),
-                "render:{name}"
-            );
-        } else {
-            assert_eq!(&actual, expected, "render:{name}");
+        let result =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let temp = tempfile::Builder::new()
+                    .prefix("b15-")
+                    .tempdir_in(std::env::temp_dir())
+                    .unwrap();
+                let root = temp.path().canonicalize().unwrap();
+                let db = store::connect(&root.join("synthetic.db"), None).unwrap();
+                store::apply_migrations(&db.conn).unwrap();
+                db.conn
+                    .execute("UPDATE schema_migrations SET applied_at=?", [CLOCK])
+                    .unwrap();
+                let actual = normalize(json!({"value":replay(name, &db.conn, &root)}), &root);
+                if cfg!(windows) {
+                    let captured = &windows["b15"][name];
+                    let bytes = std::fs::read(root.join("out/nested/projection.md")).ok();
+                    let actual_file = bytes.as_ref().map(|bytes| json!({
+                "file_hex": bytes.iter().map(|b| format!("{b:02x}")).collect::<String>(),
+                "byte_length": bytes.len(), "sha256": digest::sha256(bytes),
+                "character_length": std::str::from_utf8(bytes).unwrap().chars().count()
+            }));
+                    let expected_file = (!captured["file_hex"].is_null()).then(|| json!({
+                "file_hex": captured["file_hex"], "byte_length": captured["byte_length"],
+                "sha256": captured["sha256"], "character_length": captured["character_length"]
+            }));
+                    if actual_file != expected_file {
+                        failures.push(format!(
+                            "{name}: file actual={actual_file:?} expected={expected_file:?}"
+                        ));
+                    }
+                }
+                if actual != *expected {
+                    failures.push(format!(
+                        "{name}: observation actual={actual} expected={expected}"
+                    ));
+                }
+            }));
+        if result.is_err() {
+            failures.push(format!("{name}: replay panicked"));
         }
         replayed += 1;
         println!("render:{name}: replayed");
     }
+    assert!(
+        failures.is_empty(),
+        "{} mismatches:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
     assert_eq!(replayed + exempt, total);
     println!("replayed={replayed} exempt={exempt} total={total}");
+}
+
+#[test]
+fn render_directory_failure() {
+    let tmp = tempfile::tempdir().unwrap();
+    let db = store::connect(&tmp.path().join("synthetic.db"), None).unwrap();
+    store::apply_migrations(&db.conn).unwrap();
+    let blocked = tmp.path().join("blocked.md");
+    std::fs::create_dir(&blocked).unwrap();
+    // This seam reaches the real OS failure, rather than injecting an Error.
+    assert!(std::fs::write(&blocked, "probe").is_err());
+    let error = cli::render(&db.conn, "all", true, Some(&blocked)).unwrap_err();
+    let (class, message) = if cfg!(windows) {
+        ("PermissionError", "[Errno 13] Permission denied:")
+    } else {
+        ("IsADirectoryError", "[Errno 21] Is a directory:")
+    };
+    assert_eq!(error.python_class(), class);
+    assert!(error.to_string().starts_with(message));
+    assert!(blocked.is_dir());
 }
