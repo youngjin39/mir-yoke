@@ -369,7 +369,12 @@ fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<
     };
     encode_points(&text_points(text), encoding, handler, bom)
 }
-fn encode_points(points: &[u32], encoding: &str, handler: &str, bom: bool) -> Result<Vec<u8>> {
+pub(crate) fn encode_points(
+    points: &[u32],
+    encoding: &str,
+    handler: &str,
+    bom: bool,
+) -> Result<Vec<u8>> {
     let canonical = codec_name(encoding)?;
     let normalized = canonical.replace('-', "");
     let name = match canonical {

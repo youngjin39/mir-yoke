@@ -391,7 +391,7 @@ fn wide(
     }
     Ok(out)
 }
-fn json_utf8_points(b: &[u8], surrogatepass: bool) -> Result<Vec<u32>, Error> {
+pub(crate) fn json_utf8_points(b: &[u8], surrogatepass: bool) -> Result<Vec<u32>, Error> {
     if !surrogatepass {
         return decode(b.to_vec()).map(|s| s.chars().map(u32::from).collect());
     }

@@ -13,6 +13,25 @@ pub struct Text {
     text: Option<String>,
 }
 impl Text {
+    pub fn from_wtf8(bytes: &[u8]) -> Result<Self, crate::mir_cli::bootstrap_adoption::Error> {
+        crate::mir_cli::bootstrap_adoption::json_utf8_points(bytes, true).map(Self::new)
+    }
+    pub fn strip(&self) -> Self {
+        let space = |p: &u32| char::from_u32(*p).is_some_and(is_python_space);
+        let start = self.codepoints.iter().take_while(|p| space(p)).count();
+        let end = self.codepoints[start..]
+            .iter()
+            .rposition(|p| !space(p))
+            .map_or(start, |i| start + i + 1);
+        Self::new(self.codepoints[start..end].to_vec())
+    }
+    pub fn concat(&self, other: &Self) -> Self {
+        Self::new([self.codepoints.as_slice(), other.codepoints.as_slice()].concat())
+    }
+    /// Plain text bytes, retaining Python lone surrogates via surrogatepass.
+    pub fn render(&self) -> Result<Vec<u8>, String> {
+        crate::executor_text::encode_points(&self.codepoints, "utf-8", "surrogatepass", false)
+    }
     pub(crate) fn new(codepoints: Vec<u32>) -> Self {
         let text = codepoints.iter().map(|c| char::from_u32(*c)).collect();
         Self { codepoints, text }
@@ -154,6 +173,74 @@ pub enum Value {
     Object(Object),
 }
 impl Value {
+    /// Python json.dumps(sort_keys=True), compact or indent=2, ensure_ascii=True.
+    pub fn json_sorted(&self, pretty: bool) -> String {
+        fn quote(text: &Text) -> String {
+            let mut out = String::new();
+            for point in crate::executor_text::json_quote_points(&text.codepoints) {
+                if point < 127 {
+                    out.push(char::from_u32(point).unwrap_or_default());
+                } else if point <= 0xffff {
+                    out.push_str(&format!("\\u{point:04x}"));
+                } else {
+                    let n = point - 0x10000;
+                    out.push_str(&format!(
+                        "\\u{:04x}\\u{:04x}",
+                        0xd800 + (n >> 10),
+                        0xdc00 + (n & 1023)
+                    ));
+                }
+            }
+            out
+        }
+        fn write(value: &Value, pretty: bool, depth: usize) -> String {
+            let items: Vec<String> = match value {
+                Value::Null => return "null".into(),
+                Value::Bool(b) => return b.to_string(),
+                Value::Number(n) => {
+                    return match n.py_str().as_str() {
+                        "nan" => "NaN".into(),
+                        "inf" => "Infinity".into(),
+                        "-inf" => "-Infinity".into(),
+                        s => s.into(),
+                    };
+                }
+                Value::String(s) => return quote(s),
+                Value::Array(a) => a.iter().map(|v| write(v, pretty, depth + 1)).collect(),
+                Value::Object(o) => {
+                    let mut entries: Vec<_> = o.iter().collect();
+                    entries.sort_by(|(a, _), (b, _)| a.codepoints.cmp(&b.codepoints));
+                    entries
+                        .into_iter()
+                        .map(|(k, v)| {
+                            format!(
+                                "{}:{}{}",
+                                quote(k),
+                                if pretty { " " } else { "" },
+                                write(v, pretty, depth + 1)
+                            )
+                        })
+                        .collect()
+                }
+            };
+            let (open, close) = if matches!(value, Value::Array(_)) {
+                ('[', ']')
+            } else {
+                ('{', '}')
+            };
+            if pretty && !items.is_empty() {
+                let indent = "  ".repeat(depth + 1);
+                format!(
+                    "{open}\n{indent}{}\n{}{close}",
+                    items.join(&format!(",\n{indent}")),
+                    "  ".repeat(depth)
+                )
+            } else {
+                format!("{open}{}{close}", items.join(","))
+            }
+        }
+        write(self, pretty, 0)
+    }
     pub fn get(&self, key: &str) -> Option<&Self> {
         self.as_object()?.get(key)
     }
