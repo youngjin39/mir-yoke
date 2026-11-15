@@ -185,7 +185,23 @@ fn state(db: &Path) -> Value {
 }
 fn normalize(v: Value, root: &Path) -> Value {
     match v {
-        Value::String(s) => json!(s.replace(root.to_str().unwrap(), "<tmp>")),
+        Value::String(s) => {
+            #[cfg(windows)]
+            let s = {
+                let plain = handoff_packet::supply::plain(root.to_path_buf());
+                let mut spellings = Vec::new();
+                for path in [root, plain.as_path()] {
+                    let text = path.to_str().unwrap();
+                    let encoded = serde_json::to_string(text).unwrap();
+                    spellings.push(text.to_owned());
+                    spellings.push(encoded[1..encoded.len() - 1].to_owned());
+                }
+                spellings.sort_by_key(|s| std::cmp::Reverse(s.len()));
+                spellings.dedup();
+                spellings.iter().fold(s, |s, root| s.replace(root, "<tmp>"))
+            };
+            json!(s.replace(root.to_str().unwrap(), "<tmp>"))
+        }
         Value::Array(a) => json!(
             a.into_iter()
                 .map(|v| normalize(v, root))
@@ -197,6 +213,18 @@ fn normalize(v: Value, root: &Path) -> Value {
                 .collect(),
         ),
         v => v,
+    }
+}
+#[cfg(windows)]
+#[test]
+fn wt_core_a_g_closing_roots() {
+    let root = Path::new(r"\\?\C:\synthetic\case");
+    let plain = handoff_packet::supply::plain(root.to_path_buf());
+    for path in [root, plain.as_path()] {
+        let text = format!(r"{}\docs", path.display());
+        let input = json!([text, json!({"path":text}).to_string()]);
+        let expected = json!([r"<tmp>\docs", json!({"path":r"<tmp>\docs"}).to_string()]);
+        assert_eq!(normalize(input, root), expected);
     }
 }
 fn replay(name: &str, root: &Path) -> Value {
@@ -642,25 +670,20 @@ fn wt_core_a_g_doctor_display_paths() {
     let actual = replay("doctor.stale.True", &root);
     let report: Value =
         serde_json::from_str(actual["value"]["command"]["stdout"].as_str().unwrap()).unwrap();
-    assert_eq!(
-        report["errors"],
-        json!([
-            format!(
-                "archive root drift for 'docs': {} != {}",
-                plain.join("elsewhere").display(),
-                plain.join("docs").display()
-            ),
-            "archive has no successful current sync evidence: 'docs'",
-            format!(
-                "archive FTS5 probe failed: [Errno 2] No such file or directory: '{}'",
-                plain
-                    .join("elsewhere/note.md")
-                    .display()
-                    .to_string()
-                    .replace('\\', r"\\")
-            ),
-        ])
-    );
+    let expected = platform_expected("doctor.stale.True", &Value::Null, true);
+    let mut expected: Value =
+        serde_json::from_str(expected["value"]["command"]["stdout"].as_str().unwrap()).unwrap();
+    for error in expected["errors"].as_array_mut().unwrap() {
+        let text = error.as_str().unwrap();
+        let plain = plain.to_str().unwrap();
+        let root = if text.starts_with("archive FTS5 probe failed:") {
+            plain.replace('\\', r"\\")
+        } else {
+            plain.to_owned()
+        };
+        *error = json!(text.replace("<tmp>", &root));
+    }
+    assert_eq!(report["errors"], expected["errors"]);
     // The display conversion must not change the stored or accessed path.
     assert_eq!(
         actual["value"]["after"]["rows"]["external_archives"][0][2],
