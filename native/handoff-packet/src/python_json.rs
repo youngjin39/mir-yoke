@@ -327,7 +327,7 @@ impl Value {
     }
 }
 /// Dispose of Python-depth JSON without recursive Rust enum destruction.
-pub(crate) fn discard(value: Value) {
+pub fn discard(value: Value) {
     let mut pending = vec![value];
     while let Some(value) = pending.pop() {
         match value {
@@ -335,6 +335,17 @@ pub(crate) fn discard(value: Value) {
             Value::Object(fields) => {
                 pending.extend(fields.into_entries().into_iter().map(|(_, v)| v))
             }
+            _ => (),
+        }
+    }
+}
+/// Dispose of converted events with the same heap-stack discipline as the parser.
+pub fn discard_serde(value: serde_json::Value) {
+    let mut pending = vec![value];
+    while let Some(value) = pending.pop() {
+        match value {
+            serde_json::Value::Array(values) => pending.extend(values),
+            serde_json::Value::Object(fields) => pending.extend(fields.into_values()),
             _ => (),
         }
     }
@@ -561,6 +572,25 @@ enum Frame {
     Array(Vec<Value>, bool),
     Object(Object, Option<Text>, bool),
 }
+const fn recursion_limit(windows: bool) -> usize {
+    // Frozen Python 3.12 consumer captures: outer object + nested arrays.
+    if windows { 2997 } else { 9997 }
+}
+
+#[test]
+fn python_json_platform_recursion_limit() {
+    let capture: serde_json::Value =
+        serde_json::from_str(include_str!("../tests/fixtures/windows-deep.json")).unwrap();
+    for boundary in capture["boundaries"].as_array().unwrap() {
+        assert_eq!(
+            recursion_limit(true),
+            boundary["first_changed"]["depth"].as_u64().unwrap() as usize,
+            "{} Windows admission edge",
+            boundary["consumer"]
+        );
+    }
+    assert_eq!(recursion_limit(false), 9997);
+}
 impl Drop for Frame {
     fn drop(&mut self) {
         discard(match self {
@@ -660,7 +690,7 @@ fn parse_codes(chars: Vec<u32>) -> Result<Value, Error> {
         match r.peek() {
             Some(91 | 123) => {
                 let object = r.peek() == Some(123);
-                if stack.len() >= 9997 {
+                if stack.len() >= recursion_limit(cfg!(windows)) {
                     let mut e=r.error(if object {"maximum recursion depth exceeded while decoding a JSON object from a unicode string"} else {"maximum recursion depth exceeded while decoding a JSON array from a unicode string"},r.offset);
                     e.exception = "RecursionError";
                     return Err(e);

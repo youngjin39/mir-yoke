@@ -18,9 +18,20 @@ fn run() -> io::Result<i32> {
         .read_to_end(&mut raw)?;
     // Match sys.stdin.read(LIMIT + 1): oversize prevents event determination.
     let parsed = handoff_packet::python_json::parse_stdin(&raw)
-        .map(|event| event.to_serde())
+        .map(|event| {
+            let converted = event.to_serde();
+            handoff_packet::python_json::discard(event);
+            converted
+        })
         .ok();
-    if let Some(event) = parsed.as_ref()
+    let output = handle(parsed.as_ref());
+    if let Some(event) = parsed {
+        handoff_packet::python_json::discard_serde(event);
+    }
+    output
+}
+fn handle(parsed: Option<&serde_json::Value>) -> io::Result<i32> {
+    if let Some(event) = parsed
         && event.get("hook_event_name").and_then(|v| v.as_str()) == Some("UserPromptSubmit")
     {
         let output = handoff_packet::supply::supply(event)
@@ -42,13 +53,12 @@ fn run() -> io::Result<i32> {
         return Ok(0);
     }
     let is_pretool = parsed
-        .as_ref()
         .and_then(|e| e.get("hook_event_name"))
         .and_then(|v| v.as_str())
         == Some("PreToolUse");
     if is_pretool {
         if let Some(event) = parsed
-            && let Ok(Some(reason)) = pretool(&event)
+            && let Ok(Some(reason)) = pretool(event)
         {
             write!(
                 io::stdout(),
@@ -59,7 +69,7 @@ fn run() -> io::Result<i32> {
         }
         return Ok(0);
     }
-    if let Some(event) = parsed.as_ref() {
+    if let Some(event) = parsed {
         if !event.is_object() {
             return warning();
         }

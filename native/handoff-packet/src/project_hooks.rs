@@ -100,6 +100,14 @@ fn main() -> ExitCode {
             );
             tdd_ledger::guard(&project, strings.first().map(String::as_str).unwrap_or(""))
         };
+        // tdd-matrix: match Python text streams, including the final exception
+        // line. tdd-guard replaces a Bash `echo`, which writes LF.
+        #[cfg(windows)]
+        let (stdout, stderr) = if args[0] == "tdd-matrix" {
+            (stdout.replace('\n', "\r\n"), stderr.replace('\n', "\r\n"))
+        } else {
+            (stdout, stderr)
+        };
         if io::stdout()
             .write_all(stdout.as_bytes())
             .and_then(|()| io::stderr().write_all(stderr.as_bytes()))
