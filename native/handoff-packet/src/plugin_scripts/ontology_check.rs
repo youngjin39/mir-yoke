@@ -322,14 +322,20 @@ fn io_error(e: std::io::Error, p: &Path) -> Error {
     };
     error(
         class,
-        format!("[Errno {code}] {message}: '{}'", p.display()),
+        format!(
+            "[Errno {code}] {message}: {}",
+            py_repr(&p.display().to_string())
+        ),
     )
 }
 fn read(p: &Path) -> Result<Vec<u8>> {
     if p.is_dir() {
         return Err(error(
             "IsADirectoryError",
-            format!("[Errno 21] Is a directory: '{}'", p.display()),
+            format!(
+                "[Errno 21] Is a directory: {}",
+                py_repr(&p.display().to_string())
+            ),
         ));
     }
     fs::read(p).map_err(|e| io_error(e, p))
@@ -2097,6 +2103,60 @@ fn join(v: &Doc) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn errno_filename_repr_matches_shared_helper() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("missing'with\\backslash");
+        assert_eq!(
+            io_error(fs::read(&path).unwrap_err(), &path).message,
+            crate::executor_brief_profile::python_os_error_message(
+                &fs::read(&path).unwrap_err(),
+                &path
+            )
+        );
+    }
+
+    #[test]
+    fn directory_errno_filename_repr() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("directory'with\\backslash");
+        fs::create_dir_all(&path).unwrap();
+        let failure = read(&path).unwrap_err();
+        assert_eq!(failure.class, "IsADirectoryError");
+        assert_eq!(
+            failure.message,
+            format!(
+                "[Errno 21] Is a directory: {}",
+                py_repr(&path.display().to_string())
+            )
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_errno_filename_repr_matches_capture() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("absent");
+        let failure = read(&path).unwrap_err();
+        let capture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/wt-path-records-b33-windows.json"
+        ))
+        .unwrap();
+        let unknown =
+            capture["records"]["core"]["pins"]["value"][0]["value"][0]["value"]["unknowns"][6]
+                .as_str()
+                .unwrap();
+        let expected = unknown.strip_prefix("absent: file unavailable: ").unwrap();
+        assert_eq!(failure.class, "FileNotFoundError");
+        assert_eq!(
+            failure.message.replace(
+                &root.path().display().to_string().replace('\\', "\\\\"),
+                "<tmp>"
+            ),
+            expected
+        );
+    }
 
     struct NoGit;
     impl GitRunner for NoGit {

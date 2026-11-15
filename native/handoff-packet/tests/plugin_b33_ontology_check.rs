@@ -737,46 +737,51 @@ fn replay(name: &str, root: &Path) -> Value {
         _ => panic!("unhandled {name}"),
     }
 }
-fn main8_expected(unix: &Value, windows: bool) -> Value {
-    if !windows {
-        return unix.clone();
+fn record_expected<'a>(
+    unix: &'a Value,
+    capture: &'a Value,
+    name: &str,
+    windows: bool,
+) -> &'a Value {
+    if windows {
+        capture["records"]["core"]
+            .get(name)
+            .expect("missing Windows record")
+    } else {
+        unix.get(name).expect("missing Unix record")
     }
-    let capture: Value =
-        serde_json::from_str(include_str!("fixtures/wt-path-records-main8-windows.json")).unwrap();
-    let mut observation = capture["records"][0]["observation"].clone();
-    // Replace only the captured synthetic root, preserving the diagnostic suffix bytes.
-    observation[2] = json!(
-        observation[2]
-            .as_str()
-            .unwrap()
-            .replace(r"{ROOT}\\ontology-main-8", "<tmp>")
-    );
-    json!({"value": observation})
 }
 #[test]
-fn main8_expectation_selector_matches_capture() {
-    let records: Value =
+fn windows_expectation_selector_matches_capture() {
+    let unix: Value =
         serde_json::from_str(include_str!("fixtures/w2/b33-ontology-check.json")).unwrap();
     let capture: Value =
-        serde_json::from_str(include_str!("fixtures/wt-path-records-main8-windows.json")).unwrap();
-    let unix = &records["main"]["value"][8];
-    assert_eq!(main8_expected(unix, false), *unix, "Unix record unchanged");
-    let mut observation = capture["records"][0]["observation"].clone();
-    observation[2] = json!(
-        observation[2]
-            .as_str()
-            .unwrap()
-            .replace(r"{ROOT}\\ontology-main-8", "<tmp>")
+        serde_json::from_str(include_str!("fixtures/wt-path-records-b33-windows.json")).unwrap();
+    for copy in ["core", "mcp"] {
+        let records = capture["records"][copy].as_object().unwrap();
+        assert_eq!(records.len(), unix.as_object().unwrap().len());
+        for (name, expected) in records {
+            assert_eq!(
+                record_expected(&unix, &capture, name, true),
+                expected,
+                "{copy}/{name}"
+            );
+            assert_eq!(
+                record_expected(&unix, &capture, name, false),
+                &unix[name],
+                "Unix {name}"
+            );
+        }
+    }
+    assert_ne!(
+        record_expected(&unix, &capture, "pins", true),
+        &unix["pins"]
     );
-    let windows = main8_expected(unix, true);
-    assert_eq!(
-        windows,
-        json!({"value": observation}),
-        "Windows captured main[8]"
-    );
-    assert_eq!(windows["value"][0], json!([{ "value": 2 }, []]));
-    assert_eq!(windows["value"][1], "");
-    assert_ne!(windows, *unix, "Windows suffix must differ from Unix");
+}
+#[test]
+#[should_panic(expected = "missing Windows record")]
+fn windows_expectation_selector_refuses_missing_record() {
+    record_expected(&json!({"missing": 1}), &json!({}), "missing", true);
 }
 #[test]
 fn frozen_records() {
@@ -798,7 +803,7 @@ fn frozen_records() {
     let mut exempt = 0;
     #[cfg(unix)]
     let exempt = 0;
-    for (name, expected) in records.as_object().unwrap() {
+    for name in records.as_object().unwrap().keys() {
         let tmp = tempfile::tempdir_in(std::env::temp_dir().canonicalize().unwrap()).unwrap();
         let actual = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             observe(Ok(replay(name, tmp.path())), tmp.path())
@@ -810,24 +815,10 @@ fn frozen_records() {
                 continue;
             }
         };
-        #[cfg(windows)]
-        let windows_expected = {
-            let mut e = expected.clone();
-            if name == "main" {
-                let capture: Value =
-                    serde_json::from_str(include_str!("fixtures/wt-path-records-windows.json"))
-                        .unwrap();
-                let stdout = capture["records"][9]["stdout"]
-                    .as_str()
-                    .unwrap()
-                    .replace("{ROOT}\\\\plugin-capture\\\\ontology-main-1", "<tmp>");
-                e["value"][1]["value"][1] = clean(json!(stdout), tmp.path());
-                e["value"][8] = main8_expected(&e["value"][8], true);
-            }
-            e
-        };
-        #[cfg(windows)]
-        let expected = &windows_expected;
+        let capture: Value =
+            serde_json::from_str(include_str!("fixtures/wt-path-records-b33-windows.json"))
+                .unwrap();
+        let expected = record_expected(&records, &capture, name, cfg!(windows));
         #[cfg(windows)]
         if ["refs", "refs_codes", "paths"].contains(&name.as_str()) {
             // Unix symlinks and POSIX absolute-path cells cannot run as native Windows fixtures.
