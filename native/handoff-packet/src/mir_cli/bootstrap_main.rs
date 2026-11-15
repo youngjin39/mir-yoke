@@ -1,5 +1,6 @@
 //! Bootstrap orchestration with explicit host boundaries and no CLI registration.
 use super::{Error, Host, authored};
+use crate::python_json::{Text, Value as PyValue};
 use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
@@ -10,7 +11,7 @@ use std::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct MainOutput {
     pub exit: Value,
-    pub stdout: String,
+    pub stdout: Text,
     pub stderr: String,
 }
 
@@ -22,7 +23,7 @@ pub(super) fn strings(value: &Value) -> Vec<String> {
         .map(authored::python_str)
         .collect()
 }
-fn output(code: i32, stdout: String, stderr: String) -> MainOutput {
+fn output(code: i32, stdout: Text, stderr: String) -> MainOutput {
     MainOutput {
         exit: json!(code),
         stdout,
@@ -30,7 +31,7 @@ fn output(code: i32, stdout: String, stderr: String) -> MainOutput {
     }
 }
 fn refused(message: impl AsRef<str>) -> MainOutput {
-    output(2, String::new(), format!("{}\n", message.as_ref()))
+    output(2, "".into(), format!("{}\n", message.as_ref()))
 }
 fn config_error(error: &Error) -> bool {
     value_error(error) || error.class == "ConfigLoadError" || io_error(error)
@@ -71,14 +72,26 @@ fn suffixed(path: &Path, suffix: &str) -> PathBuf {
     value.push(suffix);
     value.into()
 }
-fn merged(status: &str, evidence: Value) -> Value {
-    let mut result = json!({"status": status});
-    if let Some(fields) = evidence.as_object() {
-        for (key, value) in fields {
-            result[key] = value.clone();
+fn merged(status: &str, evidence: PyValue) -> PyValue {
+    let mut result = crate::python_json::Object::default();
+    result.insert("status".into(), PyValue::String(status.into()));
+    if let PyValue::Object(fields) = evidence {
+        for (key, value) in fields.into_entries() {
+            result.insert(key, value);
         }
     }
-    result
+    PyValue::Object(result)
+}
+fn receipt_value(base: &Value, capability: &PyValue, errors: &[Text]) -> PyValue {
+    let mut receipt = PyValue::from(base);
+    if let PyValue::Object(fields) = &mut receipt {
+        fields.insert("capabilities".into(), capability.clone());
+        fields.insert(
+            "errors".into(),
+            PyValue::Array(errors.iter().cloned().map(PyValue::String).collect()),
+        );
+    }
+    receipt
 }
 
 fn prepare_content(
@@ -199,7 +212,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
     let Some(ns) = parsed.value else {
         return Ok(MainOutput {
             exit: json!(["SystemExit", parsed.code]),
-            stdout: parsed.stdout,
+            stdout: parsed.stdout.into(),
             stderr: parsed.stderr,
         });
     };
@@ -488,9 +501,12 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
     }
     let skip = ns["skip_capability_activation"] == true;
     let allow = ns["allow_incomplete"] == true;
+    let mut errors: Vec<Text> = errors.into_iter().map(Text::from).collect();
     let capability;
     if skip {
-        capability = json!({"status": "skipped", "reason": "explicit test/development boundary"});
+        capability = PyValue::from(
+            &json!({"status": "skipped", "reason": "explicit test/development boundary"}),
+        );
         if !allow {
             errors.push("capability activation was skipped; bootstrap cannot be ready".into());
         }
@@ -499,9 +515,9 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
             if ns["architecture_initialized"] != true {
                 (
                     "failed".into(),
-                    json!({"reason": concat!(
+                    PyValue::from(&json!({"reason": concat!(
                     "--finalize requires --architecture-initialized after ",
-                    "explicit mir-core:design then mir-core:spec-architect execution")}),
+                    "explicit mir-core:design then mir-core:spec-architect execution") })),
                 )
             } else {
                 let (architecture_errors, evidence) = host.validate_architecture_evidence(&root)?;
@@ -509,17 +525,16 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
                 if !architecture_errors.is_empty() {
                     (
                         "failed".into(),
-                        json!({"reason": architecture_errors.join("; ")}),
+                        PyValue::from(&json!({"reason": architecture_errors.join("; ")})),
                     )
                 } else {
                     let result = host.finalize_capabilities(&root, prior_receipt.as_ref())?;
                     architecture_attested = result.0 == "ready";
-                    (result.0, super::scalar_evidence(&result.1)?)
+                    result
                 }
             }
         } else {
-            let (status, evidence) = host.activate_capabilities(&root, profile)?;
-            (status, super::scalar_evidence(&evidence)?)
+            host.activate_capabilities(&root, profile)?
         };
         capability = merged(
             if !finalize && status == "ready" {
@@ -530,16 +545,19 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
             evidence.clone(),
         );
         if status != "ready" {
-            errors.push(format!(
-                "capability activation failed: {}",
-                evidence
-                    .get("reason")
-                    .map(authored::python_str)
-                    .unwrap_or_else(|| "unknown".into())
-            ));
+            let reason = evidence
+                .get("reason")
+                .cloned()
+                .unwrap_or(PyValue::String("unknown".into()));
+            let reason = reason
+                .as_text()
+                .cloned()
+                .unwrap_or_else(|| reason.py_str().into());
+            errors.push(Text::from("capability activation failed: ").concat(&reason));
         }
     } else {
-        capability = json!({"status":"not_run","reason":"preflight or memory failure"});
+        capability =
+            PyValue::from(&json!({"status":"not_run","reason":"preflight or memory failure"}));
     }
     let mut unique_errors = Vec::new();
     for error in errors {
@@ -547,8 +565,9 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
             unique_errors.push(error);
         }
     }
-    let mut complete = unique_errors.is_empty() && capability["status"] == "ready";
-    let restart = unique_errors.is_empty() && capability["status"] == "restart_required";
+    let mut complete = unique_errors.is_empty() && capability["status"].as_str() == Some("ready");
+    let restart =
+        unique_errors.is_empty() && capability["status"].as_str() == Some("restart_required");
     let mut allowed = unique_errors.is_empty() && allow && skip;
     if unique_errors.is_empty() && (complete || restart || allowed) {
         let publish = (|| -> Result<(), Error> {
@@ -571,7 +590,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
             if !io_error(&error) {
                 return Err(error);
             }
-            unique_errors.push(format!("memory projection publish failed: {error}"));
+            unique_errors.push(format!("memory projection publish failed: {error}").into());
             complete = false;
             allowed = false;
         }
@@ -595,7 +614,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
         match host.apply_adopter_slim(&root, &external_cli, true) {
             Ok(report) => slim_report = report,
             Err(error) if error.class == "SlimError" => {
-                unique_errors.push(format!("adopter slim failed: {error}"));
+                unique_errors.push(format!("adopter slim failed: {error}").into());
                 complete = false;
             }
             Err(error) => return Err(error),
@@ -674,10 +693,10 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
             "hook_runtime":hook_runtime},"storage":storage_report,"source_control":ownership_report,
         "cli":cli,"slim":slim_report,"memory":memory,"content_onboarding":content_acceptance,
         "vector":memory_report.get("vector").cloned().unwrap_or_else(|| json!({})),
-        "shared_embedding_endpoint":"optional","capabilities":capability,
+        "shared_embedding_endpoint":"optional",
         "architecture_initialization":{"required":true,"sequence":super::ARCHITECTURE_SEQUENCE,
             "applies_regardless_of_first_request_type":true,"attested":architecture_attested,
-            "evidence":architecture_evidence},"errors":unique_errors});
+            "evidence":architecture_evidence}});
     let mut after = snapshot(&root)?;
     if slim_report["status"] == "applied" {
         after.remove(".mir/slim-transaction.json");
@@ -688,7 +707,10 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
     changed.sort();
     changed.dedup();
     receipt["changed_paths"] = json!(changed);
-    if let Err(error) = host.atomic_write_json(&receipt_path, &receipt) {
+    if let Err(error) = host.atomic_write_json(
+        &receipt_path,
+        &receipt_value(&receipt, &capability, &unique_errors),
+    ) {
         if !io_error(&error) {
             return Err(error);
         }
@@ -698,14 +720,16 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
             Err(error) => return Err(error),
         };
         receipt["status"] = json!("incomplete");
-        unique_errors.push(format!("bootstrap receipt publish failed: {error}"));
+        unique_errors.push(format!("bootstrap receipt publish failed: {error}").into());
         if let Some(error) = rollback_error {
-            unique_errors.push(error);
+            unique_errors.push(error.into());
         }
-        receipt["errors"] = json!(unique_errors);
         return Ok(output(
             1,
-            super::emit(ns["json"] == true, &receipt)?,
+            super::emit(
+                ns["json"] == true,
+                receipt_value(&receipt, &capability, &unique_errors),
+            )?,
             String::new(),
         ));
     }
@@ -713,11 +737,13 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
         if error.class != "SlimError" {
             return Err(error);
         }
-        unique_errors.push(format!("slim commit cleanup failed: {error}"));
-        receipt["errors"] = json!(unique_errors);
+        unique_errors.push(format!("slim commit cleanup failed: {error}").into());
         return Ok(output(
             1,
-            super::emit(ns["json"] == true, &receipt)?,
+            super::emit(
+                ns["json"] == true,
+                receipt_value(&receipt, &capability, &unique_errors),
+            )?,
             String::new(),
         ));
     }
@@ -730,7 +756,10 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
     };
     Ok(output(
         code,
-        super::emit(ns["json"] == true, &receipt)?,
+        super::emit(
+            ns["json"] == true,
+            receipt_value(&receipt, &capability, &unique_errors),
+        )?,
         String::new(),
     ))
 }

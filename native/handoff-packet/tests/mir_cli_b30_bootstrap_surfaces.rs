@@ -499,7 +499,7 @@ fn case(root: &Path, name: &str, host: &mut Fake<'_>) -> Result<Value, Error> {
                 as_json == "True",
                 &json!({"status":status,"errors":["blocked"],"z":"\u{e9}"}),
             )
-            .map(|v| json!(v))
+            .map(|v| json!(v.as_str().unwrap()))
         }
         _ => panic!("unmapped record {name}"),
     }

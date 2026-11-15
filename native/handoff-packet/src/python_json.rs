@@ -172,6 +172,30 @@ pub enum Value {
     Array(Vec<Value>),
     Object(Object),
 }
+impl From<&serde_json::Value> for Value {
+    fn from(value: &serde_json::Value) -> Self {
+        match value {
+            serde_json::Value::Null => Self::Null,
+            serde_json::Value::Bool(b) => Self::Bool(*b),
+            serde_json::Value::Number(n) => Self::Number(Number {
+                token: n.to_string(),
+            }),
+            serde_json::Value::String(s) => Self::String(s.as_str().into()),
+            serde_json::Value::Array(a) => Self::Array(a.iter().map(Self::from).collect()),
+            serde_json::Value::Object(o) => Self::Object(Object(
+                o.iter()
+                    .map(|(k, v)| (k.as_str().into(), Self::from(v)))
+                    .collect(),
+            )),
+        }
+    }
+}
+impl From<&Value> for Value {
+    fn from(value: &Value) -> Self {
+        value.clone()
+    }
+}
+
 impl Value {
     /// Python json.dumps(sort_keys=True), compact or indent=2, ensure_ascii=True.
     pub fn json_sorted(&self, pretty: bool) -> String {

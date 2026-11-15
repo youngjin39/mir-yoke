@@ -53,7 +53,8 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
                         .as_i64()
                         .or_else(|| output.exit.get(1).and_then(serde_json::Value::as_i64))
                         .unwrap_or(1) as i32,
-                    output.stdout,
+                    // The public Text/byte binding remains in B2b2.
+                    output.stdout.py_str(),
                     output.stderr,
                 ),
                 Err(error) => (

@@ -90,7 +90,7 @@ fn failed(reason: impl Into<Text>) -> (String, PyValue) {
     fields.insert("reason".into(), PyValue::String(reason.into()));
     ("failed".into(), PyValue::Object(fields))
 }
-/// Temporary scalar-only main/validator boundary; never flatten Python strings.
+/// Scalar-only artifact-validator boundary; never flatten Python strings.
 pub fn scalar_evidence(value: &PyValue) -> Result<Value, Error> {
     fn has_surrogates(value: &PyValue) -> bool {
         match value {

@@ -50,6 +50,7 @@ pub use release::{
 mod content;
 use super::bootstrap_adoption::is_python_space;
 use crate::executor_execute::repr;
+use crate::python_json::{Text, Value as PyValue};
 pub use content::{
     acceptance_query, build_content_onboarding, content_archive_args, content_archive_globs,
     discoverable_content_files, load_content_onboarding, parse_content_archives,
@@ -427,7 +428,7 @@ pub trait Host: Sized {
     fn atomic_write_text(&mut self, path: &Path, body: &str) -> Result<(), Error> {
         atomic_write_text(path, body, self)
     }
-    fn atomic_write_json(&mut self, path: &Path, value: &Value) -> Result<(), Error> {
+    fn atomic_write_json(&mut self, path: &Path, value: &PyValue) -> Result<(), Error> {
         atomic_write_json(path, value, self)
     }
 }
@@ -862,31 +863,41 @@ pub fn storage_preflight(
 pub fn atomic_write_text(path: &Path, body: &str, host: &mut impl Host) -> Result<(), Error> {
     authored::atomic_write_with(path, body, false, |a, b| host.replace(a, b))
 }
-pub fn atomic_write_json(path: &Path, payload: &Value, host: &mut impl Host) -> Result<(), Error> {
-    let body = authored::pretty(payload, true)? + "\n";
+pub fn atomic_write_json(
+    path: &Path,
+    payload: impl Into<PyValue>,
+    host: &mut impl Host,
+) -> Result<(), Error> {
+    let body = payload.into().json_sorted(true) + "\n";
     authored::atomic_write_with(path, &body, true, |a, b| host.replace(a, b))
 }
 /// Return the exact stdout text; caller connection belongs to a later slice.
-pub fn emit(as_json: bool, receipt: &Value) -> Result<String, Error> {
+pub fn emit(as_json: bool, receipt: impl Into<PyValue>) -> Result<Text, Error> {
+    let receipt = receipt.into();
     if as_json {
-        let sorted: Value = serde_json::from_str(&authored::pretty(receipt, false)?)
-            .map_err(|e| Error::new("ValueError", e.to_string()))?;
-        return Ok(authored::ascii(sorted.to_string()) + "\n");
+        return Ok((receipt.json_sorted(false) + "\n").into());
     }
-    let status = authored::python_str(&receipt["status"]);
-    let mut out = format!("mir bootstrap: {status}\n");
+    let status = receipt["status"].py_str();
+    let mut out = Text::from(format!("mir bootstrap: {status}\n"));
     for error in receipt["errors"].as_array().into_iter().flatten() {
-        out.push_str(&format!("  [not-ready] {}\n", authored::python_str(error)));
+        let text = error
+            .as_text()
+            .cloned()
+            .unwrap_or_else(|| error.py_str().into());
+        out = out
+            .concat(&Text::from("  [not-ready] "))
+            .concat(&text)
+            .concat(&"\n".into());
     }
     if status == "restart_required" {
-        out.push_str(concat!(
+        out = out.concat(&Text::from(concat!(
             "  selected global plugins are hash-verified for required runtimes\n",
             "  begin a new session for every required activation runtime\n",
             "  attest the namespaced skill catalog from each required session\n",
             "  optional runtime installation and discovery evidence is advisory\n",
             "  run mir-core:design then mir-core:spec-architect, then finalize\n",
-        ));
+        )));
     }
-    out.push_str("  receipt: .mir/bootstrap-receipt.json\n");
+    out = out.concat(&"  receipt: .mir/bootstrap-receipt.json\n".into());
     Ok(out)
 }
