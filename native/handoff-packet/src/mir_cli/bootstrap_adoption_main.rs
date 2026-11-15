@@ -197,7 +197,11 @@ fn json_string(value: &Value, pretty: bool) -> Result<String, Error> {
     .map_err(|e| Error::Json(e.to_string()))?;
     Ok(ascii_json(text))
 }
-pub fn atomic_write_json(path: &Path, payload: &Value, host: &mut dyn Host) -> Result<(), Error> {
+pub fn atomic_write_json<H: Host + ?Sized>(
+    path: &Path,
+    payload: &Value,
+    host: &mut H,
+) -> Result<(), Error> {
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent).map_err(|e| io_error(parent, e))?;
     let name = path
@@ -242,6 +246,60 @@ pub fn emit(as_json: bool, report: &Value, host: &mut dyn Host) -> Result<(), Er
     }
     host.stdout(&output)
         .map_err(|e| io_error(Path::new("<stdout>"), e))
+}
+
+pub fn write_receipt_with(
+    path: &Path,
+    value: &Value,
+    before: impl FnOnce(&Path, &Path) -> io::Result<()>,
+) -> Result<(), Error> {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent).map_err(|e| io_error(parent, e))?;
+    let data = format!("{}\n", json_string(value, true)?);
+    #[cfg(unix)]
+    {
+        use io::Write;
+        let temporary = tempfile::Builder::new()
+            .prefix(".bootstrap-receipt.json.")
+            .make_in(parent, |candidate| {
+                crate::adoption_fs::StagedFile::create(parent, candidate)
+            })
+            .map_err(|e| io_error(parent, e))?;
+        let (mut staged, mut inert) = temporary.into_parts();
+        inert.disable_cleanup(true);
+        staged
+            .file
+            .write_all(data.as_bytes())
+            .map_err(|e| io_error(&staged.path, e))?;
+        before(&staged.path, path).map_err(|e| io_error(path, e))?;
+        staged.publish(parent, path).map_err(|e| {
+            let mut error = io_error(&staged.path, e);
+            if let Error::Io { message, .. } = &mut error {
+                message.push_str(&format!(" -> {}", repr(&wire(path))));
+            }
+            error
+        })?;
+        Ok(())
+    }
+    #[cfg(not(unix))]
+    {
+        use io::Write;
+        let mut temporary = tempfile::Builder::new()
+            .prefix(".bootstrap-receipt.json.")
+            .tempfile_in(parent)
+            .map_err(|e| io_error(parent, e))?;
+        temporary
+            .write_all(data.as_bytes())
+            .map_err(|e| io_error(path, e))?;
+        before(temporary.path(), path).map_err(|e| io_error(path, e))?;
+        if path.ancestors().any(Path::is_symlink) {
+            return Err(adoption("linked receipt path"));
+        }
+        temporary
+            .persist(path)
+            .map_err(|e| io_error(path, e.error))?;
+        Ok(())
+    }
 }
 
 pub(super) fn install_evaluator<H: Host + ?Sized>(
@@ -515,7 +573,7 @@ pub fn main(
         ) {
             receipt["native_evaluator"] = evaluator;
         }
-        atomic_write_json(&root.join(".mir/bootstrap-receipt.json"), &receipt, host)?;
+        host.write_receipt(&root.join(".mir/bootstrap-receipt.json"), &receipt)?;
         receipt_written = true;
     }
     let mut report = receipt;

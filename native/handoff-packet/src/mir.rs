@@ -42,6 +42,16 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
             restore(String::from_utf8_lossy(&err).into(), &replacements),
         );
     }
+    if argv[0] == "bootstrap-adoption" {
+        let (args, replacements) = scalar_args(&argv[1..], "");
+        let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
+        let (code, out, err) = mir_cli::bootstrap_adoption::console(&refs);
+        return (
+            code,
+            restore(out, &replacements),
+            restore(err, &replacements),
+        );
+    }
     if argv[0] == "runtime-manifest" {
         return manifest::console(argv[1..].to_vec());
     }

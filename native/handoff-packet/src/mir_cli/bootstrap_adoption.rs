@@ -7,7 +7,7 @@ pub(super) mod phase2;
 use crate::executor_execute::{list_repr, repr};
 pub use entry::{
     JqOutput, JqRequest, ValidationKind, ValidationOutput, ValidationRequest, atomic_write_json,
-    emit, evidence_digest, evidence_digests, main,
+    emit, evidence_digest, evidence_digests, main, write_receipt_with,
 };
 pub use phase2::{
     COUNT_KEYS, LAYER_KEYS, MemoryConnection, REVIEW_KEYS, SqliteRequest, open_memory,
@@ -190,6 +190,9 @@ pub struct GitRequest {
     pub optional_locks: &'static str,
 }
 pub trait Host {
+    fn write_receipt(&mut self, path: &Path, value: &Value) -> Result<(), Error> {
+        entry::atomic_write_json(path, value, self)
+    }
     fn cwd(&mut self) -> io::Result<PathBuf> {
         std::env::current_dir()
     }
@@ -1118,8 +1121,39 @@ pub fn parse(argv: &[&str], cwd: &Path) -> Value {
         "native_evaluator":null,"json":false});
     let mut index = 0;
     let mut unknown = Vec::new();
+    let negative_number = Regex::new(r"^-([0-9]+|[0-9]*\.[0-9]+)$");
     while index < argv.len() {
         let arg = argv[index];
+        if arg == "--" {
+            unknown.extend_from_slice(&argv[index..]);
+            break;
+        }
+        let option = super::argparse::resolve(
+            arg,
+            &[
+                "--help",
+                "--project-root",
+                "--apply",
+                "--native-evaluator",
+                "--json",
+            ],
+        )
+        .unwrap_or(None);
+        let inline = arg.split_once('=').map(|(_, value)| value);
+        let arg = option.unwrap_or(arg);
+        if ["-h", "--help", "--apply", "--json"].contains(&arg)
+            && let Some(value) = inline
+        {
+            let label = if arg == "--help" { "-h/--help" } else { arg };
+            return json!([{"error":["SystemExit","2"]},"",format!("{USAGE}mir bootstrap-adoption: error: argument {label}: ignored explicit argument {}\n", repr(value))]);
+        }
+        if argv[index].starts_with("-h")
+            && !argv[index].starts_with("--")
+            && argv[index] != "-h"
+            && inline.is_none()
+        {
+            return json!([{"error":["SystemExit","0"]},format!("{USAGE}{HELP}"),""]);
+        }
         if ["-h", "--help"].contains(&arg) {
             return json!([{"error":["SystemExit","0"]},format!("{USAGE}{HELP}"),""]);
         }
@@ -1127,8 +1161,19 @@ pub fn parse(argv: &[&str], cwd: &Path) -> Value {
             "--apply" => namespace["apply"] = json!(true),
             "--json" => namespace["json"] = json!(true),
             "--project-root" | "--native-evaluator" => {
-                index += 1;
-                if index >= argv.len() || argv[index].starts_with('-') {
+                if inline.is_none() {
+                    index += 1;
+                }
+                let value = inline.or_else(|| argv.get(index).copied());
+                let negative = negative_number
+                    .as_ref()
+                    .is_ok_and(|r| value.is_some_and(|v| r.is_match(v)));
+                if value.is_none()
+                    || (inline.is_none()
+                        && value.is_some_and(|v| {
+                            v.starts_with('-') && v != "-" && !negative && !v.contains(' ')
+                        }))
+                {
                     let message = format!(
                         "{USAGE}mir bootstrap-adoption: error: \
                         argument {arg}: expected one argument\n"
@@ -1140,7 +1185,13 @@ pub fn parse(argv: &[&str], cwd: &Path) -> Value {
                 } else {
                     "native_evaluator"
                 };
-                namespace[key] = json!(argv[index]);
+                let value = value.unwrap_or("");
+                let path: PathBuf = Path::new(value).components().collect();
+                namespace[key] = json!(if value.is_empty() {
+                    ".".to_owned()
+                } else {
+                    wire(&path)
+                });
             }
             _ => unknown.push(arg),
         }
@@ -1155,4 +1206,69 @@ pub fn parse(argv: &[&str], cwd: &Path) -> Value {
         return json!([{"error":["SystemExit","2"]},"",message]);
     }
     json!([{"value":namespace},"",""])
+}
+
+/// Public binding uses local providers and the root's stream codec.
+pub fn console(argv: &[&str]) -> (i32, String, String) {
+    struct Console {
+        local: LocalHost,
+        out: String,
+        err: String,
+    }
+    impl Host for Console {
+        fn write_receipt(&mut self, path: &Path, value: &Value) -> Result<(), Error> {
+            write_receipt_with(path, value, |_, _| Ok(()))
+        }
+        fn stdout(&mut self, text: &str) -> io::Result<()> {
+            self.out.push_str(text);
+            Ok(())
+        }
+        fn stderr(&mut self, text: &str) -> io::Result<()> {
+            self.err.push_str(text);
+            Ok(())
+        }
+        fn cwd(&mut self) -> io::Result<PathBuf> {
+            self.local.cwd()
+        }
+        fn env(&mut self, key: &str) -> Option<String> {
+            self.local.env(key)
+        }
+        fn read(&mut self, path: &Path) -> io::Result<Vec<u8>> {
+            self.local.read(path)
+        }
+        fn git(&mut self, r: &GitRequest) -> io::Result<bool> {
+            self.local.git(r)
+        }
+        fn jq(&mut self, r: &JqRequest) -> io::Result<JqOutput> {
+            self.local.jq(r)
+        }
+        fn sqlite_open(&mut self, r: &SqliteRequest) -> Result<Box<dyn MemoryConnection>, String> {
+            self.local.sqlite_open(r)
+        }
+        fn scan_content_candidates(&mut self, root: &Path) -> Result<Vec<Value>, String> {
+            self.local.scan_content_candidates(root)
+        }
+        fn install_evaluator(
+            &mut self,
+            root: &Path,
+            source: &Path,
+            local: Option<&Path>,
+        ) -> Option<Value> {
+            self.local.install_evaluator(root, source, local)
+        }
+    }
+    let mut host = Console {
+        local: LocalHost,
+        out: String::new(),
+        err: String::new(),
+    };
+    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let code = match main(Some(argv), &source, &source.join("src/mir"), &mut host) {
+        Ok(code) | Err(Error::SystemExit(code)) => code,
+        Err(error) => {
+            host.err.push_str(&format!("{}: {error}\n", error.class()));
+            1
+        }
+    };
+    (code, host.out, host.err)
 }
