@@ -122,7 +122,12 @@ fn status_blob_json_decode_errors_count_the_bom() {
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
-    assert_eq!(output.stderr,b"UnicodeDecodeError: 'utf-32-le' codec can't decode bytes in position 4-7: code point not in range(0x110000)\n");
+    assert_eq!(
+        output.stderr,
+        "UnicodeDecodeError: 'utf-32-le' codec can't decode bytes in position 4-7: code point not in range(0x110000)\n"
+            .replace('\n', if cfg!(windows) { "\r\n" } else { "\n" })
+            .as_bytes()
+    );
     fs::remove_dir_all(root).unwrap();
 }
 
@@ -182,7 +187,12 @@ fn status_abbreviated_repeated_options_and_missing_parent_are_owned() {
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
-    assert_eq!(output.stderr, b"[mir_executor] job_id not found: 'last'\n");
+    assert_eq!(
+        output.stderr,
+        "[mir_executor] job_id not found: 'last'\n"
+            .replace('\n', if cfg!(windows) { "\r\n" } else { "\n" })
+            .as_bytes()
+    );
     assert!(root.join("jobs.db").is_file());
     assert!(!root.join("missing").exists());
     fs::remove_dir_all(root).unwrap();

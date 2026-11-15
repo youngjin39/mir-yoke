@@ -1,6 +1,9 @@
 use serde_json::Value;
 use std::{fs, process::Command};
 
+#[path = "support/unify2_s6.rs"]
+mod platform;
+
 #[test]
 fn context_sync_console() {
     let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e5.json")).unwrap();
@@ -50,8 +53,16 @@ fn check_record(i: usize, r: &Value) {
             .unwrap()
             .replace(root.to_str().unwrap(), "@ROOT@")
     };
-    assert_eq!(normalize(out.stdout), r["stdout"], "stdout {i}");
-    assert_eq!(normalize(out.stderr), r["stderr"], "stderr {i}");
+    assert_eq!(
+        normalize(out.stdout),
+        platform::expected_text(r["stdout"].as_str().unwrap(), cfg!(windows)),
+        "stdout {i}"
+    );
+    assert_eq!(
+        normalize(out.stderr),
+        platform::expected_text(r["stderr"].as_str().unwrap(), cfg!(windows)),
+        "stderr {i}"
+    );
     if [14, 16].contains(&i) {
         let c = rusqlite::Connection::open(root.join("memory.db")).unwrap();
         assert_eq!(

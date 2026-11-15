@@ -557,8 +557,54 @@ fn normalize(value: Value, root: &Path) -> Value {
         root.to_str().unwrap(),
     )
 }
+fn platform_record<'a>(
+    common: &'a Value,
+    windows: &'a Value,
+    name: &str,
+    ingest: bool,
+    is_windows: bool,
+) -> &'a Value {
+    // S5 authority: native-separator archive filtering agrees with both P4 captures.
+    // The original Python capture pin remains UNKNOWN; production is unchanged.
+    if ingest && is_windows {
+        windows.get(name).unwrap_or(common)
+    } else {
+        common
+    }
+}
+
+#[test]
+fn windows_path_selection_preserves_full_rows() {
+    let common: Value = serde_json::from_str(include_str!("fixtures/w2/b11-ingest.json")).unwrap();
+    let windows: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b11-ingest-windows.json")).unwrap();
+    let records = &windows["records"];
+    assert_eq!(records.as_object().unwrap().len(), 3);
+    for name in ["paths.0", "paths.1", "paths.2"] {
+        assert_eq!(
+            platform_record(&common[name], records, name, true, true),
+            &records[name],
+            "{name}: Windows must select both full steps, live/committed rows and hashes"
+        );
+        assert_eq!(
+            platform_record(&common[name], records, name, true, false),
+            &common[name]
+        );
+        assert_eq!(
+            platform_record(&common[name], records, name, false, true),
+            &common[name]
+        );
+    }
+    assert_eq!(
+        platform_record(&common["sequence"], records, "sequence", true, true),
+        &common["sequence"]
+    );
+}
+
 #[test]
 fn frozen_records() {
+    let windows: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b11-ingest-windows.json")).unwrap();
     for (ingest, fixture, total) in [
         (true, include_str!("fixtures/w2/b11-ingest.json"), 28),
         (false, include_str!("fixtures/w2/b11-insert.json"), 25),
@@ -567,6 +613,8 @@ fn frozen_records() {
         assert_eq!(oracle.as_object().unwrap().len(), total);
         let mut replayed = 0;
         for (name, expected) in oracle.as_object().unwrap() {
+            let expected =
+                platform_record(expected, &windows["records"], name, ingest, cfg!(windows));
             let temp = tempfile::Builder::new().prefix("b11-").tempdir().unwrap();
             let root = temp.path().canonicalize().unwrap();
             let relative = match (ingest, name.as_str()) {

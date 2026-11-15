@@ -1145,6 +1145,7 @@ mod tests {
         }
     }
 
+    #[cfg(unix)]
     #[test]
     fn io_error_preserves_unmapped_errno_text() {
         for errno in [92, 63] {

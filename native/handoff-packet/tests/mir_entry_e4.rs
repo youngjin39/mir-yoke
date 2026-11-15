@@ -1,6 +1,9 @@
 use serde_json::Value;
 use std::process::Command;
 
+#[path = "support/unify2_s6.rs"]
+mod platform;
+
 fn unhex(value: &Value) -> Vec<u8> {
     value
         .as_str()
@@ -60,6 +63,10 @@ fn stdout_dup_injection_is_absent_from_console_binary() {
         .output()
         .unwrap();
     assert_eq!(out.status.code(), Some(0));
-    assert_eq!(out.stdout, unhex(&r["no_dup_console"]["stdout"]));
+    let text = String::from_utf8(unhex(&r["no_dup_console"]["stdout"])).unwrap();
+    assert_eq!(
+        out.stdout,
+        platform::expected_text(&text, cfg!(windows)).as_bytes()
+    );
     assert!(out.stderr.is_empty());
 }
