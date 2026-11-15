@@ -1,5 +1,6 @@
 //! Installer-only descriptor-relative mutations.
 use crate::adoption_fs::{self, StagedFile};
+use crate::executor_text::IoOperation;
 use std::{
     ffi::OsStr,
     io::{self, Write},
@@ -19,7 +20,7 @@ impl PendingWrite {
         temporary: &OsStr,
         content: &[u8],
     ) -> io::Result<Self> {
-        Self::prepare_mapped(root, target, temporary, content, |_, e| e)
+        Self::prepare_mapped(root, target, temporary, content, |_, e, _| e)
     }
     /// Preserve the filename context of the failing syscall.
     pub(crate) fn prepare_mapped<E>(
@@ -27,7 +28,7 @@ impl PendingWrite {
         target: &Path,
         temporary: &OsStr,
         content: &[u8],
-        error: impl Fn(Option<&Path>, io::Error) -> E,
+        error: impl Fn(Option<&Path>, io::Error, IoOperation) -> E,
     ) -> Result<Self, E> {
         if !matches!(Path::new(temporary).components().next(), Some(Component::Normal(name)) if name == temporary)
         {
@@ -37,9 +38,11 @@ impl PendingWrite {
                     io::ErrorKind::InvalidInput,
                     "temporary must be one basename",
                 ),
+                IoOperation::Win32,
             ));
         }
-        let relative = adoption_fs::relative(root, target).map_err(|e| error(Some(target), e))?;
+        let relative = adoption_fs::relative(root, target)
+            .map_err(|e| error(Some(target), e, IoOperation::Win32))?;
         let mut directory = root.to_owned();
         let mut parts = relative.components().peekable();
         while let Some(part) = parts.next() {
@@ -50,25 +53,48 @@ impl PendingWrite {
             match adoption_fs::mkdir(root, &directory, 0o777) {
                 Ok(()) => (),
                 Err(e) if e.kind() == io::ErrorKind::AlreadyExists => (),
-                Err(e) => return Err(error(Some(&directory), e)),
+                Err(e) => return Err(error(Some(&directory), e, IoOperation::Win32)),
             }
         }
         let path = target.with_file_name(temporary);
-        if adoption_fs::aliases(root, &path, target).map_err(|e| error(Some(target), e))? {
+        if adoption_fs::aliases(root, &path, target)
+            .map_err(|e| error(Some(target), e, IoOperation::Win32))?
+        {
             return Err(error(
                 Some(target),
                 io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "temporary must differ from target",
                 ),
+                IoOperation::Win32,
             ));
         }
-        let mut staged = StagedFile::create_with_parent_check(root, &path, true, |_| Ok(()))
-            .map_err(|e| error(Some(&path), e))?;
-        staged.file.write_all(content).map_err(|e| error(None, e))?;
-        staged.file.flush().map_err(|e| error(None, e))?;
-        staged.file.sync_all().map_err(|e| error(None, e))?;
-        adoption_fs::set_mode(&staged.file, 0o644).map_err(|e| error(Some(&path), e))?;
+        let staged = StagedFile::create_with_parent_check(root, &path, true, |_| Ok(()))
+            .map_err(|e| error(Some(&path), e, IoOperation::Read))?;
+        let result = (|| {
+            let mut writer = staged
+                .file
+                .try_clone()
+                .map_err(|e| error(None, e, IoOperation::Handle))?;
+            let written = (|| {
+                writer.write_all(content)?;
+                writer.flush()?;
+                writer.sync_all()
+            })();
+            // Python's with-statement lets a close failure replace a body failure.
+            adoption_fs::close_file(writer).map_err(|e| error(None, e, IoOperation::Handle))?;
+            written.map_err(|e| error(None, e, IoOperation::Handle))?;
+            adoption_fs::set_mode(&staged.file, 0o644)
+                .map_err(|e| error(Some(&path), e, IoOperation::Win32))
+        })();
+        if let Err(e) = result {
+            let cleanup = staged
+                .remove()
+                .map_err(|e| error(Some(&path), e, IoOperation::Win32));
+            staged.keep();
+            cleanup?;
+            return Err(e);
+        }
         Ok(Self {
             staged,
             root: root.to_owned(),
@@ -85,7 +111,9 @@ impl PendingWrite {
     }
     pub fn cleanup_with(&self, before: impl FnOnce(&Path) -> io::Result<()>) -> io::Result<()> {
         before(&self.staged.path)?;
-        self.staged.remove()
+        let result = self.staged.remove();
+        self.staged.keep();
+        result
     }
 }
 
@@ -276,4 +304,9 @@ mod tests {
             assert_eq!(snapshot(&outside), expected);
         }
     }
+}
+pub(crate) fn remove_required(root: &Path, target: &Path, directory: bool) -> io::Result<()> {
+    let pinned = adoption_fs::parent(root, target)?;
+    pinned.verify_parent(root, target)?;
+    pinned.unlink(&pinned.name, directory)
 }

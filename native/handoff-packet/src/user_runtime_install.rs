@@ -69,7 +69,7 @@ pub fn regular_source(root: &Path, path: &Path) -> Result<Vec<u8>, Error> {
     source_with(root, path, |p| fs::symlink_metadata(p), |p| fs::read(p))
 }
 pub fn load_sources(root: &Path) -> Result<(Vec<ManagedFile>, Vec<ManagedFile>), Error> {
-    let bytes = regular_source(root, &root.join("config/capability-sources.json"))?;
+    let bytes = regular_source(root, &root.join("config").join("capability-sources.json"))?;
     sources_from_bytes(root, &bytes)
 }
 fn sources_from_bytes(

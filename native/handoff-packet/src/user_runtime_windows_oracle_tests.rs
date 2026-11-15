@@ -51,7 +51,7 @@ fn bytes(value: &Option<Vec<u8>>) -> Value {
         .as_ref()
         .map_or(Value::Null, |b| json!({"hex":hex(b)}))
 }
-fn tree(root: &Path) -> Value {
+pub(super) fn tree(root: &Path) -> Value {
     fn walk(root: &Path, dir: &Path, rows: &mut serde_json::Map<String, Value>) {
         for entry in fs::read_dir(dir).unwrap() {
             let path = entry.unwrap().path();
@@ -95,7 +95,7 @@ fn check(corpus: &Value, name: &str, root: &Path, value: Value) {
     assert_eq!(record["stdout_hex"], "");
     assert_eq!(record["stderr_hex"], "");
 }
-fn seed(root: &Path, record: &Value) {
+pub(super) fn seed(root: &Path, record: &Value) {
     let mut entries: Vec<_> = record["tree"].as_object().unwrap().iter().collect();
     entries.sort_by_key(|(name, _)| name.len());
     for (name, row) in entries {
@@ -107,7 +107,7 @@ fn seed(root: &Path, record: &Value) {
         }
     }
 }
-fn plans(root: &Path, corpus: &Value) -> Vec<RuntimePlan> {
+pub(super) fn plans(root: &Path, corpus: &Value) -> Vec<RuntimePlan> {
     corpus["records"]["normal"]["input"]
         .as_array()
         .unwrap()

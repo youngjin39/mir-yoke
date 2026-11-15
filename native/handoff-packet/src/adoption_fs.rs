@@ -1,5 +1,56 @@
 //! Descriptor-relative adoption mutations; never follow substituted parent symlinks.
 #[cfg(windows)]
+#[rustfmt::skip]
+pub(crate) fn windows_error(error: &std::io::Error, path: Option<&std::path::Path>, destination: Option<&std::path::Path>, operation: crate::executor_text::IoOperation) -> String {
+    use crate::executor_text::{IoOperation, os_points, repr_points};
+    use windows_sys::Win32::System::Diagnostics::Debug::{FormatMessageW, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS};
+    let code = error.raw_os_error().unwrap_or(87);
+    let crt = matches!(operation, IoOperation::Read | IoOperation::Handle);
+    // CPython PC/errmap.h: Win32 codes map to Windows CRT errno, not Unix errno.
+    let errno = match code { 2 | 3 => 2, 5 | 19 | 32 | 33 => 13, 6 => 9, 80 | 183 => 17, 267 => 20, 145 => 41, 17 => 18, 112 => 28, _ => 22 };
+    let class = match errno { 2 => "FileNotFoundError", 13 => "PermissionError", 17 => "FileExistsError", 20 => "NotADirectoryError", _ => "OSError" };
+    let message = if crt {
+        // SAFETY: strerror returns a static NUL-terminated CRT message.
+        unsafe { std::ffi::CStr::from_ptr(libc::strerror(errno)) }.to_string_lossy().into_owned()
+    } else {
+        let mut buffer = [0u16; 32768];
+        // SAFETY: windows-sys 0.61.2 Debug::FormatMessageW takes a writable UTF-16
+        // buffer; system source/IGNORE_INSERTS require no source or arguments.
+        let length = unsafe { FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, std::ptr::null(), code as u32, 0, buffer.as_mut_ptr(), buffer.len() as u32, std::ptr::null()) } as usize;
+        if length == 0 { format!("Windows Error 0x{code:X}") } else {
+            let text = String::from_utf16_lossy(&buffer[..length]);
+            if path.is_none() { text.trim_end().to_owned() }
+            else { text.trim_end_matches([' ', '\r', '\n', '.']).to_owned() }
+        }
+    };
+    let mut rendered = if crt { format!("{class}: [Errno {errno}] {message}") } else { format!("{class}: [WinError {code}] {message}") };
+    if let Some(path) = path { rendered.push_str(&format!(": {}", repr_points(&os_points(path.as_os_str())))); }
+    if let Some(destination) = destination { rendered.push_str(&format!(" -> {}", repr_points(&os_points(destination.as_os_str())))); }
+    rendered
+}
+
+pub(crate) fn close_file(file: std::fs::File) -> std::io::Result<()> {
+    #[cfg(unix)]
+    let status = {
+        use std::os::fd::IntoRawFd;
+        // SAFETY: transfer ownership once; never retry close, including EINTR.
+        unsafe { libc::close(file.into_raw_fd()) }
+    };
+    #[cfg(windows)]
+    let status = {
+        use std::os::windows::io::IntoRawHandle;
+        // SAFETY: the owned handle is consumed exactly once.
+        i32::from(
+            unsafe { windows_sys::Win32::Foundation::CloseHandle(file.into_raw_handle()) } == 0,
+        )
+    };
+    if status == 0 {
+        Ok(())
+    } else {
+        Err(std::io::Error::last_os_error())
+    }
+}
+#[cfg(windows)]
 mod windows;
 #[cfg(all(test, windows))]
 mod windows_entry_tests;

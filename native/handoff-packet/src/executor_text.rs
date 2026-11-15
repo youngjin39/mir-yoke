@@ -172,6 +172,42 @@ pub fn repr(text: &str) -> String {
     repr_points(&text_points(text))
 }
 pub fn io_error(error: io::Error, path: &Path) -> String {
+    io_operation(error, Some(path), None, IoOperation::Win32)
+}
+#[derive(Clone, Copy)]
+pub(crate) enum IoOperation {
+    Win32,
+    Read,
+    Handle,
+}
+pub(crate) fn io_operation(
+    error: io::Error,
+    path: Option<&Path>,
+    destination: Option<&Path>,
+    operation: IoOperation,
+) -> String {
+    #[cfg(windows)]
+    {
+        crate::adoption_fs::windows_error(&error, path, destination, operation)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = operation;
+        let mut rendered = unix_io_error(error, path.unwrap_or_else(|| Path::new("")));
+        if path.is_none() {
+            rendered.truncate(rendered.len() - 4);
+        }
+        if let Some(destination) = destination {
+            rendered.push_str(&format!(
+                " -> {}",
+                repr_points(&os_points(destination.as_os_str()))
+            ));
+        }
+        rendered
+    }
+}
+#[cfg(not(windows))]
+fn unix_io_error(error: io::Error, path: &Path) -> String {
     let kind = match error.kind() {
         io::ErrorKind::NotFound => "FileNotFoundError",
         io::ErrorKind::AlreadyExists => "FileExistsError",

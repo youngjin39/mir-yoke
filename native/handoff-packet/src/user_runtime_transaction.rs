@@ -2,7 +2,7 @@
 use crate::{
     adoption_fs,
     user_runtime_install::*,
-    user_runtime_mutation::{PendingWrite, remove_with},
+    user_runtime_mutation::{PendingWrite, remove_required},
 };
 use std::{
     collections::BTreeMap,
@@ -33,6 +33,23 @@ fn io(path: &Path, error: std::io::Error) -> Error {
     io_context(Some(path), error)
 }
 fn io_context(path: Option<&Path>, error: std::io::Error) -> Error {
+    operation_error(
+        path,
+        None,
+        error,
+        if path.is_some() {
+            crate::executor_text::IoOperation::Win32
+        } else {
+            crate::executor_text::IoOperation::Handle
+        },
+    )
+}
+fn operation_error(
+    path: Option<&Path>,
+    destination: Option<&Path>,
+    error: std::io::Error,
+    operation: crate::executor_text::IoOperation,
+) -> Error {
     if error.raw_os_error().is_none() {
         let error = crate::mir_cli::bootstrap_adoption::io_error(
             path.unwrap_or_else(|| Path::new("")),
@@ -43,13 +60,9 @@ fn io_context(path: Option<&Path>, error: std::io::Error) -> Error {
             message: error.to_string(),
         };
     }
-    let rendered = crate::executor_text::io_error(error, path.unwrap_or_else(|| Path::new("")));
+    let rendered = crate::executor_text::io_operation(error, path, destination, operation);
     let (class, message) = rendered.split_once(": ").unwrap_or(("OSError", &rendered));
-    let mut message = message.to_owned();
-    if path.is_none() {
-        let suffix = format!(": {}", crate::executor_text::repr(""));
-        message.truncate(message.len() - suffix.len());
-    }
+    let message = message.to_owned();
     Error {
         class: match class {
             "FileNotFoundError" => "FileNotFoundError",
@@ -63,21 +76,53 @@ fn io_context(path: Option<&Path>, error: std::io::Error) -> Error {
     }
 }
 fn read(identity: &HomeIdentity, relative: &Path) -> Result<Option<Vec<u8>>, Error> {
+    read_with(identity, relative, || Ok(()))
+}
+fn read_with(
+    identity: &HomeIdentity,
+    relative: &Path,
+    before: impl FnOnce() -> std::io::Result<()>,
+) -> Result<Option<Vec<u8>>, Error> {
     let path = verified_target(identity, relative)?;
-    let result: std::io::Result<Vec<u8>> = (|| {
-        let parent = adoption_fs::parent(&identity.path, &path)?;
-        let mut file = parent.open_file()?;
-        let mut bytes = Vec::new();
-        file.read_to_end(&mut bytes)?;
-        Ok(bytes)
-    })();
-    match result {
-        Ok(bytes) => Ok(Some(bytes)),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(e) => Err(io(&path, e)),
+    if !path
+        .try_exists()
+        .or_else(|e| {
+            if adoption_fs::missing_metadata(&e) {
+                Ok(false)
+            } else {
+                Err(e)
+            }
+        })
+        .map_err(|e| io(&path, e))?
+    {
+        return Ok(None);
     }
+    before().map_err(|e| io(&path, e))?;
+    let open_error = |e| {
+        operation_error(
+            Some(&path),
+            None,
+            e,
+            crate::executor_text::IoOperation::Read,
+        )
+    };
+    let parent = adoption_fs::parent(&identity.path, &path).map_err(open_error)?;
+    let mut file = parent.open_file().map_err(open_error)?;
+    let mut bytes = Vec::new();
+    let result = file.read_to_end(&mut bytes);
+    adoption_fs::close_file(file).map_err(|e| io_context(None, e))?;
+    result.map_err(|e| io_context(None, e))?;
+    Ok(Some(bytes))
 }
 fn write(identity: &HomeIdentity, relative: &Path, bytes: &[u8]) -> Result<(), Error> {
+    write_with(identity, relative, bytes, |_| Ok(()))
+}
+fn write_with(
+    identity: &HomeIdentity,
+    relative: &Path,
+    bytes: &[u8],
+    before: impl FnOnce(&Path) -> std::io::Result<()>,
+) -> Result<(), Error> {
     static NEXT: AtomicU64 = AtomicU64::new(0);
     let path = verified_target(identity, relative)?;
     let name = format!(
@@ -85,24 +130,34 @@ fn write(identity: &HomeIdentity, relative: &Path, bytes: &[u8]) -> Result<(), E
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)
     );
-    let pending =
-        PendingWrite::prepare_mapped(&identity.path, &path, name.as_ref(), bytes, io_context)?;
-    verified_target(identity, relative)?;
-    pending
-        .publish_with(|_| Ok(()))
-        .map_err(|e| rename_error(pending.temporary_path(), &path, e))
+    let pending = PendingWrite::prepare_mapped(
+        &identity.path,
+        &path,
+        name.as_ref(),
+        bytes,
+        |path, e, operation| operation_error(path, None, e, operation),
+    )?;
+    let result = verified_target(identity, relative).and_then(|_| {
+        pending
+            .publish_with(before)
+            .map_err(|e| rename_error(pending.temporary_path(), &path, e))
+    });
+    if result.is_err() {
+        pending
+            .cleanup_with(|_| Ok(()))
+            .map_err(|e| io(pending.temporary_path(), e))?;
+    }
+    result
 }
 // Match os.replace at 0754c36 scripts/install_user_runtime_agents.py:380.
 // executor_text::io_error renders the source with the same codepoint repr.
 fn rename_error(temporary: &Path, path: &Path, e: std::io::Error) -> Error {
-    let mut error = io(temporary, e);
-    if error.message.starts_with("[Errno ") {
-        error.message.push_str(&format!(
-            " -> {}",
-            crate::executor_text::repr_points(&crate::executor_text::os_points(path.as_os_str()))
-        ));
-    }
-    error
+    operation_error(
+        Some(temporary),
+        Some(path),
+        e,
+        crate::executor_text::IoOperation::Win32,
+    )
 }
 
 pub(crate) fn ordered_desired(
@@ -153,7 +208,8 @@ fn restore(plan: &RuntimePlan, snap: &Snapshot) -> Result<(), Error> {
         Some(bytes) => write(&plan.identity, &snap.relative, bytes),
         None => {
             let path = verified_target(&plan.identity, &snap.relative)?;
-            remove_with(&plan.identity.path, &path, false, || Ok(())).map_err(|e| io(&path, e))
+            crate::user_runtime_mutation::remove_required(&plan.identity.path, &path, false)
+                .map_err(|e| io(&path, e))
         }
     }
 }
@@ -183,16 +239,15 @@ fn cleanup(plan: &RuntimePlan, snapshots: &[Snapshot]) -> Result<(), Error> {
                 path.display()
             )));
         }
-        remove_with(&plan.identity.path, &path, true, || Ok(())).map_err(|e| io(&path, e))?;
+        remove_required(&plan.identity.path, &path, true).map_err(|e| io(&path, e))?;
     }
     verified_target(&plan.identity, Path::new(RECEIPT_NAME))?;
     let root = &plan.identity.path;
-    remove_with(
+    remove_required(
         root.parent()
             .ok_or_else(|| sync("runtime home has no parent".into()))?,
         root,
         true,
-        || Ok(()),
     )
     .map_err(|e| io(root, e))
 }
@@ -227,8 +282,12 @@ pub(crate) fn transaction_with(
                         )));
                     }
                     let path = verified_target(&plan.identity, &item.target_relative)?;
-                    remove_with(&plan.identity.path, &path, false, || Ok(()))
-                        .map_err(|e| io(&path, e))?;
+                    crate::user_runtime_mutation::remove_required(
+                        &plan.identity.path,
+                        &path,
+                        false,
+                    )
+                    .map_err(|e| io(&path, e))?;
                 }
             }
             hook("receipt", i, Path::new(RECEIPT_NAME))?;
@@ -289,3 +348,31 @@ pub(crate) fn windows_core_order_test() {
 #[cfg(all(test, windows))]
 #[path = "user_runtime_windows_oracle_tests.rs"]
 mod user_runtime_windows_oracle_tests;
+
+#[cfg(all(test, windows))]
+#[path = "user_runtime_windows_error_tests.rs"]
+mod user_runtime_windows_error_tests;
+
+#[cfg(test)]
+mod phase_tests {
+    use super::*;
+    #[test]
+    fn missing_after_positive_exists_is_an_error() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let path = root.join("file");
+        std::fs::write(&path, b"before").unwrap();
+        let identity = capture_home_identity(&root).unwrap();
+        let result = read_with(&identity, Path::new("file"), || std::fs::remove_file(&path));
+        assert!(result.is_err(), "{result:?}");
+        assert!(read(&identity, Path::new("file")).unwrap().is_none());
+    }
+    #[test]
+    fn required_unlink_does_not_swallow_disappearance() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let result =
+            crate::user_runtime_mutation::remove_required(&root, &root.join("gone"), false);
+        assert!(result.is_err(), "{result:?}");
+    }
+}
