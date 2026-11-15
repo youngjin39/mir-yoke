@@ -285,3 +285,7 @@ pub(crate) fn windows_core_order_test() {
         (PathBuf::from("agents/Z.md"), Some(vec![3])),
     ]);
 }
+
+#[cfg(all(test, windows))]
+#[path = "user_runtime_windows_oracle_tests.rs"]
+mod user_runtime_windows_oracle_tests;
