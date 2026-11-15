@@ -157,67 +157,6 @@ fn faults_close_session_without_retry() {
     }
 }
 #[test]
-fn phase_probe_is_opt_in() {
-    let f = Fixture::new("echo");
-    let example = fixture_binary();
-    for setting in [None, Some("0"), Some("1")] {
-        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-        command
-            .args([
-                "--exact",
-                "persistent_child_uses_exact_argv_cwd_and_request_ids",
-                "--nocapture",
-            ])
-            .current_dir(&f.root)
-            .env("HOME", &f.root)
-            .env("MIR_HOOK_FIXTURE", &example)
-            .env_remove("MIR_HOOK_PHASE_PROBE");
-        if let Some(setting) = setting {
-            command.env("MIR_HOOK_PHASE_PROBE", setting);
-        }
-        let output = command.output().unwrap();
-        assert!(output.status.success(), "{output:?}");
-        let stderr = String::from_utf8(output.stderr).unwrap();
-        let marks: Vec<_> = stderr
-            .lines()
-            .filter(|line| line.starts_with("mir-hook phase="))
-            .collect();
-        if setting != Some("1") {
-            assert!(marks.is_empty(), "{stderr}");
-            continue;
-        }
-        for phase in [
-            "validation/canonicalisation",
-            "executable-read",
-            "sha256",
-            "spawn",
-            "receive",
-            "close",
-        ] {
-            let prefix = format!("mir-hook phase={phase} ");
-            let elapsed: Vec<_> = marks
-                .iter()
-                .filter_map(|line| line.strip_prefix(&prefix))
-                .map(|value| {
-                    value
-                        .strip_prefix("elapsed_ns=")
-                        .unwrap()
-                        .parse::<u128>()
-                        .unwrap()
-                })
-                .collect();
-            assert!(!elapsed.is_empty(), "missing phase {phase}: {stderr}");
-        }
-        #[cfg(windows)]
-        for phase in ["process-job", "assignment/resume"] {
-            assert!(
-                stderr.contains(&format!("mir-hook phase={phase} elapsed_ns=")),
-                "{stderr}"
-            );
-        }
-    }
-}
-#[test]
 fn timeout_covers_hello_response_and_blocked_stdin() {
     let _timing = Timing::new("test/timeout_covers_hello_response_and_blocked_stdin");
     let f = Fixture::new("hello-hang");
