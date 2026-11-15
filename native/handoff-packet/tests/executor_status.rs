@@ -1,6 +1,10 @@
 //! Status owns every argument shape before touching its synthetic registry.
 use std::{fs, path::PathBuf, process::Command};
 
+#[cfg(windows)]
+#[path = "support/executor_text.rs"]
+mod executor_text;
+
 fn root() -> PathBuf {
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
@@ -148,7 +152,11 @@ fn status_legacy_hooks_require_the_facade_without_launching_children() {
         assert!(output.stdout.is_empty());
         assert_eq!(
             output.stderr,
-            b"[mir_executor] legacy status hooks require the Python facade\n"
+            // WT-TEXT pass 2 authorizes the native-only text-stream contract.
+            "[mir_executor] legacy status hooks require the Python facade\n"
+                .replace('\n', if cfg!(windows) { "\r\n" } else { "\n" })
+                .as_bytes(),
+            "legacy stderr bytes, option={option:?}"
         );
     }
     assert!(!home.join("tasks/jobs.db").exists());
@@ -194,7 +202,26 @@ fn status_parser_errors_are_owned_without_registry_effects() {
         .unwrap();
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
-    assert_eq!(output.stderr, b"usage: python -m tools.mir_executor status --job-id JOB_ID [--repo-root PATH]\npython -m tools.mir_executor status: error: argument --job-id: expected one argument\n");
+    #[cfg(windows)]
+    {
+        let record = executor_text::record("parser", "");
+        assert_eq!(
+            output.status.code(),
+            record["exit"].as_i64().map(|v| v as i32)
+        );
+        assert_eq!(
+            output.stdout,
+            executor_text::bytes(&record, "stdout"),
+            "parser stdout bytes"
+        );
+        assert_eq!(
+            output.stderr,
+            executor_text::bytes(&record, "stderr"),
+            "parser stderr bytes"
+        );
+    }
+    #[cfg(not(windows))]
+    assert_eq!(output.stderr, b"usage: python -m tools.mir_executor status --job-id JOB_ID [--repo-root PATH]\npython -m tools.mir_executor status: error: argument --job-id: expected one argument\n", "parser stderr bytes");
     assert!(!root.join("tasks/jobs.db").exists());
     fs::remove_dir_all(root).unwrap();
 }

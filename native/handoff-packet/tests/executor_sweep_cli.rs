@@ -5,6 +5,10 @@ use std::{
     process::{Command, Output},
 };
 
+#[cfg(windows)]
+#[path = "support/executor_text.rs"]
+mod executor_text;
+
 struct Fixture(PathBuf);
 impl Fixture {
     fn new() -> Self {
@@ -106,11 +110,24 @@ fixture.setup(root, 'artifact')
 fn normalize(value: serde_json::Value, root: &std::path::Path) -> serde_json::Value {
     match value {
         serde_json::Value::String(s) => {
-            let normalized = s.replace(root.to_str().unwrap(), "$ROOT");
-            serde_json::json!(if normalized.contains("$ROOT") {
-                normalized.replace('\\', "/")
+            // Match cc468eee's generator: only synthetic root/path aliases.
+            let plain = |path: &str| {
+                let path = path.replace('\\', "/");
+                match path.strip_prefix("//?/") {
+                    Some(candidate) if candidate.as_bytes().get(1..3) == Some(b":/") => {
+                        candidate.to_owned()
+                    }
+                    _ => path,
+                }
+            };
+            let root = plain(root.to_str().unwrap());
+            let candidate = plain(&s);
+            serde_json::json!(if candidate == root {
+                "$ROOT".to_owned()
+            } else if let Some(tail) = candidate.strip_prefix(&(root + "/")) {
+                format!("$ROOT/{tail}")
             } else {
-                normalized
+                s
             })
         }
         serde_json::Value::Array(a) => {
@@ -133,6 +150,26 @@ fn normalize(value: serde_json::Value, root: &std::path::Path) -> serde_json::Va
         v => v,
     }
 }
+#[test]
+fn normalize_only_synthetic_root_aliases() {
+    for root in [r"C:\fixture", r"\\?\C:\fixture"] {
+        for (input, expected) in [
+            (r"C:\fixture", "$ROOT"),
+            (r"\\?\C:\fixture\repo\job", "$ROOT/repo/job"),
+            (r"C:\fixture\repo\job", "$ROOT/repo/job"),
+            ("C:/fixture/repo/job", "$ROOT/repo/job"),
+            (r"C:\fixture-other\job", r"C:\fixture-other\job"),
+            (r"prefix C:\fixture\job", r"prefix C:\fixture\job"),
+            (r"D:\elsewhere\job", r"D:\elsewhere\job"),
+        ] {
+            assert_eq!(
+                normalize(serde_json::json!(input), std::path::Path::new(root)),
+                serde_json::json!(expected),
+                "root={root:?}, input={input:?}"
+            );
+        }
+    }
+}
 fn parity(apply: bool) {
     let fixture = Fixture::new();
     fixture.setup();
@@ -151,18 +188,34 @@ fn parity(apply: bool) {
         "{}",
         String::from_utf8_lossy(&native.stderr)
     );
+    #[cfg(windows)]
+    let windows_record = executor_text::record("sweep", &apply.to_string());
+    #[cfg(windows)]
     assert_eq!(
-        native.stderr,
-        expected["stderr"].as_str().unwrap().as_bytes()
+        native.status.code(),
+        windows_record["exit"].as_i64().map(|v| v as i32)
+    );
+    #[cfg(windows)]
+    let expected_stderr = executor_text::bytes(&windows_record, "stderr");
+    #[cfg(not(windows))]
+    let expected_stderr = expected["stderr"].as_str().unwrap().as_bytes();
+    assert_eq!(
+        native.stderr, expected_stderr,
+        "sweep stderr bytes, apply={apply}"
     );
     assert_eq!(native.stdout.iter().filter(|b| **b == b'\n').count(), 1);
     let escaped_root = fixture.0.to_str().unwrap().replace('\\', "\\\\");
     let stdout = String::from_utf8(native.stdout.clone())
         .unwrap()
         .replace(&escaped_root, "$ROOT");
+    #[cfg(windows)]
+    let expected_stdout = executor_text::bytes(&windows_record, "stdout");
+    #[cfg(not(windows))]
+    let expected_stdout = expected["stdout"].as_str().unwrap().as_bytes();
     assert_eq!(
         stdout.as_bytes(),
-        expected["stdout"].as_str().unwrap().as_bytes()
+        expected_stdout,
+        "sweep stdout bytes, apply={apply}"
     );
     let result = serde_json::from_slice(&native.stdout).unwrap();
     assert_eq!(normalize(result, &fixture.0), expected["result"]);
