@@ -317,6 +317,9 @@ pub trait Reader {
 fn io_error(e: std::io::Error, p: &Path) -> Error {
     let (class, code, message) = match e.kind() {
         std::io::ErrorKind::NotFound => ("FileNotFoundError", 2, "No such file or directory"),
+        std::io::ErrorKind::PermissionDenied if cfg!(windows) => {
+            ("PermissionError", 13, "Permission denied")
+        }
         std::io::ErrorKind::IsADirectory => ("IsADirectoryError", 21, "Is a directory"),
         _ => ("OSError", e.raw_os_error().unwrap_or(0), "IO error"),
     };
@@ -329,7 +332,7 @@ fn io_error(e: std::io::Error, p: &Path) -> Error {
     )
 }
 fn read(p: &Path) -> Result<Vec<u8>> {
-    if p.is_dir() {
+    if cfg!(not(windows)) && p.is_dir() {
         return Err(error(
             "IsADirectoryError",
             format!(
@@ -2123,11 +2126,23 @@ mod tests {
         let path = root.path().join("directory'with\\backslash");
         fs::create_dir_all(&path).unwrap();
         let failure = read(&path).unwrap_err();
-        assert_eq!(failure.class, "IsADirectoryError");
+        assert_eq!(
+            failure.class,
+            if cfg!(windows) {
+                "PermissionError"
+            } else {
+                "IsADirectoryError"
+            }
+        );
         assert_eq!(
             failure.message,
             format!(
-                "[Errno 21] Is a directory: {}",
+                "{}: {}",
+                if cfg!(windows) {
+                    "[Errno 13] Permission denied"
+                } else {
+                    "[Errno 21] Is a directory"
+                },
                 py_repr(&path.display().to_string())
             )
         );

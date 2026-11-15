@@ -43,6 +43,12 @@ fn setup(root: &Path) -> (Doc, Doc) {
         ("contract.json", c.dump(false, None)),
         (".mir/ontology-map.json", m.dump(false, None)),
     ] {
+        // Python capture setup uses write_text with platform newline translation.
+        let text = if cfg!(windows) {
+            text.replace('\n', "\r\n")
+        } else {
+            text
+        };
         fs::write(root.join(name), text).unwrap();
     }
     (c, m)
