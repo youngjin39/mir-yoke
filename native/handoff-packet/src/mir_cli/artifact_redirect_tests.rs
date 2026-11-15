@@ -7,10 +7,11 @@ fn frozen_artifact_redirects() {
     let records: Vec<serde_json::Value> = serde_json::from_str(include_str!("../../tests/fixtures/y-e14c.json")).unwrap();
     if std::env::var_os("E14C_WORKER").is_none() {
         let home = tempfile::tempdir().unwrap();
-        assert!(Command::new(std::env::current_exe().unwrap()).args(["--exact",
+        let worker = Command::new(std::env::current_exe().unwrap()).args(["--exact",
             "mir_cli::artifact_redirect_tests::frozen_artifact_redirects", "--nocapture"])
             .env_clear().env("HOME", home.path()).env("E14C_WORKER", "1").env("HTTP_PROXY", "http://127.0.0.1:1").env("NO_PROXY", "127.0.0.1")
-            .current_dir(home.path()).status().unwrap().success());
+            .current_dir(home.path()).output().unwrap();
+        assert!(worker.status.success(), "worker status: {}\nstdout:\n{}\nstderr:\n{}", worker.status, String::from_utf8_lossy(&worker.stdout), String::from_utf8_lossy(&worker.stderr));
         return;
     }
     for r in records {
@@ -29,6 +30,8 @@ fn frozen_artifact_redirects() {
                     if start.elapsed() > Duration::from_secs(1) { return requests; }
                     std::thread::sleep(Duration::from_millis(1));
                 };
+                // macOS accept inherits O_NONBLOCK; wait for request bytes under parallel load.
+                stream.set_nonblocking(false).unwrap();
                 stream.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
                 let mut head = Vec::new();
                 while !head.ends_with(b"\r\n\r\n") { let mut b = [0]; stream.read_exact(&mut b).unwrap(); head.push(b[0]); }
