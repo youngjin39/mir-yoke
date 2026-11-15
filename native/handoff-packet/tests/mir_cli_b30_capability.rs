@@ -4,6 +4,71 @@ use handoff_packet::mir_cli::changes;
 use serde_json::{Value, json};
 use std::{fs, path::Path};
 
+fn observe_root(name: &str, mut value: Value, root: &str) -> Value {
+    // a61c3013 project_hooks.py:61,119: receipt read raises; degraded stdout
+    // contains errno's filename repr. Tokenize the root, never its suffix.
+    if name == "hooks.check.uninstalled"
+        && let Some(text) = value["value"][1].as_str()
+    {
+        let plain = root.strip_prefix(r"\\?\").unwrap_or(root);
+        let mut text = text.to_owned();
+        let mut spellings = Vec::new();
+        for spelling in [root.to_owned(), plain.to_owned(), plain.replace('\\', "/")] {
+            let encoded = serde_json::to_string(&spelling).unwrap();
+            spellings.push(encoded[1..encoded.len() - 1].to_owned());
+            spellings.push(spelling);
+        }
+        spellings.sort_by_key(|s| std::cmp::Reverse(s.len()));
+        for spelling in spellings {
+            for separator in ["/", r"\"] {
+                text = text.replace(
+                    &format!("directory: '{spelling}{separator}"),
+                    &format!("directory: '<tmp>{separator}"),
+                );
+            }
+        }
+        value["value"][1] = json!(text);
+    }
+    value
+}
+
+#[test]
+fn wt_core_a_d_roots() {
+    let root = r"\\?\C:\synthetic\case";
+    let encoded = serde_json::to_string(root).unwrap();
+    for spelling in [
+        root,
+        r"C:\synthetic\case",
+        "C:/synthetic/case",
+        &encoded[1..encoded.len() - 1],
+    ] {
+        for suffix in [
+            "/project/.mir/bin/project-hooks.json",
+            r"\project\.mir\bin\project-hooks.json",
+        ] {
+            let text = format!(
+                "project-hooks: degraded: [Errno 2] No such file or directory: '{spelling}{suffix}'\n"
+            );
+            let input = json!({"value":[1,text,text,{},[]]});
+            let mut expected = input.clone();
+            expected["value"][1] = json!(format!(
+                "project-hooks: degraded: [Errno 2] No such file or directory: '<tmp>{suffix}'\n"
+            ));
+            assert_eq!(
+                observe_root("hooks.check.uninstalled", input.clone(), root),
+                expected
+            );
+            assert_eq!(observe_root("other", input.clone(), root), input);
+            let other = text.replace("case", "case-other");
+            let input = json!({"value":[1,other,"",{},[]]});
+            assert_eq!(
+                observe_root("hooks.check.uninstalled", input.clone(), root),
+                input
+            );
+        }
+    }
+}
+
 #[path = "b30_capability_support/mod.rs"]
 mod capability;
 #[path = "b30_hooks_support/mod.rs"]
@@ -104,7 +169,12 @@ fn every_frozen_record_replays_exactly() {
         let actual = serde_json::to_string(&observed).unwrap();
         let prefix = serde_json::to_string(root.path().to_str().unwrap()).unwrap();
         let actual = actual.replace(&prefix[1..prefix.len() - 1], "<tmp>");
-        let actual: Value = observe_paths(name, serde_json::from_str(&actual).unwrap());
+        let actual = observe_root(
+            name,
+            serde_json::from_str(&actual).unwrap(),
+            root.path().to_str().unwrap(),
+        );
+        let actual: Value = observe_paths(name, actual);
         assert_eq!(&actual, expected, "record {name}");
         replayed += 1;
     }

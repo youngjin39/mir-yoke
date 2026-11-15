@@ -9,6 +9,64 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 const NOW: &str = "2030-01-02T00:00:00.123456+00:00";
+
+fn observe_root(name: &str, mut value: Value, root: &str) -> Value {
+    // 6b8796fa memory.py:434,233: Path in errors[0], then JSON stdout.
+    // Replace only that error's JSON-escaped synthetic root; keep suffix bytes.
+    if name == "doctor.missing.True"
+        && let Some(text) = value["value"]["command"]["stdout"].as_str()
+    {
+        let plain = root.strip_prefix(r"\\?\").unwrap_or(root);
+        let mut text = text.to_owned();
+        for spelling in [root.to_owned(), plain.to_owned(), plain.replace('\\', "/")] {
+            for separator in ["/", r"\"] {
+                let encoded = serde_json::to_string(&format!("{spelling}{separator}")).unwrap();
+                let suffix = serde_json::to_string(separator).unwrap();
+                text = text.replace(
+                    &format!(
+                        "\"errors\":[\"memory database is missing: {}",
+                        &encoded[1..encoded.len() - 1]
+                    ),
+                    &format!(
+                        "\"errors\":[\"memory database is missing: <tmp>{}",
+                        &suffix[1..suffix.len() - 1]
+                    ),
+                );
+            }
+        }
+        value["value"]["command"]["stdout"] = json!(text);
+    }
+    value
+}
+
+#[test]
+fn wt_core_a_d_roots() {
+    let root = r"\\?\C:\synthetic\case";
+    for spelling in [root, r"C:\synthetic\case", "C:/synthetic/case"] {
+        for suffix in ["/.mir/db", r"\.mir\db"] {
+            let text =
+                json!({"errors":[format!("memory database is missing: {spelling}{suffix}")]})
+                    .to_string();
+            let input = json!({"value":{"command":{"stdout":text,"stderr":text}}});
+            let mut expected = input.clone();
+            expected["value"]["command"]["stdout"] = json!(
+                json!({"errors":[format!("memory database is missing: <tmp>{suffix}")]})
+                    .to_string()
+            );
+            assert_eq!(
+                observe_root("doctor.missing.True", input.clone(), root),
+                expected
+            );
+            assert_eq!(observe_root("other", input.clone(), root), input);
+            let other = text.replace("case", "case-other");
+            let input = json!({"value":{"command":{"stdout":other}}});
+            assert_eq!(
+                observe_root("doctor.missing.True", input.clone(), root),
+                input
+            );
+        }
+    }
+}
 fn clock() -> SystemTime {
     UNIX_EPOCH + Duration::new(1893542400, 123456000)
 }
@@ -316,7 +374,8 @@ fn frozen_records() {
             .tempdir_in(std::env::temp_dir())
             .unwrap();
         let root = tmp.path().canonicalize().unwrap();
-        let actual = observe_paths(name, normalize(replay(name, &root), &root));
+        let actual = observe_root(name, replay(name, &root), root.to_str().unwrap());
+        let actual = observe_paths(name, normalize(actual, &root));
         assert_eq!(&actual, expected, "{name}");
         replayed += 1;
         println!("{name}: replayed");
