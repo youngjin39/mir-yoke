@@ -157,8 +157,10 @@ fn run(cmd: &mut Command, r: &Value, mode: &str, expand: &impl Fn(&str) -> Strin
                 reference["final_exception"].as_str().unwrap()
             ));
         }
-        for field in ["stdout", "stderr"] {
-            expected[field] = json!(expected[field].as_str().unwrap().replace('\n', "\r\n"));
+        if mode != "tdd-guard" {
+            for field in ["stdout", "stderr"] {
+                expected[field] = json!(expected[field].as_str().unwrap().replace('\n', "\r\n"));
+            }
         }
     }
     assert_eq!(observed, expected, "{}", r["id"]);
