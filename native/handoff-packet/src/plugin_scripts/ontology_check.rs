@@ -1766,8 +1766,9 @@ pub fn main(argv: &[String], ctx: &Context<'_>) -> Output {
         return cli_error(
             "",
             &format!(
-                "argument command: invalid choice: '{chosen}' \
-(choose from contract, mapping, impact, lookup)"
+                "argument command: invalid choice: {} \
+(choose from contract, mapping, impact, lookup)",
+                py_repr(chosen)
             ),
         );
     }
@@ -2091,4 +2092,61 @@ pub fn main(argv: &[String], ctx: &Context<'_>) -> Output {
 }
 fn join(v: &Doc) -> String {
     v.list().iter().map(display).collect::<Vec<_>>().join(", ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct NoGit;
+    impl GitRunner for NoGit {
+        fn run(&self, _: &[String], _: u64) -> Result<GitOutput> {
+            panic!("argparse refusal must not invoke Git");
+        }
+    }
+
+    fn assert_argparse_repr(quotes: bool) {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/wt-path-records-repr.json"
+        ))
+        .unwrap();
+        for record in fixture["records"].as_array().unwrap() {
+            let value = record["value"].as_str().unwrap();
+            if value.contains('\'') != quotes {
+                continue;
+            }
+            let output = main(
+                &[value.into()],
+                &Context {
+                    git: &NoGit,
+                    observed_at: "unused",
+                },
+            );
+            assert_eq!(
+                output.exit,
+                record["exit"].as_i64().unwrap() as i32,
+                "{value:?}"
+            );
+            assert_eq!(
+                output.stdout,
+                record["stdout"].as_str().unwrap(),
+                "{value:?}"
+            );
+            assert_eq!(
+                output.stderr,
+                record["stderr"].as_str().unwrap(),
+                "{value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn argparse_repr_paths_match_pinned_python() {
+        assert_argparse_repr(false);
+    }
+
+    #[test]
+    fn argparse_repr_quotes_match_pinned_python() {
+        assert_argparse_repr(true);
+    }
 }
