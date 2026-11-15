@@ -12,6 +12,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -98,7 +99,69 @@ def activate(bundle, pin):
                    *[p for p in sys.path if not Path(p).is_relative_to(bundle)]]
 
 
+def path_spellings(value):
+    """Include lexical/real paths and Windows long/8.3 aliases, without subprocesses."""
+    paths = {str(value), os.path.abspath(value), os.path.realpath(value)}
+    if os.name == "nt":
+        import ctypes
+
+        for name in ("GetLongPathNameW", "GetShortPathNameW"):
+            function = getattr(ctypes.windll.kernel32, name)
+            function.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32]
+            function.restype = ctypes.c_uint32
+            for path in list(paths):
+                buffer = ctypes.create_unicode_buffer(32768)
+                size = function(path, buffer, len(buffer))
+                if 0 < size < len(buffer):
+                    paths.add(buffer.value)
+    spellings = {spelling for path in paths for spelling in
+                 (path, path.replace("\\", "/"), path.replace("/", "\\"))}
+    # OSError.__str__ uses repr(filename): Windows separators are doubled even
+    # before the outer JSON encoding. Nested JSON metadata can do the same.
+    return spellings | {repr(p)[1:-1] for p in spellings} | {
+        json.dumps(p, ensure_ascii=True)[1:-1] for p in spellings}
+
+
+
+class Privacy:
+    """Tokenise string leaves before JSON escaping; retain every field and byte hash."""
+
+    def __init__(self, paths, private_names):
+        aliases = {}
+        for path, token in paths:
+            if path:
+                for spelling in path_spellings(path):
+                    aliases.setdefault(spelling, token)
+        self.aliases = sorted(aliases.items(), key=lambda pair: len(pair[0]), reverse=True)
+        self.pattern = re.compile("|".join(re.escape(p) for p, _ in self.aliases), re.I)
+        self.tokens = {p.casefold(): token for p, token in self.aliases}
+        self.private = [p.casefold() for p, _ in self.aliases] + [
+            name.casefold() for name in private_names if name]
+
+    def clean(self, value, record, field="$"):
+        if isinstance(value, str):
+            value = self.pattern.sub(lambda m: self.tokens[m[0].casefold()], value)
+            value = value.replace("<tmp>", "{ROOT}")
+            if any(private in value.casefold() for private in self.private):
+                raise AssertionError(f"private path/name in capture: {record} {field}")
+            return re.sub(r"(?i)(?<![a-z])([a-z]):(?=[/\\])", "{DRIVE}", value)
+        if isinstance(value, list):
+            return [self.clean(v, record, f"{field}[{i}]") for i, v in enumerate(value)]
+        if isinstance(value, dict):
+            return {self.clean(k, record, f"{field}.<key>"):
+                    self.clean(v, record, f"{field}.{k}") for k, v in value.items()}
+        return value
+
+
 def capture(bundle, scratch, output, check_unix):
+    bundle, scratch = bundle.absolute(), scratch.absolute()
+    # Save the host home before installing the synthetic HOME/USERPROFILE.
+    private_names = [os.environ.get("USERNAME", ""), os.environ.get("USER", "")]
+    host_paths = [(str(bundle.parent), "{PKG}"),
+                  (str(Path(__file__).parent), "{PKG}"),
+                  (str(Path(sys.executable)), "{PKG}/python")]
+    host_paths += [(os.environ.get(name, ""), "{HOME}") for name in ("HOME", "USERPROFILE")]
+    scratch_paths = [(str(scratch), "{ROOT}")]
     bundle = bundle.resolve()
     manifest = json.loads((bundle / "manifest.json").read_text(encoding="ascii"))
     for name, sha in manifest.items():
@@ -139,15 +202,7 @@ def capture(bundle, scratch, output, check_unix):
             assert os.name == "posix"
             assert g15._compact(raw) == expected[name], name
 
-        def clean(v, root=root):
-            if isinstance(v, str):
-                v = v.replace(str(root), "{ROOT}").replace("<tmp>", "{ROOT}")
-                return v.replace(root.drive, "{DRIVE}") if root.drive else v
-            if isinstance(v, list):
-                return [clean(x) for x in v]
-            if isinstance(v, dict):
-                return {k: clean(x) for k, x in v.items()}
-            return v
+        privacy = Privacy([(str(root), "{ROOT}"), *scratch_paths, *host_paths], private_names)
 
         # No projection is produced by helpers/early failures; null distinguishes
         # absence from an empty file. Bytes and hashes are never normalized.
@@ -155,7 +210,7 @@ def capture(bundle, scratch, output, check_unix):
                              else "out/nested/projection.md")
         file_bytes = projection.read_bytes() if projection.is_file() else None
         b15[name] = {
-            "observation": clean(raw),
+            "observation": privacy.clean(raw, name),
             "file_hex": file_bytes.hex() if file_bytes is not None else None,
             "byte_length": len(file_bytes) if file_bytes is not None else None,
             "sha256": digest(file_bytes) if file_bytes is not None else None,
@@ -169,7 +224,8 @@ def capture(bundle, scratch, output, check_unix):
     g18 = isolated_module(
         bundle / B18 / "tests/test_w2_b18_archive_helpers_frozen.py", "oracle_b18", True)
     check_modules(bundle)
-    b18 = {name: g18.observe(g18.CASES[name], scratch) for name in CASES}
+    privacy = Privacy([*scratch_paths, *host_paths], private_names)
+    b18 = {name: privacy.clean(g18.observe(g18.CASES[name], scratch), name) for name in CASES}
     check_modules(bundle)
     if check_unix:
         expected = json.loads((bundle / B18 / fixture_dir / "b18-archive-helpers.json").read_text())
@@ -180,9 +236,6 @@ def capture(bundle, scratch, output, check_unix):
               "b15": b15, "b18": b18,
               "unix_frozen_verified": check_unix}
     text = json.dumps(result, indent=2, ensure_ascii=True) + "\n"
-    for private in (str(scratch), os.environ.get("USERNAME", "")):
-        if private:
-            assert private.casefold() not in text.casefold(), "private path/name in capture"
     output.write_text(text, encoding="ascii", newline="\n")
 
 

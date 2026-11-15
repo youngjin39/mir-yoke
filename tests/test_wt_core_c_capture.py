@@ -18,10 +18,13 @@ PIN = "aa4fdbdbaa1c9641d5b7594e6c73174a0e0e4315"
 
 @unittest.skipUnless(os.name == "posix", "Unix frozen verification; PC capture runs separately")
 def test_all_b15_routes(tmp_path):
+    tmp_path = tmp_path / "MiXeDPrivate"
+    tmp_path.mkdir()
     home = tmp_path / "home"
     home.mkdir()
     env = {**os.environ, "HOME": str(home), "USERPROFILE": str(home),
-           "PYTHONDONTWRITEBYTECODE": "1"}
+           "PYTHONDONTWRITEBYTECODE": "1", "USERNAME": "mIxEdPrIvAtE",
+           "USER": "MIXEDPRIVATE"}
     bundle, output = tmp_path / "bundle", tmp_path / "records.json"
     commands = [
         ["--prepare", "--repo", str(ROOT), "--yaml-root", str(Path(yaml.__file__).parent)],
@@ -33,6 +36,7 @@ def test_all_b15_routes(tmp_path):
              "--bundle", str(bundle), *args],
             cwd=tmp_path, env=env, capture_output=True, text=True, check=False)
         assert result.returncode == 0, result.stderr
+    assert "mixedprivate" not in output.read_text().casefold()
     records = json.loads(output.read_text())["b15"]
     frozen = json.loads((bundle / PIN /
                         "native/handoff-packet/tests/fixtures/w2/b15-render.json").read_text())
@@ -53,3 +57,29 @@ def test_all_b15_routes(tmp_path):
     assert records["cli.None.False.False"]["observation"]["value"]["results"] == [{"value": 0}]
     assert records["cli.invalid_target"]["observation"]["value"]["results"] == [
         {"error": ["SystemExit", "2"]}]
+
+
+def test_private_path_spellings_and_guard():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("capture_privacy", CAPTURE)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    root = r"C:\Users\MiXeDPrivate\pkg\scratch\b15\cli.in_place"
+    privacy = module.Privacy(
+        [(root, "{ROOT}"), (r"C:\Users\MiXeDPrivate\pkg", "{PKG}"),
+         (r"C:\Users\MiXeDPrivate", "{HOME}")], ["MiXeDPrivate"])
+    raw = {"value": [root.lower().replace("\\", "/") + "/out/link.md",
+                     r"C:\USERS\MIXEDPRIVATE\pkg\bundle\source.py",
+                     r"c:/users/mixedprivate/AppData/python.exe"]}
+    assert privacy.clean(raw, "cli.in_place") == {"value": [
+        "{ROOT}/out/link.md", r"{PKG}\bundle\source.py", "{HOME}/AppData/python.exe"]}
+    assert privacy.clean({"error": ["OSError", f"denied: {root!r}"]}, "cli.second_failure") == {
+        "error": ["OSError", "denied: '{ROOT}'"]}
+    try:
+        privacy.clean({"error": ["PermissionError", "user MiXeDPrivate denied"]}, "cli.in_place")
+    except AssertionError as exc:
+        assert str(exc) == "private path/name in capture: cli.in_place $.error[1]"
+        assert "MiXeDPrivate" not in str(exc)
+    else:
+        raise AssertionError("guard accepted a private name")
