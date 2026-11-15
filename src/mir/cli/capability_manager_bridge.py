@@ -13,9 +13,10 @@ METHODS = frozenset({"status", "check", "sync", "update", "finalize", "attest"})
 
 
 @contextlib.contextmanager
-def capture(mode=None):
+def capture(mode=None, output=None):
     if mode is not None:
-        events, output = [], io.StringIO()
+        events = []
+        start = len(output.getvalue())
         try:
             with contextlib.ExitStack() as stack:
                 if mode in {"activate", "finalize"}:
@@ -24,8 +25,12 @@ def capture(mode=None):
                     stack.enter_context(contextlib.redirect_stderr(output))
                 yield events
         finally:
-            if output.getvalue():
-                events.append({"stream": "stdout", "data": list(output.getvalue().encode())})
+            text = output.getvalue()[start:]
+            if text:
+                # StringIO has no encoder: retain even Python-only code points.
+                events.append({
+                    "stream": "stdout", "data": list(text.encode("utf-8", "surrogatepass"))
+                })
         return
     events, saved, files = [], [], []
     try:
@@ -58,9 +63,11 @@ def main():
         if mode is None:
             os.dup2(null.fileno(), 1)
     cls = manager = None
+    # The pinned bootstrap owns one redirect target across construction and call.
+    output = io.StringIO()
     terminal_stdout, terminal_stderr = sys.stdout, sys.stderr
     for line in requests:
-        with capture(mode) as events:
+        with capture(mode, output) as events:
             try:
                 request = json.loads(line)
                 if cls is None:

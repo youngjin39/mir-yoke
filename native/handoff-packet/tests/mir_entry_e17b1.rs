@@ -249,23 +249,28 @@ fn output_boundary_child() {
     let mut m = ProductionManager::start_with_output(&root.join("mir-cli"), &root, output).unwrap();
     m.request(json!({"op":"import"})).unwrap();
     let mut start = std::time::Instant::now();
-    let mut captured = String::new();
+    let mut captured = Vec::new();
     if mode != "import" {
-        m.request(json!({"op":"initialize"})).unwrap();
+        let init = m.request(json!({"op":"initialize"})).unwrap();
+        for event in init.events {
+            match event {
+                Event::Stdout(b) | Event::Stderr(b) => captured.extend(b),
+            }
+        }
         start = std::time::Instant::now();
         let reply = m
             .request(json!({"op":"call","method":if mode=="finalize" {"finalize"} else {"sync"}}))
             .unwrap();
         for event in reply.events {
             match event {
-                Event::Stdout(b) | Event::Stderr(b) => {
-                    captured.push_str(std::str::from_utf8(&b).unwrap())
-                }
+                Event::Stdout(b) | Event::Stderr(b) => captured.extend(b),
             }
         }
-        let error = format!("ERROR: {}\n", reply.error.unwrap().message);
+        let error = reply.error.unwrap();
+        assert_eq!(error.class, "CapabilityError");
+        let error = format!("ERROR: {}\n", error.message);
         if mode == "activate" {
-            captured.push_str(&error);
+            captured.extend(error.as_bytes());
         } else {
             eprint!("{error}");
         }
@@ -276,8 +281,10 @@ fn output_boundary_child() {
         Value::Null
     } else if mode == "console" {
         json!(1)
+    } else if r["closing"] == true {
+        json!(["failed", {"reason_wtf8":captured.strip_suffix(b"\n").unwrap_or(&captured)}])
     } else {
-        json!(["failed", {"reason":captured.trim()}])
+        json!(["failed", {"reason":std::str::from_utf8(&captured).unwrap().trim()}])
     };
     fs::write(root.join("result.json"), value.to_string()).unwrap();
     std::process::exit(0);
@@ -286,6 +293,26 @@ fn output_boundary_child() {
 #[test]
 fn pinned_output_semantics() {
     let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e17b2a.json")).unwrap();
+    check_output_records(records);
+}
+
+#[test]
+fn retained_stdout_matches_pinned_python() {
+    closing_output_records("retained-stdout");
+}
+
+#[test]
+fn captured_surrogate_matches_pinned_python() {
+    closing_output_records("surrogate");
+}
+
+fn closing_output_records(case: &str) {
+    let records: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/y-e17b2ac.json")).unwrap();
+    check_output_records(records.into_iter().filter(|r| r["case"] == case).collect());
+}
+
+fn check_output_records(records: Vec<Value>) {
     for r in records {
         let source = r["source"].as_str().unwrap().replace(
             "from mir.core.capabilities.manager import CapabilityError",
