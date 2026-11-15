@@ -579,6 +579,7 @@ fn reviewer_write_error_converts_nested_alias_once() {
     );
 }
 
+#[cfg(unix)]
 fn completed_outcome(wt: &DispatchWorktree) -> DispatchOutcome {
     DispatchOutcome {
         status: "completed".into(),

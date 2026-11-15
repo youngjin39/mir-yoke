@@ -268,20 +268,13 @@ pub(crate) fn expand_path(path: &Path) -> Result<PathBuf> {
     // Preserve surrogateescaped native path bytes throughout filesystem calls.
     let mut components = path.components();
     if components.next().is_some_and(|c| c.as_os_str() == "~") {
-        let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
-            .or_else(|| {
-                #[cfg(unix)]
-                {
-                    handoff_packet::runtime_account_home(None).map(PathBuf::into_os_string)
-                }
-                #[cfg(not(unix))]
-                {
-                    None
-                }
-            })
-            .ok_or_else(|| {
-                Failure::Exception("RuntimeError: Could not determine home directory.".into())
-            })?;
+        let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" });
+        #[cfg(unix)]
+        let home = home
+            .or_else(|| handoff_packet::runtime_account_home(None).map(PathBuf::into_os_string));
+        let home = home.ok_or_else(|| {
+            Failure::Exception("RuntimeError: Could not determine home directory.".into())
+        })?;
         let home = if home.is_empty() {
             PathBuf::from(std::path::MAIN_SEPARATOR.to_string())
         } else {

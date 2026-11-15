@@ -6,14 +6,14 @@
 )]
 // Reuse the reviewed descriptor-relative adoption boundary. Loaded as a normal (non-#[path]) module so its
 // platform submodules resolve under src/adoption_fs/ exactly as in the library.
+#[cfg(unix)]
 #[allow(unsafe_code, dead_code)]
 #[path = "."]
 mod fs_root {
     pub(crate) mod adoption_fs;
 }
+#[cfg(unix)]
 use fs_root::adoption_fs;
-#[cfg(windows)]
-use handoff_packet::executor_text;
 #[path = "runtime_manifest_args.rs"]
 mod runtime_manifest_args;
 #[path = "runtime_verify.rs"]
