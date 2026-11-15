@@ -126,6 +126,12 @@ fn bootstrap_child() {
     } else {
         b::finalize_capabilities(&root, Some(&prior), &mut host)
     };
+    if r.get("case").is_some() {
+        let (status, evidence) = result.unwrap();
+        let value = format!("[{},{}]", json!(status), evidence.json_sorted(false));
+        fs::write(root.join("result.json"), value).unwrap();
+        return;
+    }
     let value = match result {
         Ok((s, v)) => json!([s, b::scalar_evidence(&v).unwrap()]),
         Err(e) => json!({"class":e.class,"message":e.message}),
@@ -278,4 +284,67 @@ fn closing_paths() {
 #[test]
 fn closing_cwd() {
     closing_replay("cwd");
+}
+
+#[test]
+fn lossless_rpc_records() {
+    let records: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/y-e17b2b2a.json")).unwrap();
+    for r in records.into_iter().filter(|r| r["mode"] != "protocol") {
+        let (_tmp, root) = setup(r["source"].as_str().unwrap());
+        let mut cmd = Command::new(if r["mode"] == "activate" {
+            std::env::current_exe().unwrap()
+        } else {
+            root.join("mir")
+        });
+        if r["mode"] == "activate" {
+            cmd.args(["--exact", "bootstrap_child", "--nocapture", "--quiet"])
+                .env("Y_E17B2B2", r.to_string());
+        } else {
+            cmd.args([
+                "capability",
+                if r["mode"] == "sync" {
+                    "sync"
+                } else {
+                    "status"
+                },
+                "--project-root",
+                ".",
+            ]);
+            if r["mode"] != "status-pretty" {
+                cmd.arg("--json");
+            }
+        }
+        let out = cmd
+            .env("HOME", &root)
+            .env("PATH", &root)
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        if r["mode"] == "activate" {
+            assert!(out.status.success(), "{:?}", out);
+            let actual = fs::read_to_string(root.join("result.json")).unwrap();
+            let expected = r["value"].as_str().unwrap();
+            assert_eq!(actual, expected, "{}", r["case"]);
+        } else {
+            assert_eq!(
+                out.status.code(),
+                r["value"].as_i64().map(|v| v as i32),
+                "{r}: {out:?}"
+            );
+            assert_eq!(
+                out.stdout,
+                serde_json::from_value::<Vec<u8>>(r["stdout"].clone()).unwrap(),
+                "{r}"
+            );
+            // Console encoding is deferred: exception Text is checked by the bootstrap route.
+            if r["case"] != "exception" {
+                assert_eq!(
+                    out.stderr,
+                    serde_json::from_value::<Vec<u8>>(r["stderr"].clone()).unwrap()
+                );
+            }
+        }
+        reaped(&root);
+    }
 }

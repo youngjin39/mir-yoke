@@ -67,6 +67,7 @@ use std::{
 pub struct Error {
     pub class: String,
     pub message: String,
+    pub message_text: Option<crate::python_json::Text>,
     pub mro: Vec<String>,
 }
 impl Error {
@@ -82,6 +83,7 @@ impl Error {
         Self {
             class,
             message: message.into(),
+            message_text: None,
             mro,
         }
     }

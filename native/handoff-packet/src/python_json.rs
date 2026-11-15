@@ -7,7 +7,7 @@ pub fn python_strip(text: &str) -> &str {
     text.trim_matches(crate::mir_cli::bootstrap_adoption::is_python_space)
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Text {
     pub codepoints: Vec<u32>,
     text: Option<String>,
@@ -125,9 +125,18 @@ impl Number {
         }
     }
 }
-#[derive(Clone, Debug, PartialEq, Default)]
-pub struct Object(Vec<(Text, Value)>);
+#[derive(Clone, Debug, Default)]
+pub struct Object(Vec<(Text, Value)>, bool);
+impl PartialEq for Object {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
 impl Object {
+    /// Protocol schemas may reject duplicate fields while payloads keep Python's last value.
+    pub fn has_duplicate_keys(&self) -> bool {
+        self.1
+    }
     pub fn into_entries(self) -> Vec<(Text, Value)> {
         self.0
     }
@@ -157,6 +166,7 @@ impl Object {
     }
     pub(crate) fn insert(&mut self, key: Text, value: Value) {
         if let Some((_, v)) = self.0.iter_mut().find(|(k, _)| *k == key) {
+            self.1 = true;
             *v = value;
         } else {
             self.0.push((key, value));
@@ -186,6 +196,7 @@ impl From<&serde_json::Value> for Value {
                 o.iter()
                     .map(|(k, v)| (k.as_str().into(), Self::from(v)))
                     .collect(),
+                false,
             )),
         }
     }

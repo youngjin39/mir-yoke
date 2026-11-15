@@ -24,7 +24,7 @@ pub fn replay(name: &str, tmp: &Path) -> Value {
             method: &str,
             args: Vec<Value>,
             kwargs: Map<String, Value>,
-        ) -> Result<Value, capability::Error> {
+        ) -> Result<handoff_packet::python_json::Value, capability::Error> {
             self.calls.push(json!([method, args, kwargs]));
             if self.error {
                 return Err(capability::Error::new(
@@ -33,7 +33,9 @@ pub fn replay(name: &str, tmp: &Path) -> Value {
                 ));
             }
             fs::write(self.root.join("written"), method).unwrap();
-            Ok(json!({"query":method}))
+            Ok(handoff_packet::python_json::Value::from(
+                &json!({"query":method}),
+            ))
         }
     }
     let command = name.strip_prefix("capability.").unwrap_or(name);

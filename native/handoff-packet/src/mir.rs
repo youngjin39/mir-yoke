@@ -345,6 +345,7 @@ mod tests {
         let error = super::mir_cli::bootstrap::Error {
             class: e["klass"].as_str().unwrap().into(),
             message: e["message"].as_str().unwrap().into(),
+            message_text: None,
             mro: serde_json::from_value(e["mro"].clone()).unwrap(),
         };
         assert_eq!(super::bootstrap_failure(&error).2, e["line"]);

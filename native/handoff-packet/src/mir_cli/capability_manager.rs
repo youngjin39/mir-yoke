@@ -1,4 +1,5 @@
 use super::capability::Manager;
+use crate::python_json::{self as py, Text, Value as PyValue};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 use std::io::{BufRead, BufReader, Read, Seek, Write};
@@ -13,22 +14,89 @@ pub enum Event {
     Stdout(Vec<u8>),
     Stderr(Vec<u8>),
 }
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, PartialEq)]
 pub struct Exception {
     pub class: String,
-    pub message: String,
-    #[serde(default)]
+    pub message: Text,
     pub mro: Vec<String>,
 }
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, PartialEq)]
 pub struct Reply {
-    #[serde(deserialize_with = "Value::deserialize")]
-    pub value: Value,
-    #[serde(deserialize_with = "Option::<Exception>::deserialize")]
+    pub value: PyValue,
     pub error: Option<Exception>,
     pub events: Vec<Event>,
+}
+impl Reply {
+    fn decode(line: &str) -> Result<Self, String> {
+        let invalid = || "invalid manager reply".to_owned();
+        let fields = |value: &PyValue, required: &[&str], optional: &[&str]| {
+            value.as_object().is_some_and(|o| {
+                !o.has_duplicate_keys()
+                    && required.iter().all(|k| o.get(k).is_some())
+                    && o.keys().all(|k| {
+                        k.as_str()
+                            .is_some_and(|s| required.contains(&s) || optional.contains(&s))
+                    })
+            })
+        };
+        let value = py::parse(line).map_err(|e| e.to_string())?;
+        if !fields(&value, &["value", "error", "events"], &[]) {
+            return Err(invalid());
+        }
+        let error = if value["error"].is_null() {
+            None
+        } else {
+            let e = &value["error"];
+            if !fields(e, &["class", "message"], &["mro"]) {
+                return Err(invalid());
+            }
+            Some(Exception {
+                class: e["class"].as_str().ok_or_else(invalid)?.into(),
+                message: e["message"].as_text().ok_or_else(invalid)?.clone(),
+                mro: match e.get("mro") {
+                    None => vec![],
+                    Some(v) => v
+                        .as_array()
+                        .ok_or_else(invalid)?
+                        .iter()
+                        .map(|s| s.as_str().map(str::to_owned).ok_or_else(invalid))
+                        .collect::<Result<_, _>>()?,
+                },
+            })
+        };
+        let events = value["events"]
+            .as_array()
+            .ok_or_else(invalid)?
+            .iter()
+            .map(|e| {
+                if !fields(e, &["stream", "data"], &[]) {
+                    return Err(invalid());
+                }
+                let bytes = e["data"]
+                    .as_array()
+                    .ok_or_else(invalid)?
+                    .iter()
+                    .map(|n| {
+                        if let PyValue::Number(n) = n {
+                            n.token.parse::<u8>().map_err(|_| invalid())
+                        } else {
+                            Err(invalid())
+                        }
+                    })
+                    .collect::<Result<_, _>>()?;
+                match e["stream"].as_str() {
+                    Some("stdout") => Ok(Event::Stdout(bytes)),
+                    Some("stderr") => Ok(Event::Stderr(bytes)),
+                    _ => Err(invalid()),
+                }
+            })
+            .collect::<Result<_, _>>()?;
+        Ok(Self {
+            value: value["value"].clone(),
+            error,
+            events,
+        })
+    }
 }
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -153,9 +221,7 @@ impl ProductionManager {
             Err(e) => Err((Failure::Io, e.to_string())),
             Ok(line) if line.is_empty() => Err((Failure::Eof, "manager reply EOF".into())),
             Ok(line) if !line.ends_with('\n') => Err((Failure::Malformed, "partial reply".into())),
-            Ok(line) => {
-                serde_json::from_str(&line).map_err(|e| (Failure::Malformed, e.to_string()))
-            }
+            Ok(line) => Reply::decode(&line).map_err(|e| (Failure::Malformed, e)),
         };
         result.map_err(|(kind, message)| self.stop(kind, message))
     }
@@ -198,20 +264,21 @@ impl ProductionManager {
     pub fn import(&mut self) -> Result<(), super::capability::Error> {
         self.invoke(json!({"op":"import"})).map(|_| ())
     }
-    fn invoke(&mut self, request: Value) -> Result<Value, super::capability::Error> {
+    fn invoke(&mut self, request: Value) -> Result<PyValue, super::capability::Error> {
         self.invoke_wire(&request.to_string(), request["op"] == "call")
     }
     fn invoke_wire(
         &mut self,
         request: &str,
         terminal: bool,
-    ) -> Result<Value, super::capability::Error> {
+    ) -> Result<PyValue, super::capability::Error> {
         self.last_reply = None;
         let reply = self.request_wire(request).map_err(Self::transport)?;
         let result = match &reply.error {
             Some(e) => Err(super::capability::Error {
                 class: e.class.clone(),
-                message: e.message.clone(),
+                message: e.message.py_str(),
+                message_text: Some(e.message.clone()),
                 mro: e.mro.clone(),
             }),
             None => Ok(reply.value.clone()),
@@ -263,7 +330,7 @@ impl Manager for ProductionManager {
         op: &str,
         args: Vec<Value>,
         k: Map<String, Value>,
-    ) -> Result<Value, super::capability::Error> {
+    ) -> Result<PyValue, super::capability::Error> {
         self.invoke(json!({"op":"call", "method":op, "args":args, "kwargs":k}))
     }
 }

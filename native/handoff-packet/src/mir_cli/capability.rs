@@ -3,6 +3,7 @@
 pub use super::bootstrap::Error;
 use super::{changes, memory::Output};
 use crate::executor_execute::repr;
+use crate::python_json::{Text, Value as PyValue};
 use serde_json::{Map, Value, json};
 use std::path::Path;
 
@@ -22,7 +23,7 @@ pub trait Manager {
         method: &str,
         args: Vec<Value>,
         kwargs: Map<String, Value>,
-    ) -> Result<Value, Error>;
+    ) -> Result<PyValue, Error>;
 }
 
 fn usage(command: &str) -> String {
@@ -117,27 +118,6 @@ fn help(command: &str) -> Output {
 }
 fn option_like(value: &str) -> bool {
     value.len() > 1 && value.starts_with('-') && value[1..].parse::<f64>().is_err()
-}
-fn ascii_json(value: &Value, pretty: bool) -> Result<String, Error> {
-    let encoded = if pretty {
-        serde_json::to_string_pretty(value)
-    } else {
-        serde_json::to_string(value)
-    }
-    .map_err(|error| Error::new("TypeError", error.to_string()))?;
-    let mut out = String::new();
-    for ch in encoded.chars() {
-        if ch.is_ascii() {
-            out.push(ch);
-        } else {
-            let mut units = [0; 2];
-            for unit in ch.encode_utf16(&mut units) {
-                out.push_str(&format!("\\u{unit:04x}"));
-            }
-        }
-    }
-    out.push('\n');
-    Ok(out)
 }
 /// Dispatch without discovering or creating a provider.
 pub fn main(argv: &[&str], manager: &mut impl Manager) -> Result<Output, Error> {
@@ -298,7 +278,7 @@ pub fn main_with_paths(
             &format!("unrecognized arguments: {}", unknown.join(" ")),
         ));
     }
-    let mut run = || -> Result<Value, Error> {
+    let mut run = || -> Result<PyValue, Error> {
         use super::bootstrap::Host;
         let mut host = super::bootstrap::ProductionHost::default();
         let root = path(Path::new(
@@ -362,20 +342,47 @@ pub fn main_with_paths(
             kwargs.insert("apply".into(), json!(values.contains_key("--apply")));
         }
         let mut result = manager.call(command, args, kwargs)?;
-        if let Some(before) = before {
-            result["changed_paths"] = json!(changes::changed_paths(
-                &before,
-                &changes::snapshot_project(&root)
-                    .map_err(|e| Error::new("OSError", e.to_string()))?
+        let PyValue::Object(ref mut object) = result else {
+            return Err(Error::new(
+                "TypeError",
+                format!(
+                    "'{}' object does not support item assignment",
+                    result.type_name()
+                ),
             ));
+        };
+        if let Some(before) = before {
+            object.insert(
+                "changed_paths".into(),
+                PyValue::Array(
+                    changes::changed_paths(
+                        &before,
+                        &changes::snapshot_project(&root)
+                            .map_err(|e| Error::new("OSError", e.to_string()))?,
+                    )
+                    .into_iter()
+                    .map(|s| PyValue::String(s.into()))
+                    .collect(),
+                ),
+            );
         } else {
-            result["change_evidence"] =
-                json!({"status":"not-applicable","reason":"read-only-operation"});
+            let mut evidence = crate::python_json::Object::default();
+            for (k, v) in [
+                ("status", "not-applicable"),
+                ("reason", "read-only-operation"),
+            ] {
+                evidence.insert(k.into(), PyValue::String(v.into()));
+            }
+            object.insert("change_evidence".into(), PyValue::Object(evidence));
         }
         Ok(result)
     };
-    match run().and_then(|v| ascii_json(&v, !values.contains_key("--json"))) {
-        Ok(out) => Ok((0, out.into_bytes(), vec![])),
+    match run() {
+        Ok(value) => Ok((
+            0,
+            format!("{}\n", value.json_sorted(!values.contains_key("--json"))).into_bytes(),
+            vec![],
+        )),
         Err(e)
             if e.mro.iter().any(|c| {
                 matches!(
@@ -385,7 +392,14 @@ pub fn main_with_paths(
                 )
             }) =>
         {
-            Ok((1, vec![], format!("ERROR: {e}\n").into_bytes()))
+            let message = e.message_text.unwrap_or_else(|| e.message.into());
+            let text = Text::from("ERROR: ").concat(&message).concat(&"\n".into());
+            Ok((
+                1,
+                vec![],
+                text.render()
+                    .map_err(|e| Error::new("UnicodeEncodeError", e))?,
+            ))
         }
         Err(e) => Err(e),
     }

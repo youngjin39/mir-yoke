@@ -128,7 +128,9 @@ fn manager_boundary() {
     let expected = json!([73,["p"],{"mcp":true}]);
     assert_eq!(
         reply.value.as_array().unwrap()[..3],
-        expected.as_array().unwrap()[..]
+        handoff_packet::python_json::Value::from(&expected)
+            .as_array()
+            .unwrap()[..]
     );
     for (request, class) in [
         (json!({"op":"call","method":"_finalize"}), "ValueError"),
@@ -147,7 +149,7 @@ fn manager_boundary() {
     let expected = [vec![b'r'; 100000].as_slice(), &[255], b"out"].concat();
     assert_eq!(stdout, expected);
     assert_eq!(stderr, [vec![b's'; 100000].as_slice(), b"err"].concat());
-    let pid = reply.value[3].to_string();
+    let pid = reply.value.as_array().unwrap()[3].py_str();
     drop(m);
     let mut probe = std::process::Command::new("/bin/kill");
     let status = probe.args(["-0", &pid]).output().unwrap().status;
@@ -155,7 +157,7 @@ fn manager_boundary() {
     let (_temp, root, cli) = setup(Some("raise ImportError('missing provider')"));
     let mut m = ProductionManager::start(&cli, &root).unwrap();
     let error = m.request(json!({"op":"import"})).unwrap().error.unwrap();
-    assert_eq!(error.message, "missing provider");
+    assert_eq!(error.message.as_str(), Some("missing provider"));
     let fixture: Value = serde_json::from_str(include_str!("fixtures/y-e17b1.json")).unwrap();
     for record in fixture["records"].as_array().unwrap() {
         let (_temp, root, cli) = setup(None);
@@ -186,7 +188,10 @@ fn manager_boundary() {
             );
         }
         let root_text = root.to_str().unwrap();
-        let mut reply = json!(m.last_reply);
+        let reply = m.last_reply.as_ref().unwrap();
+        let error = reply.error.as_ref().unwrap();
+        let mut reply = json!({"value": serde_json::from_str::<Value>(&reply.value.json_sorted(false)).unwrap(),
+            "error": {"class":error.class, "message":error.message.as_str().unwrap()}, "events":reply.events});
         // Earlier records predate the additive exception ancestry field.
         reply["error"].as_object_mut().unwrap().remove("mro");
         let actual = reply.to_string().replace(root_text, "{ROOT}");
@@ -460,4 +465,25 @@ fn check_provider_classes(case: Option<&str>) {
         );
     }
     assert!(mismatches.is_empty(), "{mismatches:?}");
+}
+
+#[test]
+fn lossless_rpc_schema_refusal() {
+    let records: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/y-e17b2b2a.json")).unwrap();
+    for r in records.into_iter().filter(|r| r["mode"] == "protocol") {
+        let (_tmp, root, cli) = setup(Some(""));
+        fs::write(
+            &cli,
+            format!(
+                "#!/bin/sh\nread line\nprintf '%s\\n' '{}'\n",
+                r["wire"].as_str().unwrap()
+            ),
+        )
+        .unwrap();
+        let mut manager = ProductionManager::start(&cli, &root).unwrap();
+        let error = manager.request(json!({"op":"import"})).unwrap_err();
+        assert_eq!(error.kind, Failure::Malformed, "{r}");
+        assert!(error.status.is_ok());
+    }
 }

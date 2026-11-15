@@ -27,7 +27,7 @@ impl capability::Manager for Provider {
         method: &str,
         args: Vec<Value>,
         kwargs: Map<String, Value>,
-    ) -> Result<Value, b::Error> {
+    ) -> Result<py::Value, b::Error> {
         assert_eq!(args, vec![json!("code_app")]);
         if method == "sync" {
             assert_eq!(kwargs, json!({"apply": true}).as_object().unwrap().clone());
@@ -48,7 +48,7 @@ impl capability::Manager for Provider {
         if self.case == "console-change" {
             fs::write(self.root.join(".mir/capability-lock.json"), "{}").unwrap();
         }
-        Ok(json!({"ready": true}))
+        Ok(py::Value::from(&json!({"ready": true})))
     }
 }
 struct Host {
