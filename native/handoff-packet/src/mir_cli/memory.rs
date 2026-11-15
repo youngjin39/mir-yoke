@@ -1193,7 +1193,7 @@ pub fn run_doctor(
             code = 2;
             errors.push(format!(
                 "project root is not a directory: {}",
-                root.display()
+                crate::supply::plain(root.to_owned()).display()
             ));
             return Ok(());
         }
@@ -1231,22 +1231,27 @@ pub fn run_doctor(
                 errors.push(format!(
                     "configured archive root is missing: {} ({})",
                     crate::executor_execute::repr(archive["slug"].as_str().unwrap_or("")),
-                    path.display()
+                    crate::supply::plain(path.clone()).display()
                 ));
             }
         }
         let configured_db = loader::resolve_memory_db(root, &cfg, home)?;
+        let display_db = crate::supply::plain(configured_db.clone());
+        let display_root = crate::supply::plain(root.to_owned());
         report["memory"]["db_path"] = json!(
-            configured_db
-                .strip_prefix(root)
-                .unwrap_or(&configured_db)
+            display_db
+                .strip_prefix(&display_root)
+                .unwrap_or(&display_db)
                 .to_str()
                 .ok_or_else(|| std::io::Error::other("non-UTF-8 DB path"))?
                 .replace('\\', "/")
         );
         let db = db_override.unwrap_or(&configured_db);
         if !db.is_file() {
-            errors.push(format!("memory database is missing: {}", db.display()));
+            errors.push(format!(
+                "memory database is missing: {}",
+                crate::supply::plain(db.to_owned()).display()
+            ));
             return Ok(());
         }
         let connection = connect(db)?;
@@ -1353,8 +1358,8 @@ pub fn run_doctor(
             if actual != expected {
                 errors.push(format!(
                     "archive root drift for {quoted}: {} != {}",
-                    actual.display(),
-                    expected.display()
+                    crate::supply::plain(actual.clone()).display(),
+                    crate::supply::plain(expected.clone()).display()
                 ));
             }
             let current: bool = conn.query_row(
@@ -1403,7 +1408,10 @@ pub fn run_doctor(
                     let file = Path::new(&path).join(relative);
                     let bytes = std::fs::read(&file).map_err(|e| {
                         std::io::Error::other(
-                            crate::executor_brief_profile::python_os_error_message(&e, &file),
+                            crate::executor_brief_profile::python_os_error_message(
+                                &e,
+                                &crate::supply::plain(file.clone()),
+                            ),
                         )
                     })?;
                     let snippet =
@@ -1458,4 +1466,57 @@ pub fn run_doctor(
     }
     report["errors"] = json!(errors);
     Ok((code, report))
+}
+
+#[cfg(all(test, windows))]
+mod display_tests {
+    use super::*;
+
+    #[test]
+    fn wt_core_a_h_relative_db_display() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = crate::supply::plain(tmp.path().canonicalize().unwrap());
+        std::fs::create_dir(root.join(".mir")).unwrap();
+        std::fs::create_dir(root.join("docs")).unwrap();
+        std::fs::write(
+            root.join("harness_a.toml"),
+            "[memory]\nenabled=true\nrequired=true\nbackend=\"sqlite_fts5\"\n\
+             db_path=\".mir/db\"\nvector_mode=\"off\"\n[memory.embedding]\n\
+             enabled=false\nrequired=false\n[[memory.external_archives]]\n\
+             slug=\"docs\"\nroot=\"docs\"\n",
+        )
+        .unwrap();
+        // resolve_memory_db canonicalises the existing parent to a verbatim path.
+        // Python 6b8796fa memory.py:363-367,432 uses relative_to(root).as_posix().
+        let (code, report) = run_doctor(&root, None, &root, std::time::SystemTime::now, |_| {
+            panic!("missing synthetic DB must return before connecting")
+        })
+        .unwrap();
+        assert_eq!(code, 1);
+        assert!(
+            report["errors"][0]
+                .as_str()
+                .unwrap()
+                .starts_with("memory database is missing:")
+        );
+        assert_eq!(report["memory"]["db_path"], ".mir/db");
+        assert!(!root.join(".mir/db").exists());
+    }
+
+    #[test]
+    fn wt_core_a_g_missing_root_display() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().canonicalize().unwrap().join("missing");
+        let (_, report) = run_doctor(&root, None, &root, std::time::SystemTime::now, |_| {
+            panic!("missing root must return before connecting")
+        })
+        .unwrap();
+        assert_eq!(
+            report["errors"],
+            serde_json::json!([format!(
+                "project root is not a directory: {}",
+                crate::supply::plain(root).display()
+            )])
+        );
+    }
 }

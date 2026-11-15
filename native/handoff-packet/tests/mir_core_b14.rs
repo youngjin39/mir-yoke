@@ -9,6 +9,94 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 const NOW: &str = "2030-01-02T00:00:00.123456+00:00";
+
+fn observe_root(name: &str, mut value: Value, root: &str) -> Value {
+    // 6b8796fa memory.py:434,233: Path in errors[0], then JSON stdout.
+    // Replace only that error's JSON-escaped synthetic root; keep suffix bytes.
+    if name == "doctor.missing.True"
+        && let Some(text) = value["value"]["command"]["stdout"].as_str()
+    {
+        let plain = root.strip_prefix(r"\\?\").unwrap_or(root);
+        let mut text = text.to_owned();
+        for spelling in [root.to_owned(), plain.to_owned(), plain.replace('\\', "/")] {
+            for separator in ["/", r"\"] {
+                let encoded = serde_json::to_string(&format!("{spelling}{separator}")).unwrap();
+                let suffix = serde_json::to_string(separator).unwrap();
+                text = text.replace(
+                    &format!(
+                        "\"errors\":[\"memory database is missing: {}",
+                        &encoded[1..encoded.len() - 1]
+                    ),
+                    &format!(
+                        "\"errors\":[\"memory database is missing: <tmp>{}",
+                        &suffix[1..suffix.len() - 1]
+                    ),
+                );
+            }
+        }
+        value["value"]["command"]["stdout"] = json!(text);
+    }
+    // Python 6b8796fa memory.py:511,571: observe only the two displayed error paths.
+    if name == "doctor.stale.True"
+        && let Some(text) = value["value"]["command"]["stdout"].as_str()
+    {
+        let mut report: Value = serde_json::from_str(text).unwrap();
+        for error in report["errors"].as_array_mut().unwrap() {
+            let text = error.as_str().unwrap();
+            let plain = root.strip_prefix(r"\\?\").unwrap_or(root);
+            let (prefix, path, separator) = if text.starts_with("archive root drift for 'docs': ") {
+                (
+                    "archive root drift for 'docs': ",
+                    format!("{plain}\\"),
+                    r"\",
+                )
+            } else if text.starts_with("archive FTS5 probe failed: [Errno 2] ") {
+                (
+                    "archive FTS5 probe failed: [Errno 2] ",
+                    format!("{}\\\\", plain.replace('\\', r"\\")),
+                    r"\\",
+                )
+            } else {
+                continue;
+            };
+            *error = json!(format!(
+                "{prefix}{}",
+                text[prefix.len()..].replace(&path, &format!("<tmp>{separator}"))
+            ));
+        }
+        value["value"]["command"]["stdout"] = json!(report.to_string() + "\n");
+    }
+    value
+}
+
+#[test]
+fn wt_core_a_d_roots() {
+    let root = r"\\?\C:\synthetic\case";
+    for spelling in [root, r"C:\synthetic\case", "C:/synthetic/case"] {
+        for suffix in ["/.mir/db", r"\.mir\db"] {
+            let text =
+                json!({"errors":[format!("memory database is missing: {spelling}{suffix}")]})
+                    .to_string();
+            let input = json!({"value":{"command":{"stdout":text,"stderr":text}}});
+            let mut expected = input.clone();
+            expected["value"]["command"]["stdout"] = json!(
+                json!({"errors":[format!("memory database is missing: <tmp>{suffix}")]})
+                    .to_string()
+            );
+            assert_eq!(
+                observe_root("doctor.missing.True", input.clone(), root),
+                expected
+            );
+            assert_eq!(observe_root("other", input.clone(), root), input);
+            let other = text.replace("case", "case-other");
+            let input = json!({"value":{"command":{"stdout":other}}});
+            assert_eq!(
+                observe_root("doctor.missing.True", input.clone(), root),
+                input
+            );
+        }
+    }
+}
 fn clock() -> SystemTime {
     UNIX_EPOCH + Duration::new(1893542400, 123456000)
 }
@@ -97,7 +185,23 @@ fn state(db: &Path) -> Value {
 }
 fn normalize(v: Value, root: &Path) -> Value {
     match v {
-        Value::String(s) => json!(s.replace(root.to_str().unwrap(), "<tmp>")),
+        Value::String(s) => {
+            #[cfg(windows)]
+            let s = {
+                let plain = handoff_packet::supply::plain(root.to_path_buf());
+                let mut spellings = Vec::new();
+                for path in [root, plain.as_path()] {
+                    let text = path.to_str().unwrap();
+                    let encoded = serde_json::to_string(text).unwrap();
+                    spellings.push(text.to_owned());
+                    spellings.push(encoded[1..encoded.len() - 1].to_owned());
+                }
+                spellings.sort_by_key(|s| std::cmp::Reverse(s.len()));
+                spellings.dedup();
+                spellings.iter().fold(s, |s, root| s.replace(root, "<tmp>"))
+            };
+            json!(s.replace(root.to_str().unwrap(), "<tmp>"))
+        }
         Value::Array(a) => json!(
             a.into_iter()
                 .map(|v| normalize(v, root))
@@ -109,6 +213,18 @@ fn normalize(v: Value, root: &Path) -> Value {
                 .collect(),
         ),
         v => v,
+    }
+}
+#[cfg(windows)]
+#[test]
+fn wt_core_a_g_closing_roots() {
+    let root = Path::new(r"\\?\C:\synthetic\case");
+    let plain = handoff_packet::supply::plain(root.to_path_buf());
+    for path in [root, plain.as_path()] {
+        let text = format!(r"{}\docs", path.display());
+        let input = json!([text, json!({"path":text}).to_string()]);
+        let expected = json!([r"<tmp>\docs", json!({"path":r"<tmp>\docs"}).to_string()]);
+        assert_eq!(normalize(input, root), expected);
     }
 }
 fn replay(name: &str, root: &Path) -> Value {
@@ -310,17 +426,32 @@ fn frozen_records() {
         serde_json::from_str(include_str!("fixtures/w2/b14-gc-doctor.json")).unwrap();
     assert_eq!(records.as_object().unwrap().len(), 40);
     let mut replayed = 0;
+    let mut failures = Vec::new();
     for (name, expected) in records.as_object().unwrap() {
         let tmp = tempfile::Builder::new()
             .prefix("b14-")
             .tempdir_in(std::env::temp_dir())
             .unwrap();
         let root = tmp.path().canonicalize().unwrap();
-        let actual = normalize(replay(name, &root), &root);
-        assert_eq!(&actual, expected, "{name}");
+        let actual = std::panic::catch_unwind(|| replay(name, &root));
+        let Ok(actual) = actual else {
+            failures.push(format!("record {name}: replay panicked"));
+            replayed += 1;
+            continue;
+        };
+        let actual = observe_root(name, actual, root.to_str().unwrap());
+        let actual = observe_paths(name, normalize(actual, &root));
+        // Apply the same existing field observation to the selected platform oracle.
+        let expected = observe_paths(name, platform_expected(name, expected, cfg!(windows)));
+        if actual != expected {
+            failures.push(format!(
+                "record {name}: actual={actual}, expected={expected}"
+            ));
+        }
         replayed += 1;
         println!("{name}: replayed");
     }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
     assert_eq!(replayed, 40);
     println!("replayed={replayed} exempt=0 total=40");
 }
@@ -371,4 +502,196 @@ fn options_before_database_access() {
     let output = cli::main_with_clock(&["doctor", "--project-root"], &db, root, clock).unwrap();
     assert_eq!(output.0, 2);
     assert!(!db.exists());
+}
+
+fn observe_paths(name: &str, mut value: Value) -> Value {
+    // Python 6b8796fa:src/mir/cli/memory.py:188-220 rejects --db via argparse.
+    // Only its synthetic argv path is platform-dependent; keep the refusal intact.
+    if matches!(name, "doctor.db_option.False" | "doctor.db_option.True")
+        && let Some(text) = value["value"]["command"]["stderr"].as_str()
+    {
+        value["value"]["command"]["stderr"] =
+            json!(text.replace("--db <tmp>\\.mir\\db\n", "--db <tmp>/.mir/db\n"));
+    }
+    // Python 6b8796fa:src/mir/cli/memory.py:434 interpolates db_path;
+    // :237 prints that error. Match only the missing text record's synthetic path.
+    if name == "doctor.missing.False"
+        && value["value"]["command"]["stdout"]
+            == "memory doctor: not_ready\n  [not-ready] memory database is missing: <tmp>\\.mir\\db\n"
+    {
+        value["value"]["command"]["stdout"] = json!(
+            "memory doctor: not_ready\n  [not-ready] memory database is missing: <tmp>/.mir/db\n"
+        );
+    }
+    value
+}
+
+#[test]
+fn wt_core_a_paths() {
+    let records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b14-gc-doctor.json")).unwrap();
+    for name in ["doctor.db_option.False", "doctor.db_option.True"] {
+        let expected = &records[name];
+        let mut input = expected.clone();
+        input["value"]["command"]["stderr"] = json!(
+            expected["value"]["command"]["stderr"]
+                .as_str()
+                .unwrap()
+                .replace("<tmp>/.mir/db", r"<tmp>\.mir\db")
+        );
+        input["value"]["command"]["stdout"] = json!("keep --db <tmp>\\.mir\\db\n");
+        let mut wanted = expected.clone();
+        wanted["value"]["command"]["stdout"] = input["value"]["command"]["stdout"].clone();
+        assert_eq!(observe_paths(name, input.clone()), wanted);
+        assert_eq!(observe_paths("gc.False.True", input.clone()), input);
+        assert_eq!(observe_paths(name, expected.clone()), *expected);
+    }
+}
+
+#[test]
+fn wt_core_a_c_paths() {
+    let records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b14-gc-doctor.json")).unwrap();
+    let expected = &records["doctor.missing.False"];
+    assert_eq!(
+        observe_paths("doctor.missing.False", expected.clone()),
+        *expected
+    );
+    let mut input = expected.clone();
+    input["value"]["command"]["stdout"] = json!(
+        "memory doctor: not_ready\n  [not-ready] memory database is missing: <tmp>\\.mir\\db\n"
+    );
+    input["value"]["command"]["stderr"] = json!(r"keep <tmp>\.mir\db");
+    let mut wanted = expected.clone();
+    wanted["value"]["command"]["stderr"] = input["value"]["command"]["stderr"].clone();
+    assert_eq!(observe_paths("doctor.missing.False", input.clone()), wanted);
+    assert_eq!(observe_paths("doctor.missing.True", input.clone()), input);
+    input["value"]["command"]["stdout"] = json!(r"keep <tmp>\.mir\db");
+    assert_eq!(observe_paths("doctor.missing.False", input.clone()), input);
+}
+
+fn platform_expected(name: &str, expected: &Value, windows: bool) -> Value {
+    if !windows {
+        return expected.clone();
+    }
+    // The privileged symlink record was captured separately on the same PC.
+    let fixture = if name == "doctor.relative_link.True" {
+        include_str!("fixtures/w2/b14-gc-doctor-windows-relative-link.json")
+    } else {
+        include_str!("fixtures/w2/b14-gc-doctor-windows-all.json")
+    };
+    let capture: Value = serde_json::from_str(&fixture.replace("{ROOT}", "<tmp>")).unwrap();
+    capture["records"]
+        .get(name)
+        .expect("record missing from Windows capture")
+        .clone()
+}
+
+#[test]
+fn wt_core_a_f_expectations() {
+    let unix: Value = serde_json::from_str(include_str!("fixtures/w2/b14-gc-doctor.json")).unwrap();
+    let capture: Value = serde_json::from_str(
+        &include_str!("fixtures/w2/b14-gc-doctor-windows-all.json").replace("{ROOT}", "<tmp>"),
+    )
+    .unwrap();
+    let relative_link: Value = serde_json::from_str(
+        &include_str!("fixtures/w2/b14-gc-doctor-windows-relative-link.json")
+            .replace("{ROOT}", "<tmp>"),
+    )
+    .unwrap();
+    assert_eq!(relative_link["exempt"], json!([]));
+    let mut captured = capture["records"].as_object().unwrap().clone();
+    assert_eq!(
+        capture["exempt"],
+        json!(
+            relative_link["records"]
+                .as_object()
+                .unwrap()
+                .keys()
+                .collect::<Vec<_>>()
+        )
+    );
+    for (name, record) in relative_link["records"].as_object().unwrap() {
+        assert!(captured.insert(name.clone(), record.clone()).is_none());
+    }
+    assert_eq!(captured.len(), 40);
+    assert_eq!(captured.len(), unix.as_object().unwrap().len());
+    let single: Value = serde_json::from_str(
+        &include_str!("fixtures/w2/b14-gc-doctor-windows.json").replace("{ROOT}", "<tmp>"),
+    )
+    .unwrap();
+    assert_eq!(captured["doctor.missing.True"], single);
+    for name in captured.keys() {
+        assert!(unix.get(name).is_some(), "unknown captured record {name}");
+    }
+    for (name, expected) in unix.as_object().unwrap() {
+        assert_eq!(platform_expected(name, expected, false), *expected);
+        let wanted = captured
+            .get(name)
+            .expect("record missing from Windows capture");
+        assert_eq!(platform_expected(name, expected, true), *wanted, "{name}");
+        // Distinguish selection even where the two platform values happen to match.
+        let sentinel = json!({"wrong_unix_expectation":name});
+        assert_eq!(platform_expected(name, &sentinel, true), *wanted, "{name}");
+    }
+}
+
+// Exercise the display route with real canonicalisation and a real missing-file error.
+#[test]
+fn wt_core_a_g_display_observation() {
+    let root = r"\\?\C:\synthetic\case";
+    let plain = r"C:\synthetic\case";
+    let errors = json!([
+        format!("archive root drift for 'docs': {plain}\\elsewhere != {plain}\\docs"),
+        format!(
+            "archive FTS5 probe failed: [Errno 2] No such file or directory: '{}\\\\elsewhere\\\\note.md'",
+            plain.replace('\\', r"\\")
+        ),
+        format!("unrelated: {plain}\\docs"),
+    ]);
+    let input = json!({"value":{"command":{"stdout":json!({"errors":errors}).to_string()+"\n"}}});
+    let observed = observe_root("doctor.stale.True", input.clone(), root);
+    let report: Value =
+        serde_json::from_str(observed["value"]["command"]["stdout"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        report["errors"][0],
+        r"archive root drift for 'docs': <tmp>\elsewhere != <tmp>\docs"
+    );
+    assert_eq!(
+        report["errors"][1],
+        r"archive FTS5 probe failed: [Errno 2] No such file or directory: '<tmp>\\elsewhere\\note.md'"
+    );
+    assert_eq!(report["errors"][2], errors[2]);
+    assert_eq!(observe_root("other", input.clone(), root), input);
+}
+
+#[cfg(windows)]
+#[test]
+fn wt_core_a_g_doctor_display_paths() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().canonicalize().unwrap();
+    assert!(root.to_str().unwrap().starts_with(r"\\?\"));
+    let plain = handoff_packet::supply::plain(root.clone());
+    let actual = replay("doctor.stale.True", &root);
+    let report: Value =
+        serde_json::from_str(actual["value"]["command"]["stdout"].as_str().unwrap()).unwrap();
+    let expected = platform_expected("doctor.stale.True", &Value::Null, true);
+    let mut expected: Value =
+        serde_json::from_str(expected["value"]["command"]["stdout"].as_str().unwrap()).unwrap();
+    for error in expected["errors"].as_array_mut().unwrap() {
+        let text = error.as_str().unwrap();
+        let plain = plain.to_str().unwrap();
+        let root = if text.starts_with("archive FTS5 probe failed:") {
+            plain.replace('\\', r"\\")
+        } else {
+            plain.to_owned()
+        };
+        *error = json!(text.replace("<tmp>", &root));
+    }
+    assert_eq!(report["errors"], expected["errors"]);
+    // The display conversion must not change the stored or accessed path.
+    assert_eq!(
+        actual["value"]["after"]["rows"]["external_archives"][0][2],
+        root.join("elsewhere").to_str().unwrap()
+    );
 }
