@@ -44,6 +44,7 @@ pub enum Error {
 impl Error {
     pub fn kind(&self) -> &'static str {
         match self {
+            Self::Io(e) if e.raw_os_error().is_none() => io_kind(e.kind()),
             Self::Io(_) => "OSError",
             Self::PathIo { kind, .. } => kind,
             Self::Json(_) => "JSONDecodeError",
@@ -226,18 +227,21 @@ fn git_command(root: &Path, args: &[&OsStr]) -> Result<Vec<String>> {
         })
         .collect()
 }
-pub(crate) fn path_io(error: io::Error, path: &Path) -> Error {
-    let Some(errno) = error.raw_os_error() else {
-        return Error::Io(error);
-    };
-    let kind = match error.kind() {
+fn io_kind(kind: io::ErrorKind) -> &'static str {
+    match kind {
         io::ErrorKind::NotADirectory => "NotADirectoryError",
         io::ErrorKind::IsADirectory => "IsADirectoryError",
         io::ErrorKind::NotFound => "FileNotFoundError",
         io::ErrorKind::PermissionDenied => "PermissionError",
         io::ErrorKind::AlreadyExists => "FileExistsError",
         _ => "OSError",
+    }
+}
+pub(crate) fn path_io(error: io::Error, path: &Path) -> Error {
+    let Some(errno) = error.raw_os_error() else {
+        return Error::Io(error);
     };
+    let kind = io_kind(error.kind());
     let Some(path) = path.to_str() else {
         return Error::Invalid("non UTF-8 evidence path".into());
     };

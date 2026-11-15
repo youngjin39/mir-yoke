@@ -490,6 +490,7 @@ fn timeout_duration(value: Option<&Value>) -> Result<Option<Duration>> {
     }
 }
 
+#[derive(Debug)]
 enum Verification {
     Success,
     Failed,
@@ -777,4 +778,108 @@ pub fn evaluate_merge_gate(wt: &DispatchWorktree, options: &GateOptions) -> Resu
         return Ok(gate("dispatch-dirty".into()));
     }
     Ok(gate("approved".into()))
+}
+
+#[cfg(test)]
+mod spawn_tests {
+    use super::*;
+
+    fn check_spawn_error(case_name: &str) {
+        let root = tempfile::tempdir_in(
+            std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+                .map(PathBuf::from)
+                .unwrap_or_else(std::env::temp_dir),
+        )
+        .unwrap();
+        let golden: Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/executor_spawn_windows.json"
+        ))
+        .unwrap();
+        let env = BTreeMap::new();
+        let record = golden["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["case"] == case_name)
+            .unwrap();
+        let case = record["case"].as_str().unwrap();
+        let program = match case {
+            "missing" => root.path().join("missing.exe"),
+            "permission-denied" => {
+                // Executing a directory is denied by the real OS on both platforms.
+                let path = root.path().join("denied.exe");
+                fs::create_dir(&path).unwrap();
+                path
+            }
+            "malformed" => {
+                let path = root.path().join("malformed.exe");
+                fs::write(&path, b"WT-SPAWN malformed executable\n").unwrap();
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+                }
+                path
+            }
+            _ => unreachable!("unexpected capture: {record:?}"),
+        };
+        let argv = vec![program.to_str().unwrap().to_owned()];
+        let result = run_verifier(&argv, root.path(), &env, None);
+        assert!(result.is_err(), "{case}: {result:?}");
+        let error = result.err().unwrap();
+        assert_eq!(
+            error.kind(),
+            record["class"].as_str().unwrap(),
+            "{case}: {error:?}"
+        );
+        // std's Windows PATH search can lose the raw code. Reproduce that
+        // representation from a real OS failure, rather than injecting an Error.
+        let os = Command::new(&program)
+            .current_dir(root.path())
+            .env_clear()
+            .spawn();
+        assert!(os.is_err(), "{case}: {os:?}");
+        let os = os.err().unwrap();
+        #[cfg(windows)]
+        if let Some(code) = os.raw_os_error() {
+            assert_eq!(
+                i64::from(code),
+                record["winerror"].as_i64().unwrap(),
+                "{case}: {os:?}"
+            );
+        }
+        let kind_only = io::Error::from(os.kind());
+        let text = kind_only.to_string();
+        let error = Error::Worktree(crate::executor_worktree::path_io(kind_only, &program));
+        assert_eq!(
+            error.kind(),
+            record["class"].as_str().unwrap(),
+            "{case}: {error:?}"
+        );
+        assert_eq!(error.to_string(), text, "{case}: {error:?}");
+    }
+
+    #[test]
+    fn spawn_missing_preserves_class() {
+        check_spawn_error("missing");
+    }
+    #[test]
+    fn spawn_permission_denied_preserves_class() {
+        check_spawn_error("permission-denied");
+    }
+    #[cfg(windows)]
+    #[test]
+    fn spawn_malformed_preserves_class() {
+        check_spawn_error("malformed");
+    }
+
+    #[test]
+    fn spawn_search_missing_program_preserves_class() {
+        let root = tempfile::tempdir().unwrap();
+        let argv = vec!["mir-e7-nonexistent-verifier".into()];
+        let result = run_verifier(&argv, root.path(), &BTreeMap::new(), None);
+        assert!(result.is_err(), "{result:?}");
+        let error = result.err().unwrap();
+        assert_eq!(error.kind(), "FileNotFoundError", "{error:?}");
+    }
 }
