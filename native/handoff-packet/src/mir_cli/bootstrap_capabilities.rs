@@ -92,6 +92,21 @@ fn failed(reason: impl Into<Text>) -> (String, PyValue) {
 }
 /// Temporary scalar-only main/validator boundary; never flatten Python strings.
 pub fn scalar_evidence(value: &PyValue) -> Result<Value, Error> {
+    fn has_surrogates(value: &PyValue) -> bool {
+        match value {
+            PyValue::String(text) => text.has_surrogates(),
+            PyValue::Array(items) => items.iter().any(has_surrogates),
+            PyValue::Object(fields) => fields
+                .iter()
+                .any(|(key, value)| key.has_surrogates() || has_surrogates(value)),
+            _ => false,
+        }
+    }
+    if has_surrogates(value) {
+        return Err(value_error(
+            "scalar-only bootstrap boundary: surrogate code point",
+        ));
+    }
     serde_json::from_str(&value.json_sorted(false))
         .map_err(|e| value_error(format!("scalar-only bootstrap boundary: {e}")))
 }
@@ -165,7 +180,10 @@ pub fn capability_lock_evidence(
             let plugins = if config.is_file() {
                 host.capability_config_plugins(&config)?
             } else {
-                scalar_evidence(&lock["plugins"])?
+                scalar_evidence(
+                    lock.get("plugins")
+                        .unwrap_or(&PyValue::Object(Object::default())),
+                )?
             };
             host.validate_artifacts(&scalar_evidence(artifacts)?, &plugins)
         };

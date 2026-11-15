@@ -19,6 +19,14 @@ wrapper.write_text(wrapper.read_text().replace(
 cases.append(dict(mode='console', case='console-error', error='provider\r\nrefused\r',
                   argv=['sync', '--profile', 'code_app', '--project-root', '.', '--json',
                         '--apply']))
+cases += [dict(mode='activate', case='surrogate-pair', code=7, out='\ud800', err='\udc00'),
+          dict(mode='lock', case='missing-plugins', lock={'native_artifacts': {
+              'tool': dict(plugin='missing', install_path='bin/tool', targets={})}})]
+wrapper.write_text(wrapper.read_text().replace(
+    'print(json.dumps(dict(result=',
+    "if r['case'] == 'surrogate-pair':\n"
+    "    assert [ord(c) for c in value[1]['reason']] == [0xd800, 0xdc00]\n"
+    'print(json.dumps(dict(result='))
 records = []
 for i, case in enumerate(cases):
     work = root / f'carrier-{i}'
@@ -31,7 +39,12 @@ for i, case in enumerate(cases):
                          capture_output=True, check=True)
     assert not out.stderr
     result = json.loads(out.stdout.replace(str(work).encode(), b'{ROOT}'))
-    if case['mode'] != 'console':
+    if case['case'] == 'surrogate-pair':
+        assert b'"reason": "\\ud800\\udc00"' in out.stdout
+    elif case['case'] == 'missing-plugins':
+        assert result['result']['value'] == ['failed', {
+            'reason': 'invalid capability lock: native artifact plugin is unknown'}]
+    elif case['mode'] != 'console':
         assert result['result']['value'][0] == ('ready' if files else 'failed')
     else:
         assert result['stderr'] == 'ERROR: provider\r\nrefused\r\n'

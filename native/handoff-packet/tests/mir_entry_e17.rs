@@ -222,7 +222,16 @@ fn replay(mode: &str) {
         let expected = r["result"]["value"].as_array().unwrap();
         assert_eq!(Some(status.as_str()), expected[0].as_str());
         assert_eq!(evidence.json_sorted(false), expected[1].json_sorted(false));
-        assert!(b::scalar_evidence(&evidence).is_err());
+        if r["case"].as_str() == Some("surrogate-pair") {
+            assert_eq!(
+                evidence["reason"].as_text().unwrap().codepoints,
+                [0xd800, 0xdc00]
+            );
+        }
+        assert_eq!(
+            b::scalar_evidence(&evidence).is_err(),
+            r["case"].as_str() != Some("missing-plugins")
+        );
     }
 }
 #[test]
@@ -241,7 +250,15 @@ fn lock() {
 #[test]
 fn output_admission() {
     let records = py::parse(include_str!("fixtures/y-e17b2b1b2a.json")).unwrap();
-    let r = b::scalar_evidence(records.as_array().unwrap().last().unwrap()).unwrap();
+    let r = b::scalar_evidence(
+        records
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["mode"].as_str() == Some("console"))
+            .unwrap(),
+    )
+    .unwrap();
     let temp = tempfile::tempdir().unwrap();
     let mut provider = Provider {
         root: temp.path().canonicalize().unwrap(),
@@ -266,6 +283,31 @@ fn output_admission() {
         out.stderr.render().unwrap(),
         r["stderr"].as_str().unwrap().as_bytes()
     );
+}
+
+#[test]
+fn scalar_surrogate_recursion() {
+    // Raw Python code points, not JSON escapes which would combine the pair.
+    for text in [
+        "\"PAIR\"",
+        "[\"PAIR\"]",
+        "{\"nested\":[{\"PAIR\":0}]}",
+        "{\"nested\":[{\"key\":\"PAIR\"}]}",
+    ] {
+        let (before, after) = text.split_once("PAIR").unwrap();
+        let points = before
+            .chars()
+            .map(u32::from)
+            .chain([0xd800, 0xdc00])
+            .chain(after.chars().map(u32::from))
+            .collect();
+        let value = py::parse_codepoints(points).unwrap();
+        let err = b::scalar_evidence(&value).unwrap_err();
+        assert_eq!(err.class, "ValueError");
+        assert!(err.message.starts_with("scalar-only bootstrap boundary:"));
+        let scalar = py::parse(&text.replace("PAIR", "\u{10000}")).unwrap();
+        assert!(b::scalar_evidence(&scalar).is_ok());
+    }
 }
 
 #[test]
