@@ -510,3 +510,31 @@ fn every_frozen_record_replays_exactly() {
     assert_eq!(exempt, if cfg!(windows) { 5 } else { 0 });
     eprintln!("B30 bootstrap identity: replayed={replayed}, exempt={exempt}, total=118");
 }
+
+#[cfg(windows)]
+#[test]
+fn wt_path_content_root_spellings_keep_containment() {
+    let temp = tempfile::tempdir().unwrap();
+    let verbatim = temp.path().canonicalize().unwrap();
+    let plain = handoff_packet::supply::plain(verbatim.clone());
+    fs::create_dir(plain.join("notes")).unwrap();
+    for root in [&plain, &verbatim] {
+        let (path, relative) = m::project_relative(root, "notes").unwrap();
+        assert_eq!(path, plain.join("notes"));
+        assert_eq!(relative, "notes");
+        for raw in [".", "../outside", plain.to_str().unwrap()] {
+            assert!(m::project_relative(root, raw).is_err(), "{root:?}: {raw}");
+        }
+    }
+    let outside = tempfile::tempdir().unwrap();
+    let result = std::process::Command::new("cmd.exe")
+        .args(["/D", "/C", "mklink", "/J"])
+        .arg(plain.join("escape"))
+        .arg(handoff_packet::supply::plain(outside.path().to_owned()))
+        .current_dir(&plain)
+        .env("HOME", &plain)
+        .output()
+        .unwrap();
+    assert!(result.status.success(), "{result:?}");
+    assert!(m::project_relative(&verbatim, "escape").is_err());
+}

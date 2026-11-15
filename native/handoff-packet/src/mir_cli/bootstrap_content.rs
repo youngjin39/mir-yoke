@@ -90,7 +90,7 @@ pub fn project_relative(root: &Path, raw: &str) -> Result<(PathBuf, String), Err
     let path = root.join(authored);
     let resolved = resolve_content_path(&path, &mut BTreeSet::new(), &path)?;
     let relative = resolved
-        .strip_prefix(root)
+        .strip_prefix(crate::supply::plain(root.to_owned()))
         .map_err(|_| value_error(format!("content archive path escapes the project: {raw}")))?;
     let relative = wire(relative);
     if relative.is_empty() || relative == "." {

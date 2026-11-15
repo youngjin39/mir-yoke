@@ -275,6 +275,24 @@ fn parse(raw: &[OsString], cwd: &Path) -> Parse {
     })
 }
 
+// Windows ordinary entries are not read_link inputs (ERROR_NOT_A_REPARSE_POINT).
+#[cfg(any(windows, test))]
+fn resolve_link(path: &Path) -> io::Result<Option<PathBuf>> {
+    let metadata = fs::symlink_metadata(path)?;
+    #[cfg(windows)]
+    let reparse = {
+        use std::os::windows::fs::MetadataExt;
+        metadata.file_attributes() & 0x400 != 0 // FILE_ATTRIBUTE_REPARSE_POINT
+    };
+    #[cfg(not(windows))] // Test the same non-reparse decision with real Unix filesystem calls.
+    let reparse = metadata.file_type().is_symlink();
+    if reparse {
+        fs::read_link(path).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
 fn resolve(path: &Path) -> Result<PathBuf> {
     enum Part {
         Component(OsString),
@@ -302,8 +320,18 @@ fn resolve(path: &Path) -> Result<PathBuf> {
             continue;
         }
         output.push(&part);
-        match fs::read_link(&output) {
-            Ok(target) => {
+        // A drive prefix (C:) is not the drive root (C:\), nor a link probe.
+        #[cfg(windows)]
+        if output.file_name().is_none() {
+            continue;
+        }
+        #[cfg(windows)]
+        let target = resolve_link(&output);
+        #[cfg(not(windows))]
+        let target = fs::read_link(&output).map(Some);
+        match target {
+            Ok(None) => {}
+            Ok(Some(target)) => {
                 let link = output.clone();
                 if !active.insert(link.clone()) {
                     return Err(format!(
@@ -1066,6 +1094,28 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
 mod tests {
     use super::*;
 
+    #[test]
+    fn wt_path_non_reparse_and_real_errors() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        fs::write(root.join("file"), "synthetic").unwrap();
+        assert_eq!(resolve_link(root).unwrap(), None);
+        assert_eq!(resolve_link(&root.join("file")).unwrap(), None);
+        assert_eq!(
+            resolve_link(&root.join("missing")).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
+        assert!(resolve_link(&root.join("invalid\0name")).is_err());
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink("missing", root.join("link")).unwrap();
+            assert_eq!(
+                resolve_link(&root.join("link")).unwrap(),
+                Some("missing".into())
+            );
+        }
+    }
+
     #[cfg(target_os = "macos")]
     #[test]
     fn io_error_preserves_filesystem_exception_classes() {
@@ -1116,3 +1166,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(all(test, windows))]
+#[path = "executor_status_windows_tests.rs"]
+mod windows_tests;
