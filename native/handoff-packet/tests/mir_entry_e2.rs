@@ -1,6 +1,9 @@
 use serde_json::Value;
 use std::{fs, process::Command};
 
+#[path = "support/unify2_s6.rs"]
+mod platform;
+
 fn fixture_python() -> std::path::PathBuf {
     std::env::var_os("Y_E2_PYTHON").map_or_else(
         || {
@@ -60,7 +63,9 @@ fn fixture_interpreter_starts_with_its_own_prefix_and_stdlib() {
     let bin = provision_interpreter(&fixture_python(), &root);
     let out = isolated_command(&bin.join(format!("python{}", std::env::consts::EXE_SUFFIX)), &root)
         .args(["-I", "-c", "import argparse, ctypes, runpy, sqlite3, sys; from pathlib import Path; assert Path(sys.prefix).resolve() == Path(sys.argv[1]).resolve(), sys.prefix; assert sys.prefix != sys.base_prefix"])
-        .arg(root.join("interpreter"))
+        // ntpath.realpath preserves a supplied \\?\ prefix, while sys.prefix
+        // from the Windows venv uses an ordinary path. Resolve both from cwd.
+        .arg("interpreter")
         .output()
         .unwrap();
     assert!(out.status.success(), "{out:?}");
@@ -129,8 +134,18 @@ fn check_family(family: &str) {
             "{}",
             r["argv"]
         );
-        assert_eq!(normalize(output.stdout), r["stdout"], "{}", r["argv"]);
-        assert_eq!(normalize(output.stderr), r["stderr"], "{}", r["argv"]);
+        assert_eq!(
+            normalize(output.stdout),
+            platform::expected_text(r["stdout"].as_str().unwrap(), cfg!(windows)),
+            "{}",
+            r["argv"]
+        );
+        assert_eq!(
+            normalize(output.stderr),
+            platform::expected_text(r["stderr"].as_str().unwrap(), cfg!(windows)),
+            "{}",
+            r["argv"]
+        );
         if family == "migrate" && r["exit"] == 0 && r["argv"][1] == "up" {
             let c = rusqlite::Connection::open(root.join("memory.db")).unwrap();
             assert_eq!(
