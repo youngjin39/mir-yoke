@@ -43,4 +43,21 @@ with (root / 'readonly').open('rb') as fd:
                          stdout=fd, stderr=subprocess.PIPE)
 records[0]['stdout_os'] = dict(code=out.returncode, stderr=out.stderr.decode())
 assert out.returncode == 120 and 'Bad file descriptor' in out.stderr.decode()
+for encoding, readonly in [('utf-8-sig', False), ('utf-8', True)]:
+    closing_receipt = receipt if readonly else dict(status='restart_required', errors=['a', 'b'])
+    wrapper.write_text(prefix + "import types\n"
+                       f"sys.stdout.reconfigure(encoding={encoding!r}, errors='strict')\n"
+                       "bootstrap._emit(types.SimpleNamespace(json=False), json.loads(" +
+                       repr(json.dumps(closing_receipt)) + "))\n")
+    with (root / 'readonly').open('rb') as fd:
+        out = subprocess.run([python, '-I', str(wrapper)], cwd=root, env=env,
+                             stdout=fd if readonly else subprocess.PIPE, stderr=subprocess.PIPE)
+    stderr = '\n'.join(line for line in out.stderr.decode('utf-8-sig').splitlines()
+                       if line.startswith(('UnicodeEncodeError:', 'Exception ignored in:',
+                                           'OSError:')))
+    records.append(dict(encoding=encoding, readonly=readonly, handler='strict', json=False,
+                        receipt=json.dumps(closing_receipt), code=out.returncode,
+                        stdout=list(out.stdout or b''), stderr=stderr + '\n' if stderr else ''))
+assert bytes(records[-2]['stdout']).count(b'\xef\xbb\xbf') == 1
+assert records[-1]['code'] == 120 and len(records[-1]['stderr'].splitlines()) == 3
 a.output.write_text(json.dumps(records, sort_keys=True) + '\n')

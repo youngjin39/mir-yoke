@@ -283,6 +283,14 @@ pub fn encode_console(text: &str, error: bool) -> Result<Vec<u8>> {
 }
 /// Encode Python Text without interpreting literal escape spellings.
 pub fn encode_console_text(text: &crate::python_json::Text, error: bool) -> Result<Vec<u8>> {
+    encode_console_print(text, error, &mut true)
+}
+/// Keep incremental encoder state local to each console stream.
+pub fn encode_console_print(
+    text: &crate::python_json::Text,
+    error: bool,
+    first: &mut bool,
+) -> Result<Vec<u8>> {
     #[cfg(windows)]
     let points = text
         .codepoints
@@ -294,8 +302,10 @@ pub fn encode_console_text(text: &crate::python_json::Text, error: bool) -> Resu
     let setting = std::env::var_os("PYTHONIOENCODING")
         .map(|s| os_text(&s))
         .unwrap_or_default();
-    let bom = codec_name(setting.split(':').next().unwrap_or(""))? == "utf-8-sig";
-    encode_stream(points.as_slice(), error, bom, false)
+    let bom = *first && codec_name(setting.split(':').next().unwrap_or(""))? == "utf-8-sig";
+    let bytes = encode_stream(points.as_slice(), error, bom, false)?;
+    *first = false;
+    Ok(bytes)
 }
 fn codecs() -> &'static serde_json::Value {
     static TABLE: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();

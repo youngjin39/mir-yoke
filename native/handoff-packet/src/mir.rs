@@ -374,15 +374,15 @@ mod tests {
 
     #[test]
     fn injected_stdout_dup_child() {
-        if let Ok(as_json) = std::env::var("MIR_TEST_PRINTS") {
+        if let Ok(index) = std::env::var("MIR_TEST_PRINTS") {
             let records: Vec<serde_json::Value> =
                 serde_json::from_str(include_str!("../tests/fixtures/y-e17b2b2b.json")).unwrap();
+            let r = &records[index.parse::<usize>().unwrap()];
             let receipt =
-                handoff_packet::python_json::parse(records[0]["receipt"].as_str().unwrap())
-                    .unwrap();
+                handoff_packet::python_json::parse(r["receipt"].as_str().unwrap()).unwrap();
             super::finish((
                 0,
-                super::mir_cli::bootstrap::emit_prints(as_json == "true", receipt).unwrap(),
+                super::mir_cli::bootstrap::emit_prints(r["json"] == true, receipt).unwrap(),
                 "".into(),
             ));
         }
@@ -393,25 +393,51 @@ mod tests {
 
     #[test]
     fn print_boundary_console() {
+        console_records(0..6);
+    }
+    #[test]
+    fn closing_bom_once() {
+        console_records(6..7);
+    }
+    #[test]
+    fn closing_encoder_flush() {
+        console_records(7..8);
+    }
+    fn console_records(range: std::ops::Range<usize>) {
         let records: Vec<serde_json::Value> =
             serde_json::from_str(include_str!("../tests/fixtures/y-e17b2b2b.json")).unwrap();
-        for r in records.iter().filter(|r| r.get("handler").is_some()) {
+        for index in range {
+            let r = &records[index];
             let temp = tempfile::tempdir().unwrap();
             let encoding = format!("utf-8:{}", r["handler"].as_str().unwrap());
-            let out = std::process::Command::new(std::env::current_exe().unwrap())
-                .args("--exact tests::injected_stdout_dup_child --nocapture --quiet".split(' '))
+            let mut cmd = std::process::Command::new(std::env::current_exe().unwrap());
+            cmd.args("--exact tests::injected_stdout_dup_child --nocapture --quiet".split(' '))
                 .env_clear()
                 .env("HOME", temp.path())
                 .current_dir(temp.path())
-                .env("MIR_TEST_PRINTS", r["json"].to_string())
-                .env("PYTHONIOENCODING", encoding)
-                .output()
-                .unwrap();
+                .env("MIR_TEST_PRINTS", index.to_string())
+                .env(
+                    "PYTHONIOENCODING",
+                    r["encoding"].as_str().unwrap_or(&encoding),
+                );
+            let readonly = temp.path().join("readonly");
+            if r["readonly"] == true {
+                std::fs::write(&readonly, "unchanged").unwrap();
+                cmd.stdout(std::fs::File::open(&readonly).unwrap());
+            }
+            let out = cmd.output().unwrap();
             assert_eq!(out.status.code(), r["code"].as_i64().map(|c| c as i32));
-            let mut expected = b"\nrunning 1 test\n".to_vec();
+            let mut expected = if r["readonly"] == true {
+                vec![]
+            } else {
+                b"\nrunning 1 test\n".to_vec()
+            };
             expected.extend(serde_json::from_value::<Vec<u8>>(r["stdout"].clone()).unwrap());
             assert_eq!(out.stdout, expected);
             assert_eq!(out.stderr, r["stderr"].as_str().unwrap().as_bytes());
+            if r["readonly"] == true {
+                assert_eq!(std::fs::read(&readonly).unwrap(), b"unchanged");
+            }
         }
     }
 
@@ -464,9 +490,10 @@ fn main() {
 }
 
 fn finish((mut code, out, mut err): (i32, Vec<Text>, Text)) -> ! {
+    let mut first = true;
     let mut prints = out.into_iter();
     match prints.next().map_or(Ok(vec![]), |p| {
-        executor_text::encode_console_text(&p, false)
+        executor_text::encode_console_print(&p, false, &mut first)
     }) {
         Ok(bytes) => {
             // CPython buffers small piped writes until interpreter shutdown. A failure
@@ -509,7 +536,7 @@ fn finish((mut code, out, mut err): (i32, Vec<Text>, Text)) -> ! {
             let mut stream = std::io::BufWriter::with_capacity(capacity, writer);
             let mut write_failed = false;
             let written = std::iter::once(Ok(bytes))
-                .chain(prints.map(|p| executor_text::encode_console_text(&p, false)))
+                .chain(prints.map(|p| executor_text::encode_console_print(&p, false, &mut first)))
                 .try_for_each(|bytes| {
                     stream.write_all(&bytes?).map_err(|error| {
                         write_failed = true;
@@ -524,10 +551,10 @@ fn finish((mut code, out, mut err): (i32, Vec<Text>, Text)) -> ! {
                 code = 120;
                 let encoding = std::env::var("PYTHONIOENCODING").unwrap_or_else(|_| "utf-8".into());
                 let encoding = encoding.split(':').next().unwrap_or("utf-8");
-                err = format!(
+                err = err.concat(&format!(
                     "Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='{encoding}'>\n{}\n",
                     stdout_error(error)
-                ).into();
+                ).into());
             }
         }
         Err(message) => {
