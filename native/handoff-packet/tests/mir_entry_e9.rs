@@ -14,12 +14,16 @@ fn frozen_context_parser_and_removed_cwd() {
     records.extend(
         serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e12a-parser.json")).unwrap(),
     );
+    records.extend(
+        serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e12d-cli.json")).unwrap(),
+    );
     let mut failures = Vec::new();
     for r in records {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         let gone = root.join("gone");
         fs::create_dir(&gone).unwrap();
+        fs::write(root.join("invalid.pem"), b"not a certificate\n").unwrap();
         fs::write(root.join("bad.db"), b"not a database").unwrap();
         if let Some(config) = r["config"].as_str() {
             fs::create_dir(root.join("notes")).unwrap();

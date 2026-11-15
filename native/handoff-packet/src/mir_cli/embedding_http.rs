@@ -132,13 +132,17 @@ fn bytearray(bytes: &[u8]) -> String {
     }
     format!("{out}{quote})")
 }
-fn header_lines(reader: &mut impl BufRead) -> Result<Vec<Vec<u8>>, HttpError> {
+fn header_lines(reader: &mut impl BufRead, trailer: bool) -> Result<Vec<Vec<u8>>, HttpError> {
     // h11 caps incomplete events after each httpcore-sized receive.
     let mut block = Vec::new();
     loop {
         let chunk = reader.fill_buf().map_err(|e| io_error(e, "Read"))?;
         if chunk.is_empty() {
-            return Err(protocol("Server disconnected without sending a response."));
+            return Err(protocol(if trailer {
+                "peer unexpectedly closed connection"
+            } else {
+                "Server disconnected without sending a response."
+            }));
         }
         let mut used = 0;
         let mut complete = false;
@@ -224,6 +228,11 @@ fn headers(lines: Vec<Vec<u8>>) -> Result<std::collections::BTreeMap<String, Str
                 return Err(protocol("Only Transfer-Encoding: chunked is supported"));
             }
         }
+        if name == "connection"
+            && let Some(previous) = result.get(&name)
+        {
+            value = format!("{previous},{value}");
+        }
         result.insert(name, value);
     }
     Ok(result)
@@ -241,6 +250,7 @@ fn wire_url_guard(authority: &str, target: &str) -> Result<(), HttpError> {
         || authority.bytes().any(|b| b.is_ascii_uppercase())
         || port == "80"
         || port.starts_with('0')
+        || port.starts_with('+')
         || target
             .split('?')
             .next()
@@ -378,7 +388,7 @@ impl Transport for HttpTransport {
             .write_all(format!("{head}\r\n{body}").as_bytes())
             .map_err(|e| io_error(e, "Write"))?;
         loop {
-            let mut block = header_lines(&mut reader)?;
+            let mut block = header_lines(&mut reader, false)?;
             let raw = if block.is_empty() {
                 Vec::new()
             } else {
@@ -467,7 +477,7 @@ impl Transport for HttpTransport {
                             protocol(format!("illegal chunk header: {}", bytearray(&raw)))
                         })?;
                     if size == 0 {
-                        headers(header_lines(&mut reader)?)?;
+                        headers(header_lines(&mut reader, true)?)?;
                         break;
                     }
                     let start = body.len();
@@ -639,6 +649,60 @@ mod tests {
 mod e10_http_tests {
     use super::*;
     #[test]
+    fn e12d_constructor_frames() {
+        let records: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../../tests/fixtures/y-e12d-errors.json")).unwrap();
+        if let Ok(index) = std::env::var("E12D_CONSTRUCTOR") {
+            let r = &records[index.parse::<usize>().unwrap()];
+            let cfg = serde_json::json!({"base_url":"http://127.0.0.1/", "timeout_sec":1});
+            let e = super::super::context_sync::backend(&cfg)
+                .err()
+                .expect("constructor must fail");
+            assert_eq!(e.kind, r["error"]);
+            assert_eq!(e.message, r["message"]);
+            if index == "0" {
+                let pem: serde_json::Value =
+                    serde_json::from_str(include_str!("../../tests/fixtures/y-e12c-pem.json"))
+                        .unwrap();
+                assert_eq!(e.message, pem["message"]);
+                assert_eq!(e.kind, pem["error"]);
+            }
+            return;
+        }
+        let root = tempfile::tempdir().unwrap();
+        std::fs::write(root.path().join("invalid.pem"), b"not a certificate\n").unwrap();
+        let mut failed = Vec::new();
+        for (i, r) in records.iter().enumerate() {
+            let out = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "mir_cli::embedding_http::e10_http_tests::e12d_constructor_frames",
+                    "--nocapture",
+                ])
+                .env_clear()
+                .env("HOME", root.path())
+                .env("NO_PROXY", "127.0.0.1")
+                .env("E12D_CONSTRUCTOR", i.to_string())
+                .envs(
+                    r["env"]
+                        .as_object()
+                        .unwrap()
+                        .iter()
+                        .map(|(k, v)| (k, v.as_str().unwrap())),
+                )
+                .current_dir(root.path())
+                .output()
+                .unwrap();
+            if !out.status.success() {
+                failed.push(format!(
+                    "case {i}: {}",
+                    String::from_utf8_lossy(&out.stderr)
+                ));
+            }
+        }
+        assert!(failed.is_empty(), "{}", failed.join("\n"));
+    }
+    #[test]
     fn e12c_lifecycle() {
         if std::env::var_os("E12C_WORKER").is_none() {
             assert!(
@@ -660,11 +724,38 @@ mod e10_http_tests {
         let records: Vec<serde_json::Value> =
             serde_json::from_str(include_str!("../../tests/fixtures/y-e12c.json")).unwrap();
         let mut mismatches = Vec::new();
-        for r in records {
+        let extra: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../../tests/fixtures/y-e12d.json")).unwrap();
+        for r in records.into_iter().chain(extra) {
             let mode = r["mode"].as_str().unwrap().to_owned();
             let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
             listener.set_nonblocking(true).unwrap();
             let url = format!("http://{}/embeddings", listener.local_addr().unwrap());
+            if mode == "plus-port" {
+                let mut transport = HttpTransport::default();
+                let request = HttpRequest {
+                    url: url.replacen("127.0.0.1:", "127.0.0.1:+", 1),
+                    method: "POST".into(),
+                    headers: Default::default(),
+                    body: serde_json::json!({}),
+                    timeout: serde_json::json!({"connect":1,"read":1,"write":1}),
+                };
+                assert!(
+                    r["requests"][0]
+                        .as_str()
+                        .unwrap()
+                        .contains("Host: 127.0.0.1:{PORT}")
+                );
+                assert_eq!(
+                    transport.send(request).unwrap_err().class,
+                    "UnsupportedProtocol"
+                );
+                assert_eq!(
+                    listener.accept().unwrap_err().kind(),
+                    io::ErrorKind::WouldBlock
+                );
+                continue;
+            }
             let server_mode = mode.clone();
             let server = std::thread::spawn(move || {
                 let start = std::time::Instant::now();
@@ -701,7 +792,11 @@ mod e10_http_tests {
                             .parse()
                             .unwrap();
                         stream.read_exact(&mut vec![0; size]).unwrap();
-                        let close = if server_mode == "close" {
+                        let close = if server_mode == "close-first" {
+                            "Connection: close\r\nConnection: keep-alive\r\n"
+                        } else if server_mode == "close-last" {
+                            "Connection: keep-alive\r\nConnection: close\r\n"
+                        } else if server_mode == "close" {
                             "Connection: close\r\n"
                         } else {
                             ""
@@ -711,14 +806,18 @@ mod e10_http_tests {
                         } else {
                             "{}"
                         };
-                        stream
-                            .write_all(
-                                format!(
-                                    "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n{close}\r\n{body}"
-                                )
-                                .as_bytes(),
-                            )
-                            .unwrap();
+                        let wire = if server_mode == "trailer-eof" {
+                            "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nX: abc"
+                                .into()
+                        } else {
+                            format!("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n{close}\r\n{body}")
+                        };
+                        stream.write_all(wire.as_bytes()).unwrap();
+                        if server_mode.starts_with("close-")
+                            && stream.read(&mut [0]).unwrap_or(0) != 0
+                        {
+                            return count;
+                        }
                         served += 1;
                     }
                 }

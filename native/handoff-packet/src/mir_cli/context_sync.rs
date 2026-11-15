@@ -448,10 +448,54 @@ pub(super) fn backend(
         ));
     }
     if let Some(file) = std::env::var_os("SSL_CERT_FILE").filter(|s| !s.is_empty()) {
-        std::fs::read(file).map_err(|e| {
+        let pem = std::fs::read(file).map_err(|e| {
             let text = crate::executor_brief_profile::python_os_error_message(&e, Path::new(""));
             error("OSError", text.strip_suffix(": ''").unwrap_or(&text).into())
         })?;
+        // Bounded trust-file admission for the cited no-certificate input.
+        // TLS and malformed certificate payloads remain outside this transport.
+        if ![
+            b"-----BEGIN CERTIFICATE-----".as_slice(),
+            b"-----BEGIN TRUSTED CERTIFICATE-----",
+            b"-----BEGIN X509 CRL-----",
+        ]
+        .iter()
+        .any(|marker| pem.windows(marker.len()).any(|w| w == *marker))
+        {
+            return Err(error(
+                "SSLError",
+                "[X509: NO_CERTIFICATE_OR_CRL_FOUND] no certificate or crl found (_ssl.c:4106)"
+                    .into(),
+            ));
+        }
+    }
+    // httpx constructs environment proxy mounts before NO_PROXY selection.
+    for name in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"] {
+        let proxy = std::env::var(name).unwrap_or_default();
+        if proxy.is_empty() {
+            continue;
+        }
+        if name == "ALL_PROXY" && proxy.starts_with("ftp://") {
+            return Err(error(
+                "ValueError",
+                format!("Unknown scheme for proxy URL URL({})", repr(&proxy)),
+            ));
+        }
+        let authority = proxy
+            .split("://")
+            .nth(1)
+            .unwrap_or(&proxy)
+            .split('/')
+            .next()
+            .unwrap_or("");
+        if let Some((_, port)) = authority.rsplit_once(':')
+            && name != "ALL_PROXY"
+            && !authority.ends_with(']')
+            && !port.is_empty()
+            && super::context::python_k(port).is_none()
+        {
+            return Err(error("InvalidURL", format!("Invalid port: {}", repr(port))));
+        }
     }
     Ok(omlx_http::from_config(
         omlx_http::BackendCfg {
