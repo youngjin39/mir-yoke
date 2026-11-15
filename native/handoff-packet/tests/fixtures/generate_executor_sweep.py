@@ -21,9 +21,27 @@ IDS = [str(i) * 32 for i in range(1, 9)]
 
 def git(repo, *args):
     env = dict(os.environ, GIT_AUTHOR_DATE=OLD, GIT_COMMITTER_DATE=OLD, GIT_OPTIONAL_LOCKS="0")
-    return subprocess.check_output(
-        ["git", "-C", str(repo), *args], stderr=subprocess.PIPE, env=env
-    ).decode()
+    # Git for Windows rejects verbatim drive paths; retain UNC/device spellings.
+    argv = [str(repo), *args]
+    argv = [
+        value[4:]
+        if value.startswith("\\\\?\\")
+        and len(value) >= 7
+        and value[4].isascii()
+        and value[4].isalpha()
+        and value[5:7] == ":\\"
+        else value
+        for value in argv
+    ]
+    try:
+        return subprocess.check_output(
+            ["git", "-C", *argv], stderr=subprocess.PIPE, env=env
+        ).decode()
+    except subprocess.CalledProcessError as error:
+        # Keep the original exception/exit and expose the otherwise lost Git cause.
+        sys.stderr.buffer.write(error.stderr)
+        sys.stderr.buffer.flush()
+        raise
 
 
 def write(path, text):
@@ -156,8 +174,17 @@ def setup(home, case):
 
 def normalize(value, home):
     if isinstance(value, str):
-        value = value.replace(str(home), "$ROOT").replace(str(home).replace("\\", "/"), "$ROOT")
-        return value.replace("\\", "/") if "$ROOT" in value else value
+        def plain(path):
+            candidate = path.removeprefix("//?/")
+            return candidate if candidate[1:3] == ":/" else path
+
+        root = plain(str(home).replace("\\", "/"))
+        candidate = plain(value.replace("\\", "/"))
+        if candidate == root:
+            return "$ROOT"
+        if candidate.startswith(root + "/"):
+            return "$ROOT" + candidate[len(root):]
+        return value
     if isinstance(value, list):
         return [normalize(v, home) for v in value]
     if isinstance(value, dict):

@@ -53,7 +53,9 @@ fn git(repo: &Path, args: &[&str]) -> String {
         .unwrap();
     assert!(
         out.status.success(),
-        "{}",
+        "fixture Git -C {} {args:?}, exit {:?}: {}",
+        repo.display(),
+        out.status.code(),
         String::from_utf8_lossy(&out.stderr)
     );
     String::from_utf8(out.stdout).unwrap().trim().to_owned()

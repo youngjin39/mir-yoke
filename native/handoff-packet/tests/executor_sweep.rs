@@ -82,11 +82,21 @@ fn reference(mode: &str, root: &Path, case: &str, args: &[&str]) -> Value {
 fn normalize(value: Value, root: &Path) -> Value {
     match value {
         Value::String(s) => {
-            let normalized = s.replace(root.to_str().unwrap(), "$ROOT");
-            json!(if normalized.contains("$ROOT") {
-                normalized.replace('\\', "/")
-            } else {
-                normalized
+            let root = root.to_str().unwrap().replace('\\', "/");
+            let plain = |path: &str| {
+                let candidate = path.strip_prefix("//?/").unwrap_or(path);
+                if candidate.as_bytes().get(1..3) == Some(b":/") {
+                    candidate.to_owned()
+                } else {
+                    path.to_owned()
+                }
+            };
+            let root = plain(&root);
+            let candidate = plain(&s.replace('\\', "/"));
+            json!(match candidate.strip_prefix(&root) {
+                Some("") => "$ROOT".to_owned(),
+                Some(tail) if tail.starts_with('/') => format!("$ROOT{tail}"),
+                _ => s,
             })
         }
         Value::Array(a) => Value::Array(a.into_iter().map(|v| normalize(v, root)).collect()),
@@ -97,6 +107,37 @@ fn normalize(value: Value, root: &Path) -> Value {
         ),
         v => v,
     }
+}
+#[test]
+fn snapshot_root_aliases_are_bounded() {
+    for root in [r"C:\scratch\native", r"\\?\C:\scratch\native"] {
+        for alias in [
+            r"C:\scratch\native",
+            r"\\?\C:\scratch\native",
+            "C:/scratch/native",
+            "//?/C:/scratch/native",
+        ] {
+            assert_eq!(
+                normalize(json!(format!(r"{alias}\wt-clean")), Path::new(root)),
+                json!("$ROOT/wt-clean")
+            );
+            assert_eq!(normalize(json!(alias), Path::new(root)), json!("$ROOT"));
+        }
+        for outside in [
+            r"C:\scratch\native-other\keep",
+            r"D:\elsewhere\keep",
+            r"literal $ROOT\keep",
+        ] {
+            assert_eq!(normalize(json!(outside), Path::new(root)), json!(outside));
+        }
+    }
+    assert_eq!(
+        normalize(
+            json!("/scratch/native/wt-clean"),
+            Path::new("/scratch/native")
+        ),
+        json!("$ROOT/wt-clean")
+    );
 }
 fn run_native(root: &Path, case: &str, apply: bool) -> Value {
     let repo = root.join("repo");
@@ -277,12 +318,17 @@ fn non_force_removal_preserves_dirt_created_after_reinspection() {
         fs::read_to_string(fixture.0.join("wt-clean/late.txt")).unwrap(),
         "preserve late dirt\n"
     );
+    eprintln!(
+        "preserved_worktrees actual: {}",
+        result["preserved_worktrees"]
+    );
+    let result = normalize(result, &fixture.0);
     assert!(
         result["preserved_worktrees"]
             .as_array()
             .unwrap()
             .contains(&json!({
-                "path": fixture.0.join("wt-clean"), "reasons": ["apply-time-drift:remove-refused"]
+                "path": "$ROOT/wt-clean", "reasons": ["apply-time-drift:remove-refused"]
             }))
     );
 }
