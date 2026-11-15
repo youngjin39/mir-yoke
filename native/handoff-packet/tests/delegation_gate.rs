@@ -9,9 +9,15 @@ use std::{
 fn decision_fixtures() {
     let cases: Vec<Value> =
         serde_json::from_str(include_str!("fixtures/delegation-gate.json")).unwrap();
-    for (index, case) in cases.iter().enumerate() {
-        let root =
-            std::env::temp_dir().join(format!("delegation-gate-{}-{index}", std::process::id()));
+    for case in &cases {
+        let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir);
+        let directory = tempfile::Builder::new()
+            .prefix("delegation-gate-")
+            .tempdir_in(base)
+            .unwrap();
+        let root = directory.path();
         fs::create_dir_all(root.join("config")).unwrap();
         let mode = &case["mode"];
         let source = case["source"].as_str().unwrap_or("lock");
@@ -52,7 +58,8 @@ fn decision_fixtures() {
             fs::write(&overlay, raw).unwrap();
         }
         let mut child = Command::new(env!("CARGO_BIN_EXE_delegation-gate"))
-            .current_dir(&root)
+            .current_dir(root)
+            .env("HOME", root)
             .env_remove("CLAUDE_PROJECT_DIR")
             .env("MIR_SUB_AGENT_POLICY", &overlay)
             .env("MIR_R3_FALLBACK", case["r3"].as_str().unwrap_or("0"))
@@ -76,7 +83,6 @@ fn decision_fixtures() {
             .write_all(input.as_bytes())
             .unwrap();
         let output = child.wait_with_output().unwrap();
-        fs::remove_dir_all(root).unwrap();
         assert_eq!(
             output.status.code(),
             Some(case["code"].as_i64().unwrap() as i32),
@@ -101,5 +107,38 @@ fn decision_fixtures() {
         } else {
             assert!(error.starts_with("[mir BLOCKED]"), "{error}");
         }
+        // wait_with_output consumes Child and closes its handles before cleanup.
+        // Preserve the exact OS error and remaining entries; do not retry away
+        // a sharing violation or attribute it to an unobserved external holder.
+        let path = root.to_owned();
+        directory.close().unwrap_or_else(|error| {
+            eprintln!(
+                "cleanup case={} root={} runner_pid={} cwd={:?}",
+                case["name"],
+                path.display(),
+                std::process::id(),
+                std::env::current_dir()
+            );
+            fn remaining(path: &std::path::Path) {
+                match fs::read_dir(path) {
+                    Ok(entries) => {
+                        for entry in entries {
+                            let entry = entry.unwrap();
+                            eprintln!(
+                                "remaining: {} {:?}",
+                                entry.path().display(),
+                                entry.file_type()
+                            );
+                            if entry.file_type().unwrap().is_dir() {
+                                remaining(&entry.path());
+                            }
+                        }
+                    }
+                    Err(error) => eprintln!("inspect {}: {error:?}", path.display()),
+                }
+            }
+            remaining(&path);
+            panic!("cleanup after reaped gate: {error:?}");
+        });
     }
 }

@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use std::{
     fs,
     path::PathBuf,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 #[path = "../src/digest.rs"]
 mod digest;
@@ -129,7 +129,26 @@ fn timeout_covers_hello_response_and_blocked_stdin() {
     let f = Fixture::new("hello-hang");
     let t = Instant::now();
     assert!(matches!(f.start(), Err(BridgeError::Timeout)));
-    assert!(t.elapsed() < Duration::from_secs(4));
+    let total = t.elapsed();
+    // Executable verification and OS startup precede this fixture marker.
+    let ready: u128 = fs::read_to_string(f.root.join("parent.ready"))
+        .expect("hello-hang must mark transport readiness")
+        .parse()
+        .unwrap();
+    let operation = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos()
+        - ready;
+    eprintln!(
+        "hello-hang: startup+operation={total:?}, ready-to-return={}ms",
+        operation / 1_000_000
+    );
+    assert!(operation < Duration::from_secs(4).as_nanos());
+    assert!(
+        total < Duration::from_secs(30),
+        "startup+operation={total:?}"
+    );
     for mode in ["hang", "blocked-stdin"] {
         let f = Fixture::new(mode);
         let mut s = f.start().unwrap();
@@ -173,8 +192,15 @@ fn timeout_and_crash_reap_descendants_on_every_supported_platform() {
     for mode in ["tree-hang", "tree-crash"] {
         let f = Fixture::new(mode);
         let mut s = f.start().unwrap();
-        assert!(s.call("on_job_event", json!({})).is_err());
         let heartbeat = f.root.join("child.heartbeat");
+        assert!(
+            !fs::read(&heartbeat).unwrap_or_default().is_empty(),
+            "{mode}: hello must follow the descendant's first flushed heartbeat"
+        );
+        let t = Instant::now();
+        assert!(s.call("on_job_event", json!({})).is_err());
+        eprintln!("{mode}: operation+cleanup={:?}", t.elapsed());
+        assert!(t.elapsed() < Duration::from_secs(4), "{mode}");
         std::thread::sleep(Duration::from_millis(100));
         let bytes = fs::read(&heartbeat).unwrap();
         assert!(!bytes.is_empty());
