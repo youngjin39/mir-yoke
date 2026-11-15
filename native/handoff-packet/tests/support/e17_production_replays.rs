@@ -1,4 +1,4 @@
-//! Original E17 records 0..16; private CLI adapter only for arbitrary stub exit codes.
+//! Original E17 bootstrap/provider records; private adapters match pinned provider seams.
 use super::{reaped, setup};
 use handoff_packet::mir_cli::{
     bootstrap::{self as b, Host},
@@ -11,6 +11,7 @@ use std::{
     fs,
     io::Write,
     os::fd::AsRawFd,
+    os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -138,6 +139,24 @@ fn child() {
                     keys.sort();
                     json!(keys)
                 }),
+            "discovery" | "provider-finalize" => {
+                let manager = host
+                    .inner
+                    .import_capabilities(&host.cli, &root, Output::Activate)
+                    .unwrap();
+                manager.initialize(&root, None, None).unwrap();
+                manager
+                    .call(
+                        if r["mode"] == "discovery" {
+                            "check"
+                        } else {
+                            "finalize"
+                        },
+                        vec![],
+                        Default::default(),
+                    )
+                    .map(|v| b::scalar_evidence(&v).unwrap())
+            }
             _ => unreachable!(),
         };
         let result = match result {
@@ -155,7 +174,7 @@ fn child() {
 fn replay(mode: &str, count: usize) {
     let records: Vec<Value> = serde_json::from_str(include_str!("../fixtures/y-e17.json")).unwrap();
     let mut checked = 0;
-    for r in records.into_iter().take(16).filter(|r| r["mode"] == mode) {
+    for r in records.into_iter().filter(|r| r["mode"] == mode) {
         let source = format!(
             r#"
 Path('pid').rename(Path.cwd().parent / 'pid')
@@ -180,6 +199,40 @@ class CapabilityManager:
 "#,
             record = json!(r.to_string())
         );
+        let source = if matches!(mode, "discovery" | "provider-finalize") {
+            format!(
+                r#"
+import types
+Path('pid').rename(Path.cwd().parent / 'pid')
+r = json.loads({record})
+class ReplayManager(CapabilityManager):
+ def __init__(self, project_root, **kw):
+  assert project_root == Path.cwd() and kw == {{}}
+  Path('../trace').write_text('initialize\n')
+  self.project_root = project_root
+  self.active_receipt_path = project_root / 'receipt.json'
+  self.config = types.SimpleNamespace(required_runtimes=('claude-code',),
+   plugin_skills={{'mir-core': ('design',)}}, plugin_hooks={{}}, plugin_mcp={{}})
+  self._assert_capability_home_safe = lambda **kw: None
+  if r['mode'] == 'provider-finalize':
+   self._assert_project_lock_path_safe = lambda: None
+   self._load_lock = lambda: None if r['case'] == 'missing' else r['lock']
+   self._active_integrity = lambda *a: r['case'] != 'integrity'
+   self._activation_evidence = lambda *a, **kw: {{'status': 'missing' if r['case'] == 'activation' else 'verified'}}
+   self._discovery_evidence = lambda *a: {{'status': 'missing' if r['case'] == 'discovery' else 'verified'}}
+ def check(self):
+  with Path('../trace').open('a') as f: f.write('discovery\n')
+  return self._discovery_evidence(r['lock'], consumer_key='consumer')
+ def finalize(self):
+  with Path('../trace').open('a') as f: f.write('provider-finalize\n')
+  return self._finalize(apply=r['case'] != 'read-only', after_restart=r['case'] != 'restart')
+CapabilityManager = ReplayManager
+"#,
+                record = json!(r.to_string())
+            )
+        } else {
+            source
+        };
         let (_tmp, infra) = setup(&format!("import json, sys\n{source}"));
         let root = infra.join("project");
         fs::create_dir_all(root.join(".mir")).unwrap();
@@ -232,7 +285,8 @@ class CapabilityManager:
             "{mode}/{} files",
             r["case"]
         );
-        let invoked = !r["calls"].as_array().unwrap().is_empty();
+        let invoked = matches!(mode, "discovery" | "provider-finalize")
+            || !r["calls"].as_array().unwrap().is_empty();
         assert_eq!(infra.join("pid").exists(), invoked);
         if invoked {
             reaped(&infra);
@@ -240,10 +294,10 @@ class CapabilityManager:
                 fs::read_to_string(infra.join("trace")).unwrap(),
                 format!(
                     "initialize\n{}\n",
-                    if mode == "activate" {
-                        "sync"
-                    } else {
-                        "finalize"
+                    match mode {
+                        "activate" => "sync",
+                        "finalize" => "finalize",
+                        other => other,
                     }
                 )
             );
@@ -267,4 +321,116 @@ fn lock() {
 #[test]
 fn config() {
     replay("config", 2);
+}
+#[test]
+fn discovery() {
+    replay("discovery", 6);
+}
+#[test]
+fn provider_finalize() {
+    replay("provider-finalize", 7);
+}
+
+#[test]
+fn installed_bootstrap_entry() {
+    let source = r#"
+Path('pid').rename(Path.cwd().parent / 'pid')
+class CapabilityManager:
+ def __init__(self, project_root, **kw):
+  assert project_root == Path.cwd() and kw == {}
+  Path('../trace').write_text('initialize\n')
+ def sync(self, profile, **kw):
+  assert profile == 'code_app' and kw == {'apply': True}
+  with Path('../trace').open('a') as f: f.write('sync\n')
+  return {}
+"#;
+    let (_tmp, infra) = setup(source);
+    let root = infra.join("project");
+    for relative in [
+        "CLAUDE.md",
+        "AGENTS.md",
+        ".codex/config.toml",
+        ".ai-harness/deny-list.yaml",
+        ".claude/agents/main-orchestrator.md",
+        ".codex/agents/main-orchestrator.toml",
+        ".claude/hooks/test.sh",
+    ] {
+        let path = root.join(relative);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, "").unwrap();
+    }
+    let records: Vec<Value> = serde_json::from_str(include_str!("../fixtures/y-e17.json")).unwrap();
+    for (relative, body) in [
+        (".claude/settings.json", "{\"hooks\":{\"Test\":[]}}"),
+        (".codex/hooks.json", "{}"),
+        ("config/sub-agent-policy.json", "{}"),
+        ("config/adopter-boundary.json", "{}"),
+        ("config/adopter-payload.json", "{}"),
+        (
+            "config/capability-sources.json",
+            records[13]["config"].as_str().unwrap(),
+        ),
+    ] {
+        let path = root.join(relative);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, body).unwrap();
+    }
+    fs::write(
+        root.join("harness_a.toml"),
+        b::memory_config_text("entry", "code_app", None)
+            .unwrap()
+            .replace(".mir/memory.db", ".mir/synthetic-memory.sqlite"),
+    )
+    .unwrap();
+    // Only these fake tools are reachable; neither mir nor python is on PATH.
+    let tools = infra.join("tools");
+    fs::create_dir(&tools).unwrap();
+    for name in ["git", "jq"] {
+        let path = tools.join(name);
+        fs::write(&path, "#!/bin/sh\nexit 1\n").unwrap();
+        fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    let out = Command::new(infra.join("mir"))
+        .args([
+            "bootstrap",
+            "--project-root",
+            ".",
+            "--profile",
+            "code_app",
+            "--slug",
+            "entry",
+            "--purpose",
+            "Synthetic entry proof",
+            "--stack",
+            "Rust",
+            "--json",
+        ])
+        .env_clear()
+        .env("HOME", &infra)
+        .env("PATH", &tools)
+        .env("VIRTUAL_ENV", &infra)
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert_eq!(
+        fs::read_to_string(infra.join("trace")).ok().as_deref(),
+        Some("initialize\nsync\n"),
+        "{out:?}"
+    );
+    assert_eq!(out.status.code(), Some(1));
+    assert!(out.stderr.is_empty(), "{out:?}");
+    let receipt: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(
+        receipt["capabilities"],
+        json!({"status":"failed",
+        "reason":"capability sync did not write .mir/capability-lock.json"})
+    );
+    let value = handoff_packet::python_json::Value::from(&receipt);
+    assert_eq!(out.stdout, (value.json_sorted(false) + "\n").as_bytes());
+    assert_eq!(
+        fs::read(root.join(".mir/bootstrap-receipt.json")).unwrap(),
+        (value.json_sorted(true) + "\n").as_bytes()
+    );
+    assert!(!root.join(".mir/memory.db").exists());
+    reaped(&infra);
 }
