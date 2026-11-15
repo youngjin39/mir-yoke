@@ -12,9 +12,14 @@ const RENDER_USAGE: &str = concat!(
 struct DirectoryError(std::path::PathBuf);
 impl fmt::Display for DirectoryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = if cfg!(windows) {
+            "[Errno 13] Permission denied"
+        } else {
+            "[Errno 21] Is a directory"
+        };
         write!(
             f,
-            "[Errno 21] Is a directory: {}",
+            "{message}: {}",
             crate::executor_execute::repr(self.0.to_str().unwrap_or_default())
         )
     }
@@ -119,13 +124,16 @@ pub fn render(
             String::new()
         };
         let updated = inject_markers(&existing, &body);
-        if path.is_dir() {
-            return Err(Box::new(DirectoryError(path.to_owned())));
-        }
         #[cfg(windows)]
         let updated = updated.replace('\n', "\r\n");
         // Path.write_text writes in place: it keeps the mode bits and follows a symlink.
-        std::fs::write(path, updated)?;
+        std::fs::write(path, updated).map_err(|error| -> Box<dyn std::error::Error> {
+            if path.is_dir() {
+                Box::new(DirectoryError(path.to_owned()))
+            } else {
+                Box::new(error)
+            }
+        })?;
         Ok((
             0,
             format!("render applied \u{2192} {}\n", path.display()).into_bytes(),
@@ -328,7 +336,11 @@ impl Error {
             return e.0.python_class();
         }
         if self.0.downcast_ref::<DirectoryError>().is_some() {
-            return "IsADirectoryError";
+            return if cfg!(windows) {
+                "PermissionError"
+            } else {
+                "IsADirectoryError"
+            };
         }
         let sql = self.0.downcast_ref::<rusqlite::Error>().or_else(|| {
             match self.0.downcast_ref::<distill::SearchError>() {
