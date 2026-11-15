@@ -56,3 +56,31 @@ fn public_bootstrap_phase1_memory_receipts() {
         String::from_utf8_lossy(&out.stderr)
     );
 }
+
+#[test]
+#[cfg(target_os = "macos")]
+fn public_bootstrap_phase2_content() {
+    let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let scratch = package.join("target/mig-scratch/Y-E18-p3");
+    fs::create_dir_all(&scratch).unwrap();
+    let tmp = tempfile::tempdir_in(scratch).unwrap();
+    let out = Command::new(package.join("../../.venv/bin/python"))
+        .args(["-I", "-X", "utf8"])
+        .arg(package.join("tests/fixtures/generate_y_e18_p3.py"))
+        .arg("--scratch")
+        .arg(tmp.path())
+        .arg("--output")
+        .arg(tmp.path().join("frozen.json"))
+        .arg("--binary")
+        .arg(env!("CARGO_BIN_EXE_mir"))
+        .env("HOME", tmp.path())
+        .current_dir(tmp.path())
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+}
