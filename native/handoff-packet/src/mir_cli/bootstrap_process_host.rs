@@ -1,4 +1,4 @@
-//! Native process/environment boundary; schema and capability execution remain deferred.
+//! Native process/environment boundary and bounded, frozen schema validation.
 use super::{CommandOutput, CommandRequest, Error, Host, authored};
 use std::{
     fs,
@@ -17,6 +17,21 @@ fn os_error(path: &Path, error: std::io::Error) -> Error {
 }
 
 impl Host for ProductionHost {
+    fn validate_boundary_schema(
+        &mut self,
+        value: &serde_json::Value,
+        schema: &serde_json::Value,
+    ) -> Result<(), Error> {
+        validate_schema(value, schema, None)
+    }
+    fn validate_boundary_schema_repr(
+        &mut self,
+        value: &serde_json::Value,
+        schema: &serde_json::Value,
+        instance_repr: &str,
+    ) -> Result<(), Error> {
+        validate_schema(value, schema, Some(instance_repr))
+    }
     fn env(&mut self, name: &str) -> Option<String> {
         std::env::var(name).ok()
     }
@@ -283,4 +298,65 @@ fn execute(request: &CommandRequest, clean: bool) -> Result<CommandOutput, Error
         result.stderr = authored::decode(result.stderr)?.into_bytes();
     }
     Ok(result)
+}
+
+// shortcut: admit only the Y-E16 measured keywords. Extend with pinned diagnostics
+// before admitting compound schemas, schema errors, or multiline pprint output.
+fn validate_schema(
+    value: &serde_json::Value,
+    schema: &serde_json::Value,
+    instance_repr: Option<&str>,
+) -> Result<(), Error> {
+    let refused = || {
+        Error::new(
+            "NotImplementedError",
+            "bootstrap boundary schema validator is not connected",
+        )
+    };
+    if schema == true || schema.as_object().is_some_and(|m| m.is_empty()) {
+        return Ok(());
+    }
+    let fields = schema
+        .as_object()
+        .filter(|m| m.len() == 1)
+        .ok_or_else(refused)?;
+    if fields.get("type").and_then(|t| t.as_str()) == Some("object") && value.is_object() {
+        return Ok(());
+    }
+    let required = fields
+        .get("required")
+        .and_then(|v| v.as_array())
+        .ok_or_else(refused)?;
+    // Invalid required lists need SchemaError, never a successful empty validation.
+    if required.len() != 1 || required.iter().any(|v| !v.is_string()) {
+        return Err(refused());
+    }
+    let object = value.as_object().ok_or_else(refused)?;
+    for key in required {
+        let key = key.as_str().ok_or_else(refused)?;
+        if object.contains_key(key) {
+            continue;
+        }
+        let instance = instance_repr.ok_or_else(refused)?;
+        let schema_text = crate::executor_brief_render::python_value_repr(schema);
+        // jsonschema uses pprint(width=72, sort_dicts=False) here.
+        // Refuse outside the frozen single-line representation envelope.
+        if !instance.is_ascii()
+            || !schema_text.is_ascii()
+            || instance.len() > 72
+            || schema_text.len() > 72
+        {
+            return Err(refused());
+        }
+        return Err(Error::new(
+            "ValidationError",
+            format!(
+                "{} is a required property\n\nFailed validating 'required' in schema:\n    {}\n\nOn instance:\n    {}",
+                crate::executor_execute::repr(key),
+                schema_text,
+                instance,
+            ),
+        ));
+    }
+    Ok(())
 }

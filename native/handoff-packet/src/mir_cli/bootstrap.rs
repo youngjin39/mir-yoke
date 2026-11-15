@@ -109,6 +109,15 @@ pub trait Host: Sized {
             "bootstrap boundary schema validator is not connected",
         ))
     }
+    /// Preserve source order for jsonschema's diagnostic pprint.
+    fn validate_boundary_schema_repr(
+        &mut self,
+        value: &Value,
+        schema: &Value,
+        _instance_repr: &str,
+    ) -> Result<(), Error> {
+        self.validate_boundary_schema(value, schema)
+    }
     /// The real compiler is the default; callers can still inject this boundary.
     fn compile_adopter_agent_catalog(
         &mut self,

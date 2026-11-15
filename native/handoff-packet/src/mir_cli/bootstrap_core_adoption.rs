@@ -92,6 +92,15 @@ fn json_text(path: &Path) -> Result<Value, Error> {
     parse_json(&read_text(path)?)
 }
 
+fn json_with_repr(path: &Path) -> Result<(Value, String), Error> {
+    admit_file_type(path)?;
+    let text = read_text(path)?;
+    let value = parse_json(&text)?;
+    let ordered =
+        crate::python_json::parse(&text).map_err(|e| Error::new(e.exception, e.to_string()))?;
+    Ok((value, ordered.repr()))
+}
+
 fn read_text(path: &Path) -> Result<String, Error> {
     authored::decode(fs::read(path).map_err(|error| path_error(path, error))?)
 }
@@ -439,7 +448,7 @@ fn payload_relative(value: &Value) -> Result<String, Error> {
 
 pub(super) fn load_boundary(root: &Path, host: &mut impl Host) -> Result<Value, Error> {
     let path = root.join("config/adopter-boundary.json");
-    let mut boundary = json_text(&path).map_err(|e| {
+    let (mut boundary, instance_repr) = json_with_repr(&path).map_err(|e| {
         if !caught_json(&e) && e.class != "TOMLDecodeError" {
             return e;
         }
@@ -470,7 +479,7 @@ pub(super) fn load_boundary(root: &Path, host: &mut impl Host) -> Result<Value, 
                 e
             }
         })?;
-        host.validate_boundary_schema(&boundary, &schema)
+        host.validate_boundary_schema_repr(&boundary, &schema, &instance_repr)
             .map_err(|e| {
                 if e.class == "ValidationError" {
                     Error::new("BoundaryError", format!("invalid {}: {e}", path.display()))
@@ -1126,7 +1135,7 @@ fn payload(root: &Path, boundary: &Value, host: &mut impl Host) -> Result<Value,
     let manifest_relative = relative(&boundary["payload_manifest"])
         .map_err(|e| slim(e.message.replace("boundary", "payload")))?;
     let path = root.join(manifest_relative);
-    let mut payload = json_text(&path).map_err(|e| {
+    let (mut payload, instance_repr) = json_with_repr(&path).map_err(|e| {
         if caught_json(&e) {
             slim(format!("cannot read adopter payload manifest: {e}"))
         } else {
@@ -1154,7 +1163,7 @@ fn payload(root: &Path, boundary: &Value, host: &mut impl Host) -> Result<Value,
                 e
             }
         })?;
-        host.validate_boundary_schema(&payload, &schema)
+        host.validate_boundary_schema_repr(&payload, &schema, &instance_repr)
             .map_err(|e| {
                 if caught_json(&e) || e.class == "ValidationError" {
                     slim(format!("invalid adopter payload manifest: {e}"))
@@ -1821,3 +1830,7 @@ mod tests {
         assert_eq!(check_marker_names(&raw), Err(error));
     }
 }
+
+#[cfg(test)]
+#[path = "bootstrap_schema_tests.rs"]
+mod schema_tests;
