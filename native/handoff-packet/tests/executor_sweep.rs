@@ -222,17 +222,38 @@ fn run_native(root: &Path, case: &str, apply: bool) -> Value {
 fn golden(case: &str, apply: bool, seam: &str, now: &str, step: usize) -> Value {
     let corpus: Value = serde_json::from_str(include_str!("fixtures/g6/sweep.json")).unwrap();
     let expected = corpus["cases"][format!("{case}|{apply}|{seam}|{now}")][step].clone();
-    #[cfg(windows)]
-    let expected = {
-        let mut expected = expected;
-        if let Some(rows) = expected["state"]["rows"]["artifact_sweeps"].as_array_mut() {
-            for row in rows {
-                row["path"] = json!(row["path"].as_str().unwrap().replace('/', "\\"));
-            }
+    platform_golden(expected, cfg!(windows))
+}
+fn platform_golden(mut expected: Value, windows: bool) -> Value {
+    if windows
+        && let Some(rows) = expected["state"]["rows"]
+            .get_mut("artifact_sweeps")
+            .and_then(Value::as_array_mut)
+    {
+        for row in rows {
+            row["path"] = json!(row["path"].as_str().unwrap().replace('/', "\\"));
         }
-        expected
-    };
+    }
     expected
+}
+#[test]
+fn windows_golden_preserves_missing_ledger_snapshot() {
+    let corpus: Value = serde_json::from_str(include_str!("fixtures/g6/sweep.json")).unwrap();
+    // Both pinned Windows captures equal this G6 record, including the absent key.
+    let expected = corpus["cases"][format!("missing-db|false||{NOW}")][0].clone();
+    assert_eq!(expected["state"]["rows"], json!({}));
+    assert_eq!(platform_golden(expected.clone(), false), expected);
+    assert_eq!(platform_golden(expected.clone(), true), expected);
+    let receipts = corpus["cases"][format!("artifact-receipt|false||{NOW}")][0].clone();
+    let windows = platform_golden(receipts.clone(), true);
+    assert_eq!(
+        windows["state"]["rows"]["artifact_sweeps"][0]["path"],
+        json!(format!(r"$ROOT\repo\tasks\dispatch\{}", "1".repeat(32)))
+    );
+    assert_eq!(
+        windows["state"]["rows"]["jobs"],
+        receipts["state"]["rows"]["jobs"]
+    );
 }
 fn p2_record(windows: bool, variant: &str, step: &str) -> Option<Value> {
     if !windows {
