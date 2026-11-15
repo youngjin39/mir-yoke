@@ -12,6 +12,7 @@ use std::{
 pub struct MainOutput {
     pub exit: Value,
     pub stdout: Text,
+    pub stdout_prints: Vec<Text>,
     pub stderr: String,
 }
 
@@ -23,15 +24,19 @@ pub(super) fn strings(value: &Value) -> Vec<String> {
         .map(authored::python_str)
         .collect()
 }
-fn output(code: i32, stdout: Text, stderr: String) -> MainOutput {
+fn output(code: i32, stdout_prints: Vec<Text>, stderr: String) -> MainOutput {
+    let stdout = stdout_prints
+        .iter()
+        .fold(Text::from(""), |a, b| a.concat(b));
     MainOutput {
         exit: json!(code),
         stdout,
+        stdout_prints,
         stderr,
     }
 }
 fn refused(message: impl AsRef<str>) -> MainOutput {
-    output(2, "".into(), format!("{}\n", message.as_ref()))
+    output(2, vec![], format!("{}\n", message.as_ref()))
 }
 fn config_error(error: &Error) -> bool {
     value_error(error) || error.class == "ConfigLoadError" || io_error(error)
@@ -212,6 +217,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
     let Some(ns) = parsed.value else {
         return Ok(MainOutput {
             exit: json!(["SystemExit", parsed.code]),
+            stdout_prints: vec![parsed.stdout.clone().into()],
             stdout: parsed.stdout.into(),
             stderr: parsed.stderr,
         });
@@ -726,7 +732,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
         }
         return Ok(output(
             1,
-            super::emit(
+            super::emit_prints(
                 ns["json"] == true,
                 receipt_value(&receipt, &capability, &unique_errors),
             )?,
@@ -740,7 +746,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
         unique_errors.push(format!("slim commit cleanup failed: {error}").into());
         return Ok(output(
             1,
-            super::emit(
+            super::emit_prints(
                 ns["json"] == true,
                 receipt_value(&receipt, &capability, &unique_errors),
             )?,
@@ -756,7 +762,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
     };
     Ok(output(
         code,
-        super::emit(
+        super::emit_prints(
             ns["json"] == true,
             receipt_value(&receipt, &capability, &unique_errors),
         )?,

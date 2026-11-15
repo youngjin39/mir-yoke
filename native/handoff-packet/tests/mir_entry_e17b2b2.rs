@@ -337,14 +337,42 @@ fn lossless_rpc_records() {
                 serde_json::from_value::<Vec<u8>>(r["stdout"].clone()).unwrap(),
                 "{r}"
             );
-            // Console encoding is deferred: exception Text is checked by the bootstrap route.
-            if r["case"] != "exception" {
-                assert_eq!(
-                    out.stderr,
-                    serde_json::from_value::<Vec<u8>>(r["stderr"].clone()).unwrap()
-                );
-            }
+            let stderr = if r["case"] == "exception" {
+                let encoding: Vec<Value> =
+                    serde_json::from_str(include_str!("fixtures/y-e17b2b2b.json")).unwrap();
+                encoding[0]["public_stderr"].clone()
+            } else {
+                r["stderr"].clone()
+            };
+            assert_eq!(
+                out.stderr,
+                serde_json::from_value::<Vec<u8>>(stderr).unwrap()
+            );
         }
         reaped(&root);
     }
+}
+
+#[test]
+fn stdout_os_failure() {
+    let records: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/y-e17b2b2b.json")).unwrap();
+    let r = &records[0]["stdout_os"];
+    let (_tmp, root) = setup(
+        "class CapabilityManager:\n def __init__(self,*a,**kw): pass\n def status(self,*a,**kw): return {}\n",
+    );
+    fs::write(root.join("readonly"), "unchanged").unwrap();
+    let out = Command::new(root.join("mir"))
+        .args(["capability", "status", "--project-root", ".", "--json"])
+        .env_clear()
+        .env("HOME", &root)
+        .env("PATH", &root)
+        .current_dir(&root)
+        .stdout(fs::File::open(root.join("readonly")).unwrap())
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), r["code"].as_i64().map(|c| c as i32));
+    assert_eq!(out.stderr, r["stderr"].as_str().unwrap().as_bytes());
+    assert_eq!(fs::read(root.join("readonly")).unwrap(), b"unchanged");
+    reaped(&root);
 }

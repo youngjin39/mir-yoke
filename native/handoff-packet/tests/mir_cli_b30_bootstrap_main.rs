@@ -892,6 +892,16 @@ fn main_carriers_match_pinned_python() {
             r["result"]["stdout"].as_text().unwrap().render().unwrap()
         );
         assert_eq!(out.stderr, r["result"]["stderr"].as_str().unwrap());
+        if r["json"] == py::Value::Bool(false) && r["status"].as_str() == Some("failed") {
+            let message = r["evidence"]["reason"].as_text().unwrap();
+            let prefix = py::Text::from("  [not-ready] capability activation failed: ");
+            assert_eq!(
+                out.stdout_prints.get(1),
+                Some(&prefix.concat(message).concat(&"\n".into()))
+            );
+            let last = out.stdout_prints.last().unwrap().as_str();
+            assert_eq!(last, Some("  receipt: .mir/bootstrap-receipt.json\n"));
+        }
         let receipt = root.join(".mir/bootstrap-receipt.json");
         if r["receipt"].is_null() {
             assert!(!receipt.exists());

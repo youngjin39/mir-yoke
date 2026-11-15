@@ -32,7 +32,7 @@ impl Text {
     pub fn render(&self) -> Result<Vec<u8>, String> {
         crate::executor_text::encode_points(&self.codepoints, "utf-8", "surrogatepass", false)
     }
-    pub(crate) fn new(codepoints: Vec<u32>) -> Self {
+    pub fn new(codepoints: Vec<u32>) -> Self {
         let text = codepoints.iter().map(|c| char::from_u32(*c)).collect();
         Self { codepoints, text }
     }

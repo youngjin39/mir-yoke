@@ -878,31 +878,40 @@ pub fn atomic_write_json(
 }
 /// Return the exact stdout text; caller connection belongs to a later slice.
 pub fn emit(as_json: bool, receipt: impl Into<PyValue>) -> Result<Text, Error> {
+    Ok(emit_prints(as_json, receipt)?
+        .into_iter()
+        .fold("".into(), |a, b| a.concat(&b)))
+}
+/// Preserve each Python print call for the public console encoder.
+pub fn emit_prints(as_json: bool, receipt: impl Into<PyValue>) -> Result<Vec<Text>, Error> {
     let receipt = receipt.into();
     if as_json {
-        return Ok((receipt.json_sorted(false) + "\n").into());
+        return Ok(vec![(receipt.json_sorted(false) + "\n").into()]);
     }
     let status = receipt["status"].py_str();
-    let mut out = Text::from(format!("mir bootstrap: {status}\n"));
+    let mut out = vec![Text::from(format!("mir bootstrap: {status}\n"))];
     for error in receipt["errors"].as_array().into_iter().flatten() {
         let text = error
             .as_text()
             .cloned()
             .unwrap_or_else(|| error.py_str().into());
-        out = out
-            .concat(&Text::from("  [not-ready] "))
-            .concat(&text)
-            .concat(&"\n".into());
+        out.push(
+            Text::from("  [not-ready] ")
+                .concat(&text)
+                .concat(&"\n".into()),
+        );
     }
     if status == "restart_required" {
-        out = out.concat(&Text::from(concat!(
+        for line in [
             "  selected global plugins are hash-verified for required runtimes\n",
             "  begin a new session for every required activation runtime\n",
             "  attest the namespaced skill catalog from each required session\n",
             "  optional runtime installation and discovery evidence is advisory\n",
             "  run mir-core:design then mir-core:spec-architect, then finalize\n",
-        )));
+        ] {
+            out.push(line.into());
+        }
     }
-    out = out.concat(&"  receipt: .mir/bootstrap-receipt.json\n".into());
+    out.push("  receipt: .mir/bootstrap-receipt.json\n".into());
     Ok(out)
 }
