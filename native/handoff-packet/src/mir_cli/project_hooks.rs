@@ -448,44 +448,79 @@ pub fn main(
     install: impl FnOnce(&Path, &Value) -> Option<Value>,
     mut run: impl FnMut(ProbeRequest<'_>) -> Result<ProbeOutput, String>,
 ) -> Output {
-    if argv.iter().any(|arg| matches!(*arg, "--help" | "-h")) {
+    const OPTIONS: &[&str] = &["--help", "--project-root"];
+    let help = || {
         let help = concat!(
             "\npositional arguments:\n  {install,check}\n\noptions:\n",
             "  -h, --help            show this help message and exit\n",
             "  --project-root PROJECT_ROOT\n",
         );
-        return (0, format!("{USAGE}{help}").into_bytes(), vec![]);
-    }
+        (0, format!("{USAGE}{help}").into_bytes(), vec![])
+    };
     let mut operation = None;
     let mut root = None;
     let mut index = 0;
     let mut error = None;
+    let mut unknown = Vec::new();
+    let mut options = true;
     while index < argv.len() {
         let arg = argv[index];
-        if arg == "--project-root" {
-            index += 1;
-            if let Some(value) = argv.get(index) {
-                root = Some(PathBuf::from(value));
-            } else {
-                error = Some("argument --project-root: expected one argument".to_owned());
-                break;
+        index += 1;
+        if options && arg == "--" {
+            options = false;
+            continue;
+        }
+        let option = if options {
+            match super::argparse::resolve(arg, OPTIONS) {
+                Ok(option) => option,
+                Err(message) => {
+                    error = Some(message);
+                    break;
+                }
             }
-        } else if operation.is_none() && !arg.starts_with('-') {
+        } else {
+            None
+        };
+        if let Some(option) = option {
+            let inline = arg.split_once('=').map(|(_, v)| v);
+            if option == "--help" {
+                if let Some(value) = inline {
+                    error = Some(format!(
+                        "argument -h/--help: ignored explicit argument {}",
+                        crate::executor_execute::repr(value)
+                    ));
+                    break;
+                }
+                return help();
+            }
+            let value = if let Some(value) = inline {
+                value
+            } else {
+                let Some(value) = argv
+                    .get(index)
+                    .filter(|v| !super::context_sync::option_like_with(v, OPTIONS))
+                else {
+                    error = Some("argument --project-root: expected one argument".to_owned());
+                    break;
+                };
+                index += 1;
+                value
+            };
+            root = Some(PathBuf::from(value));
+        } else if operation.is_none()
+            && (!options || !super::context_sync::option_like_with(arg, OPTIONS))
+        {
             if !matches!(arg, "install" | "check") {
                 error = Some(format!(
-                    "argument operation: invalid choice: '{arg}' (choose from install, check)"
+                    "argument operation: invalid choice: {} (choose from install, check)",
+                    crate::executor_execute::repr(arg)
                 ));
                 break;
             }
             operation = Some(arg);
         } else {
-            error = Some(format!(
-                "unrecognized arguments: {}",
-                argv[index..].join(" ")
-            ));
-            break;
+            unknown.push(arg);
         }
-        index += 1;
     }
     if error.is_none() {
         let missing: Vec<_> = [
@@ -501,6 +536,9 @@ pub fn main(
                 missing.join(", ")
             ));
         }
+    }
+    if error.is_none() && !unknown.is_empty() {
+        error = Some(format!("unrecognized arguments: {}", unknown.join(" ")));
     }
     if let Some(error) = error {
         return (

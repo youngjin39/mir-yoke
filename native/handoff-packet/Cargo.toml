@@ -24,7 +24,7 @@ path = "src/bootstrap_gate.rs"
 
 [dependencies]
 libc = "=0.2.191"
-serde = "1"
+serde = { version = "1", features = ["derive"] }
 tempfile = "3"
 serde_json = { version = "1", features = ["unbounded_depth", "float_roundtrip", "raw_value"] }
 regex = "1"

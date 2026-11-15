@@ -5,7 +5,12 @@ mod authored;
 mod core_adoption;
 #[path = "bootstrap_main_host.rs"]
 mod main_host;
+#[path = "bootstrap_process_host.rs"]
+mod process_host;
+#[path = "bootstrap_schema.rs"]
+mod schema;
 pub use core_adoption::core_adoption_operation;
+pub use process_host::ProductionHost;
 #[path = "bootstrap_main.rs"]
 mod main_port;
 #[path = "bootstrap_memory.rs"]
@@ -35,7 +40,7 @@ pub use authored_text::{
 };
 pub use capabilities::{
     CATALOG_TEMPLATE_BY_PROFILE, CapabilityOutput, activate_capabilities, capability_lock_evidence,
-    compile_adopter_agent_catalog, finalize_capabilities, load_capability_sources,
+    compile_adopter_agent_catalog, finalize_capabilities, load_capability_sources, scalar_evidence,
 };
 pub use release::{
     is_raw_provider_checkout, is_safe_existing_project_file, normalise_git_url,
@@ -45,6 +50,7 @@ pub use release::{
 mod content;
 use super::bootstrap_adoption::is_python_space;
 use crate::executor_execute::repr;
+use crate::python_json::{Text, Value as PyValue};
 pub use content::{
     acceptance_query, build_content_onboarding, content_archive_args, content_archive_globs,
     discoverable_content_files, load_content_onboarding, parse_content_archives,
@@ -59,14 +65,26 @@ use std::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Error {
-    pub class: &'static str,
+    pub class: String,
     pub message: String,
+    pub message_text: Option<crate::python_json::Text>,
+    pub mro: Vec<String>,
 }
 impl Error {
-    pub fn new(class: &'static str, message: impl Into<String>) -> Self {
+    pub fn new(class: impl Into<String>, message: impl Into<String>) -> Self {
+        let class = class.into();
+        let mro = match class.as_str() {
+            "CapabilityError" => vec!["mir.core.capabilities.manager.CapabilityError".into()],
+            "CapabilityConfigError" => {
+                vec!["mir.core.capabilities.config.CapabilityConfigError".into()]
+            }
+            _ => vec![],
+        };
         Self {
             class,
             message: message.into(),
+            message_text: None,
+            mro,
         }
     }
 }
@@ -106,6 +124,26 @@ pub trait Host: Sized {
             "bootstrap boundary schema validator is not connected",
         ))
     }
+    /// Preserve source order for jsonschema's diagnostic pprint.
+    fn validate_boundary_schema_repr(
+        &mut self,
+        value: &Value,
+        schema: &Value,
+        _instance_repr: &str,
+    ) -> Result<(), Error> {
+        self.validate_boundary_schema(value, schema)
+    }
+    fn validate_boundary_schema_source(
+        &mut self,
+        value: &Value,
+        schema: &Value,
+        instance: &str,
+        _schema_source: &str,
+    ) -> Result<(), Error> {
+        let ordered = crate::python_json::parse(instance)
+            .map_err(|e| Error::new(e.exception, e.to_string()))?;
+        self.validate_boundary_schema_repr(value, schema, &ordered.repr())
+    }
     /// The real compiler is the default; callers can still inject this boundary.
     fn compile_adopter_agent_catalog(
         &mut self,
@@ -117,6 +155,9 @@ pub trait Host: Sized {
     /// Models the Python import separately from execution failures.
     fn capability_import(&mut self) -> Result<(), Error> {
         Ok(())
+    }
+    fn capability_import_for(&mut self, _root: &Path, _finalize: bool) -> Result<(), Error> {
+        self.capability_import()
     }
     /// Caller-supplied provider execution; CapabilityOutput::run uses the B30-P01 CLI.
     fn capability_main(&mut self, _argv: &[String]) -> Result<CapabilityOutput, Error> {
@@ -153,8 +194,8 @@ pub trait Host: Sized {
         }
         .into()
     }
-    fn platform_release(&mut self) -> String {
-        String::new()
+    fn platform_release(&mut self) -> Result<String, Error> {
+        Ok(String::new())
     }
     fn python_version(&mut self) -> String {
         String::new()
@@ -291,14 +332,14 @@ pub trait Host: Sized {
         &mut self,
         root: &Path,
         profile: &str,
-    ) -> Result<(String, Value), Error> {
+    ) -> Result<(String, crate::python_json::Value), Error> {
         activate_capabilities(root, profile, self)
     }
     fn finalize_capabilities(
         &mut self,
         root: &Path,
         prior: Option<&Value>,
-    ) -> Result<(String, Value), Error> {
+    ) -> Result<(String, crate::python_json::Value), Error> {
         finalize_capabilities(root, prior, self)
     }
     fn apply_adopter_slim(
@@ -392,7 +433,7 @@ pub trait Host: Sized {
     fn atomic_write_text(&mut self, path: &Path, body: &str) -> Result<(), Error> {
         atomic_write_text(path, body, self)
     }
-    fn atomic_write_json(&mut self, path: &Path, value: &Value) -> Result<(), Error> {
+    fn atomic_write_json(&mut self, path: &Path, value: &PyValue) -> Result<(), Error> {
         atomic_write_json(path, value, self)
     }
 }
@@ -798,7 +839,7 @@ pub fn storage_preflight(
     match same_filesystem {
         Err(error) => {
             if !matches!(
-                error.class,
+                error.class.as_str(),
                 "OSError"
                     | "FileNotFoundError"
                     | "PermissionError"
@@ -827,31 +868,50 @@ pub fn storage_preflight(
 pub fn atomic_write_text(path: &Path, body: &str, host: &mut impl Host) -> Result<(), Error> {
     authored::atomic_write_with(path, body, false, |a, b| host.replace(a, b))
 }
-pub fn atomic_write_json(path: &Path, payload: &Value, host: &mut impl Host) -> Result<(), Error> {
-    let body = authored::pretty(payload, true)? + "\n";
+pub fn atomic_write_json(
+    path: &Path,
+    payload: impl Into<PyValue>,
+    host: &mut impl Host,
+) -> Result<(), Error> {
+    let body = payload.into().json_sorted(true) + "\n";
     authored::atomic_write_with(path, &body, true, |a, b| host.replace(a, b))
 }
 /// Return the exact stdout text; caller connection belongs to a later slice.
-pub fn emit(as_json: bool, receipt: &Value) -> Result<String, Error> {
+pub fn emit(as_json: bool, receipt: impl Into<PyValue>) -> Result<Text, Error> {
+    Ok(emit_prints(as_json, receipt)?
+        .into_iter()
+        .fold("".into(), |a, b| a.concat(&b)))
+}
+/// Preserve each Python print call for the public console encoder.
+pub fn emit_prints(as_json: bool, receipt: impl Into<PyValue>) -> Result<Vec<Text>, Error> {
+    let receipt = receipt.into();
     if as_json {
-        let sorted: Value = serde_json::from_str(&authored::pretty(receipt, false)?)
-            .map_err(|e| Error::new("ValueError", e.to_string()))?;
-        return Ok(authored::ascii(sorted.to_string()) + "\n");
+        return Ok(vec![(receipt.json_sorted(false) + "\n").into()]);
     }
-    let status = authored::python_str(&receipt["status"]);
-    let mut out = format!("mir bootstrap: {status}\n");
+    let status = receipt["status"].py_str();
+    let mut out = vec![Text::from(format!("mir bootstrap: {status}\n"))];
     for error in receipt["errors"].as_array().into_iter().flatten() {
-        out.push_str(&format!("  [not-ready] {}\n", authored::python_str(error)));
+        let text = error
+            .as_text()
+            .cloned()
+            .unwrap_or_else(|| error.py_str().into());
+        out.push(
+            Text::from("  [not-ready] ")
+                .concat(&text)
+                .concat(&"\n".into()),
+        );
     }
     if status == "restart_required" {
-        out.push_str(concat!(
+        for line in [
             "  selected global plugins are hash-verified for required runtimes\n",
             "  begin a new session for every required activation runtime\n",
             "  attest the namespaced skill catalog from each required session\n",
             "  optional runtime installation and discovery evidence is advisory\n",
             "  run mir-core:design then mir-core:spec-architect, then finalize\n",
-        ));
+        ] {
+            out.push(line.into());
+        }
     }
-    out.push_str("  receipt: .mir/bootstrap-receipt.json\n");
+    out.push("  receipt: .mir/bootstrap-receipt.json\n".into());
     Ok(out)
 }

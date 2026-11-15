@@ -139,7 +139,20 @@ impl<T: Transport> OmlxHttpBackend<T> {
                 "Cannot send a request, as the client has been closed.",
             ));
         }
-        let url = format!("{}/embeddings", self.cfg.base_url.trim_end_matches('/'));
+        let (base, fragment) = self
+            .cfg
+            .base_url
+            .split_once('#')
+            .unwrap_or((&self.cfg.base_url, ""));
+        let url = format!(
+            "{base}{}embeddings{}",
+            if base.ends_with('/') { "" } else { "/" },
+            if self.cfg.base_url.contains('#') {
+                format!("#{fragment}")
+            } else {
+                String::new()
+            }
+        );
         let timeout = self.cfg.timeout_sec;
         let response = self.transport.send(HttpRequest {
             url: url.clone(),
@@ -268,7 +281,9 @@ fn parse_response(raw: &[u8]) -> Result<Value, HttpError> {
         i += 1;
     }
     serde_json::from_slice(&out).map_err(|e| {
-        let reason = if e.to_string().starts_with("EOF while parsing an object") {
+        let reason = if raw.is_empty() {
+            "Expecting value".to_owned()
+        } else if e.to_string().starts_with("EOF while parsing an object") {
             "Expecting property name enclosed in double quotes".to_owned()
         } else {
             e.to_string()

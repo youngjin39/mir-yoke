@@ -197,7 +197,11 @@ fn json_string(value: &Value, pretty: bool) -> Result<String, Error> {
     .map_err(|e| Error::Json(e.to_string()))?;
     Ok(ascii_json(text))
 }
-pub fn atomic_write_json(path: &Path, payload: &Value, host: &mut dyn Host) -> Result<(), Error> {
+pub fn atomic_write_json<H: Host + ?Sized>(
+    path: &Path,
+    payload: &Value,
+    host: &mut H,
+) -> Result<(), Error> {
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent).map_err(|e| io_error(parent, e))?;
     let name = path
@@ -244,6 +248,60 @@ pub fn emit(as_json: bool, report: &Value, host: &mut dyn Host) -> Result<(), Er
         .map_err(|e| io_error(Path::new("<stdout>"), e))
 }
 
+pub fn write_receipt_with(
+    path: &Path,
+    value: &Value,
+    before: impl FnOnce(&Path, &Path) -> io::Result<()>,
+) -> Result<(), Error> {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent).map_err(|e| io_error(parent, e))?;
+    let data = format!("{}\n", json_string(value, true)?);
+    #[cfg(unix)]
+    {
+        use io::Write;
+        let temporary = tempfile::Builder::new()
+            .prefix(".bootstrap-receipt.json.")
+            .make_in(parent, |candidate| {
+                crate::adoption_fs::StagedFile::create(parent, candidate)
+            })
+            .map_err(|e| io_error(parent, e))?;
+        let (mut staged, mut inert) = temporary.into_parts();
+        inert.disable_cleanup(true);
+        staged
+            .file
+            .write_all(data.as_bytes())
+            .map_err(|e| io_error(&staged.path, e))?;
+        before(&staged.path, path).map_err(|e| io_error(path, e))?;
+        staged.publish(parent, path).map_err(|e| {
+            let mut error = io_error(&staged.path, e);
+            if let Error::Io { message, .. } = &mut error {
+                message.push_str(&format!(" -> {}", repr(&wire(path))));
+            }
+            error
+        })?;
+        Ok(())
+    }
+    #[cfg(not(unix))]
+    {
+        use io::Write;
+        let mut temporary = tempfile::Builder::new()
+            .prefix(".bootstrap-receipt.json.")
+            .tempfile_in(parent)
+            .map_err(|e| io_error(parent, e))?;
+        temporary
+            .write_all(data.as_bytes())
+            .map_err(|e| io_error(path, e))?;
+        before(temporary.path(), path).map_err(|e| io_error(path, e))?;
+        if path.ancestors().any(Path::is_symlink) {
+            return Err(adoption("linked receipt path"));
+        }
+        temporary
+            .persist(path)
+            .map_err(|e| io_error(path, e.error))?;
+        Ok(())
+    }
+}
+
 pub(super) fn install_evaluator<H: Host + ?Sized>(
     root: &Path,
     source: &Path,
@@ -261,6 +319,33 @@ pub(super) fn install_evaluator<H: Host + ?Sized>(
     let home = host
         .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from);
+    struct ArtifactHost<'a, H: Host + ?Sized>(&'a mut H);
+    impl<H: Host + ?Sized> adoption_native::InstallHost for ArtifactHost<'_, H> {
+        fn read(&mut self, url: &str, size: u64) -> io::Result<Vec<u8>> {
+            if !url.starts_with("http://") && !url.starts_with("https://") {
+                return crate::mir_core::capabilities::native::read(url, size);
+            }
+            let result =
+                crate::mir_cli::embedding_http::HttpTransport::default().artifact(url, size);
+            let response = match result {
+                Ok(response) => response,
+                Err(error) => {
+                    if error.class == "UnsupportedProtocol" {
+                        self.0
+                            .stderr(&format!("{}: {}\n", error.class, error.message))?;
+                    }
+                    return Err(io::Error::other(error.message));
+                }
+            };
+            if !(200..300).contains(&response.status) {
+                return Err(io::Error::other(format!("HTTP {}", response.status)));
+            }
+            if response.body.len() as u64 > size {
+                return Err(io::Error::other("native artifact exceeds recorded size"));
+            }
+            Ok(response.body)
+        }
+    }
     adoption_native::install_evaluator(
         root,
         &adoption_native::InstallOptions {
@@ -271,7 +356,7 @@ pub(super) fn install_evaluator<H: Host + ?Sized>(
             home: home.as_deref(),
             ..Default::default()
         },
-        &mut adoption_native::LocalHost,
+        &mut ArtifactHost(host),
     )
 }
 
@@ -515,7 +600,7 @@ pub fn main(
         ) {
             receipt["native_evaluator"] = evaluator;
         }
-        atomic_write_json(&root.join(".mir/bootstrap-receipt.json"), &receipt, host)?;
+        host.write_receipt(&root.join(".mir/bootstrap-receipt.json"), &receipt)?;
         receipt_written = true;
     }
     let mut report = receipt;

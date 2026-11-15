@@ -1,12 +1,12 @@
 //! Library-only bootstrap capability selection, activation and lock evidence.
 #![forbid(unsafe_code)]
-use super::authored::{decode, io_error, json_text, python_str, read_text, value_error};
+use super::authored::{io_error, json_text, python_str, read_text, value_error};
 use super::content::truthy;
-use super::{Error, Host, is_python_space, release};
-use crate::executor_brief_render::python_type;
+use super::{Error, Host, release};
 use crate::executor_execute::repr;
 use crate::mir_cli::bootstrap_adoption::wire;
 use crate::plugin_scripts::ontology_check::{Doc, object};
+use crate::python_json::{self as py, Object, Text, Value as PyValue};
 use serde_json::{Value, json};
 use std::{collections::BTreeSet, fs, path::Path};
 
@@ -20,8 +20,8 @@ pub const CATALOG_TEMPLATE_BY_PROFILE: [(&str, &str); 4] = [
 /// stdout/stderr are separate because finalize redirects stdout only.
 pub struct CapabilityOutput {
     pub code: i32,
-    pub stdout: String,
-    pub stderr: String,
+    pub stdout: Text,
+    pub stderr: Text,
 }
 impl CapabilityOutput {
     /// Reuse the library CLI with an explicitly supplied provider; no provider discovery.
@@ -30,11 +30,11 @@ impl CapabilityOutput {
         manager: &mut impl crate::mir_cli::capability::Manager,
     ) -> Result<Self, Error> {
         let argv: Vec<_> = argv.iter().map(String::as_str).collect();
-        let (code, stdout, stderr) = crate::mir_cli::capability::main(&argv, manager);
+        let (code, stdout, stderr) = crate::mir_cli::capability::main(&argv, manager)?;
         Ok(Self {
             code,
-            stdout: decode(stdout)?,
-            stderr: decode(stderr)?,
+            stdout: Text::from_wtf8(&stdout).map_err(super::authored::adopt_error)?,
+            stderr: Text::from_wtf8(&stderr).map_err(super::authored::adopt_error)?,
         })
     }
 }
@@ -85,13 +85,39 @@ pub fn load_capability_sources(root: &Path, profile: &str) -> Result<Value, Erro
     }
     Ok(raw)
 }
-fn failed(reason: impl Into<String>) -> (String, Value) {
-    ("failed".into(), json!({"reason":reason.into()}))
+fn failed(reason: impl Into<Text>) -> (String, PyValue) {
+    let mut fields = Object::default();
+    fields.insert("reason".into(), PyValue::String(reason.into()));
+    ("failed".into(), PyValue::Object(fields))
 }
-fn import(host: &mut impl Host) -> Result<Option<(String, Value)>, Error> {
-    match host.capability_import() {
+/// Scalar-only artifact-validator boundary; never flatten Python strings.
+pub fn scalar_evidence(value: &PyValue) -> Result<Value, Error> {
+    fn has_surrogates(value: &PyValue) -> bool {
+        match value {
+            PyValue::String(text) => text.has_surrogates(),
+            PyValue::Array(items) => items.iter().any(has_surrogates),
+            PyValue::Object(fields) => fields
+                .iter()
+                .any(|(key, value)| key.has_surrogates() || has_surrogates(value)),
+            _ => false,
+        }
+    }
+    if has_surrogates(value) {
+        return Err(value_error(
+            "scalar-only bootstrap boundary: surrogate code point",
+        ));
+    }
+    serde_json::from_str(&value.json_sorted(false))
+        .map_err(|e| value_error(format!("scalar-only bootstrap boundary: {e}")))
+}
+fn import(
+    host: &mut impl Host,
+    root: &Path,
+    finalize: bool,
+) -> Result<Option<(String, PyValue)>, Error> {
+    match host.capability_import_for(root, finalize) {
         Ok(()) => Ok(None),
-        Err(e) if ["ImportError", "ModuleNotFoundError"].contains(&e.class) => {
+        Err(e) if ["ImportError", "ModuleNotFoundError"].contains(&e.class.as_str()) => {
             Ok(Some(failed(format!("capability CLI unavailable: {e}"))))
         }
         Err(e) => Err(e),
@@ -101,8 +127,8 @@ pub fn activate_capabilities(
     root: &Path,
     profile: &str,
     host: &mut impl Host,
-) -> Result<(String, Value), Error> {
-    if let Some(result) = import(host)? {
+) -> Result<(String, PyValue), Error> {
+    if let Some(result) = import(host, root, false)? {
         return Ok(result);
     }
     let argv = [
@@ -117,12 +143,12 @@ pub fn activate_capabilities(
     .map(str::to_owned);
     let output = host.capability_main(&argv)?;
     if output.code != 0 {
-        let text = output.stdout + &output.stderr;
-        let text = text.trim_matches(is_python_space);
+        let text = output.stdout.concat(&output.stderr);
+        let text = text.strip();
         return Ok(failed(if text.is_empty() {
-            format!("capability sync exited {}", output.code)
+            Text::from(format!("capability sync exited {}", output.code))
         } else {
-            text.into()
+            text
         }));
     }
     capability_lock_evidence(root, host)
@@ -135,14 +161,16 @@ pub(super) fn capability_config_plugins(path: &Path) -> Result<Value, Error> {
 pub fn capability_lock_evidence(
     root: &Path,
     host: &mut impl Host,
-) -> Result<(String, Value), Error> {
+) -> Result<(String, PyValue), Error> {
     let path = root.join(".mir/capability-lock.json");
     if !path.is_file() {
         return Ok(failed(
             "capability sync did not write .mir/capability-lock.json",
         ));
     }
-    let lock = match json_text(&path) {
+    let lock = match read_text(&path)
+        .and_then(|s| py::parse(&s).map_err(|e| Error::new(e.exception, e.to_string())))
+    {
         Ok(value) => value,
         Err(e) if e.class == "UnicodeDecodeError" => return Err(e),
         Err(e) => return Ok(failed(format!("invalid capability lock: {e}"))),
@@ -156,27 +184,33 @@ pub fn capability_lock_evidence(
             let plugins = if config.is_file() {
                 host.capability_config_plugins(&config)?
             } else {
-                lock.get("plugins").cloned().unwrap_or_else(|| json!({}))
+                scalar_evidence(
+                    lock.get("plugins")
+                        .unwrap_or(&PyValue::Object(Object::default())),
+                )?
             };
-            host.validate_artifacts(artifacts, &plugins)
+            host.validate_artifacts(&scalar_evidence(artifacts)?, &plugins)
         };
         match validate() {
             Ok(()) => (),
-            Err(e) if ["ValueError", "CapabilityConfigError"].contains(&e.class) => {
+            Err(e) if ["ValueError", "CapabilityConfigError"].contains(&e.class.as_str()) => {
                 return Ok(failed(format!("invalid capability lock: {e}")));
             }
             Err(e) => return Err(e),
         }
     }
     let source = &lock["source"];
-    let commit = python_str(source.get("commit").unwrap_or(&json!("")));
+    let commit = source
+        .get("commit")
+        .map(PyValue::py_str)
+        .unwrap_or_default();
     if !source.is_object()
         || commit.len() != 40
         || !commit
             .bytes()
             .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
         || !lock["plugins"].is_object()
-        || !truthy(&lock["plugins"])
+        || !lock["plugins"].truthy()
     {
         return Ok(failed(
             "capability lock requires source.commit and non-empty plugins",
@@ -188,24 +222,44 @@ pub fn capability_lock_evidence(
         .into_iter()
         .flat_map(|m| m.keys().cloned())
         .collect();
-    plugins.sort();
-    let agents = python_sorted(lock.get("agents").unwrap_or(&json!({})))?;
-    Ok((
-        "ready".into(),
-        json!({"lock_path":".mir/capability-lock.json",
-        "lock_sha256":hash,"lock_version":lock["schema_version"],"source_commit":source["commit"],
-        "profile":lock["profile"],"selected_plugins":plugins,"selected_agents":agents,
-        "registration":lock["registration"]}),
-    ))
+    plugins.sort_by(|a, b| a.codepoints.cmp(&b.codepoints));
+    let agents = python_sorted(
+        lock.get("agents")
+            .unwrap_or(&PyValue::Object(Object::default())),
+    )?;
+    let mut evidence = Object::default();
+    for (key, value) in [
+        (
+            "lock_path",
+            PyValue::String(".mir/capability-lock.json".into()),
+        ),
+        ("lock_sha256", PyValue::String(hash.into())),
+        (
+            "selected_plugins",
+            PyValue::Array(plugins.into_iter().map(PyValue::String).collect()),
+        ),
+        ("selected_agents", PyValue::Array(agents)),
+        ("lock_version", lock["schema_version"].clone()),
+        ("source_commit", source["commit"].clone()),
+        ("profile", lock["profile"].clone()),
+        ("registration", lock["registration"].clone()),
+    ] {
+        evidence.insert(key.into(), value);
+    }
+    Ok(("ready".into(), PyValue::Object(evidence)))
 }
 /// Python `sorted(value)` for the shapes a lock can hold: dict keys, a string list, or a string.
-fn python_sorted(value: &Value) -> Result<Vec<Value>, Error> {
-    let mut items: Vec<Value> = match value {
-        Value::Object(map) => map.keys().map(|k| json!(k)).collect(),
-        Value::String(text) => text.chars().map(|c| json!(c.to_string())).collect(),
-        Value::Array(items) if items.iter().all(Value::is_string) => items.clone(),
+fn python_sorted(value: &PyValue) -> Result<Vec<PyValue>, Error> {
+    let mut items: Vec<PyValue> = match value {
+        PyValue::Object(map) => map.keys().map(|k| PyValue::String(k.clone())).collect(),
+        PyValue::String(text) => text
+            .codepoints
+            .iter()
+            .map(|c| PyValue::String(Text::new(vec![*c])))
+            .collect(),
+        PyValue::Array(items) if items.iter().all(|v| v.as_text().is_some()) => items.clone(),
         // Python also raises TypeError for non-string items; its exact message is not mirrored.
-        Value::Array(_) => {
+        PyValue::Array(_) => {
             return Err(Error::new(
                 "TypeError",
                 "'<' not supported between instances of agent list items",
@@ -214,24 +268,28 @@ fn python_sorted(value: &Value) -> Result<Vec<Value>, Error> {
         other => {
             return Err(Error::new(
                 "TypeError",
-                format!("'{}' object is not iterable", python_type(other)),
+                format!("'{}' object is not iterable", other.type_name()),
             ));
         }
     };
-    items.sort_by(|a, b| a.as_str().cmp(&b.as_str()));
+    items.sort_by(|a, b| {
+        a.as_text()
+            .map(|s| &s.codepoints)
+            .cmp(&b.as_text().map(|s| &s.codepoints))
+    });
     Ok(items)
 }
 pub fn finalize_capabilities(
     root: &Path,
     prior: Option<&Value>,
     host: &mut impl Host,
-) -> Result<(String, Value), Error> {
+) -> Result<(String, PyValue), Error> {
     if !prior.is_some_and(|p| truthy(p) && p["status"] == "restart_required") {
         return Ok(failed(
             "--finalize requires a prior restart_required bootstrap receipt",
         ));
     }
-    if let Some(result) = import(host)? {
+    if let Some(result) = import(host, root, true)? {
         return Ok(result);
     }
     let argv = [
@@ -245,15 +303,17 @@ pub fn finalize_capabilities(
     .map(str::to_owned);
     let output = host.capability_main(&argv)?;
     if output.code != 0 {
-        let text = output.stdout.trim_matches(is_python_space);
+        let text = output.stdout.strip();
         return Ok(failed(if text.is_empty() {
-            format!("capability status exited {}", output.code)
+            Text::from(format!("capability status exited {}", output.code))
         } else {
-            text.into()
+            text
         }));
     }
     let (status, evidence) = capability_lock_evidence(root, host)?;
-    if !evidence["registration"].is_object() || evidence["registration"]["status"] != "active" {
+    if !evidence["registration"].is_object()
+        || evidence["registration"]["status"].as_str() != Some("active")
+    {
         return Ok(failed("capability activation lock is not active"));
     }
     Ok((status, evidence))

@@ -1,0 +1,107 @@
+[
+  {
+    "mode": "public",
+    "argv": [
+      "--help"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 0,
+    "stdout": "usage: mir bootstrap [-h] [--project-root PROJECT_ROOT] [--slug SLUG]\n                     --profile PROFILE [--purpose PURPOSE] [--stack STACK]\n                     [--archive CLASSIFICATION=PATH]\n                     [--storage-root STORAGE_ROOT] [--json] [--finalize]\n                     [--architecture-initialized]\n                     [--skip-capability-activation]\n\noptions:\n  -h, --help            show this help message and exit\n  --project-root PROJECT_ROOT\n  --slug SLUG\n  --profile PROFILE     required project archetype; no implicit code_app\n                        default\n  --purpose PURPOSE     non-placeholder project mission (required in phase 1)\n  --stack STACK         technology or working-medium item; repeat or pass\n                        comma-separated values\n  --archive CLASSIFICATION=PATH\n                        classify an existing content path for onboarding\n                        (content_workspace)\n  --storage-root STORAGE_ROOT\n                        shared external-volume root configured by setup.sh\n  --json\n  --finalize            phase 2: verify capabilities after restarting the\n                        agent runtime\n  --architecture-initialized\n                        attest that mir-core:design then mir-core:spec-\n                        architect initialized the project\n  --skip-capability-activation\n                        test/development only: leave bootstrap incomplete\n                        unless --allow-incomplete\n",
+    "stderr": ""
+  },
+  {
+    "mode": "public",
+    "argv": [
+      "--profile",
+      "code_app"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n"
+    },
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Git ownership cannot be verified: provider source is unavailable.\n"
+  },
+  {
+    "mode": "public",
+    "argv": [
+      "--project-root",
+      "absent",
+      "--profile",
+      "code_app"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 2,
+    "stdout": "",
+    "stderr": "project root is not a directory: {ROOT}/absent\n"
+  },
+  {
+    "mode": "public",
+    "argv": [
+      "--profile",
+      "bad"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 2,
+    "stdout": "",
+    "stderr": "unknown profile 'bad'; choose one of code_app, hybrid_pipeline, infra_runtime, content_workspace\n"
+  },
+  {
+    "mode": "public",
+    "argv": [
+      "--profile",
+      "code_app",
+      "--slug",
+      "!"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 2,
+    "stdout": "",
+    "stderr": "project slug '!' cannot be normalized to a valid slug\n"
+  },
+  {
+    "mode": "clean",
+    "argv": [],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 0,
+    "stdout": "[true, \"ready\"]\n",
+    "stderr": ""
+  },
+  {
+    "mode": "alive",
+    "argv": [],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 0,
+    "stdout": "[true, false]\n",
+    "stderr": ""
+  },
+  {
+    "mode": "inaccessible",
+    "argv": [],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 1,
+    "stdout": "",
+    "stderr": "PermissionError: [Errno 13] Permission denied: PosixPath('{ROOT}/denied')\n"
+  }
+]

@@ -1,7 +1,8 @@
 //! Native console root. Caller/package switching belongs to the closing slice.
-use handoff_packet::{executor_text, mir_cli, mir_front};
+use handoff_packet::{executor_text, mir_cli, mir_front, python_json::Text};
 use std::{ffi::OsString, io::Write};
 
+mod entry_supply;
 #[path = "runtime_manifest.rs"]
 mod manifest;
 #[path = "run_python.rs"]
@@ -20,6 +21,77 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
         let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
         let (code, out, err) =
             mir_cli::context_sync::console(&refs, |p| scalar_path(p, &replacements));
+        return (
+            code,
+            restore(out, &replacements),
+            restore(err, &replacements),
+        );
+    }
+    if argv[0] == "relations" || argv[0] == "project-hooks" {
+        let (args, replacements) = scalar_args(&argv[1..], "");
+        let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
+        let family = if argv[0] == "relations" {
+            "relations"
+        } else {
+            "project-hooks"
+        };
+        let (code, out, err) = entry_supply::console(family, &refs);
+        return (
+            code,
+            restore(String::from_utf8_lossy(&out).into(), &replacements),
+            restore(String::from_utf8_lossy(&err).into(), &replacements),
+        );
+    }
+    #[cfg(unix)]
+    if argv[0] == "capability" {
+        use mir_cli::capability_manager::Output;
+        let (args, replacements) = scalar_args(&argv[1..], "");
+        let result = (|| {
+            let root = std::env::current_dir()
+                .map_err(|e| mir_cli::bootstrap::Error::new("OSError", e.to_string()))?;
+            let cli = std::env::current_exe()
+                .map_err(|e| mir_cli::bootstrap::Error::new("OSError", e.to_string()))?;
+            let mut host = mir_cli::bootstrap::ProductionHost::default();
+            let manager = host.import_capabilities(&cli, &root, Output::Console)?;
+            let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
+            let (code, out, err) = mir_cli::capability::main_with_paths(&refs, manager, |p| {
+                scalar_path(p, &replacements)
+            })?;
+            let text = |bytes: &[u8]| {
+                Text::from_wtf8(bytes)
+                    .map_err(|e| mir_cli::bootstrap::Error::new(e.class(), e.to_string()))
+            };
+            Ok((
+                code,
+                vec![restore_text(text(&out)?, &replacements)],
+                restore_text(text(&err)?, &replacements),
+            ))
+        })();
+        finish(result.unwrap_or_else(|e| bootstrap_failure(&e)));
+    }
+    if argv[0] == "bootstrap" {
+        let (args, replacements) = scalar_args(&argv[1..], "");
+        let restore = |p| restore_text(p, &replacements);
+        let retained_production_bootstrap_host = &mut mir_cli::bootstrap::ProductionHost::default();
+        finish(
+            match mir_cli::bootstrap::main(retained_production_bootstrap_host, &args) {
+                Ok(output) => (
+                    output
+                        .exit
+                        .as_i64()
+                        .or_else(|| output.exit.get(1).and_then(serde_json::Value::as_i64))
+                        .unwrap_or(1) as i32,
+                    output.stdout_prints.into_iter().map(restore).collect(),
+                    restore(output.stderr.into()),
+                ),
+                Err(error) => bootstrap_failure(&error),
+            },
+        );
+    }
+    if argv[0] == "bootstrap-adoption" {
+        let (args, replacements) = scalar_args(&argv[1..], "");
+        let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
+        let (code, out, err) = mir_cli::bootstrap_adoption::console(&refs);
         return (
             code,
             restore(out, &replacements),
@@ -249,6 +321,33 @@ fn scalar_path(path: &std::path::Path, replacements: &[(String, u32)]) -> std::p
     executor_text::points_text(&points).into()
 }
 
+fn restore_text(mut text: Text, replacements: &[(String, u32)]) -> Text {
+    let points = &mut text.codepoints;
+    for (marker, point) in replacements {
+        let marker: Vec<_> = marker.chars().map(u32::from).collect();
+        while let Some(start) = points.windows(marker.len()).position(|p| p == marker) {
+            points.splice(start..start + marker.len(), [*point]);
+        }
+    }
+    // Rebuild the scalar cache after replacing typed points.
+    Text::new(text.codepoints)
+}
+fn bootstrap_failure(error: &mir_cli::bootstrap::Error) -> (i32, Vec<Text>, Text) {
+    let class = error
+        .mro
+        .first()
+        .filter(|c| !c.starts_with("builtins.") && !c.starts_with("__main__."))
+        .unwrap_or(&error.class);
+    let message = error
+        .message_text
+        .clone()
+        .unwrap_or_else(|| error.message.clone().into());
+    let stderr = Text::from(format!("{class}: "))
+        .concat(&message)
+        .concat(&"\n".into());
+    (1, vec![], stderr)
+}
+
 fn stdout_error(error: std::io::Error) -> String {
     if error.kind() == std::io::ErrorKind::BrokenPipe {
         return "BrokenPipeError: [Errno 32] Broken pipe".into();
@@ -264,9 +363,89 @@ fn stdout_error(error: std::io::Error) -> String {
 #[cfg(all(test, unix))]
 mod tests {
     #[test]
+    fn bootstrap_qualified_exception() {
+        let records: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../tests/fixtures/y-e17b2b2.json")).unwrap();
+        let r = records.last().unwrap();
+        let e: serde_json::Value = serde_json::from_str(r["stdout"].as_str().unwrap()).unwrap();
+        let error = super::mir_cli::bootstrap::Error {
+            class: e["klass"].as_str().unwrap().into(),
+            message: e["message"].as_str().unwrap().into(),
+            message_text: None,
+            mro: serde_json::from_value(e["mro"].clone()).unwrap(),
+        };
+        assert_eq!(
+            super::bootstrap_failure(&error).2.as_str().unwrap(),
+            e["line"]
+        );
+    }
+
+    #[test]
     fn injected_stdout_dup_child() {
+        if let Ok(index) = std::env::var("MIR_TEST_PRINTS") {
+            let records: Vec<serde_json::Value> =
+                serde_json::from_str(include_str!("../tests/fixtures/y-e17b2b2b.json")).unwrap();
+            let r = &records[index.parse::<usize>().unwrap()];
+            let receipt =
+                handoff_packet::python_json::parse(r["receipt"].as_str().unwrap()).unwrap();
+            super::finish((
+                0,
+                super::mir_cli::bootstrap::emit_prints(r["json"] == true, receipt).unwrap(),
+                "".into(),
+            ));
+        }
         if std::env::var_os("MIR_TEST_STDOUT_DUP_EMFILE").is_some() {
             super::main();
+        }
+    }
+
+    #[test]
+    fn print_boundary_console() {
+        console_records(0..6);
+    }
+    #[test]
+    fn closing_bom_once() {
+        console_records(6..7);
+    }
+    #[test]
+    fn closing_encoder_flush() {
+        console_records(7..8);
+    }
+    fn console_records(range: std::ops::Range<usize>) {
+        let records: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../tests/fixtures/y-e17b2b2b.json")).unwrap();
+        for index in range {
+            let r = &records[index];
+            let temp = tempfile::tempdir().unwrap();
+            let encoding = format!("utf-8:{}", r["handler"].as_str().unwrap());
+            let mut cmd = std::process::Command::new(std::env::current_exe().unwrap());
+            cmd.args("--exact tests::injected_stdout_dup_child --nocapture --quiet".split(' '))
+                .env_clear()
+                .env("HOME", temp.path())
+                .current_dir(temp.path())
+                .env("MIR_TEST_PRINTS", index.to_string())
+                .env(
+                    "PYTHONIOENCODING",
+                    r["encoding"].as_str().unwrap_or(&encoding),
+                );
+            let readonly = temp.path().join("readonly");
+            if r["readonly"] == true {
+                std::fs::write(&readonly, "unchanged").unwrap();
+                cmd.stdout(std::fs::File::open(&readonly).unwrap());
+            }
+            let out = cmd.output().unwrap();
+            assert_eq!(out.status.code(), r["code"].as_i64().map(|c| c as i32));
+            let mut expected = if r["readonly"] == true {
+                vec![]
+            } else {
+                b"\nrunning 1 test\n".to_vec()
+            };
+            expected.extend(serde_json::from_value::<Vec<u8>>(r["stdout"].clone()).unwrap());
+            assert_eq!(out.stdout, expected);
+            assert_eq!(out.stderr, r["stderr"].as_str().unwrap().as_bytes());
+            if r["readonly"] == true {
+                assert_eq!(std::fs::read(&readonly).unwrap(), b"unchanged");
+            }
         }
     }
 
@@ -314,8 +493,16 @@ fn main() {
         std::process::exit(1);
     }
     let args: Vec<_> = std::env::args_os().skip(1).collect();
-    let (mut code, out, mut err) = run(&args);
-    match executor_text::encode_console(&out, false) {
+    let (code, out, err) = run(&args);
+    finish((code, vec![out.into()], err.into()));
+}
+
+fn finish((mut code, out, mut err): (i32, Vec<Text>, Text)) -> ! {
+    let mut first = true;
+    let mut prints = out.into_iter();
+    match prints.next().map_or(Ok(vec![]), |p| {
+        executor_text::encode_console_print(&p, false, &mut first)
+    }) {
         Ok(bytes) => {
             // CPython buffers small piped writes until interpreter shutdown. A failure
             // there has status 120; large writes fail during the command (status 1).
@@ -355,25 +542,35 @@ fn main() {
             #[cfg(not(unix))]
             let writer = stdout.lock();
             let mut stream = std::io::BufWriter::with_capacity(capacity, writer);
-            if let Err(error) = stream.write_all(&bytes) {
+            let mut write_failed = false;
+            let written = std::iter::once(Ok(bytes))
+                .chain(prints.map(|p| executor_text::encode_console_print(&p, false, &mut first)))
+                .try_for_each(|bytes| {
+                    stream.write_all(&bytes?).map_err(|error| {
+                        write_failed = true;
+                        stdout_error(error)
+                    })
+                });
+            if let Err(message) = written {
                 code = 1;
-                err = format!("{}\n", stdout_error(error));
-            } else if let Err(error) = stream.flush() {
+                err = format!("{message}\n").into();
+            }
+            if !write_failed && let Err(error) = stream.flush() {
                 code = 120;
                 let encoding = std::env::var("PYTHONIOENCODING").unwrap_or_else(|_| "utf-8".into());
                 let encoding = encoding.split(':').next().unwrap_or("utf-8");
-                err = format!(
+                err = err.concat(&format!(
                     "Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='{encoding}'>\n{}\n",
                     stdout_error(error)
-                );
+                ).into());
             }
         }
         Err(message) => {
             code = 1;
-            err = format!("{message}\n");
+            err = format!("{message}\n").into();
         }
     }
-    match executor_text::encode_console(&err, true) {
+    match executor_text::encode_console_text(&err, true) {
         Ok(bytes) => {
             if std::io::stderr().write_all(&bytes).is_err() {
                 code = 1;

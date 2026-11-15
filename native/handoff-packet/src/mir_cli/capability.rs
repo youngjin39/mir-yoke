@@ -1,7 +1,9 @@
 //! Library-only capability CLI. Provider execution is explicitly caller supplied.
 #![forbid(unsafe_code)]
+pub use super::bootstrap::Error;
 use super::{changes, memory::Output};
 use crate::executor_execute::repr;
+use crate::python_json::{Text, Value as PyValue};
 use serde_json::{Map, Value, json};
 use std::path::Path;
 
@@ -15,13 +17,13 @@ pub trait Manager {
         project_root: &Path,
         config_path: Option<&Path>,
         capability_home: Option<&Path>,
-    ) -> Result<(), String>;
+    ) -> Result<(), Error>;
     fn call(
         &mut self,
         method: &str,
         args: Vec<Value>,
         kwargs: Map<String, Value>,
-    ) -> Result<Value, String>;
+    ) -> Result<PyValue, Error>;
 }
 
 fn usage(command: &str) -> String {
@@ -117,44 +119,30 @@ fn help(command: &str) -> Output {
 fn option_like(value: &str) -> bool {
     value.len() > 1 && value.starts_with('-') && value[1..].parse::<f64>().is_err()
 }
-fn ascii_json(value: &Value, pretty: bool) -> Result<String, String> {
-    let encoded = if pretty {
-        serde_json::to_string_pretty(value)
-    } else {
-        serde_json::to_string(value)
-    }
-    .map_err(|error| error.to_string())?;
-    let mut out = String::new();
-    for ch in encoded.chars() {
-        if ch.is_ascii() {
-            out.push(ch);
-        } else {
-            let mut units = [0; 2];
-            for unit in ch.encode_utf16(&mut units) {
-                out.push_str(&format!("\\u{unit:04x}"));
-            }
-        }
-    }
-    out.push('\n');
-    Ok(out)
-}
 /// Dispatch without discovering or creating a provider.
-pub fn main(argv: &[&str], manager: &mut impl Manager) -> Output {
+pub fn main(argv: &[&str], manager: &mut impl Manager) -> Result<Output, Error> {
+    main_with_paths(argv, manager, Path::to_owned)
+}
+pub fn main_with_paths(
+    argv: &[&str],
+    manager: &mut impl Manager,
+    path: impl Fn(&Path) -> std::path::PathBuf,
+) -> Result<Output, Error> {
     let Some(&command) = argv.first() else {
-        return diag("", "the following arguments are required: command");
+        return Ok(diag("", "the following arguments are required: command"));
     };
     if matches!(command, "-h" | "--help") {
-        return help("");
+        return Ok(help(""));
     }
     if !COMMANDS.contains(&command) {
-        return diag(
+        return Ok(diag(
             "",
             &format!(
                 "argument command: invalid choice: {} (choose from {})",
                 repr(command),
                 COMMANDS.join(", ")
             ),
-        );
+        ));
     }
     let mut options = vec![
         ("--help", false),
@@ -213,13 +201,13 @@ pub fn main(argv: &[&str], manager: &mut impl Manager) -> Output {
                 continue;
             }
             _ => {
-                return diag(
+                return Ok(diag(
                     command,
                     &format!(
                         "ambiguous option: {name} could match {}",
                         matching.iter().map(|o| o.0).collect::<Vec<_>>().join(", ")
                     ),
-                );
+                ));
             }
         };
         let value = if option.1 {
@@ -227,31 +215,31 @@ pub fn main(argv: &[&str], manager: &mut impl Manager) -> Output {
                 v
             } else {
                 let Some(&v) = argv.get(i).filter(|v| !option_like(v)) else {
-                    return diag(
+                    return Ok(diag(
                         command,
                         &format!("argument {}: expected one argument", option.0),
-                    );
+                    ));
                 };
                 i += 1;
                 v
             }
         } else {
             if let Some(v) = explicit {
-                return diag(
+                return Ok(diag(
                     command,
                     &format!(
                         "argument {}: ignored explicit argument {}",
                         option.0,
                         repr(v)
                     ),
-                );
+                ));
             }
             ""
         };
         match option.0 {
-            "--help" => return help(command),
+            "--help" => return Ok(help(command)),
             "--runtime" if !["claude-code", "codex-cli-desktop"].contains(&value) => {
-                return diag(
+                return Ok(diag(
                     command,
                     &format!(
                         concat!(
@@ -260,7 +248,7 @@ pub fn main(argv: &[&str], manager: &mut impl Manager) -> Output {
                         ),
                         repr(value)
                     ),
-                );
+                ));
             }
             "--observed-skill" => skills.push(json!(value)),
             "--observed-hook" => hooks.push(json!(value)),
@@ -279,43 +267,50 @@ pub fn main(argv: &[&str], manager: &mut impl Manager) -> Output {
         }
     }
     if command == "attest" && !values.contains_key("--runtime") {
-        return diag(command, "the following arguments are required: --runtime");
+        return Ok(diag(
+            command,
+            "the following arguments are required: --runtime",
+        ));
     }
     if !unknown.is_empty() {
-        return diag(
+        return Ok(diag(
             "",
             &format!("unrecognized arguments: {}", unknown.join(" ")),
-        );
+        ));
     }
-    let mut run = || -> Result<Value, String> {
-        let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
-        let home = std::env::var_os("HOME")
-            .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| cwd.clone());
-        let root = crate::mir_core::config::loader::resolve_path(
-            &cwd,
+    let mut run = || -> Result<PyValue, Error> {
+        use super::bootstrap::Host;
+        let mut host = super::bootstrap::ProductionHost::default();
+        let root = path(Path::new(
             values
                 .get("--project-root")
                 .and_then(Value::as_str)
                 .unwrap_or("."),
-            &home,
-        )
-        .map_err(|e| e.to_string())?;
+        ));
+        let root = host.expanduser(&root)?;
+        let root = host.resolve(&root)?;
         manager.initialize(
             &root,
             values
                 .get("--config")
                 .and_then(Value::as_str)
-                .map(Path::new),
+                .map(Path::new)
+                .map(&path)
+                .as_deref(),
             values
                 .get("--capability-home")
                 .and_then(Value::as_str)
-                .map(Path::new),
+                .map(Path::new)
+                .map(&path)
+                .as_deref(),
         )?;
         let before = if command == "status" {
             None
         } else {
-            Some(changes::snapshot_project(&root).map_err(|e| e.to_string())?)
+            Some(
+                changes::snapshot_project(&root)
+                    .map_err(|e| Error::new("OSError", e.to_string()))?,
+            )
         };
         let mut kwargs = Map::new();
         let args = match command {
@@ -335,7 +330,9 @@ pub fn main(argv: &[&str], manager: &mut impl Manager) -> Output {
             _ => {
                 if let Some(path) = values.get("--mcp-evidence").and_then(Value::as_str) {
                     let evidence = crate::mir_core::capabilities::mcp::closed_json(Path::new(path))
-                        .ok_or("cannot read MCP evidence JSON object")?;
+                        .ok_or_else(|| {
+                            Error::new("CapabilityError", "cannot read MCP evidence JSON object")
+                        })?;
                     kwargs.insert("observed_mcp".into(), evidence);
                 }
                 vec![values["--runtime"].clone(), json!(skills), json!(hooks)]
@@ -345,19 +342,65 @@ pub fn main(argv: &[&str], manager: &mut impl Manager) -> Output {
             kwargs.insert("apply".into(), json!(values.contains_key("--apply")));
         }
         let mut result = manager.call(command, args, kwargs)?;
-        if let Some(before) = before {
-            result["changed_paths"] = json!(changes::changed_paths(
-                &before,
-                &changes::snapshot_project(&root).map_err(|e| e.to_string())?
+        let PyValue::Object(ref mut object) = result else {
+            return Err(Error::new(
+                "TypeError",
+                format!(
+                    "'{}' object does not support item assignment",
+                    result.type_name()
+                ),
             ));
+        };
+        if let Some(before) = before {
+            object.insert(
+                "changed_paths".into(),
+                PyValue::Array(
+                    changes::changed_paths(
+                        &before,
+                        &changes::snapshot_project(&root)
+                            .map_err(|e| Error::new("OSError", e.to_string()))?,
+                    )
+                    .into_iter()
+                    .map(|s| PyValue::String(s.into()))
+                    .collect(),
+                ),
+            );
         } else {
-            result["change_evidence"] =
-                json!({"status":"not-applicable","reason":"read-only-operation"});
+            let mut evidence = crate::python_json::Object::default();
+            for (k, v) in [
+                ("status", "not-applicable"),
+                ("reason", "read-only-operation"),
+            ] {
+                evidence.insert(k.into(), PyValue::String(v.into()));
+            }
+            object.insert("change_evidence".into(), PyValue::Object(evidence));
         }
         Ok(result)
     };
-    match run().and_then(|v| ascii_json(&v, !values.contains_key("--json"))) {
-        Ok(out) => (0, out.into_bytes(), vec![]),
-        Err(e) => (1, vec![], format!("ERROR: {e}\n").into_bytes()),
+    match run() {
+        Ok(value) => Ok((
+            0,
+            format!("{}\n", value.json_sorted(!values.contains_key("--json"))).into_bytes(),
+            vec![],
+        )),
+        Err(e)
+            if e.mro.iter().any(|c| {
+                matches!(
+                    c.as_str(),
+                    "mir.core.capabilities.manager.CapabilityError"
+                        | "mir.core.capabilities.config.CapabilityConfigError"
+                )
+            }) =>
+        {
+            let message = e.message_text.unwrap_or_else(|| e.message.into());
+            let text = Text::from("ERROR: ").concat(&message).concat(&"\n".into());
+            Ok((
+                1,
+                vec![],
+                text.render()
+                    .map_err(|e| Error::new("UnicodeEncodeError", e))?,
+            ))
+        }
+        Err(e) => Err(e),
     }
 }

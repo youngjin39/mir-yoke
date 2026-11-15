@@ -7,13 +7,32 @@ pub fn python_strip(text: &str) -> &str {
     text.trim_matches(crate::mir_cli::bootstrap_adoption::is_python_space)
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Text {
     pub codepoints: Vec<u32>,
     text: Option<String>,
 }
 impl Text {
-    pub(crate) fn new(codepoints: Vec<u32>) -> Self {
+    pub fn from_wtf8(bytes: &[u8]) -> Result<Self, crate::mir_cli::bootstrap_adoption::Error> {
+        crate::mir_cli::bootstrap_adoption::json_utf8_points(bytes, true).map(Self::new)
+    }
+    pub fn strip(&self) -> Self {
+        let space = |p: &u32| char::from_u32(*p).is_some_and(is_python_space);
+        let start = self.codepoints.iter().take_while(|p| space(p)).count();
+        let end = self.codepoints[start..]
+            .iter()
+            .rposition(|p| !space(p))
+            .map_or(start, |i| start + i + 1);
+        Self::new(self.codepoints[start..end].to_vec())
+    }
+    pub fn concat(&self, other: &Self) -> Self {
+        Self::new([self.codepoints.as_slice(), other.codepoints.as_slice()].concat())
+    }
+    /// Plain text bytes, retaining Python lone surrogates via surrogatepass.
+    pub fn render(&self) -> Result<Vec<u8>, String> {
+        crate::executor_text::encode_points(&self.codepoints, "utf-8", "surrogatepass", false)
+    }
+    pub fn new(codepoints: Vec<u32>) -> Self {
         let text = codepoints.iter().map(|c| char::from_u32(*c)).collect();
         Self { codepoints, text }
     }
@@ -106,9 +125,18 @@ impl Number {
         }
     }
 }
-#[derive(Clone, Debug, PartialEq, Default)]
-pub struct Object(Vec<(Text, Value)>);
+#[derive(Clone, Debug, Default)]
+pub struct Object(Vec<(Text, Value)>, bool);
+impl PartialEq for Object {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
 impl Object {
+    /// Protocol schemas may reject duplicate fields while payloads keep Python's last value.
+    pub fn has_duplicate_keys(&self) -> bool {
+        self.1
+    }
     pub fn into_entries(self) -> Vec<(Text, Value)> {
         self.0
     }
@@ -138,6 +166,7 @@ impl Object {
     }
     pub(crate) fn insert(&mut self, key: Text, value: Value) {
         if let Some((_, v)) = self.0.iter_mut().find(|(k, _)| *k == key) {
+            self.1 = true;
             discard(std::mem::replace(v, value));
         } else {
             self.0.push((key, value));
@@ -153,7 +182,100 @@ pub enum Value {
     Array(Vec<Value>),
     Object(Object),
 }
+impl From<&serde_json::Value> for Value {
+    fn from(value: &serde_json::Value) -> Self {
+        match value {
+            serde_json::Value::Null => Self::Null,
+            serde_json::Value::Bool(b) => Self::Bool(*b),
+            serde_json::Value::Number(n) => Self::Number(Number {
+                token: n.to_string(),
+            }),
+            serde_json::Value::String(s) => Self::String(s.as_str().into()),
+            serde_json::Value::Array(a) => Self::Array(a.iter().map(Self::from).collect()),
+            serde_json::Value::Object(o) => Self::Object(Object(
+                o.iter()
+                    .map(|(k, v)| (k.as_str().into(), Self::from(v)))
+                    .collect(),
+                false,
+            )),
+        }
+    }
+}
+impl From<&Value> for Value {
+    fn from(value: &Value) -> Self {
+        value.clone()
+    }
+}
+
 impl Value {
+    /// Python json.dumps(sort_keys=True), compact or indent=2, ensure_ascii=True.
+    pub fn json_sorted(&self, pretty: bool) -> String {
+        fn quote(text: &Text) -> String {
+            let mut out = String::new();
+            for point in crate::executor_text::json_quote_points(&text.codepoints) {
+                if point < 127 {
+                    out.push(char::from_u32(point).unwrap_or_default());
+                } else if point <= 0xffff {
+                    out.push_str(&format!("\\u{point:04x}"));
+                } else {
+                    let n = point - 0x10000;
+                    out.push_str(&format!(
+                        "\\u{:04x}\\u{:04x}",
+                        0xd800 + (n >> 10),
+                        0xdc00 + (n & 1023)
+                    ));
+                }
+            }
+            out
+        }
+        fn write(value: &Value, pretty: bool, depth: usize) -> String {
+            let items: Vec<String> = match value {
+                Value::Null => return "null".into(),
+                Value::Bool(b) => return b.to_string(),
+                Value::Number(n) => {
+                    return match n.py_str().as_str() {
+                        "nan" => "NaN".into(),
+                        "inf" => "Infinity".into(),
+                        "-inf" => "-Infinity".into(),
+                        s => s.into(),
+                    };
+                }
+                Value::String(s) => return quote(s),
+                Value::Array(a) => a.iter().map(|v| write(v, pretty, depth + 1)).collect(),
+                Value::Object(o) => {
+                    let mut entries: Vec<_> = o.iter().collect();
+                    entries.sort_by(|(a, _), (b, _)| a.codepoints.cmp(&b.codepoints));
+                    entries
+                        .into_iter()
+                        .map(|(k, v)| {
+                            format!(
+                                "{}:{}{}",
+                                quote(k),
+                                if pretty { " " } else { "" },
+                                write(v, pretty, depth + 1)
+                            )
+                        })
+                        .collect()
+                }
+            };
+            let (open, close) = if matches!(value, Value::Array(_)) {
+                ('[', ']')
+            } else {
+                ('{', '}')
+            };
+            if pretty && !items.is_empty() {
+                let indent = "  ".repeat(depth + 1);
+                format!(
+                    "{open}\n{indent}{}\n{}{close}",
+                    items.join(&format!(",\n{indent}")),
+                    "  ".repeat(depth)
+                )
+            } else {
+                format!("{open}{}{close}", items.join(","))
+            }
+        }
+        write(self, pretty, 0)
+    }
     pub fn get(&self, key: &str) -> Option<&Self> {
         self.as_object()?.get(key)
     }
@@ -761,4 +883,15 @@ pub fn parse_stdin(bytes: &[u8]) -> Result<Value, Error> {
         return Err(r.error("oversized hook payload", 0));
     }
     parse_codes(chars)
+}
+
+impl From<String> for Text {
+    fn from(value: String) -> Self {
+        Self::new(value.chars().map(u32::from).collect())
+    }
+}
+impl From<&str> for Text {
+    fn from(value: &str) -> Self {
+        value.to_owned().into()
+    }
 }

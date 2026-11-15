@@ -287,8 +287,11 @@ impl Host for BoundaryHost {
         }
         .into()
     }
-    fn platform_release(&mut self) -> String {
-        "test".into()
+    fn platform_release(&mut self) -> Result<String, Error> {
+        if self.scenario == "uname_failure" {
+            return Err(Error::new("OSError", "uname failed"));
+        }
+        Ok("test".into())
     }
     fn python_version(&mut self) -> String {
         "test".into()
@@ -464,6 +467,14 @@ macro_rules! script {
 }
 type Evidence = (Vec<String>, Value);
 impl Host for Observer {
+    fn replace(&mut self, source: &Path, target: &Path) -> Result<(), Error> {
+        #[cfg(unix)]
+        if self.boundary.scenario == "leaf-race" {
+            fs::remove_file(target).unwrap();
+            std::os::unix::fs::symlink(self.boundary.root.join("outside"), target).unwrap();
+        }
+        m::ProductionHost::default().replace(source, target)
+    }
     forward!(env(name: &str) -> Option<String>);
     forward!(which(name: &str) -> Option<PathBuf>);
     forward!(resolve(path: &Path) -> Result<PathBuf, Error>);
@@ -474,7 +485,7 @@ impl Host for Observer {
     forward!(run(request: &m::CommandRequest) -> Result<m::CommandOutput, Error>);
     forward!(cwd() -> Result<PathBuf, Error>);
     forward!(platform_system() -> String);
-    forward!(platform_release() -> String);
+    forward!(platform_release() -> Result<String, Error>);
     forward!(python_version() -> String);
     forward!(in_virtualenv() -> bool);
     forward!(python_argv0() -> PathBuf);
@@ -496,8 +507,23 @@ impl Host for Observer {
         (root: &Path, db: &Path) -> BTreeMap<PathBuf, String>);
     script!(validate_content_memory_acceptance, "_validate_content_memory_acceptance",
         (root: &Path, db: &Path, slug: &str, onboarding: &Value) -> Evidence);
-    script!(activate_capabilities, "_activate_capabilities",
-        (root: &Path, profile: &str) -> (String, Value));
+    fn activate_capabilities(
+        &mut self,
+        root: &Path,
+        profile: &str,
+    ) -> Result<(String, handoff_packet::python_json::Value), Error> {
+        if let Some(value) = self.carrier() {
+            return Ok(value);
+        }
+        if let Some(value) = self.scripted("_activate_capabilities") {
+            let (status, evidence): (String, Value) = serde_json::from_value(value?).unwrap();
+            return Ok((
+                status,
+                handoff_packet::python_json::parse(&evidence.to_string()).unwrap(),
+            ));
+        }
+        self.boundary.activate_capabilities(root, profile)
+    }
     script!(validate_architecture_evidence, "_validate_architecture_evidence",
         (root: &Path) -> Evidence);
     script!(build_content_onboarding, "_build_content_onboarding",
@@ -513,12 +539,19 @@ impl Host for Observer {
         &mut self,
         root: &Path,
         prior: Option<&Value>,
-    ) -> Result<(String, Value), Error> {
+    ) -> Result<(String, handoff_packet::python_json::Value), Error> {
+        if let Some(value) = self.carrier() {
+            return Ok(value);
+        }
         if let Some(value) = self.scripted("_finalize_capabilities") {
             if self.boundary.scenario == "prior_receipt" {
                 self.helpers.push(json!({"prior_receipt":prior}));
             }
-            return Ok(serde_json::from_value(value?).unwrap());
+            let (status, evidence): (String, Value) = serde_json::from_value(value?).unwrap();
+            return Ok((
+                status,
+                handoff_packet::python_json::parse(&evidence.to_string()).unwrap(),
+            ));
         }
         self.boundary.finalize_capabilities(root, prior)
     }
@@ -617,7 +650,14 @@ impl Host for Observer {
         }
         self.boundary.atomic_write_text(path, body)
     }
-    fn atomic_write_json(&mut self, path: &Path, value: &Value) -> Result<(), Error> {
+    fn atomic_write_json(
+        &mut self,
+        path: &Path,
+        value: &handoff_packet::python_json::Value,
+    ) -> Result<(), Error> {
+        if self.boundary.scenario == "os" {
+            fs::create_dir(path).unwrap();
+        }
         if self.boundary.mode == "receipt" {
             return Err(Error::new("OSError", "receipt"));
         }
@@ -789,7 +829,7 @@ fn replay(root: &Path, name: &str) -> Value {
             let mut written = BTreeMap::new();
             files(root, root, &mut written);
             compact(
-                json!({"value":{"exit":output.exit,"stdout":output.stdout,
+                json!({"value":{"exit":output.exit,"stdout":output.stdout.as_str().unwrap(),
                 "stderr":output.stderr,"files":written,"subprocess":host.boundary.calls,
                 "scripts_called":host.helpers}}),
                 root,
@@ -798,5 +838,134 @@ fn replay(root: &Path, name: &str) -> Value {
         Err(error) => {
             json!({"error":[error.class,error.message.replace(root.to_str().unwrap(),"<tmp>")]})
         }
+    }
+}
+
+#[test]
+fn uname_failure_propagates() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/Y-E15");
+    fs::create_dir_all(&root).unwrap();
+    let temp = tempfile::tempdir_in(root).unwrap();
+    let root = temp.path();
+    let mut host = Observer {
+        boundary: BoundaryHost::new(root, "ready", Some("uname_failure")),
+        helpers: vec![],
+    };
+    let args = case_args(root, "ready", false, "");
+    let Err(error) = m::main(&mut host, &args) else {
+        panic!("uname failure must propagate");
+    };
+    assert_eq!(
+        (error.class.as_str(), error.message.as_str()),
+        ("OSError", "uname failed")
+    );
+}
+
+impl Observer {
+    fn carrier(&self) -> Option<(String, handoff_packet::python_json::Value)> {
+        use handoff_packet::python_json as py;
+        let r = self
+            .boundary
+            .scenario
+            .starts_with('{')
+            .then(|| py::parse(&self.boundary.scenario).unwrap())?;
+        Some((r["status"].as_str().unwrap().into(), r["evidence"].clone()))
+    }
+}
+#[test]
+fn main_carriers_match_pinned_python() {
+    use handoff_packet::python_json as py;
+    let records = py::parse(include_str!("fixtures/y-e17b2b1b2b.json")).unwrap();
+    for r in records.as_array().unwrap() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let mode = r["mode"].as_str().unwrap();
+        let args = case_args(&root, mode, r["json"] == py::Value::Bool(true), "");
+        let mut host = Observer {
+            boundary: BoundaryHost::new(&root, mode, Some(&r.json_sorted(false))),
+            helpers: vec![],
+        };
+        let out = m::main(&mut host, &args).unwrap();
+        assert_eq!(out.exit.to_string(), r["result"]["exit"].json_sorted(false));
+        assert_eq!(
+            out.stdout.render().unwrap(),
+            r["result"]["stdout"].as_text().unwrap().render().unwrap()
+        );
+        assert_eq!(out.stderr, r["result"]["stderr"].as_str().unwrap());
+        if r["json"] == py::Value::Bool(false) && r["status"].as_str() == Some("failed") {
+            let message = r["evidence"]["reason"].as_text().unwrap();
+            let prefix = py::Text::from("  [not-ready] capability activation failed: ");
+            assert_eq!(
+                out.stdout_prints.get(1),
+                Some(&prefix.concat(message).concat(&"\n".into()))
+            );
+            let last = out.stdout_prints.last().unwrap().as_str();
+            assert_eq!(last, Some("  receipt: .mir/bootstrap-receipt.json\n"));
+        }
+        let receipt = root.join(".mir/bootstrap-receipt.json");
+        if r["receipt"].is_null() {
+            assert!(!receipt.exists());
+        } else {
+            assert_eq!(
+                fs::read_to_string(receipt)
+                    .unwrap()
+                    .replace(root.to_str().unwrap(), "{ROOT}"),
+                r["receipt"].as_str().unwrap()
+            );
+        }
+    }
+}
+
+#[test]
+fn receipt_os_failures_and_leaf_race() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let mut host = Observer {
+        boundary: BoundaryHost::new(&root, "ready", Some("os")),
+        helpers: vec![],
+    };
+    let out = m::main(&mut host, &case_args(&root, "ready", true, "")).unwrap();
+    assert_eq!(out.exit, 1);
+    assert!(
+        out.stdout
+            .as_str()
+            .unwrap()
+            .contains("bootstrap receipt publish failed:")
+    );
+    assert!(host.helpers.contains(&json!("rollback_adopter_slim")));
+    host.boundary.scenario.clear();
+    let target = root.join(".mir/bootstrap-receipt.json");
+    assert_eq!(
+        m::atomic_write_json(&target, &json!({}), &mut host)
+            .unwrap_err()
+            .class,
+        "IsADirectoryError"
+    );
+    put(&root, "file", "old");
+    let file = root.join("file");
+    assert_eq!(
+        m::atomic_write_json(&file.join("child/receipt"), &json!({}), &mut host)
+            .unwrap_err()
+            .class,
+        "NotADirectoryError"
+    );
+    #[cfg(unix)]
+    {
+        put(&root, "receipt", "old");
+        let target = root.join("receipt");
+        put(&root, "outside/sentinel", "unchanged");
+        host.boundary.scenario = "leaf-race".into();
+        m::atomic_write_json(&target, &json!({"ok":true}), &mut host).unwrap();
+        assert_eq!(
+            fs::read(root.join("outside/sentinel")).unwrap(),
+            b"unchanged"
+        );
+        assert_eq!(fs::read_dir(root.join("outside")).unwrap().count(), 1);
+        assert!(
+            !fs::symlink_metadata(target)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
     }
 }

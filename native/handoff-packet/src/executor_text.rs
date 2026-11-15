@@ -331,17 +331,37 @@ fn escaped(n: u32) -> String {
     }
 }
 pub fn encode(text: &str, error: bool, bom: bool) -> Result<Vec<u8>> {
-    encode_stream(text, error, bom, true)
+    encode_stream(&text_points(text), error, bom, true)
 }
 /// Console streams ignore the executor test adapter's private overrides.
 pub fn encode_console(text: &str, error: bool) -> Result<Vec<u8>> {
+    encode_console_text(&text.into(), error)
+}
+/// Encode Python Text without interpreting literal escape spellings.
+pub fn encode_console_text(text: &crate::python_json::Text, error: bool) -> Result<Vec<u8>> {
+    encode_console_print(text, error, &mut true)
+}
+/// Keep incremental encoder state local to each console stream.
+pub fn encode_console_print(
+    text: &crate::python_json::Text,
+    error: bool,
+    first: &mut bool,
+) -> Result<Vec<u8>> {
     #[cfg(windows)]
-    let text = &text.replace('\n', "\r\n");
+    let points = text
+        .codepoints
+        .iter()
+        .flat_map(|&p| if p == 10 { vec![13, 10] } else { vec![p] })
+        .collect::<Vec<_>>();
+    #[cfg(not(windows))]
+    let points = &text.codepoints;
     let setting = std::env::var_os("PYTHONIOENCODING")
         .map(|s| os_text(&s))
         .unwrap_or_default();
-    let bom = codec_name(setting.split(':').next().unwrap_or(""))? == "utf-8-sig";
-    encode_stream(text, error, bom, false)
+    let bom = *first && codec_name(setting.split(':').next().unwrap_or(""))? == "utf-8-sig";
+    let bytes = encode_stream(points.as_slice(), error, bom, false)?;
+    *first = false;
+    Ok(bytes)
 }
 fn codecs() -> &'static serde_json::Value {
     static TABLE: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();
@@ -394,8 +414,8 @@ pub fn console_encoding() -> Result<()> {
         .unwrap_or_default();
     codec_name(setting.split(':').next().unwrap_or("")).map(|_| ())
 }
-fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<Vec<u8>> {
-    if text.is_empty() {
+fn encode_stream(points: &[u32], error: bool, bom: bool, overrides: bool) -> Result<Vec<u8>> {
+    if points.is_empty() {
         return Ok(Vec::new());
     }
     let setting = std::env::var_os("PYTHONIOENCODING")
@@ -423,9 +443,14 @@ fn encode_stream(text: &str, error: bool, bom: bool, overrides: bool) -> Result<
     } else {
         handler
     };
-    encode_points(&text_points(text), encoding, handler, bom)
+    encode_points(points, encoding, handler, bom)
 }
-fn encode_points(points: &[u32], encoding: &str, handler: &str, bom: bool) -> Result<Vec<u8>> {
+pub(crate) fn encode_points(
+    points: &[u32],
+    encoding: &str,
+    handler: &str,
+    bom: bool,
+) -> Result<Vec<u8>> {
     let canonical = codec_name(encoding)?;
     let normalized = canonical.replace('-', "");
     let name = match canonical {

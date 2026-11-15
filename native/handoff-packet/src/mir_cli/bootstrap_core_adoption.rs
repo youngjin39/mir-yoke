@@ -92,6 +92,13 @@ fn json_text(path: &Path) -> Result<Value, Error> {
     parse_json(&read_text(path)?)
 }
 
+fn json_with_repr(path: &Path) -> Result<(Value, String), Error> {
+    admit_file_type(path)?;
+    let text = read_text(path)?;
+    let value = parse_json(&text)?;
+    Ok((value, text))
+}
+
 fn read_text(path: &Path) -> Result<String, Error> {
     authored::decode(fs::read(path).map_err(|error| path_error(path, error))?)
 }
@@ -180,7 +187,7 @@ fn check_marker_names(path: &Path) -> Result<(), Error> {
 
 fn caught_json(error: &Error) -> bool {
     matches!(
-        error.class,
+        error.class.as_str(),
         "OSError"
             | "FileNotFoundError"
             | "PermissionError"
@@ -439,7 +446,7 @@ fn payload_relative(value: &Value) -> Result<String, Error> {
 
 pub(super) fn load_boundary(root: &Path, host: &mut impl Host) -> Result<Value, Error> {
     let path = root.join("config/adopter-boundary.json");
-    let mut boundary = json_text(&path).map_err(|e| {
+    let (mut boundary, instance_repr) = json_with_repr(&path).map_err(|e| {
         if !caught_json(&e) && e.class != "TOMLDecodeError" {
             return e;
         }
@@ -457,7 +464,7 @@ pub(super) fn load_boundary(root: &Path, host: &mut impl Host) -> Result<Value, 
         ));
     }
     if let Some(schema_ref) = boundary["$schema"].as_str() {
-        let schema = json_text(
+        let (schema, schema_source) = json_with_repr(
             &path
                 .parent()
                 .ok_or_else(|| slim("missing parent directory"))?
@@ -470,7 +477,7 @@ pub(super) fn load_boundary(root: &Path, host: &mut impl Host) -> Result<Value, 
                 e
             }
         })?;
-        host.validate_boundary_schema(&boundary, &schema)
+        host.validate_boundary_schema_source(&boundary, &schema, &instance_repr, &schema_source)
             .map_err(|e| {
                 if e.class == "ValidationError" {
                     Error::new("BoundaryError", format!("invalid {}: {e}", path.display()))
@@ -1136,7 +1143,7 @@ fn payload(root: &Path, boundary: &Value, host: &mut impl Host) -> Result<Value,
     let manifest_relative = relative(&boundary["payload_manifest"])
         .map_err(|e| slim(e.message.replace("boundary", "payload")))?;
     let path = root.join(manifest_relative);
-    let mut payload = json_text(&path).map_err(|e| {
+    let (mut payload, instance_repr) = json_with_repr(&path).map_err(|e| {
         if caught_json(&e) {
             slim(format!("cannot read adopter payload manifest: {e}"))
         } else {
@@ -1151,7 +1158,7 @@ fn payload(root: &Path, boundary: &Value, host: &mut impl Host) -> Result<Value,
         ));
     }
     if let Some(schema_ref) = payload["$schema"].as_str() {
-        let schema = json_text(
+        let (schema, schema_source) = json_with_repr(
             &path
                 .parent()
                 .ok_or_else(|| slim("missing parent directory"))?
@@ -1164,7 +1171,7 @@ fn payload(root: &Path, boundary: &Value, host: &mut impl Host) -> Result<Value,
                 e
             }
         })?;
-        host.validate_boundary_schema(&payload, &schema)
+        host.validate_boundary_schema_source(&payload, &schema, &instance_repr, &schema_source)
             .map_err(|e| {
                 if caught_json(&e) || e.class == "ValidationError" {
                     slim(format!("invalid adopter payload manifest: {e}"))
@@ -1846,3 +1853,7 @@ mod tests {
         assert_eq!(check_marker_names(&raw), Err(error));
     }
 }
+
+#[cfg(test)]
+#[path = "bootstrap_schema_tests.rs"]
+mod schema_tests;
