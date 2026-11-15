@@ -327,7 +327,7 @@ impl Value {
     }
 }
 /// Dispose of Python-depth JSON without recursive Rust enum destruction.
-pub(crate) fn discard(value: Value) {
+pub fn discard(value: Value) {
     let mut pending = vec![value];
     while let Some(value) = pending.pop() {
         match value {
@@ -335,6 +335,17 @@ pub(crate) fn discard(value: Value) {
             Value::Object(fields) => {
                 pending.extend(fields.into_entries().into_iter().map(|(_, v)| v))
             }
+            _ => (),
+        }
+    }
+}
+/// Dispose of converted events with the same heap-stack discipline as the parser.
+pub fn discard_serde(value: serde_json::Value) {
+    let mut pending = vec![value];
+    while let Some(value) = pending.pop() {
+        match value {
+            serde_json::Value::Array(values) => pending.extend(values),
+            serde_json::Value::Object(fields) => pending.extend(fields.into_values()),
             _ => (),
         }
     }

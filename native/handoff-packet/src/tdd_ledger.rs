@@ -181,13 +181,14 @@ fn load(project: &Path) -> Result<Ledger, String> {
             format!("{}: {e}", e.exception)
         }
     })?;
-    if !v.is_object() {
+    let ledger = Ledger { data: v };
+    if !ledger.data.is_object() {
         return Err("[TddGuard BLOCK] tasks/tdd.json must contain a JSON object.".into());
     }
-    if !v["changes"].is_array() {
+    if !ledger.data["changes"].is_array() {
         return Err("[TddGuard BLOCK] tasks/tdd.json must contain a 'changes' array.".into());
     }
-    Ok(Ledger { data: v })
+    Ok(ledger)
 }
 fn git_error(error: io::Error) -> String {
     if error.kind() == io::ErrorKind::PermissionDenied {
@@ -592,4 +593,9 @@ pub fn guard(project: &Path, target: &str) -> (u8, String, String) {
 
 struct Ledger {
     data: Value,
+}
+impl Drop for Ledger {
+    fn drop(&mut self) {
+        python_json::discard(std::mem::replace(&mut self.data, Value::Null));
+    }
 }
