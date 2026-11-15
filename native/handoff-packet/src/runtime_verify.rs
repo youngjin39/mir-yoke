@@ -711,6 +711,10 @@ mod tests {
 
 #[cfg(test)]
 mod provider_tests {
+    mod unify2_c_recursion {
+        include!("../tests/support/unify2_c_recursion.rs");
+    }
+
     use super::*;
     #[test]
     fn provider_python_json_shapes() {
@@ -832,6 +836,7 @@ mod provider_tests {
             "../../../tests/fixtures/runtime_manifest_verify_1324a3c.json"
         ))
         .unwrap();
+        let records = unify2_c_recursion::select(records, "provider", cfg!(windows));
         let directory = tempfile::tempdir().unwrap();
         let manifest = directory.path().join("manifest.json");
         for record in records["records"].as_array().unwrap() {

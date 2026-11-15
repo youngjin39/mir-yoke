@@ -6,6 +6,10 @@ mod path_records {
     include!("support/path_records.rs");
 }
 
+mod unify2_c_recursion {
+    include!("support/unify2_c_recursion.rs");
+}
+
 #[test]
 fn disabled_parser_extensions_do_not_control_execute_or_resume() {
     let scratch = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
@@ -123,6 +127,7 @@ fn yoke_local_brief_frozen_hook_parity_without_python() {
     )
     .unwrap();
     assert_eq!(fixture["cases"].as_array().unwrap().len(), 93);
+    let fixture = unify2_c_recursion::select(fixture, "brief", cfg!(windows));
     // These paths cannot launch a process. Every case must use the native route.
     let mut hooks = CommandHooks::start_in(
         BridgeConfig {

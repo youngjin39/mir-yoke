@@ -21,7 +21,7 @@ impl Fixture {
                 NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
             ));
         fs::create_dir_all(&root).unwrap();
-        Self(reference_path(&root))
+        Self(handoff_packet::supply::plain(reference_path(&root)))
     }
 }
 impl Drop for Fixture {
@@ -77,9 +77,69 @@ fn reference(mode: &str, root: &Path, case: &str, args: &[&str]) -> Value {
         "{mode} {case}: {}",
         String::from_utf8_lossy(&out.stderr)
     );
-    serde_json::from_slice(&out.stdout).unwrap()
+    let mut value: Value = serde_json::from_slice(&out.stdout).unwrap();
+    if mode == "snapshot" && args.is_empty() && root.join("jobs.db").exists() {
+        value["rows"]["artifact_sweeps"] = receipts(root);
+    }
+    value
 }
+fn receipts(root: &Path) -> Value {
+    let db = rusqlite::Connection::open_with_flags(
+        root.join("jobs.db"),
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )
+    .unwrap();
+    let mut stmt = db
+        .prepare("SELECT job_id,path,files,bytes,swept_at FROM artifact_sweeps ORDER BY rowid")
+        .unwrap();
+    let rows = stmt
+        .query_map([], |r| {
+            Ok(json!({
+                "job_id": r.get::<_, String>(0)?, "path": r.get::<_, String>(1)?,
+                "files": r.get::<_, i64>(2)?, "bytes": r.get::<_, i64>(3)?,
+                "swept_at": r.get::<_, String>(4)?,
+            }))
+        })
+        .unwrap()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    normalize(json!(rows), root)
+}
+// SQL equality requires retaining suffix separators and the verbatim prefix.
 fn normalize(value: Value, root: &Path) -> Value {
+    match value {
+        Value::String(s) => {
+            let root = root.to_str().unwrap();
+            let root = root
+                .strip_prefix(r"\\?\")
+                .or_else(|| root.strip_prefix("//?/"))
+                .unwrap_or(root);
+            let (prefix, candidate) = if let Some(tail) = s.strip_prefix(r"\\?\") {
+                (r"\\?\", tail)
+            } else if let Some(tail) = s.strip_prefix("//?/") {
+                ("//?/", tail)
+            } else {
+                ("", s.as_str())
+            };
+            for alias in [root.to_owned(), root.replace('\\', "/")] {
+                if let Some(tail) = candidate.strip_prefix(&alias)
+                    && (tail.is_empty() || tail.starts_with(['/', '\\']))
+                {
+                    return json!(format!("{prefix}$ROOT{tail}"));
+                }
+            }
+            json!(s)
+        }
+        Value::Array(a) => Value::Array(a.into_iter().map(|v| normalize(v, root)).collect()),
+        Value::Object(o) => Value::Object(
+            o.into_iter()
+                .map(|(k, v)| (k, normalize(v, root)))
+                .collect(),
+        ),
+        v => v,
+    }
+}
+fn normalize_display(value: Value, root: &Path) -> Value {
     match value {
         Value::String(s) => {
             let root = root.to_str().unwrap().replace('\\', "/");
@@ -99,10 +159,12 @@ fn normalize(value: Value, root: &Path) -> Value {
                 _ => s,
             })
         }
-        Value::Array(a) => Value::Array(a.into_iter().map(|v| normalize(v, root)).collect()),
+        Value::Array(a) => {
+            Value::Array(a.into_iter().map(|v| normalize_display(v, root)).collect())
+        }
         Value::Object(o) => Value::Object(
             o.into_iter()
-                .map(|(k, v)| (k, normalize(v, root)))
+                .map(|(k, v)| (k, normalize_display(v, root)))
                 .collect(),
         ),
         v => v,
@@ -117,11 +179,19 @@ fn snapshot_root_aliases_are_bounded() {
             "C:/scratch/native",
             "//?/C:/scratch/native",
         ] {
+            let prefix = if alias.starts_with(r"\\?\") || alias.starts_with("//?/") {
+                &alias[..4]
+            } else {
+                ""
+            };
             assert_eq!(
                 normalize(json!(format!(r"{alias}\wt-clean")), Path::new(root)),
-                json!("$ROOT/wt-clean")
+                json!(format!("{prefix}$ROOT\\wt-clean"))
             );
-            assert_eq!(normalize(json!(alias), Path::new(root)), json!("$ROOT"));
+            assert_ne!(
+                normalize(json!(format!("{alias}/wt-clean")), Path::new(root)),
+                normalize(json!(format!(r"{alias}\wt-clean")), Path::new(root))
+            );
         }
         for outside in [
             r"C:\scratch\native-other\keep",
@@ -147,11 +217,210 @@ fn run_native(root: &Path, case: &str, apply: bool) -> Value {
     } else {
         executor_sweep::sweep_terminal_artifacts(&repo, &db, NOW, 30, apply)
     };
-    normalize(result.unwrap_or_else(|e| panic!("{case}: {e}")), root)
+    normalize_display(result.unwrap_or_else(|e| panic!("{case}: {e}")), root)
 }
 fn golden(case: &str, apply: bool, seam: &str, now: &str, step: usize) -> Value {
     let corpus: Value = serde_json::from_str(include_str!("fixtures/g6/sweep.json")).unwrap();
-    corpus["cases"][format!("{case}|{apply}|{seam}|{now}")][step].clone()
+    let expected = corpus["cases"][format!("{case}|{apply}|{seam}|{now}")][step].clone();
+    platform_golden(expected, cfg!(windows))
+}
+fn platform_golden(mut expected: Value, windows: bool) -> Value {
+    if windows
+        && let Some(rows) = expected["state"]["rows"]
+            .get_mut("artifact_sweeps")
+            .and_then(Value::as_array_mut)
+    {
+        for row in rows {
+            row["path"] = json!(row["path"].as_str().unwrap().replace('/', "\\"));
+        }
+    }
+    expected
+}
+#[test]
+fn windows_golden_preserves_missing_ledger_snapshot() {
+    let corpus: Value = serde_json::from_str(include_str!("fixtures/g6/sweep.json")).unwrap();
+    // Both pinned Windows captures equal this G6 record, including the absent key.
+    let expected = corpus["cases"][format!("missing-db|false||{NOW}")][0].clone();
+    assert_eq!(expected["state"]["rows"], json!({}));
+    assert_eq!(platform_golden(expected.clone(), false), expected);
+    assert_eq!(platform_golden(expected.clone(), true), expected);
+    let receipts = corpus["cases"][format!("artifact-receipt|false||{NOW}")][0].clone();
+    let windows = platform_golden(receipts.clone(), true);
+    assert_eq!(
+        windows["state"]["rows"]["artifact_sweeps"][0]["path"],
+        json!(format!(r"$ROOT\repo\tasks\dispatch\{}", "1".repeat(32)))
+    );
+    assert_eq!(
+        windows["state"]["rows"]["jobs"],
+        receipts["state"]["rows"]["jobs"]
+    );
+}
+fn p2_record(windows: bool, variant: &str, step: &str) -> Option<Value> {
+    if !windows {
+        return None;
+    }
+    let corpus: Value =
+        serde_json::from_str(include_str!("fixtures/unify2_s3_sweep_windows.json")).unwrap();
+    corpus["records"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| {
+            r["variant"] == variant
+                && r["name"] == format!("executor_sweep.artifact-receipt.{step}")
+        })
+        .cloned()
+}
+#[test]
+fn p2_selector_keeps_platform_rows_and_verbatim_spelling() {
+    assert!(p2_record(false, "ordinary/backslash/python", "apply-true").is_none());
+    for (variant, count) in [
+        ("ordinary/backslash/python", 3),
+        ("ordinary/slash/python", 4),
+        ("verbatim/backslash/python", 4),
+        ("verbatim/slash/python", 4),
+    ] {
+        let r = p2_record(true, variant, "apply-true").unwrap();
+        let rows = r["after_sql"]["artifact_sweeps"].as_array().unwrap();
+        assert_eq!(rows.len(), count);
+        assert_eq!(rows[0]["swept_at"], "2026-01-01T00:00:00+00:00");
+        assert_eq!(
+            rows[1]["path"].as_str().unwrap().starts_with(r"\\?\"),
+            variant.starts_with("verbatim")
+        );
+    }
+}
+// Kept native difference: canonicalize + plain removes an explicit verbatim
+// root. Backslash receipts are reused; slash receipts remain a distinct row.
+fn p2_native_verbatim_rows(style: &str, applied: bool) -> Value {
+    let first_path = if style == "slash" {
+        format!("$ROOT/repo/tasks/dispatch/{}", "1".repeat(32))
+    } else {
+        format!(r"$ROOT\repo\tasks\dispatch\{}", "1".repeat(32))
+    };
+    let row = |path: String, swept_at: &str| {
+        json!({
+            "job_id": "1".repeat(32), "path": path, "files": 1, "bytes": 6,
+            "swept_at": swept_at,
+        })
+    };
+    let mut rows = vec![row(first_path, "2026-01-01T00:00:00+00:00")];
+    if applied {
+        for id in if style == "slash" { 1..=3 } else { 2..=3 } {
+            rows.push(row(
+                format!(r"$ROOT\repo\tasks\dispatch\{}", id.to_string().repeat(32)),
+                NOW,
+            ));
+        }
+    }
+    json!(rows)
+}
+#[test]
+fn p2_verbatim_native_contract_preserves_count_and_exact_spelling() {
+    for (style, count) in [("backslash", 3), ("slash", 4)] {
+        for step in ["apply-false", "apply-true", "apply-true-repeat"] {
+            let applied = step != "apply-false";
+            let native = p2_native_verbatim_rows(style, applied);
+            assert_eq!(
+                native.as_array().unwrap().len(),
+                if applied { count } else { 1 }
+            );
+            let ordinary = p2_record(true, &format!("ordinary/{style}/python"), step).unwrap();
+            let root = Path::new(ordinary["input"]["root_argument"].as_str().unwrap());
+            assert_eq!(
+                native,
+                normalize(ordinary["after_sql"]["artifact_sweeps"].clone(), root)
+            );
+            let verbatim = p2_record(true, &format!("verbatim/{style}/python"), step).unwrap();
+            let root = Path::new(verbatim["input"]["root_argument"].as_str().unwrap());
+            let python = normalize(verbatim["after_sql"]["artifact_sweeps"].clone(), root);
+            if applied {
+                assert_ne!(native, python);
+            } else {
+                assert_eq!(native, python);
+            }
+        }
+    }
+}
+#[cfg(windows)]
+fn replay_p2(spelling: &str) {
+    for style in ["backslash", "slash"] {
+        let fixture = Fixture::new("p2");
+        let root = &fixture.0;
+        reference("setup", root, "artifact-receipt", &[]);
+        let stored = root
+            .join("repo")
+            .join("tasks")
+            .join("dispatch")
+            .join("1".repeat(32));
+        let stored = stored.to_str().unwrap();
+        let stored = if style == "slash" {
+            stored.replace('\\', "/")
+        } else {
+            stored.to_owned()
+        };
+        rusqlite::Connection::open(root.join("jobs.db"))
+            .unwrap()
+            .execute("UPDATE artifact_sweeps SET path=?1", [stored])
+            .unwrap();
+        let repo = if spelling == "verbatim" {
+            PathBuf::from(format!(r"\\?\{}\repo", root.display()))
+        } else {
+            root.join("repo")
+        };
+        for (step, apply) in [
+            ("apply-false", false),
+            ("apply-true", true),
+            ("apply-true-repeat", true),
+        ] {
+            let before = reference("snapshot", root, "artifact-receipt", &["raw"]);
+            let r = p2_record(true, &format!("{spelling}/{style}/python"), step).unwrap();
+            let expected = |phase: &str| {
+                normalize(
+                    r[phase]["artifact_sweeps"].clone(),
+                    Path::new(r["input"]["root_argument"].as_str().unwrap()),
+                )
+            };
+            let expected_rows = |phase: &str| {
+                if spelling == "verbatim" {
+                    p2_native_verbatim_rows(
+                        style,
+                        if phase == "before_sql" {
+                            step == "apply-true-repeat"
+                        } else {
+                            apply
+                        },
+                    )
+                } else {
+                    expected(phase)
+                }
+            };
+            assert_eq!(receipts(root), expected_rows("before_sql"));
+            let result = run_native(repo.parent().unwrap(), "artifact-receipt", apply);
+            assert_eq!(result, r["result"], "{spelling}/{style}/{step}: result");
+            assert_eq!(
+                receipts(root),
+                expected_rows("after_sql"),
+                "{spelling}/{style}/{step}: exact SQL rows, including kept native verbatim difference"
+            );
+            if !apply {
+                assert_eq!(
+                    reference("snapshot", root, "artifact-receipt", &["raw"]),
+                    before
+                );
+            }
+        }
+    }
+}
+#[cfg(windows)]
+#[test]
+fn p2_windows_receipt_oracle() {
+    replay_p2("ordinary");
+}
+#[cfg(windows)]
+#[test]
+fn p2_windows_verbatim_reuses_plain_backslash_receipt_and_inserts_plain_paths_unlike_python() {
+    replay_p2("verbatim");
 }
 fn parity(case: &str, apply: bool) {
     let fixture = Fixture::new(case);
@@ -251,7 +520,7 @@ fn run_state_reinspection_preserves_late_dirt() {
         },
     )
     .unwrap();
-    assert_eq!(normalize(actual, &native), expected["result"]);
+    assert_eq!(normalize_display(actual, &native), expected["result"]);
     assert_eq!(
         reference("snapshot", &native, "run-mixed", &[]),
         expected["state"]
@@ -322,7 +591,7 @@ fn non_force_removal_preserves_dirt_created_after_reinspection() {
         "preserved_worktrees actual: {}",
         result["preserved_worktrees"]
     );
-    let result = normalize(result, &fixture.0);
+    let result = normalize_display(result, &fixture.0);
     assert!(
         result["preserved_worktrees"]
             .as_array()
@@ -359,7 +628,7 @@ fn registered_firmlink_removes_clean_and_finished_worktrees() {
     );
     // Resolve while the trees still exist; removal must report their inspected
     // spelling, which can differ from the fixture root's spelling.
-    let expected = normalize(
+    let expected = normalize_display(
         json!([
             reference_path(&alias.join("wt-clean")),
             reference_path(&alias.join("wt-finished"))
@@ -520,7 +789,7 @@ fn receipt_timestamp_normalizes_z_offset_and_naive_input_like_python() {
             true,
         )
         .unwrap();
-        assert_eq!(normalize(actual, &native), expected["result"]);
+        assert_eq!(normalize_display(actual, &native), expected["result"]);
         let actual = reference("snapshot", &native, "artifact-history", &[]);
         assert_eq!(
             actual["rows"]["artifact_sweeps"][0]["swept_at"], "2026-11-02T12:00:00+00:00",
