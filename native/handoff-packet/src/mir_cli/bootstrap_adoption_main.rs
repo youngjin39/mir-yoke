@@ -197,6 +197,15 @@ fn json_string(value: &Value, pretty: bool) -> Result<String, Error> {
     .map_err(|e| Error::Json(e.to_string()))?;
     Ok(ascii_json(text))
 }
+fn receipt_json(payload: &Value, windows: bool) -> Result<String, Error> {
+    let body = format!("{}\n", json_string(payload, true)?);
+    // Python Path.write_text(newline=None) translates every LF on Windows.
+    Ok(if windows {
+        body.replace('\n', "\r\n")
+    } else {
+        body
+    })
+}
 pub fn atomic_write_json<H: Host + ?Sized>(
     path: &Path,
     payload: &Value,
@@ -215,13 +224,14 @@ pub fn atomic_write_json<H: Host + ?Sized>(
         .map_err(|e| io_error(parent, e))?;
     // Close mkstemp's descriptor before write_text, as in the reference.
     let temporary = temporary.into_temp_path();
-    let body = format!("{}\n", json_string(payload, true)?);
+    let body = receipt_json(payload, cfg!(windows))?;
     fs::write(&temporary, body).map_err(|e| io_error(&temporary, e))?;
     host.replace(&temporary, path)
         .map_err(|e| io_error(path, e))?;
     // TempPath owns cleanup on both success and failure.
     Ok(())
 }
+
 pub fn emit(as_json: bool, report: &Value, host: &mut dyn Host) -> Result<(), Error> {
     let mut output = if as_json {
         format!("{}\n", json_string(report, false)?)
@@ -623,4 +633,37 @@ pub fn main(
     );
     emit(as_json, &report, host)?;
     Ok(if status == "ready" { 0 } else { 2 })
+}
+
+#[cfg(test)]
+mod receipt_tests {
+    use super::*;
+
+    #[test]
+    fn windows_receipt_bytes_match_pinned_p3() {
+        let fixture: Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/w2/unify2-s4.json")).unwrap();
+        for (mode, record) in fixture["records"].as_object().unwrap() {
+            let logical = record["value"]["receipts"][".mir/bootstrap-receipt.json"]
+                .as_str()
+                .unwrap();
+            let payload: Value = serde_json::from_str(logical).unwrap();
+            let windows = receipt_json(&payload, true).unwrap();
+            let hex: String = windows
+                .as_bytes()
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect();
+            assert_eq!(
+                json!(hex),
+                record["files"][".mir/bootstrap-receipt.json"],
+                "{mode}"
+            );
+            assert_eq!(
+                receipt_json(&payload, false).unwrap(),
+                logical,
+                "{mode}: Unix"
+            );
+        }
+    }
 }
