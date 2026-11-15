@@ -382,6 +382,16 @@ fn observe_paths(name: &str, mut value: Value) -> Value {
         value["value"]["command"]["stderr"] =
             json!(text.replace("--db <tmp>\\.mir\\db\n", "--db <tmp>/.mir/db\n"));
     }
+    // Python 6b8796fa:src/mir/cli/memory.py:434 interpolates db_path;
+    // :237 prints that error. Match only the missing text record's synthetic path.
+    if name == "doctor.missing.False"
+        && value["value"]["command"]["stdout"]
+            == "memory doctor: not_ready\n  [not-ready] memory database is missing: <tmp>\\.mir\\db\n"
+    {
+        value["value"]["command"]["stdout"] = json!(
+            "memory doctor: not_ready\n  [not-ready] memory database is missing: <tmp>/.mir/db\n"
+        );
+    }
     value
 }
 
@@ -405,4 +415,26 @@ fn wt_core_a_paths() {
         assert_eq!(observe_paths("gc.False.True", input.clone()), input);
         assert_eq!(observe_paths(name, expected.clone()), *expected);
     }
+}
+
+#[test]
+fn wt_core_a_c_paths() {
+    let records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b14-gc-doctor.json")).unwrap();
+    let expected = &records["doctor.missing.False"];
+    assert_eq!(
+        observe_paths("doctor.missing.False", expected.clone()),
+        *expected
+    );
+    let mut input = expected.clone();
+    input["value"]["command"]["stdout"] = json!(
+        "memory doctor: not_ready\n  [not-ready] memory database is missing: <tmp>\\.mir\\db\n"
+    );
+    input["value"]["command"]["stderr"] = json!(r"keep <tmp>\.mir\db");
+    let mut wanted = expected.clone();
+    wanted["value"]["command"]["stderr"] = input["value"]["command"]["stderr"].clone();
+    assert_eq!(observe_paths("doctor.missing.False", input.clone()), wanted);
+    assert_eq!(observe_paths("doctor.missing.True", input.clone()), input);
+    input["value"]["command"]["stdout"] = json!(r"keep <tmp>\.mir\db");
+    assert_eq!(observe_paths("doctor.missing.False", input.clone()), input);
 }

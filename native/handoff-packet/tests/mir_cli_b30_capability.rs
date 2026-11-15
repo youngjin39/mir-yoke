@@ -124,6 +124,22 @@ fn observe_paths(name: &str, mut value: Value) -> Value {
             }
         }
     }
+    // Python a61c3013:src/mir/cli/project_hooks.py:71-72 uses str(binary), cwd=root;
+    // tests/test_w2_b30_capability_frozen.py:250 serializes the Path with default=str.
+    if name == "hooks.check.normal" {
+        for (field, from, to) in [
+            (
+                "/value/4/0/argv/0",
+                r"<tmp>\project\.mir\bin\project-hooks",
+                "<tmp>/project/.mir/bin/project-hooks",
+            ),
+            ("/value/4/0/cwd", r"<tmp>\project", "<tmp>/project"),
+        ] {
+            if value.pointer(field) == Some(&json!(from)) {
+                *value.pointer_mut(field).unwrap() = json!(to);
+            }
+        }
+    }
     value
 }
 
@@ -150,4 +166,28 @@ fn wt_core_a_paths() {
         assert_eq!(observe_paths(name, input.clone()), wanted, "{name}");
         assert_eq!(observe_paths("hooks.path.normal", input.clone()), input);
     }
+}
+
+#[test]
+fn wt_core_a_c_paths() {
+    let records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b30-capability.json")).unwrap();
+    let expected = &records["hooks.check.normal"];
+    assert_eq!(
+        observe_paths("hooks.check.normal", expected.clone()),
+        *expected
+    );
+    let mut input = expected.clone();
+    input["value"][4][0]["argv"][0] = json!(r"<tmp>\project\.mir\bin\project-hooks");
+    input["value"][4][0]["cwd"] = json!(r"<tmp>\project");
+    input["value"][4][0]["argv"][1] = json!(r"<tmp>\project");
+    input["value"][2] = json!(r"keep <tmp>\project");
+    let mut wanted = expected.clone();
+    wanted["value"][4][0]["argv"][1] = input["value"][4][0]["argv"][1].clone();
+    wanted["value"][2] = input["value"][2].clone();
+    assert_eq!(observe_paths("hooks.check.normal", input.clone()), wanted);
+    assert_eq!(observe_paths("hooks.check.other", input.clone()), input);
+    input["value"][4][0]["argv"][0] = json!(r"elsewhere\project\.mir\bin\project-hooks");
+    input["value"][4][0]["cwd"] = json!(r"<tmp>\project-other");
+    assert_eq!(observe_paths("hooks.check.normal", input.clone()), input);
 }
