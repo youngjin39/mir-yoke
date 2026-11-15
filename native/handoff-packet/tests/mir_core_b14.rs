@@ -36,6 +36,36 @@ fn observe_root(name: &str, mut value: Value, root: &str) -> Value {
         }
         value["value"]["command"]["stdout"] = json!(text);
     }
+    // Python 6b8796fa memory.py:511,571: observe only the two displayed error paths.
+    if name == "doctor.stale.True"
+        && let Some(text) = value["value"]["command"]["stdout"].as_str()
+    {
+        let mut report: Value = serde_json::from_str(text).unwrap();
+        for error in report["errors"].as_array_mut().unwrap() {
+            let text = error.as_str().unwrap();
+            let plain = root.strip_prefix(r"\\?\").unwrap_or(root);
+            let (prefix, path, separator) = if text.starts_with("archive root drift for 'docs': ") {
+                (
+                    "archive root drift for 'docs': ",
+                    format!("{plain}\\"),
+                    r"\",
+                )
+            } else if text.starts_with("archive FTS5 probe failed: [Errno 2] ") {
+                (
+                    "archive FTS5 probe failed: [Errno 2] ",
+                    format!("{}\\\\", plain.replace('\\', r"\\")),
+                    r"\\",
+                )
+            } else {
+                continue;
+            };
+            *error = json!(format!(
+                "{prefix}{}",
+                text[prefix.len()..].replace(&path, &format!("<tmp>{separator}"))
+            ));
+        }
+        value["value"]["command"]["stdout"] = json!(report.to_string() + "\n");
+    }
     value
 }
 
@@ -571,4 +601,69 @@ fn wt_core_a_f_expectations() {
         };
         assert_eq!(platform_expected(name, &sentinel, true), *wanted, "{name}");
     }
+}
+
+// Exercise the display route with real canonicalisation and a real missing-file error.
+#[test]
+fn wt_core_a_g_display_observation() {
+    let root = r"\\?\C:\synthetic\case";
+    let plain = r"C:\synthetic\case";
+    let errors = json!([
+        format!("archive root drift for 'docs': {plain}\\elsewhere != {plain}\\docs"),
+        format!(
+            "archive FTS5 probe failed: [Errno 2] No such file or directory: '{}\\\\elsewhere\\\\note.md'",
+            plain.replace('\\', r"\\")
+        ),
+        format!("unrelated: {plain}\\docs"),
+    ]);
+    let input = json!({"value":{"command":{"stdout":json!({"errors":errors}).to_string()+"\n"}}});
+    let observed = observe_root("doctor.stale.True", input.clone(), root);
+    let report: Value =
+        serde_json::from_str(observed["value"]["command"]["stdout"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        report["errors"][0],
+        r"archive root drift for 'docs': <tmp>\elsewhere != <tmp>\docs"
+    );
+    assert_eq!(
+        report["errors"][1],
+        r"archive FTS5 probe failed: [Errno 2] No such file or directory: '<tmp>\\elsewhere\\note.md'"
+    );
+    assert_eq!(report["errors"][2], errors[2]);
+    assert_eq!(observe_root("other", input.clone(), root), input);
+}
+
+#[cfg(windows)]
+#[test]
+fn wt_core_a_g_doctor_display_paths() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().canonicalize().unwrap();
+    assert!(root.to_str().unwrap().starts_with(r"\\?\"));
+    let plain = handoff_packet::supply::plain(root.clone());
+    let actual = replay("doctor.stale.True", &root);
+    let report: Value =
+        serde_json::from_str(actual["value"]["command"]["stdout"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        report["errors"],
+        json!([
+            format!(
+                "archive root drift for 'docs': {} != {}",
+                plain.join("elsewhere").display(),
+                plain.join("docs").display()
+            ),
+            "archive has no successful current sync evidence: 'docs'",
+            format!(
+                "archive FTS5 probe failed: [Errno 2] No such file or directory: '{}'",
+                plain
+                    .join("elsewhere/note.md")
+                    .display()
+                    .to_string()
+                    .replace('\\', r"\\")
+            ),
+        ])
+    );
+    // The display conversion must not change the stored or accessed path.
+    assert_eq!(
+        actual["value"]["after"]["rows"]["external_archives"][0][2],
+        root.join("elsewhere").to_str().unwrap()
+    );
 }

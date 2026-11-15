@@ -1181,7 +1181,7 @@ pub fn run_doctor(
             code = 2;
             errors.push(format!(
                 "project root is not a directory: {}",
-                root.display()
+                crate::supply::plain(root.to_owned()).display()
             ));
             return Ok(());
         }
@@ -1219,7 +1219,7 @@ pub fn run_doctor(
                 errors.push(format!(
                     "configured archive root is missing: {} ({})",
                     crate::executor_execute::repr(archive["slug"].as_str().unwrap_or("")),
-                    path.display()
+                    crate::supply::plain(path.clone()).display()
                 ));
             }
         }
@@ -1234,7 +1234,10 @@ pub fn run_doctor(
         );
         let db = db_override.unwrap_or(&configured_db);
         if !db.is_file() {
-            errors.push(format!("memory database is missing: {}", db.display()));
+            errors.push(format!(
+                "memory database is missing: {}",
+                crate::supply::plain(db.to_owned()).display()
+            ));
             return Ok(());
         }
         let connection = connect(db)?;
@@ -1341,8 +1344,8 @@ pub fn run_doctor(
             if actual != expected {
                 errors.push(format!(
                     "archive root drift for {quoted}: {} != {}",
-                    actual.display(),
-                    expected.display()
+                    crate::supply::plain(actual.clone()).display(),
+                    crate::supply::plain(expected.clone()).display()
                 ));
             }
             let current: bool = conn.query_row(
@@ -1391,7 +1394,10 @@ pub fn run_doctor(
                     let file = Path::new(&path).join(relative);
                     let bytes = std::fs::read(&file).map_err(|e| {
                         std::io::Error::other(
-                            crate::executor_brief_profile::python_os_error_message(&e, &file),
+                            crate::executor_brief_profile::python_os_error_message(
+                                &e,
+                                &crate::supply::plain(file.clone()),
+                            ),
                         )
                     })?;
                     let snippet =
@@ -1446,4 +1452,26 @@ pub fn run_doctor(
     }
     report["errors"] = json!(errors);
     Ok((code, report))
+}
+
+#[cfg(all(test, windows))]
+mod display_tests {
+    use super::*;
+
+    #[test]
+    fn wt_core_a_g_missing_root_display() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().canonicalize().unwrap().join("missing");
+        let (_, report) = run_doctor(&root, None, &root, std::time::SystemTime::now, |_| {
+            panic!("missing root must return before connecting")
+        })
+        .unwrap();
+        assert_eq!(
+            report["errors"],
+            serde_json::json!([format!(
+                "project root is not a directory: {}",
+                crate::supply::plain(root).display()
+            )])
+        );
+    }
 }
