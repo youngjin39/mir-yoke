@@ -1121,7 +1121,7 @@ pub fn parse(argv: &[&str], cwd: &Path) -> Value {
         "native_evaluator":null,"json":false});
     let mut index = 0;
     let mut unknown = Vec::new();
-    let negative_number = Regex::new(r"^-([0-9]+|[0-9]*\.[0-9]+)$");
+    let negative_number = Regex::new(r"^-([0-9]+|[0-9]*\.[0-9]+)(?:\n)?$");
     while index < argv.len() {
         let arg = argv[index];
         if arg == "--" {
@@ -1147,11 +1147,7 @@ pub fn parse(argv: &[&str], cwd: &Path) -> Value {
             let label = if arg == "--help" { "-h/--help" } else { arg };
             return json!([{"error":["SystemExit","2"]},"",format!("{USAGE}mir bootstrap-adoption: error: argument {label}: ignored explicit argument {}\n", repr(value))]);
         }
-        if argv[index].starts_with("-h")
-            && !argv[index].starts_with("--")
-            && argv[index] != "-h"
-            && inline.is_none()
-        {
+        if argv[index].starts_with("-h") && !argv[index].starts_with("--") && argv[index] != "-h" {
             return json!([{"error":["SystemExit","0"]},format!("{USAGE}{HELP}"),""]);
         }
         if ["-h", "--help"].contains(&arg) {

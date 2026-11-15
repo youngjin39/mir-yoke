@@ -371,15 +371,21 @@ impl Transport for HttpTransport {
             .set_write_timeout(Some(timeout("write")))
             .map_err(|e| io_error(e, "Write"))?;
         // httpx 0.28 preserves model/input insertion order, emits UTF-8 and no spaces.
-        let body = format!(
-            "{{\"model\":{},\"input\":{}}}",
-            request.body["model"], request.body["input"]
-        );
+        let body = if request.method == "GET" {
+            String::new()
+        } else {
+            format!(
+                "{{\"model\":{},\"input\":{}}}",
+                request.body["model"], request.body["input"]
+            )
+        };
         let mut head = format!(
-            "{} {target} HTTP/1.1\r\nHost: {authority}\r\nAccept: */*\r\nAccept-Encoding: identity\r\nConnection: keep-alive\r\nUser-Agent: mir-native\r\nContent-Length: {}\r\n",
+            "{} {target} HTTP/1.1\r\nHost: {authority}\r\nAccept: */*\r\nAccept-Encoding: identity\r\nConnection: keep-alive\r\nUser-Agent: mir-native\r\n",
             request.method,
-            body.len()
         );
+        if request.method != "GET" {
+            head.push_str(&format!("Content-Length: {}\r\n", body.len()));
+        }
         for (name, value) in request.headers {
             outgoing_value(&value)?;
             head.push_str(&format!("{name}: {value}\r\n"));

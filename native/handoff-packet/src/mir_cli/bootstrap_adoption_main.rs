@@ -319,6 +319,40 @@ pub(super) fn install_evaluator<H: Host + ?Sized>(
     let home = host
         .env(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from);
+    struct ArtifactHost<'a, H: Host + ?Sized>(&'a mut H);
+    impl<H: Host + ?Sized> adoption_native::InstallHost for ArtifactHost<'_, H> {
+        fn read(&mut self, url: &str, size: u64) -> io::Result<Vec<u8>> {
+            use crate::mir_core::memory::backends::omlx_http::{HttpRequest, Transport};
+            if !url.starts_with("http://") && !url.starts_with("https://") {
+                return crate::mir_core::capabilities::native::read(url, size);
+            }
+            let result =
+                crate::mir_cli::embedding_http::HttpTransport::default().send(HttpRequest {
+                    url: url.into(),
+                    method: "GET".into(),
+                    headers: Default::default(),
+                    body: Value::Null,
+                    timeout: json!({"connect":30,"read":30,"write":30}),
+                });
+            let response = match result {
+                Ok(response) => response,
+                Err(error) => {
+                    if error.class == "UnsupportedProtocol" {
+                        self.0
+                            .stderr(&format!("{}: {}\n", error.class, error.message))?;
+                    }
+                    return Err(io::Error::other(error.message));
+                }
+            };
+            if !(200..300).contains(&response.status) {
+                return Err(io::Error::other(format!("HTTP {}", response.status)));
+            }
+            if response.body.len() as u64 > size {
+                return Err(io::Error::other("native artifact exceeds recorded size"));
+            }
+            Ok(response.body)
+        }
+    }
     adoption_native::install_evaluator(
         root,
         &adoption_native::InstallOptions {
@@ -329,7 +363,7 @@ pub(super) fn install_evaluator<H: Host + ?Sized>(
             home: home.as_deref(),
             ..Default::default()
         },
-        &mut adoption_native::LocalHost,
+        &mut ArtifactHost(host),
     )
 }
 
