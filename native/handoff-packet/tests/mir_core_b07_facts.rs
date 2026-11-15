@@ -1,5 +1,7 @@
 #[path = "../src/digest.rs"]
 mod digest;
+#[path = "support/relation_root.rs"]
+mod relation_root;
 use handoff_packet::mir_core::{
     audit_log::AuditLog,
     memory::{relation_facts as f, store},
@@ -559,6 +561,7 @@ fn frozen_records() {
             } else {
                 pure(name, &root)
             };
+            let actual = relation_root::normalize(actual, &root);
             let actual: Value =
                 serde_json::from_str(&serde_json::to_string(&actual).unwrap().replace(
                     &serde_json::to_string(root.to_str().unwrap()).unwrap()

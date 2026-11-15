@@ -1,6 +1,8 @@
 //! Frozen Python B12 oracle replay. Only synthetic scratch databases are opened.
 #[path = "../src/digest.rs"]
 mod digest;
+#[path = "support/relation_root.rs"]
+mod relation_root;
 use handoff_packet::{
     mir_cli::memory as cli,
     mir_core::memory::{distill as d, store},
@@ -72,7 +74,7 @@ fn compact(value: Value) -> Value {
     }
 }
 fn normalize(value: Value, root: &Path) -> Value {
-    match value {
+    match relation_root::normalize(value, root) {
         Value::String(s) => json!(s.replace(root.to_str().unwrap(), "<tmp>")),
         Value::Array(a) => json!(
             a.into_iter()
