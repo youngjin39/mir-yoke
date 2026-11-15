@@ -34,7 +34,7 @@ toml = { version = "=0.8.2", default-features = false, features = ["parse", "pre
 rusqlite = { version = "=0.40.2", features = ["backup", "bundled", "trace", "functions"] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "=0.61.2", features = ["Win32_Storage_FileSystem", "Wdk_Storage_FileSystem", "Wdk_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_IO", "Win32_System_SystemServices"] }
+windows-sys = { version = "=0.61.2", features = ["Win32_Storage_FileSystem", "Wdk_Storage_FileSystem", "Wdk_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_IO", "Win32_System_Diagnostics_Debug", "Win32_System_SystemServices"] }
 
 [profile.release]
 lto = true

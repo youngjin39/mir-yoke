@@ -5,6 +5,7 @@ use crate::{
     executor_local::LocalConfig,
     executor_policy,
     executor_registry::JobRegistry,
+    executor_text::IoOperation,
     executor_transport::{CallOptions, Client, Error as TransportError},
 };
 use rusqlite::OptionalExtension;
@@ -299,7 +300,14 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
                         Ok(root) => root,
                         Err(error) => {
                             let _ = emit(
-                                &format!("{}\n", crate::executor_text::io_error(error, &root)),
+                                &format!(
+                                    "{}\n",
+                                    crate::executor_text::io_error(
+                                        error,
+                                        &root,
+                                        IoOperation::Win32
+                                    )
+                                ),
                                 true,
                             );
                             return 1;
@@ -1017,12 +1025,13 @@ pub(crate) fn resolve_args(args: &Value, cwd: &Path, local: &LocalConfig) -> Res
             .as_str()
             .map(Path::new)
             .unwrap_or(&file);
-        let metadata =
-            fs::metadata(&file).map_err(|error| crate::executor_text::io_error(error, raw))?;
+        let metadata = fs::metadata(&file)
+            .map_err(|error| crate::executor_text::io_error(error, raw, IoOperation::Win32))?;
         local
             .validate_input_size(metadata.len())
             .map_err(|e| e.to_string())?;
-        let bytes = fs::read(&file).map_err(|error| crate::executor_text::io_error(error, raw))?;
+        let bytes = fs::read(&file)
+            .map_err(|error| crate::executor_text::io_error(error, raw, IoOperation::Read))?;
         let text = String::from_utf8(bytes).map_err(|error| {
             format!(
                 "UnicodeDecodeError: {}",
@@ -1226,7 +1235,8 @@ pub(crate) fn validate_ledger(
             file.display()
         ));
     }
-    let bytes = fs::read(file).map_err(|error| crate::executor_text::io_error(error, file))?;
+    let bytes = fs::read(file)
+        .map_err(|error| crate::executor_text::io_error(error, file, IoOperation::Read))?;
     let text = String::from_utf8(bytes).map_err(|error| {
         format!(
             "UnicodeDecodeError: {}",
@@ -1418,7 +1428,13 @@ fn create_ledger_temp(
         match create(&name) {
             Ok(output) => return Ok((name, output)),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
-            Err(error) => return Err(crate::executor_text::io_error(error, &parent.join(name))),
+            Err(error) => {
+                return Err(crate::executor_text::io_error(
+                    error,
+                    &parent.join(name),
+                    IoOperation::Read,
+                ));
+            }
         }
     }
     Err("FileExistsError: [Errno 17] No usable temporary file name found".into())
@@ -1430,23 +1446,23 @@ fn write_ledger(file: &Path, rendered: &str) -> Result<()> {
     let parent = file.parent().ok_or("OSError: ledger parent missing")?;
     // mkstemp(dir=ledger.parent) follows directory symlinks. Resolve only
     // the parent: os.replace replaces a leaf symlink, not its referent.
-    let resolved_parent =
-        fs::canonicalize(parent).map_err(|e| crate::executor_text::io_error(e, parent))?;
+    let resolved_parent = fs::canonicalize(parent)
+        .map_err(|e| crate::executor_text::io_error(e, parent, IoOperation::Win32))?;
     let resolved_file = resolved_parent.join(file.file_name().unwrap_or_default());
     let pinned = crate::adoption_fs::parent(&resolved_parent, &resolved_file)
-        .map_err(|e| crate::executor_text::io_error(e, parent))?;
+        .map_err(|e| crate::executor_text::io_error(e, parent, IoOperation::Win32))?;
     let (name, mut output) = create_ledger_temp(parent, |name| pinned.create(name, 0o600))?;
     let source = parent.join(&name);
     let written = (|| -> Result<()> {
         output
             .write_all(rendered.as_bytes())
-            .map_err(|e| crate::executor_text::io_error(e, &source))?;
+            .map_err(|e| crate::executor_text::io_error(e, &source, IoOperation::Handle))?;
         let replacement = crate::adoption_fs::Move::prepare(
             &resolved_parent,
             &resolved_parent.join(&name),
             &resolved_file,
         )
-        .map_err(|e| crate::executor_text::io_error(e, file))?;
+        .map_err(|e| crate::executor_text::io_error(e, file, IoOperation::Win32))?;
         #[cfg(test)]
         BEFORE_LEDGER_REPLACE.with(|hook| {
             if let Some(hook) = hook.borrow_mut().take() {
@@ -1458,7 +1474,7 @@ fn write_ledger(file: &Path, rendered: &str) -> Result<()> {
         }
         replacement
             .rename()
-            .map_err(|e| crate::executor_text::io_error(e, file))
+            .map_err(|e| crate::executor_text::io_error(e, file, IoOperation::Win32))
     })();
     // Keep the creation fd open: a substituted entry must never acquire
     // the original inode through reuse while cleanup checks its identity.
@@ -1659,7 +1675,11 @@ fn provider(
         }) => {
             let error =
                 raw_os_error.map_or_else(|| io::Error::from(kind), io::Error::from_raw_os_error);
-            return Err(crate::executor_text::io_error(error, Path::new(&binary_os)));
+            return Err(crate::executor_text::io_error(
+                error,
+                Path::new(&binary_os),
+                IoOperation::Win32,
+            ));
         }
         Err(error) => {
             let duration = start.elapsed().as_secs_f64();

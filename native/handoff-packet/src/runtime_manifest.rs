@@ -12,6 +12,8 @@ mod fs_root {
     pub(crate) mod adoption_fs;
 }
 use fs_root::adoption_fs;
+#[cfg(windows)]
+use handoff_packet::executor_text;
 #[path = "runtime_manifest_args.rs"]
 mod runtime_manifest_args;
 #[path = "runtime_verify.rs"]

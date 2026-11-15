@@ -1,7 +1,6 @@
 //! Optional, lock-verified native placement for an explicitly selected project.
 #![forbid(unsafe_code)]
 
-#[cfg(unix)]
 use crate::adoption_fs;
 use crate::mir_core::capabilities::native;
 use serde_json::{Value, json};
@@ -144,18 +143,10 @@ pub fn install(
                 return None;
             }
             if !parent.exists() {
-                #[cfg(unix)]
-                {
-                    let pinned = adoption_fs::parent(&root, &parent).ok()?;
-                    adoption_fs::mkdir(&root, &parent, 0o777).ok()?;
-                    let identity = pinned.object_identity(true).ok()??;
-                    created.push((pinned, identity));
-                }
-                #[cfg(not(unix))]
-                {
-                    fs::create_dir(&parent).ok()?;
-                    created.push(parent.clone());
-                }
+                let pinned = adoption_fs::parent(&root, &parent).ok()?;
+                adoption_fs::mkdir(&root, &parent, 0o777).ok()?;
+                let identity = pinned.object_identity(true).ok()??;
+                created.push((pinned, identity));
             }
         }
         if destination.is_symlink() || (destination.exists() && !destination.is_file()) {
@@ -175,45 +166,17 @@ pub fn install(
         {
             return None;
         }
-        #[cfg(unix)]
-        {
-            place(&root, &parent, &destination, name, &data, host)?;
-            receipt()
-        }
-        #[cfg(not(unix))]
-        {
-            let mut temporary = tempfile::Builder::new()
-                .prefix(&format!(".{name}."))
-                .tempfile_in(&parent)
-                .ok()?;
-            temporary.write_all(&data).ok()?;
-            native::verify(temporary.path(), &pin).ok()?;
-            host.before_replace(temporary.path(), &destination).ok()?;
-            // persist replaces atomically and owns cleanup on failure on all targets.
-            match temporary.persist(&destination) {
-                Ok(_) => receipt(),
-                Err(error) => {
-                    drop(error);
-                    None
-                }
-            }
-        }
+        place(&root, &parent, &destination, name, &data, host)?;
+        receipt()
     })();
-    for parent in created.iter().rev() {
-        #[cfg(unix)]
-        {
-            let (parent, identity) = parent;
-            if parent.object_identity(true).ok().flatten() == Some(*identity) {
-                let _ = parent.unlink(&parent.name, true);
-            }
+    for (parent, identity) in created.iter().rev() {
+        if parent.object_identity(true).ok().flatten() == Some(*identity) {
+            let _ = parent.unlink(&parent.name, true);
         }
-        #[cfg(not(unix))]
-        let _ = fs::remove_dir(parent);
     }
     result
 }
 
-#[cfg(unix)]
 fn place(
     root: &Path,
     directory: &Path,
@@ -222,7 +185,6 @@ fn place(
     data: &[u8],
     host: &mut dyn InstallHost,
 ) -> Option<()> {
-    use std::os::unix::fs::PermissionsExt;
     let prefix = format!(".{name}.");
     let temporary = tempfile::Builder::new()
         .prefix(&prefix)
@@ -236,10 +198,7 @@ fn place(
     if staged.contents(data.len()).ok()? != data {
         return None;
     }
-    staged
-        .file
-        .set_permissions(fs::Permissions::from_mode(0o755))
-        .ok()?;
+    adoption_fs::set_mode(&staged.file, 0o755).ok()?;
     host.before_replace(&staged.path, destination).ok()?;
     if destination.is_symlink() || (destination.exists() && !destination.is_file()) {
         return None;

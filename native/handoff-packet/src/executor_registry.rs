@@ -1,4 +1,5 @@
 //! Native writes matching the Python JobRegistry contract.
+use crate::executor_text::IoOperation;
 use rusqlite::{Connection, params_from_iter, types::Value as SqlValue};
 use serde_json::Value;
 use std::{
@@ -6,16 +7,26 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Debug)]
 pub enum Error {
-    Io(io::Error),
+    Io(io::Error, IoOperation),
     Sql(rusqlite::Error),
     Text(crate::Error),
     Shape,
 }
+// Sweep exposes Debug diagnostics; operation metadata must not change those bytes.
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Io(error, _) => f.debug_tuple("Io").field(error).finish(),
+            Self::Sql(error) => f.debug_tuple("Sql").field(error).finish(),
+            Self::Text(error) => f.debug_tuple("Text").field(error).finish(),
+            Self::Shape => f.write_str("Shape"),
+        }
+    }
+}
 impl From<io::Error> for Error {
     fn from(e: io::Error) -> Self {
-        Self::Io(e)
+        Self::Io(e, IoOperation::Win32)
     }
 }
 impl From<rusqlite::Error> for Error {
@@ -311,7 +322,7 @@ impl JobRegistry {
                 }
                 private(path)?;
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(Error::Io(e, IoOperation::Read)),
         }
         let resolved = crate::supply::plain(fs::canonicalize(path)?);
         let db = Connection::open_with_flags(

@@ -171,7 +171,63 @@ pub fn repr_points(points: &[u32]) -> String {
 pub fn repr(text: &str) -> String {
     repr_points(&text_points(text))
 }
-pub fn io_error(error: io::Error, path: &Path) -> String {
+pub fn io_error(error: io::Error, path: &Path, operation: IoOperation) -> String {
+    io_operation(error, Some(path), None, operation)
+}
+
+#[cfg(all(test, windows))]
+pub(crate) fn windows_frozen_error(name: &str, path: &Path) -> String {
+    let corpus: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../tests/fixtures/user_runtime_install/installer-windows.json"
+    ))
+    .unwrap();
+    let error = &corpus["records"][name]["error"];
+    let rendered = error["rendered"]
+        .as_str()
+        .unwrap()
+        .split(": '")
+        .next()
+        .unwrap();
+    format!(
+        "{}: {rendered}: {}",
+        error["class"].as_str().unwrap(),
+        repr_points(&os_points(path.as_os_str()))
+    )
+}
+#[derive(Clone, Copy, Debug)]
+pub enum IoOperation {
+    Win32,
+    Read,
+    Handle,
+}
+pub(crate) fn io_operation(
+    error: io::Error,
+    path: Option<&Path>,
+    destination: Option<&Path>,
+    operation: IoOperation,
+) -> String {
+    #[cfg(windows)]
+    {
+        crate::adoption_fs::windows_error(&error, path, destination, operation)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = operation;
+        let mut rendered = unix_io_error(error, path.unwrap_or_else(|| Path::new("")));
+        if path.is_none() {
+            rendered.truncate(rendered.len() - 4);
+        }
+        if let Some(destination) = destination {
+            rendered.push_str(&format!(
+                " -> {}",
+                repr_points(&os_points(destination.as_os_str()))
+            ));
+        }
+        rendered
+    }
+}
+#[cfg(not(windows))]
+fn unix_io_error(error: io::Error, path: &Path) -> String {
     let kind = match error.kind() {
         io::ErrorKind::NotFound => "FileNotFoundError",
         io::ErrorKind::AlreadyExists => "FileExistsError",
@@ -220,13 +276,13 @@ pub fn sql_error(error: rusqlite::Error) -> String {
 }
 pub fn registry_error(error: RegistryError, path: &Path) -> String {
     match error {
-        RegistryError::Io(error) => {
+        RegistryError::Io(error, operation) => {
             let target = if error.kind() == io::ErrorKind::AlreadyExists {
                 path.parent().unwrap_or(path)
             } else {
                 path
             };
-            io_error(error, target)
+            io_error(error, target, operation)
         }
         RegistryError::Sql(error) => sql_error(error),
         RegistryError::Shape => format!(

@@ -1,5 +1,6 @@
-//! Installer-only descriptor-relative mutations. Windows returns Unsupported.
+//! Installer-only descriptor-relative mutations.
 use crate::adoption_fs::{self, StagedFile};
+use crate::executor_text::IoOperation;
 use std::{
     ffi::OsStr,
     io::{self, Write},
@@ -19,7 +20,7 @@ impl PendingWrite {
         temporary: &OsStr,
         content: &[u8],
     ) -> io::Result<Self> {
-        Self::prepare_mapped(root, target, temporary, content, |_, e| e)
+        Self::prepare_mapped(root, target, temporary, content, |_, e, _| e)
     }
     /// Preserve the filename context of the failing syscall.
     pub(crate) fn prepare_mapped<E>(
@@ -27,7 +28,7 @@ impl PendingWrite {
         target: &Path,
         temporary: &OsStr,
         content: &[u8],
-        error: impl Fn(Option<&Path>, io::Error) -> E,
+        error: impl Fn(Option<&Path>, io::Error, IoOperation) -> E,
     ) -> Result<Self, E> {
         if !matches!(Path::new(temporary).components().next(), Some(Component::Normal(name)) if name == temporary)
         {
@@ -37,9 +38,11 @@ impl PendingWrite {
                     io::ErrorKind::InvalidInput,
                     "temporary must be one basename",
                 ),
+                IoOperation::Win32,
             ));
         }
-        let relative = adoption_fs::relative(root, target).map_err(|e| error(Some(target), e))?;
+        let relative = adoption_fs::relative(root, target)
+            .map_err(|e| error(Some(target), e, IoOperation::Win32))?;
         let mut directory = root.to_owned();
         let mut parts = relative.components().peekable();
         while let Some(part) = parts.next() {
@@ -50,31 +53,47 @@ impl PendingWrite {
             match adoption_fs::mkdir(root, &directory, 0o777) {
                 Ok(()) => (),
                 Err(e) if e.kind() == io::ErrorKind::AlreadyExists => (),
-                Err(e) => return Err(error(Some(&directory), e)),
+                Err(e) => return Err(error(Some(&directory), e, IoOperation::Win32)),
             }
         }
         let path = target.with_file_name(temporary);
-        if path == target {
+        if adoption_fs::aliases(root, &path, target)
+            .map_err(|e| error(Some(target), e, IoOperation::Win32))?
+        {
             return Err(error(
                 Some(target),
                 io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "temporary must differ from target",
                 ),
+                IoOperation::Win32,
             ));
         }
-        let mut staged = StagedFile::create_with_parent_check(root, &path, true, |_| Ok(()))
-            .map_err(|e| error(Some(&path), e))?;
-        staged.file.write_all(content).map_err(|e| error(None, e))?;
-        staged.file.flush().map_err(|e| error(None, e))?;
-        staged.file.sync_all().map_err(|e| error(None, e))?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            staged
+        let staged = StagedFile::create_with_parent_check(root, &path, true, |_| Ok(()))
+            .map_err(|e| error(Some(&path), e, IoOperation::Read))?;
+        let result = (|| {
+            let mut writer = staged
                 .file
-                .set_permissions(std::fs::Permissions::from_mode(0o644))
-                .map_err(|e| error(Some(&path), e))?;
+                .try_clone()
+                .map_err(|e| error(None, e, IoOperation::Handle))?;
+            let written = (|| {
+                writer.write_all(content)?;
+                writer.flush()?;
+                writer.sync_all()
+            })();
+            // Python's with-statement lets a close failure replace a body failure.
+            adoption_fs::close_file(writer).map_err(|e| error(None, e, IoOperation::Handle))?;
+            written.map_err(|e| error(None, e, IoOperation::Handle))?;
+            adoption_fs::set_mode(&staged.file, 0o644)
+                .map_err(|e| error(Some(&path), e, IoOperation::Win32))
+        })();
+        if let Err(e) = result {
+            let cleanup = staged
+                .remove()
+                .map_err(|e| error(Some(&path), e, IoOperation::Win32));
+            staged.keep();
+            cleanup?;
+            return Err(e);
         }
         Ok(Self {
             staged,
@@ -93,7 +112,9 @@ impl PendingWrite {
     }
     pub fn cleanup_with(&self, before: impl FnOnce(&Path) -> io::Result<()>) -> io::Result<()> {
         before(&self.staged.path)?;
-        self.staged.remove()
+        let result = self.staged.remove();
+        self.staged.keep();
+        result
     }
 }
 
@@ -124,86 +145,11 @@ pub fn remove_with(
 #[rustfmt::skip]
 mod tests {
     use super::*;
-    use std::{cell::RefCell, fs, os::unix::fs::{PermissionsExt, symlink}, path::PathBuf};
-    fn snapshot(path: &Path) -> Vec<(PathBuf, u32, Vec<u8>)> {
-        fn visit(root: &Path, path: &Path, rows: &mut Vec<(PathBuf, u32, Vec<u8>)>) {
-            let metadata = fs::symlink_metadata(path).unwrap();
-            let bytes = if metadata.is_symlink() {
-                fs::read_link(path).unwrap().as_os_str().as_encoded_bytes().to_vec()
-            } else if metadata.is_file() { fs::read(path).unwrap() } else { vec![] };
-            rows.push((path.strip_prefix(root).unwrap().to_owned(), metadata.permissions().mode(), bytes));
-            if metadata.is_dir() {
-                let mut entries: Vec<_> = fs::read_dir(path).unwrap().map(|p| p.unwrap().path()).collect();
-                entries.sort();
-                for entry in entries { visit(root, &entry, rows); }
-            }
-        }
-        let mut rows = vec![];
-        visit(path, path, &mut rows);
-        rows
-    }
+    use std::{fs, os::unix::fs::{PermissionsExt, symlink}};
+    use crate::user_runtime_windows_race_tests::snapshot;
     fn swap(path: &Path, outside: &Path) -> io::Result<()> {
         fs::rename(path, path.with_extension("saved"))?;
         symlink(outside, path)
-    }
-    #[test]
-    fn create_replace_restore_unlink_cleanup_swap_matrix() {
-        for operation in ["create", "replace", "restore", "unlink", "cleanup"] {
-            for site in ["leaf", "ancestor", "temporary", "moved-outside", "replaced-parent"] {
-                let temp = tempfile::tempdir().unwrap();
-                let base = temp.path().canonicalize().unwrap();
-                let root = base.join("root"); let dir = root.join("agents");
-                let target = dir.join("agent.md"); let outside = base.join("outside");
-                fs::create_dir_all(&dir).unwrap(); fs::create_dir(&outside).unwrap();
-                for name in ["agent.md", "temporary", "keep"] {
-                    fs::write(outside.join(name), b"OUTSIDE").unwrap();
-                    fs::set_permissions(outside.join(name), fs::Permissions::from_mode(0o640)).unwrap();
-                }
-                symlink("keep", outside.join("link")).unwrap();
-                if operation != "create" { fs::write(&target, b"before").unwrap(); }
-                let expected = RefCell::new(snapshot(&outside));
-                let changed = || -> io::Result<()> {
-                    match site {
-                        "ancestor" => swap(&dir, &outside),
-                        "moved-outside" | "replaced-parent" => {
-                            fs::rename(&dir, outside.join("moved"))?;
-                            if site == "replaced-parent" { fs::create_dir(&dir)?; }
-                            else { symlink(outside.join("moved"), &dir)?; }
-                            *expected.borrow_mut() = snapshot(&outside);
-                            Ok(())
-                        }
-                        "leaf" => {
-                            if target.exists() { fs::rename(&target, dir.join("leaf.saved"))?; }
-                            symlink(outside.join("agent.md"), &target)
-                        }
-                        "temporary" => {
-                            let temporary = dir.join("temporary");
-                            if temporary.exists() { fs::rename(&temporary, dir.join("temp.saved"))?; }
-                            symlink(outside.join("temporary"), temporary)
-                        }
-                        _ => unreachable!(),
-                    }
-                };
-                let result = if operation == "unlink" { remove_with(&root, &target, false, changed) }
-                else {
-                    let pending = PendingWrite::prepare(&root, &target, OsStr::new("temporary"), b"after").unwrap();
-                    if operation == "cleanup" { pending.cleanup_with(|_| changed()) }
-                    else { pending.publish_with(|_| changed()) }
-                    // pending drops here: compare outside only after implicit cleanup too.
-                };
-                assert_eq!(snapshot(&outside), *expected.borrow(), "{operation}/{site}");
-                if matches!(site, "ancestor" | "moved-outside" | "replaced-parent") {
-                    assert!(result.is_err(), "{operation}/{site}");
-                } else if operation != "unlink" && site == "temporary" {
-                    assert!(result.is_err(), "{operation}/{site}");
-                    assert!(dir.join("temporary").is_symlink());
-                } else if matches!(operation, "create" | "replace" | "restore") {
-                    result.unwrap(); assert_eq!(fs::read(&target).unwrap(), b"after");
-                } else if operation == "unlink" {
-                    result.unwrap(); assert!(!target.exists());
-                } else { result.unwrap(); assert!(!dir.join("temporary").exists()); }
-            }
-        }
     }
     #[test]
     fn nested_parents_atomic_modes_and_missing_removal() {
@@ -284,4 +230,9 @@ mod tests {
             assert_eq!(snapshot(&outside), expected);
         }
     }
+}
+pub(crate) fn remove_required(root: &Path, target: &Path, directory: bool) -> io::Result<()> {
+    let pinned = adoption_fs::parent(root, target)?;
+    pinned.verify_parent(root, target)?;
+    pinned.unlink(&pinned.name, directory)
 }

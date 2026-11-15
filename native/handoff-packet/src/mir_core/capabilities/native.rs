@@ -245,15 +245,7 @@ pub fn verify(path: &Path, pin: &Value) -> Result<(), String> {
 }
 
 pub fn is_executable(path: &Path) -> bool {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        fs::metadata(path).is_ok_and(|m| m.permissions().mode() & 0o111 != 0)
-    }
-    #[cfg(not(unix))]
-    {
-        path.is_file()
-    }
+    crate::adoption_fs::is_executable(path)
 }
 
 /// These callbacks let the host inject faults without supplying filesystem mutations.
@@ -441,14 +433,7 @@ fn exists(path: &Path) -> Result<bool, String> {
     match fs::symlink_metadata(path) {
         Ok(_) => Ok(true),
         // pathlib's exists/is_symlink ignore these traversal failures.
-        Err(error)
-            if matches!(
-                error.raw_os_error(),
-                Some(libc::ENOENT | libc::ENOTDIR | libc::EBADF | libc::ELOOP)
-            ) =>
-        {
-            Ok(false)
-        }
+        Err(error) if crate::adoption_fs::missing_metadata(&error) => Ok(false),
         Err(error) => Err(placement_io(&error, path)),
     }
 }
@@ -651,14 +636,8 @@ pub fn place_artifacts(
                     temp_path.file_name().unwrap_or_default().to_string_lossy()
                 ));
             }
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                temp.staged
-                    .file
-                    .set_permissions(fs::Permissions::from_mode(0o755))
-                    .map_err(|e| placement_io(&e, &temp_path))?;
-            }
+            crate::adoption_fs::set_mode(&temp.staged.file, 0o755)
+                .map_err(|e| placement_io(&e, &temp_path))?;
             let identity = temp
                 .staged
                 .identity()

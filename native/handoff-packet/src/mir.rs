@@ -71,7 +71,11 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
                 |error| {
                     failure = match error {
                         store::Error::Io(e) => {
-                            let message = executor_text::io_error(e, &parent.borrow());
+                            let message = executor_text::io_error(
+                                e,
+                                &parent.borrow(),
+                                executor_text::IoOperation::Win32,
+                            );
                             let message = if parent.borrow().as_os_str().is_empty() {
                                 message.strip_suffix(": ''").unwrap_or(&message)
                             } else {
@@ -249,7 +253,11 @@ fn stdout_error(error: std::io::Error) -> String {
     if error.kind() == std::io::ErrorKind::BrokenPipe {
         return "BrokenPipeError: [Errno 32] Broken pipe".into();
     }
-    let message = executor_text::io_error(error, std::path::Path::new(""));
+    let message = executor_text::io_error(
+        error,
+        std::path::Path::new(""),
+        executor_text::IoOperation::Handle,
+    );
     message.strip_suffix(": ''").unwrap_or(&message).to_owned()
 }
 

@@ -6,6 +6,200 @@ use std::{
 };
 
 #[test]
+// SAFETY: only scratch files, live owned handles and sized NT records are used.
+#[allow(unsafe_code)]
+fn deny_delete_replace_syscall_probe() {
+    use std::{mem::size_of, os::windows::ffi::OsStrExt, os::windows::io::AsRawHandle};
+    use windows_sys::{
+        Wdk::Storage::FileSystem::{
+            FILE_RENAME_INFORMATION, FILE_RENAME_REPLACE_IF_EXISTS, FileRenameInformation,
+            FileRenameInformationEx, NtSetInformationFile,
+        },
+        Win32::{
+            Foundation::RtlNtStatusToDosError,
+            Storage::FileSystem::{
+                FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, MOVEFILE_REPLACE_EXISTING,
+                MoveFileExW,
+            },
+            System::IO::IO_STATUS_BLOCK,
+        },
+    };
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let mut outcomes = Vec::new();
+    for allow_delete in [false, true] {
+        for route in [
+            "movefile-closed",
+            "movefile-live",
+            "native",
+            "nt-ex",
+            "nt-legacy",
+        ] {
+            let case = root.join(format!("{allow_delete}-{route}"));
+            fs::create_dir(&case).unwrap();
+            let source = case.join("stage");
+            let target = case.join("target");
+            fs::write(&target, b"old").unwrap();
+            // Same GENERIC_READ and READ|WRITE sharing as capture_windows.py:377.
+            let lock = fs::OpenOptions::new()
+                .read(true)
+                .share_mode(
+                    FILE_SHARE_READ
+                        | FILE_SHARE_WRITE
+                        | if allow_delete { FILE_SHARE_DELETE } else { 0 },
+                )
+                .open(&target)
+                .unwrap();
+            let mut stage = StagedFile::create(&case, &source).unwrap();
+            stage.file.write_all(b"new").unwrap();
+            let destination = parent(&case, &target).unwrap();
+            assert_eq!(
+                stage.source.identity().unwrap(),
+                Some(stage.identity().unwrap())
+            );
+            let result = if route.starts_with("movefile") {
+                // Reference closes its temporary before os.replace. Probe both
+                // lifetimes to isolate that from NT-vs-Win32 replacement behavior.
+                if route == "movefile-closed" {
+                    stage.keep();
+                    drop(stage);
+                }
+                let src: Vec<u16> = source.as_os_str().encode_wide().chain(Some(0)).collect();
+                let dst: Vec<u16> = target.as_os_str().encode_wide().chain(Some(0)).collect();
+                // SAFETY: both NUL-terminated names refer only to this scratch case.
+                if unsafe { MoveFileExW(src.as_ptr(), dst.as_ptr(), MOVEFILE_REPLACE_EXISTING) }
+                    == 0
+                {
+                    Err(io::Error::last_os_error())
+                } else {
+                    Ok(())
+                }
+            } else if route == "native" {
+                // Exact production call after all staging/parent/identity opens
+                // succeeded. A failure here is NtSetInformationFile, not an open.
+                windows::rename_file(&stage.file, &destination)
+            } else {
+                // Diagnostic alternatives, never runtime fallbacks. Installed
+                // windows-sys 0.61.2 Wdk/Storage/FileSystem/mod.rs:688,2496,3216-18.
+                let units: Vec<u16> = destination.name.encode_wide().collect();
+                let start = std::mem::offset_of!(FILE_RENAME_INFORMATION, FileName);
+                let bytes = size_of::<FILE_RENAME_INFORMATION>().max(start + units.len() * 2);
+                let mut buffer = vec![0usize; bytes.div_ceil(size_of::<usize>())];
+                let info = buffer.as_mut_ptr().cast::<FILE_RENAME_INFORMATION>();
+                let mut iosb = IO_STATUS_BLOCK::default();
+                // SAFETY: aligned allocation fits the header/tail, all handles
+                // remain live; one validated basename uses the pinned directory.
+                let status = unsafe {
+                    if route == "nt-legacy" {
+                        (*info).Anonymous.ReplaceIfExists = true;
+                    } else {
+                        (*info).Anonymous.Flags = FILE_RENAME_REPLACE_IF_EXISTS;
+                    }
+                    (*info).RootDirectory = destination.directory.as_raw_handle();
+                    (*info).FileNameLength = (units.len() * 2) as u32;
+                    std::ptr::copy_nonoverlapping(
+                        units.as_ptr(),
+                        buffer.as_mut_ptr().cast::<u8>().add(start).cast::<u16>(),
+                        units.len(),
+                    );
+                    NtSetInformationFile(
+                        stage.file.as_raw_handle(),
+                        &mut iosb,
+                        info.cast(),
+                        bytes as u32,
+                        if route == "nt-legacy" {
+                            FileRenameInformation
+                        } else {
+                            FileRenameInformationEx
+                        },
+                    )
+                };
+                println!("allow_delete={allow_delete} route={route} NTSTATUS={status:#x}");
+                if status < 0 {
+                    // SAFETY: pure conversion of the immediately captured status.
+                    Err(io::Error::from_raw_os_error(
+                        unsafe { RtlNtStatusToDosError(status) } as i32,
+                    ))
+                } else {
+                    Ok(())
+                }
+            };
+            let code = result.as_ref().err().and_then(io::Error::raw_os_error);
+            assert!(result.is_ok() || code.is_some(), "{result:?}");
+            outcomes.push((allow_delete, route, code));
+            println!(
+                "allow_delete={allow_delete} route={route} winerror={code:?} result={result:?}"
+            );
+            assert_eq!(
+                fs::read(&target).unwrap(),
+                if result.is_ok() { b"new" } else { b"old" }
+            );
+            assert_eq!(source.exists(), result.is_err());
+            if source.exists() {
+                assert_eq!(fs::read(&source).unwrap(), b"new");
+            }
+            drop(lock);
+        }
+    }
+    // Collect every diagnostic before rejecting an unexpected result.
+    for route in ["movefile-closed", "movefile-live", "native"] {
+        assert!(outcomes.contains(&(false, route, Some(if route == "native" { 32 } else { 5 }))));
+    }
+    assert!(outcomes.contains(&(true, "native", None)));
+    for route in ["nt-ex", "nt-legacy"] {
+        // Do not accept the deviation if a simple handle-relative alternative
+        // matches reference code 5 AND preserves replacement of a shared-open
+        // target. Main must then evaluate that candidate as a production fix.
+        assert!(
+            !(outcomes.contains(&(false, route, Some(5)))
+                && outcomes.contains(&(true, route, None))),
+            "{route} may preserve both contracts; evaluate it before accepting the deviation"
+        );
+    }
+}
+
+#[test]
+fn dispose_reopen_sharing_denial_preserves_original_handle_and_file() {
+    use std::io::{Seek, SeekFrom};
+    use windows_sys::Win32::{
+        Foundation::ERROR_SHARING_VIOLATION,
+        Storage::FileSystem::{FILE_SHARE_READ, FILE_SHARE_WRITE},
+    };
+
+    let t = tempfile::tempdir().unwrap();
+    let r = t.path().canonicalize().unwrap();
+    let path = r.join("blocked-delete");
+    fs::write(&path, b"original").unwrap();
+    // ReOpenFile's desired access must be compatible with every existing
+    // handle's sharing mode. This live handle omits FILE_SHARE_DELETE, so the
+    // DELETE reopen fails in the OS before any disposition can be requested.
+    // https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-reopenfile
+    let mut original = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+        .open(&path)
+        .unwrap();
+    let id = file_identity(&original).unwrap();
+    let error = windows::dispose_file(&original).unwrap_err();
+    assert_eq!(error.raw_os_error(), Some(ERROR_SHARING_VIOLATION as i32));
+    assert_eq!(file_identity(&original).unwrap(), id);
+    assert_eq!(parent(&r, &path).unwrap().identity().unwrap(), Some(id));
+    assert_eq!(fs::read(&path).unwrap(), b"original");
+    // The failure must neither close nor poison the caller's borrowed handle.
+    let mut bytes = Vec::new();
+    original.read_to_end(&mut bytes).unwrap();
+    assert_eq!(bytes, b"original");
+    original.seek(SeekFrom::Start(0)).unwrap();
+    original.write_all(b"retained").unwrap();
+    assert_eq!(fs::read(&path).unwrap(), b"retained");
+    drop(original);
+    assert_eq!(fs::read(&path).unwrap(), b"retained");
+    fs::remove_file(&path).unwrap();
+    assert!(!path.exists());
+}
+
+#[test]
 fn rename_counted_utf16_tails_preserve_identity_for_moves_and_stages() {
     use std::os::windows::ffi::OsStringExt;
     let t = tempfile::tempdir().unwrap();

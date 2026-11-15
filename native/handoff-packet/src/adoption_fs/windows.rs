@@ -592,3 +592,52 @@ pub(super) fn directory_empty(parent: &Parent) -> io::Result<bool> {
         }
     }
 }
+
+/// CPython Windows chmod maps only owner-write to READONLY, preserving inherited DACLs.
+pub(super) fn set_mode(file: &File, mode: u32) -> io::Result<()> {
+    let mut info: FILE_BASIC_INFO = information(file, FileBasicInfo)?;
+    if mode & 0o200 != 0 {
+        info.FileAttributes &= !FILE_ATTRIBUTE_READONLY;
+    } else {
+        info.FileAttributes |= FILE_ATTRIBUTE_READONLY;
+    }
+    if info.FileAttributes == 0 {
+        info.FileAttributes = FILE_ATTRIBUTE_NORMAL;
+    }
+    // SAFETY: borrowed live handle and initialized FILE_BASIC_INFO, exact API size.
+    if unsafe {
+        SetFileInformationByHandle(
+            file.as_raw_handle(),
+            FileBasicInfo,
+            (&info as *const FILE_BASIC_INFO).cast(),
+            size_of::<FILE_BASIC_INFO>() as u32,
+        )
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+pub(super) fn aliases(root: &Path, a: &Path, b: &Path) -> io::Result<bool> {
+    let (a, b) = (super::parent(root, a)?, super::parent(root, b)?);
+    if file_identity(&a.directory)? != file_identity(&b.directory)? {
+        return Ok(false);
+    }
+    let case: FILE_CASE_SENSITIVE_INFO = information(&a.directory, FileCaseSensitiveInfo)?;
+    if a.name == b.name
+        || (case.Flags & FILE_CS_FLAG_CASE_SENSITIVE_DIR == 0
+            && path_key(Path::new(&a.name)) == path_key(Path::new(&b.name)))
+    {
+        return Ok(true);
+    }
+    let identity = |p: &Parent| match p.identity() {
+        Ok(id) => Ok(id),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e),
+    };
+    Ok(match identity(&a)? {
+        Some(a) => identity(&b)? == Some(a),
+        None => false,
+    })
+}

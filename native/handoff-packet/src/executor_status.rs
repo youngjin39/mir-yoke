@@ -1,8 +1,8 @@
 //! Status, result, list-jobs and cancel share owned parsing, migration and text.
 use handoff_packet::executor_registry::JobRegistry;
 use handoff_packet::executor_text::{
-    encode, encode_error, io_error, os_points, os_text, registry_error, repr, repr_points,
-    sql_error,
+    IoOperation, encode, encode_error, io_error, os_points, os_text, registry_error, repr,
+    repr_points, sql_error,
 };
 use rusqlite::types::{Value, ValueRef};
 use std::{
@@ -355,7 +355,7 @@ fn resolve(path: &Path) -> Result<PathBuf> {
                         | io::ErrorKind::NotFound
                         | io::ErrorKind::NotADirectory
                 ) => {}
-            Err(error) => return Err(io_error(error, &output)),
+            Err(error) => return Err(io_error(error, &output, IoOperation::Win32)),
         }
     }
     Ok(handoff_packet::supply::plain(output))
@@ -912,7 +912,7 @@ fn emit(out: String, err: String, code: i32) -> i32 {
     emit_frames(vec![out], err, code)
 }
 pub fn cwd_failure(error: io::Error) -> i32 {
-    let error = io_error(error, Path::new(""));
+    let error = io_error(error, Path::new(""), IoOperation::Win32);
     emit(
         String::new(),
         format!("{}\n", error.strip_suffix(": ''").unwrap_or(&error)),
@@ -1136,6 +1136,7 @@ mod tests {
             let error = io_error(
                 io::Error::from_raw_os_error(errno),
                 Path::new("/tasks/jobs.db"),
+                IoOperation::Win32,
             );
             assert!(
                 error.starts_with(&format!("{class}: [Errno {errno}] ")),
@@ -1160,7 +1161,7 @@ mod tests {
                 }
             );
             assert_eq!(
-                io_error(error, Path::new("/tasks/jobs.db")),
+                io_error(error, Path::new("/tasks/jobs.db"), IoOperation::Win32),
                 format!("OSError: [Errno {errno}] {message}: '/tasks/jobs.db'")
             );
         }

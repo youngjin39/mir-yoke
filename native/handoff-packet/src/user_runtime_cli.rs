@@ -341,7 +341,7 @@ fn cleanup_missing_with(
             continue;
         }
         let failure = |e| {
-            let description = text::io_error(e, path);
+            let description = text::io_error(e, path, text::IoOperation::Win32);
             let message = description
                 .split_once(": ")
                 .map_or(description.as_str(), |(_, m)| m);
