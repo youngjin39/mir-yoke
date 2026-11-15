@@ -737,6 +737,47 @@ fn replay(name: &str, root: &Path) -> Value {
         _ => panic!("unhandled {name}"),
     }
 }
+fn main8_expected(unix: &Value, windows: bool) -> Value {
+    if !windows {
+        return unix.clone();
+    }
+    let capture: Value =
+        serde_json::from_str(include_str!("fixtures/wt-path-records-main8-windows.json")).unwrap();
+    let mut observation = capture["records"][0]["observation"].clone();
+    // Replace only the captured synthetic root, preserving the diagnostic suffix bytes.
+    observation[2] = json!(
+        observation[2]
+            .as_str()
+            .unwrap()
+            .replace(r"{ROOT}\\ontology-main-8", "<tmp>")
+    );
+    json!({"value": observation})
+}
+#[test]
+fn main8_expectation_selector_matches_capture() {
+    let records: Value =
+        serde_json::from_str(include_str!("fixtures/w2/b33-ontology-check.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("fixtures/wt-path-records-main8-windows.json")).unwrap();
+    let unix = &records["main"]["value"][8];
+    assert_eq!(main8_expected(unix, false), *unix, "Unix record unchanged");
+    let mut observation = capture["records"][0]["observation"].clone();
+    observation[2] = json!(
+        observation[2]
+            .as_str()
+            .unwrap()
+            .replace(r"{ROOT}\\ontology-main-8", "<tmp>")
+    );
+    let windows = main8_expected(unix, true);
+    assert_eq!(
+        windows,
+        json!({"value": observation}),
+        "Windows captured main[8]"
+    );
+    assert_eq!(windows["value"][0], json!([{ "value": 2 }, []]));
+    assert_eq!(windows["value"][1], "");
+    assert_ne!(windows, *unix, "Windows suffix must differ from Unix");
+}
 #[test]
 fn frozen_records() {
     let records: Value =
@@ -761,6 +802,7 @@ fn frozen_records() {
                     .unwrap()
                     .replace("{ROOT}\\\\plugin-capture\\\\ontology-main-1", "<tmp>");
                 e["value"][1]["value"][1] = clean(json!(stdout), tmp.path());
+                e["value"][8] = main8_expected(&e["value"][8], true);
             }
             e
         };
