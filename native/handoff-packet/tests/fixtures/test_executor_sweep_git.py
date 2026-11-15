@@ -68,5 +68,30 @@ class FixtureGitTest(unittest.TestCase):
                 )
 
 
+class SnapshotRootTest(unittest.TestCase):
+    def test_aliases_and_outside_root(self):
+        source = Path(__file__).with_name("generate_executor_sweep.py").read_text()
+        function = next(
+            node for node in ast.parse(source).body
+            if isinstance(node, ast.FunctionDef) and node.name == "normalize"
+        )
+        namespace = {}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "snapshot", "exec"), namespace)
+        normalize = namespace["normalize"]
+        for root in [r"C:\scratch\native", r"\\?\C:\scratch\native"]:
+            for alias in [
+                r"C:\scratch\native", r"\\?\C:\scratch\native",
+                "C:/scratch/native", "//?/C:/scratch/native",
+            ]:
+                with self.subTest(root=root, alias=alias):
+                    self.assertEqual(normalize(alias + r"\wt-clean", root), "$ROOT/wt-clean")
+                    self.assertEqual(normalize(alias, root), "$ROOT")
+            for outside in [
+                r"C:\scratch\native-other\keep", r"D:\elsewhere\keep", r"literal $ROOT\keep",
+            ]:
+                self.assertEqual(normalize(outside, root), outside)
+        self.assertEqual(normalize("/scratch/native/wt-clean", "/scratch/native"), "$ROOT/wt-clean")
+
+
 if __name__ == "__main__":
     unittest.main()

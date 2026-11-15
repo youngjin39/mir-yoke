@@ -42,6 +42,7 @@ fn replay_fixture(fixture: &Value, mode: &str) -> usize {
         let private_tools = (record["git_mode"].as_u64().unwrap_or(0o755) != 0o755)
             .then(|| tempfile::tempdir().unwrap());
         let tools = private_tools.as_ref().unwrap_or(&tools);
+        let record_started = std::time::Instant::now();
         let setup_started = std::time::Instant::now();
         let dir = tempfile::tempdir().unwrap();
         // Records were captured under a non-symlinked root; macOS temp dirs are symlinked.
@@ -87,11 +88,22 @@ fn replay_fixture(fixture: &Value, mode: &str) -> usize {
         setup_time += setup_started.elapsed();
         let hook_started = std::time::Instant::now();
         run(&mut cmd, record, mode, &expand, root);
-        hook_time += hook_started.elapsed();
+        let elapsed = hook_started.elapsed();
+        hook_time += elapsed;
+        let cleanup_started = std::time::Instant::now();
+        drop(dir);
+        drop(private_tools);
+        eprintln!(
+            "timing {}: setup={:?}, hook={elapsed:?}, cleanup={:?}, elapsed={:?}",
+            record["id"],
+            hook_started.duration_since(setup_started),
+            cleanup_started.elapsed(),
+            record_started.elapsed()
+        );
         count += 1;
     }
     eprintln!(
-        "fixture replay {mode}: {count} records, setup={setup_time:?}, hooks={hook_time:?}, total={:?}",
+        "timing fixture replay {mode}: {count} records, setup={setup_time:?}, hooks={hook_time:?}, total={:?}",
         started.elapsed()
     );
     count
@@ -134,7 +146,9 @@ fn run(cmd: &mut Command, r: &Value, mode: &str, expand: &impl Fn(&str) -> Strin
         }
     }
     let before = snapshot(root);
+    let started = std::time::Instant::now();
     let result = cmd.output().unwrap();
+    eprintln!("timing child {}: elapsed={:?}", r["id"], started.elapsed());
     assert_eq!(snapshot(root), before, "filesystem: {}", r["id"]);
     let normalize = |b: Vec<u8>| {
         String::from_utf8(b)

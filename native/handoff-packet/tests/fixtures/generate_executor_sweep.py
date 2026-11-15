@@ -174,8 +174,17 @@ def setup(home, case):
 
 def normalize(value, home):
     if isinstance(value, str):
-        value = value.replace(str(home), "$ROOT").replace(str(home).replace("\\", "/"), "$ROOT")
-        return value.replace("\\", "/") if "$ROOT" in value else value
+        def plain(path):
+            candidate = path.removeprefix("//?/")
+            return candidate if candidate[1:3] == ":/" else path
+
+        root = plain(str(home).replace("\\", "/"))
+        candidate = plain(value.replace("\\", "/"))
+        if candidate == root:
+            return "$ROOT"
+        if candidate.startswith(root + "/"):
+            return "$ROOT" + candidate[len(root):]
+        return value
     if isinstance(value, list):
         return [normalize(v, home) for v in value]
     if isinstance(value, dict):
