@@ -12,6 +12,7 @@ use crate::{
     executor_policy,
     executor_registry::{self, JobRegistry},
     executor_review,
+    executor_text::IoOperation,
     executor_verifier::GateOptions,
 };
 use serde_json::{Value, json};
@@ -60,10 +61,37 @@ fn brief_call(
     Ok(reply)
 }
 fn read_brief(path: &Path) -> Result<crate::python_json::Value> {
-    let bytes = fs::read(path).map_err(|e| crate::executor_text::io_error(e, path))?;
+    let bytes =
+        fs::read(path).map_err(|e| crate::executor_text::io_error(e, path, IoOperation::Read))?;
     let text = String::from_utf8(bytes).map_err(|e| e.to_string())?;
     crate::python_json::parse(&text.replace("\r\n", "\n").replace('\r', "\n"))
         .map_err(|e| e.to_string())
+}
+
+#[cfg(all(test, windows))]
+#[test]
+fn windows_executor_brief_read_errors() {
+    use crate::executor_text::windows_frozen_error;
+    use std::os::windows::fs::OpenOptionsExt;
+    let temp = tempfile::tempdir().unwrap();
+    let missing = temp.path().join("missing");
+    assert_eq!(fs::read(&missing).unwrap_err().raw_os_error(), Some(2));
+    assert_eq!(
+        read_brief(&missing).unwrap_err(),
+        windows_frozen_error("read-missing", &missing)
+    );
+    let locked = temp.path().join("locked");
+    fs::write(&locked, b"{}").unwrap();
+    let _lock = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&locked)
+        .unwrap();
+    assert_eq!(fs::read(&locked).unwrap_err().raw_os_error(), Some(32));
+    assert_eq!(
+        read_brief(&locked).unwrap_err(),
+        windows_frozen_error("crt-lock-read", &locked)
+    );
 }
 fn resolved(value: &Value, cwd: &Path) -> Result<PathBuf> {
     let p = value_path(value, cwd);
@@ -249,7 +277,8 @@ pub fn dispatch(
     let prepared = (|| -> Result<(String, String, Option<Value>)> {
         let mut validated = if let Some(p) = &brief {
             let cache = &args["__native_brief"];
-            let bytes = fs::read(p).map_err(|e| crate::executor_text::io_error(e, p))?;
+            let bytes =
+                fs::read(p).map_err(|e| crate::executor_text::io_error(e, p, IoOperation::Read))?;
             if cache["path"] == json!(p) && cache["sha256"] == crate::digest::sha256(&bytes) {
                 json!({"result":cache["value"],"handle":null})
             } else {

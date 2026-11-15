@@ -1,5 +1,61 @@
 use super::*;
 
+#[cfg(windows)]
+#[test]
+fn windows_executor_input_errors() {
+    use crate::executor_text::windows_frozen_error;
+    let temp = tempfile::tempdir().unwrap();
+    let missing = temp.path().join("missing");
+    let args = json!({"codex_args_file":{"value":missing}});
+    let local = LocalConfig::default();
+    assert_eq!(
+        resolve_args(&args, temp.path(), &local).unwrap_err(),
+        windows_frozen_error("replace-missing", &missing)
+    );
+    let args = json!({"codex_args_file":{"value":temp.path()}});
+    assert_eq!(
+        resolve_args(&args, temp.path(), &local).unwrap_err(),
+        windows_frozen_error("crt-lock-read", temp.path())
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_executor_temp_open_error() {
+    use crate::executor_text::windows_frozen_error;
+    let temp = tempfile::tempdir().unwrap();
+    names(&["candidate.tmp"]);
+    let parent = temp.path().join("absent");
+    let error = create_ledger_temp(&parent, |name| {
+        let result = fs::File::create_new(parent.join(name));
+        assert_eq!(result.as_ref().unwrap_err().raw_os_error(), Some(3));
+        result
+    })
+    .unwrap_err();
+    assert_eq!(
+        error,
+        windows_frozen_error("read-missing", &parent.join("candidate.tmp"))
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_executor_registry_open_error() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("bad<name");
+    let error = JobRegistry::open(&path).err().unwrap();
+    match &error {
+        crate::executor_registry::Error::Io(cause, _) => {
+            assert_eq!(cause.raw_os_error(), Some(123));
+            assert_eq!(format!("{error:?}"), format!("Io({cause:?})"));
+        }
+        _ => panic!("expected the real open failure: {error:?}"),
+    }
+    let rendered = crate::executor_text::registry_error(error, &path);
+    // Frozen win32-invalid-name: real code 123 maps to CRT errno 22.
+    assert!(rendered.starts_with("OSError: [Errno 22] "), "{rendered}");
+}
+
 fn names(values: &[&str]) {
     LEDGER_TEMP_NAMES.with(|names| {
         *names.borrow_mut() = values.iter().rev().map(OsString::from).collect();

@@ -8,6 +8,24 @@ use std::{fs, io, os::windows::io::AsRawHandle};
 use windows_sys::Win32::Storage::FileSystem::*;
 #[rustfmt::skip]
 fn corpus() -> Value { serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/installer-windows.json")).unwrap() }
+// Other tests must not allocate a handle between the two real OS calls below.
+fn isolated_handle_probe(name: &str) -> bool {
+    if std::env::var("MIR_S7_HANDLE_PROBE").ok().as_deref() == Some(name) {
+        return false;
+    }
+    let test = format!("{}::{name}", module_path!().split_once("::").unwrap().1);
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", &test, "--test-threads=1", "--nocapture"])
+        .env("MIR_S7_HANDLE_PROBE", name)
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        output.status.success() && stdout.contains("1 passed"),
+        "{output:?}"
+    );
+    true
+}
 fn check(name: &str, error: Error, root: &Path) {
     let c = corpus();
     let expected = &c["records"][name]["error"];
@@ -84,11 +102,13 @@ fn frozen_os_errors() {
 #[allow(unsafe_code)]
 #[rustfmt::skip]
 fn frozen_handle_errors() {
+    if isolated_handle_probe("frozen_handle_errors") { return; }
+    assert_eq!(std::env::var("MIR_S7_HANDLE_PROBE").ok().as_deref(), Some("frozen_handle_errors"));
     use std::os::windows::fs::OpenOptionsExt;
     let temp = tempfile::tempdir().unwrap(); let root = temp.path().canonicalize().unwrap();
     let path = root.join("file"); fs::write(&path,b"locked byte").unwrap();
     let file = fs::File::open(&path).unwrap(); let handle = file.as_raw_handle(); drop(file);
-    // SAFETY: a stale handle is passed only to the OS failure probe, never borrowed as File.
+    // SAFETY: only this test runs in the child; no allocation between close and flush.
     assert_eq!(unsafe { FlushFileBuffers(handle) },0);
     let error = io::Error::last_os_error();
     check("win32-invalid-handle",operation_error(None,None,io::Error::from_raw_os_error(error.raw_os_error().unwrap()),IoOperation::Win32),&root);
@@ -197,10 +217,16 @@ fn cleanup_failure_supersedes_replace_failure() {
 // SAFETY: this probe invalidates its own handle immediately before checked close.
 #[allow(unsafe_code)]
 fn checked_close_exposes_a_real_invalid_handle_failure() {
+    if isolated_handle_probe("checked_close_exposes_a_real_invalid_handle_failure") {
+        return;
+    }
+    assert_eq!(
+        std::env::var("MIR_S7_HANDLE_PROBE").ok().as_deref(),
+        Some("checked_close_exposes_a_real_invalid_handle_failure")
+    );
     let temp = tempfile::tempdir().unwrap();
     let file = fs::File::create(temp.path().join("file")).unwrap();
-    // SAFETY: no handle allocation occurs between invalidation and consuming
-    // the owned File in close_file, so the stale value cannot close a new object.
+    // SAFETY: only this test runs in the child; no allocation between the closes.
     assert_ne!(
         unsafe { windows_sys::Win32::Foundation::CloseHandle(file.as_raw_handle()) },
         0

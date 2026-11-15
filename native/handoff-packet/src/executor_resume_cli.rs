@@ -4,6 +4,7 @@ use crate::{
     executor_execute as execute,
     executor_registry::JobRegistry,
     executor_resume,
+    executor_text::IoOperation,
     local_bridge::BridgeConfig,
 };
 use rusqlite::{Connection, OpenFlags, types::ValueRef};
@@ -172,7 +173,7 @@ fn parse(raw: &[OsString], cwd: &Path) -> Result<Args> {
         "repo_root":if root_given {execute::path(&root)} else {Value::Null},
         "job_id":job, "timeout":timeout, "use_async":use_async});
     let root = crate::executor_admission::resolved(&root, cwd)
-        .map_err(|e| crate::executor_text::io_error(e, &root))?;
+        .map_err(|e| crate::executor_text::io_error(e, &root, IoOperation::Win32))?;
     let db = db.unwrap_or_else(|| root.join("tasks/jobs.db"));
     let db = match crate::executor_admission::resolved(&db, cwd) {
         Ok(path) => path,
@@ -183,7 +184,7 @@ fn parse(raw: &[OsString], cwd: &Path) -> Result<Args> {
                 cwd.join(db)
             }
         }
-        Err(e) => return Err(crate::executor_text::io_error(e, &db)),
+        Err(e) => return Err(crate::executor_text::io_error(e, &db, IoOperation::Win32)),
     };
     Ok(Args {
         root,
@@ -570,7 +571,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 .ok_or("local directory unexpectedly readable")?;
             return Err(format!(
                 "\0resume_uncaught:{}",
-                crate::executor_text::io_error(error, &local_path)
+                crate::executor_text::io_error(error, &local_path, IoOperation::Read)
             ));
         }
         let mut bridge = if cli.root.is_dir() {
@@ -772,7 +773,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 .map_err(|e| {
                     format!(
                         "\0resume_uncaught:{}",
-                        crate::executor_text::io_error(e, Path::new("git"))
+                        crate::executor_text::io_error(e, Path::new("git"), IoOperation::Win32)
                     )
                 })?
                 .status
