@@ -87,39 +87,111 @@ fn lock(pin: &Value) -> Value {
         "plugin":"hooks","install_path":"bin/project-hooks","targets":{TARGET:pin}}}})
 }
 
+// Frozen Python 3.12 pathlib PurePath.as_uri() / urllib.parse URL witnesses.
+fn local_file_url(raw: &str, windows: bool, localhost: bool) -> String {
+    let path = if windows {
+        format!(
+            "/{}",
+            raw.strip_prefix(r"\\?\").unwrap_or(raw).replace('\\', "/")
+        )
+    } else {
+        raw.to_owned()
+    };
+    let mut encoded = String::new();
+    for byte in path.bytes() {
+        if byte.is_ascii_alphanumeric() || b"-._~/".contains(&byte) || (windows && byte == b':') {
+            encoded.push(char::from(byte));
+        } else {
+            encoded.push_str(&format!("%{byte:02X}"));
+        }
+    }
+    let host = if localhost { "localhost" } else { "" };
+    format!("file://{host}{encoded}")
+}
+
+#[test]
+fn local_file_pin_urls_match_pathlib() {
+    for (raw, windows, expected) in [
+        (
+            "/tmp/artifact with space",
+            false,
+            "file:///tmp/artifact%20with%20space",
+        ),
+        (
+            r"C:\tmp\artifact with space",
+            true,
+            "file:///C:/tmp/artifact%20with%20space",
+        ),
+        (
+            r"\\?\C:\tmp\artifact with space",
+            true,
+            "file:///C:/tmp/artifact%20with%20space",
+        ),
+        (r"C:\tmp\a%é#?", true, "file:///C:/tmp/a%25%C3%A9%23%3F"),
+    ] {
+        for localhost in [false, true] {
+            let expected = if localhost {
+                expected.replacen("file://", "file://localhost", 1)
+            } else {
+                expected.to_owned()
+            };
+            assert_eq!(
+                local_file_url(raw, windows, localhost),
+                expected,
+                "raw={raw:?} windows={windows} localhost={localhost}"
+            );
+        }
+    }
+}
+
+#[test]
+fn local_host_installs_raw_path_pin() {
+    assert_local_pin_install("raw", None);
+}
+
 #[test]
 fn local_host_installs_raw_and_percent_encoded_file_pins() {
+    for (case, localhost) in [("file", false), ("localhost", true)] {
+        assert_local_pin_install(case, Some(localhost));
+    }
+}
+
+fn assert_local_pin_install(case: &str, localhost: Option<bool>) {
     let temp = scratch();
     let source = temp.path().join("artifact with space");
     fs::write(&source, DATA).unwrap();
-    for (i, url) in [
-        source.to_str().unwrap().to_owned(),
-        format!("file://localhost{}", source.display()).replace(' ', "%20"),
-    ]
-    .iter()
-    .enumerate()
+    let raw = source.to_str().unwrap();
+    let url = localhost.map_or_else(
+        || raw.to_owned(),
+        |host| local_file_url(raw, cfg!(windows), host),
+    );
+    eprintln!("case={case} url={url:?} raw_path={source:?}");
+    let root = temp.path().join("project");
+    fs::create_dir(&root).unwrap();
+    let mut pin = pin(&source);
+    pin["url"] = json!(url);
+    assert_eq!(
+        adoption::install_project_hooks(&root, &options(&pin), &mut adoption::LocalHost),
+        Some(receipt()),
+        "case={case} url={url:?} raw_path={source:?}"
+    );
+    assert_eq!(
+        fs::read(root.join(RELATIVE)).unwrap(),
+        DATA,
+        "case={case} url={url:?} raw_path={source:?}"
+    );
+    #[cfg(unix)]
     {
-        let root = temp.path().join(format!("project{i}"));
-        fs::create_dir(&root).unwrap();
-        let mut pin = pin(&source);
-        pin["url"] = json!(url);
+        use std::os::unix::fs::PermissionsExt;
         assert_eq!(
-            adoption::install_project_hooks(&root, &options(&pin), &mut adoption::LocalHost),
-            Some(receipt())
+            fs::metadata(root.join(RELATIVE))
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o755,
+            "case={case} url={url:?} raw_path={source:?}"
         );
-        assert_eq!(fs::read(root.join(RELATIVE)).unwrap(), DATA);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            assert_eq!(
-                fs::metadata(root.join(RELATIVE))
-                    .unwrap()
-                    .permissions()
-                    .mode()
-                    & 0o777,
-                0o755
-            );
-        }
     }
 }
 
