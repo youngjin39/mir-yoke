@@ -42,7 +42,8 @@ pub(super) fn context_main(
 ) -> Result<(i32, String), Error> {
     let cfg = load_config(root, home)?;
     let connection = memory::connect(db)?;
-    let clock = || now.to_owned();
+    // ExternalStore uses datetime.isoformat()'s automatic fractional precision.
+    let clock = || now.replace(".000000+00:00", "+00:00");
     let store =
         ExternalStore::new(&connection, &clock).map_err(|e| Error::new(e.kind, e.message))?;
     crate::mir_cli::context::do_sync(&store, &cfg, root, home)

@@ -147,6 +147,7 @@ pub(super) fn wire(path: &Path) -> String {
 pub(super) fn io_error(path: &Path, e: io::Error) -> Error {
     let (class, errno, message) = match e.kind() {
         io::ErrorKind::NotFound => ("FileNotFoundError", 2, "No such file or directory"),
+        io::ErrorKind::AlreadyExists => ("FileExistsError", 17, "File exists"),
         io::ErrorKind::PermissionDenied => ("PermissionError", 13, "Permission denied"),
         io::ErrorKind::IsADirectory => ("IsADirectoryError", 21, "Is a directory"),
         io::ErrorKind::NotADirectory => ("NotADirectoryError", 20, "Not a directory"),

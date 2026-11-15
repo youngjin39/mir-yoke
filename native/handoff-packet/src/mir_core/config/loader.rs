@@ -271,7 +271,11 @@ pub fn resolve_path(root: &Path, authored: &str, home: &Path) -> Result<PathBuf,
                 output.push(part);
                 match output.canonicalize() {
                     Ok(p) => output = p,
-                    Err(e) if e.kind() == io::ErrorKind::NotFound => (),
+                    Err(e)
+                        if matches!(
+                            e.kind(),
+                            io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+                        ) => {}
                     #[cfg(windows)]
                     Err(e) if e.raw_os_error() == Some(123) => (),
                     Err(e) => return Err(e.into()),
