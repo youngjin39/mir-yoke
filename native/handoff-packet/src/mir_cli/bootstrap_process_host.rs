@@ -283,8 +283,8 @@ impl Host for ProductionHost {
                 "-c",
                 concat!(
                     "import json, os, platform, sys; ",
-                    "print(json.dumps([platform.python_version(), ",
-                    "bool(os.environ.get('VIRTUAL_ENV') or sys.prefix != sys.base_prefix)]))"
+                    "print('\\0' + json.dumps([platform.python_version(), ",
+                    "bool(os.environ.get('VIRTUAL_ENV') or sys.prefix != sys.base_prefix)]) + '\\0')"
                 ),
             ])
             .stdin(Stdio::null())
@@ -296,7 +296,13 @@ impl Host for ProductionHost {
                 format!("Python runtime attestation failed: {}", result.status),
             ));
         }
-        serde_json::from_slice(&result.stdout)
+        // Keep site's Python 3.12 venv prefixes, excluding startup output from the frame.
+        let mut frame = result.stdout.rsplitn(3, |byte| *byte == 0);
+        let observation = match (frame.next(), frame.next(), frame.next()) {
+            (Some(_), Some(json), Some(_)) => json,
+            _ => &[],
+        };
+        serde_json::from_slice(observation)
             .map_err(|_| Error::new("RuntimeError", "invalid Python runtime attestation"))
     }
     fn python_argv0(&mut self) -> PathBuf {

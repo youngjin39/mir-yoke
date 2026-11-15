@@ -16,7 +16,7 @@ scope = {'__file__': __file__}
 exec(Path(__file__).with_name('generate_y_e13.py').read_text().split('resources =')[0], scope)
 a, oracle, packages = (scope[k] for k in ('a', 'root', 'packages'))
 wrapper = oracle / 'bootstrap_capture.py'
-wrapper.write_text('''import sys, pathlib, sysconfig, socket
+wrapper.write_text('''import sys, pathlib, sysconfig, socket, os
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
 sys.path[:] = [str(root/'src'), str(root), stdlib, str(pathlib.Path(stdlib)/'lib-dynload')]
@@ -27,6 +27,9 @@ for name, module in list(sys.modules.items()):
     if name.split('.')[0] in PACKAGE_SET:
         paths = [module.__file__] if module.__file__ else module.__path__
         assert all(pathlib.Path(p).resolve().is_relative_to(root) for p in paths), name
+# Install after startup: the pinned bootstrap observes this already-running venv.
+if pth := os.environ.get('BOOTSTRAP_TEST_PTH'):
+    pathlib.Path(pth).write_text("import builtins; print('startup .pth output')\\n")
 try: code = bootstrap.main(sys.argv[1:])
 except Exception as exc:
     print(type(exc).__name__ + ': ' + str(exc), file=sys.stderr)
@@ -38,7 +41,8 @@ source = json.dumps(dict(schema_version=1, source=dict(url='https://example.inva
                          plugins={'mir-core': dict(path='plugins/mir-core')},
                          profiles=dict(packs={p: ['mir-core'] for p in
                                               ['code_app', 'content_workspace']})))
-cases = [('prefix', 'venv', None, 'code_app', []),
+cases = [('site-output', 'venv', None, 'code_app', []),
+         ('prefix', 'venv', None, 'code_app', []),
          ('base', 'base', None, 'code_app', []),
          ('environment', 'base', 'copied', 'code_app', []),
          ('empty-environment', 'base', '', 'code_app', []),
@@ -78,6 +82,9 @@ for name, interpreter, virtual, profile, extra in cases:
         return {str(p.relative_to(project)): list(p.read_bytes())
                 for p in sorted(project.rglob('*')) if p.is_file()}
     env = dict(HOME=str(work), PATH=str(tools), PYTHONUTF8='1')
+    if name == 'site-output':
+        site = install / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}'
+        env['BOOTSTRAP_TEST_PTH'] = str(site / 'site-packages' / 'observation.pth')
     if virtual is not None:
         env['VIRTUAL_ENV'] = virtual
     argv = ['--project-root', str(project), '--profile', profile, '--slug', 'sample',
@@ -87,6 +94,7 @@ for name, interpreter, virtual, profile, extra in cases:
     reset()
     out = subprocess.run([str(install/'bin/python'), '-I', '-X', 'utf8', str(wrapper), *argv],
                          cwd=project, env=env, capture_output=True, check=False, timeout=30)
+    assert b'startup .pth output' not in out.stdout
     receipt = json.loads((project/'.mir/bootstrap-receipt.json').read_bytes())
     assert out.returncode == (2 if profile == 'content_workspace' else 1) and not out.stderr, (
         name, out)
