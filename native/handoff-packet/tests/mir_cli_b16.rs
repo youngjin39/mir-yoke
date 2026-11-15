@@ -7,6 +7,37 @@ use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
 const SUFFIXES: [&str; 4] = ["", "-wal", "-shm", "-journal"];
+fn scratch() -> tempfile::TempDir {
+    let root = Path::new(env!("CARGO_TARGET_TMPDIR"));
+    std::fs::create_dir_all(root).unwrap();
+    tempfile::tempdir_in(root).unwrap()
+}
+
+#[test]
+fn scratch_without_tmpdir() {
+    let root = scratch();
+    let home = root.path().join("home");
+    std::fs::create_dir(&home).unwrap();
+    for name in ["frozen_records", "default_database_path"] {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", name, "--nocapture"])
+            .env_remove("TMPDIR")
+            .env("TEMP", root.path())
+            .env("TMP", root.path())
+            .env("HOME", &home)
+            .env("USERPROFILE", &home)
+            .current_dir(root.path())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{name} without TMPDIR: {}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
 fn file(db: &Path, suffix: &str) -> PathBuf {
     let mut s = db.as_os_str().to_os_string();
     s.push(suffix);
@@ -303,10 +334,10 @@ fn frozen_records() {
         serde_json::from_str(include_str!("fixtures/w2/b16-migrate.json")).unwrap();
     let records = records.as_object().unwrap();
     assert_eq!(records.len(), 42);
-    let root = std::env::var_os("TMPDIR").expect("TMPDIR must select task scratch");
+    let root = scratch();
     let mut replayed = 0;
     for (name, expected) in records {
-        let tmp = tempfile::tempdir_in(&root).unwrap();
+        let tmp = tempfile::tempdir_in(root.path()).unwrap();
         assert_eq!(&replay(name, tmp.path()), expected, "{name}");
         replayed += 1;
     }
@@ -314,7 +345,7 @@ fn frozen_records() {
 }
 #[test]
 fn default_database_path() {
-    let tmp = tempfile::tempdir_in(std::env::var_os("TMPDIR").unwrap()).unwrap();
+    let tmp = scratch();
     for args in [
         vec!["status"],
         vec!["status", "--db", ""],
