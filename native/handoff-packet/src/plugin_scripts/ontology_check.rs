@@ -341,7 +341,17 @@ pub fn read(p: &Path) -> Result<Vec<u8>> {
             ),
         ));
     }
-    fs::read(p).map_err(|e| io_error(e, p))
+    fs::read(p).map_err(|e| {
+        #[cfg(windows)]
+        {
+            error(
+                crate::adoption_fs::windows_crt_error(&e).0,
+                crate::executor_brief_profile::python_read_error_message(&e, p),
+            )
+        }
+        #[cfg(not(windows))]
+        io_error(e, p)
+    })
 }
 fn text_bytes(b: Vec<u8>) -> Result<String> {
     String::from_utf8(b)

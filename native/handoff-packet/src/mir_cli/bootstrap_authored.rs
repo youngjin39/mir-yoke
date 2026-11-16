@@ -51,13 +51,16 @@ pub(super) fn adopt_error(e: adoption::Error) -> Error {
 pub(super) fn io_error(path: &Path, e: std::io::Error) -> Error {
     adopt_error(adoption::io_error(path, e))
 }
+pub(super) fn read_error(path: &Path, e: std::io::Error) -> Error {
+    adopt_error(adoption::read_error(path, e))
+}
 pub(super) fn decode(bytes: Vec<u8>) -> Result<String, Error> {
     adoption::decode(bytes)
         .map(|s| s.replace("\r\n", "\n").replace('\r', "\n"))
         .map_err(adopt_error)
 }
 pub(super) fn read_text(path: &Path) -> Result<String, Error> {
-    decode(fs::read(path).map_err(|e| io_error(path, e))?)
+    decode(fs::read(path).map_err(|e| read_error(path, e))?)
 }
 pub(super) fn json_text(path: &Path) -> Result<Value, Error> {
     adoption::json_text(&read_text(path)?).map_err(adopt_error)

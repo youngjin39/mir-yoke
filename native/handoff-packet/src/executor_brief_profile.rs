@@ -140,18 +140,18 @@ impl BriefProfile {
         self.load_cached(path).map(|(value, _)| value)
     }
     pub fn load_cached(&self, path: &Path) -> Result<(Value, String), PolicyFailure> {
-        let file = fs::File::open(path).map_err(|error| io_failure(error, path))?;
+        let file = fs::File::open(path).map_err(|error| read_failure(error, path))?;
         let mut bytes = Vec::new();
         match self.input_limit_bytes {
             Some(limit) => {
                 file.take(limit.saturating_add(1))
                     .read_to_end(&mut bytes)
-                    .map_err(|error| io_failure(error, path))?;
+                    .map_err(|error| read_failure(error, path))?;
             }
             None => {
                 let mut file = file;
                 file.read_to_end(&mut bytes)
-                    .map_err(|error| io_failure(error, path))?;
+                    .map_err(|error| read_failure(error, path))?;
             }
         }
         let value = self.validate_bytes(&bytes)?;
@@ -488,6 +488,20 @@ fn failure(kind: &str, message: impl Into<String>) -> PolicyFailure {
 fn local_failure(error: Error) -> PolicyFailure {
     failure(error.kind(), error.to_string())
 }
+fn read_failure(error: std::io::Error, path: &Path) -> PolicyFailure {
+    #[cfg(windows)]
+    {
+        if error.raw_os_error().is_none() {
+            return io_failure(error, path);
+        }
+        failure(
+            crate::adoption_fs::windows_crt_error(&error).0,
+            python_read_error_message(&error, path),
+        )
+    }
+    #[cfg(not(windows))]
+    io_failure(error, path)
+}
 pub(crate) fn io_failure(error: std::io::Error, path: &Path) -> PolicyFailure {
     let kind = match error.kind() {
         std::io::ErrorKind::NotFound => "FileNotFoundError",
@@ -523,13 +537,25 @@ pub(crate) fn python_os_error_message(error: &std::io::Error, path: &Path) -> St
 pub(crate) fn python_read_error_message(error: &std::io::Error, path: &Path) -> String {
     #[cfg(windows)]
     if error.raw_os_error().is_some() {
-        let (_, errno, text) = crate::adoption_fs::windows_crt_error(error);
-        return format!(
-            "[Errno {errno}] {text}: {}",
-            crate::executor_execute::repr(&path.display().to_string())
-        );
+        return python_file_error_message(error, path, crate::executor_text::IoOperation::Read);
     }
     python_os_error_message(error, path)
+}
+
+/// Operation-selected CPython filesystem error message, without the exception class.
+#[cfg(windows)]
+pub fn python_file_error_message(
+    error: &std::io::Error,
+    path: &Path,
+    operation: crate::executor_text::IoOperation,
+) -> String {
+    if error.raw_os_error().is_none() {
+        return python_os_error_message(error, path);
+    }
+    let rendered = crate::adoption_fs::windows_error(error, Some(path), None, operation);
+    rendered
+        .split_once(": ")
+        .map_or(rendered.clone(), |(_, message)| message.to_owned())
 }
 
 /// Platform errno text without Rust's numeric suffix.

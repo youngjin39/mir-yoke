@@ -1,7 +1,7 @@
 //! Descriptor-relative adoption mutations; never follow substituted parent symlinks.
 // Keep the existing Win32-to-errno map shared by CRT and Win32 operations.
 #[cfg(any(windows, test))]
-fn windows_errno(code: i32) -> (&'static str, i32) {
+pub(crate) fn windows_errno(code: i32) -> (&'static str, i32) {
     let errno = match code {
         2 | 3 => 2,
         5 | 19 | 32 | 33 => 13,
@@ -42,11 +42,11 @@ pub(crate) fn windows_crt_error(error: &std::io::Error) -> (&'static str, i32, S
 #[cfg(windows)]
 #[rustfmt::skip]
 pub(crate) fn windows_error(error: &std::io::Error, path: Option<&std::path::Path>, destination: Option<&std::path::Path>, operation: crate::executor_text::IoOperation) -> String {
-    use crate::executor_text::{IoOperation, os_points, repr_points};
+    use crate::executor_text::{os_points, repr_points};
     use windows_sys::Win32::System::Diagnostics::Debug::{FormatMessageW, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS};
     let code = error.raw_os_error().unwrap_or(87);
-    let crt = matches!(operation, IoOperation::Read | IoOperation::Handle);
-    let (class, errno) = windows_errno(code);
+    let (class, form, number) = crate::executor_text::windows_error_code(error, operation);
+    let crt = form == "Errno";
     let message = if crt {
         windows_crt_error(error).2
     } else {
@@ -60,7 +60,7 @@ pub(crate) fn windows_error(error: &std::io::Error, path: Option<&std::path::Pat
             else { text.trim_end_matches([' ', '\r', '\n', '.']).to_owned() }
         }
     };
-    let mut rendered = if crt { format!("{class}: [Errno {errno}] {message}") } else { format!("{class}: [WinError {code}] {message}") };
+    let mut rendered = format!("{class}: [{form} {number}] {message}");
     if let Some(path) = path { rendered.push_str(&format!(": {}", repr_points(&os_points(path.as_os_str())))); }
     if let Some(destination) = destination { rendered.push_str(&format!(" -> {}", repr_points(&os_points(destination.as_os_str())))); }
     rendered

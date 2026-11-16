@@ -333,11 +333,13 @@ fn audit(project: &Path, raw: &str, failure: bool) -> io::Result<()> {
 }
 
 fn write_warning(failure: bool, path: &Path, error: &io::Error) {
+    #[cfg(not(windows))]
     let reason = match error.kind() {
         io::ErrorKind::PermissionDenied => "Permission denied",
         io::ErrorKind::NotFound => "No such file or directory",
         _ => "I/O error",
     };
+    #[cfg(not(windows))]
     let errno = match error.kind() {
         io::ErrorKind::PermissionDenied => 13,
         io::ErrorKind::NotFound => 2,
@@ -348,6 +350,16 @@ fn write_warning(failure: bool, path: &Path, error: &io::Error) {
     } else {
         "mir-stop: warning: could not write audit log"
     };
+    #[cfg(windows)]
+    eprintln!(
+        "{prefix}: {}",
+        handoff_packet::executor_brief_profile::python_file_error_message(
+            error,
+            path,
+            handoff_packet::executor_text::IoOperation::Write
+        )
+    );
+    #[cfg(not(windows))]
     eprintln!("{prefix}: [Errno {errno}] {reason}: '{}'", path.display());
 }
 

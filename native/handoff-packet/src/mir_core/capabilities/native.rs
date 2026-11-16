@@ -289,7 +289,9 @@ impl ArtifactHost for LocalArtifactHost {
     fn read(&mut self, url: &str, size: u64) -> Result<Vec<u8>, String> {
         let path =
             local_source(url)?.ok_or("network artifact reader must be supplied by the host")?;
-        read(url, size).map_err(|error| placement_io(&error, &path))
+        read(url, size).map_err(|error| {
+            placement_file_io(&error, &path, crate::executor_text::IoOperation::Read)
+        })
     }
     fn warm(&mut self, path: &Path) {
         let Ok(mut child) = Command::new(path)
@@ -332,6 +334,21 @@ pub struct PlacementError {
 
 fn placement_io(error: &io::Error, path: &Path) -> String {
     crate::executor_brief_profile::python_os_error_message(error, path)
+}
+fn placement_file_io(
+    error: &io::Error,
+    path: &Path,
+    operation: crate::executor_text::IoOperation,
+) -> String {
+    #[cfg(windows)]
+    {
+        crate::executor_brief_profile::python_file_error_message(error, path, operation)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = operation;
+        placement_io(error, path)
+    }
 }
 fn cleanup_io(error: io::Error, path: &Path) -> String {
     let class = match error.kind() {
@@ -458,7 +475,7 @@ fn publish(
     if temporary
         .staged
         .contents(data.len())
-        .map_err(|e| placement_io(&e, source))?
+        .map_err(|e| placement_file_io(&e, source, crate::executor_text::IoOperation::Read))?
         != data
     {
         return Err(format!(
@@ -607,14 +624,12 @@ pub fn place_artifacts(
             let temp = temporary_file
                 .as_mut()
                 .ok_or("missing native artifact temporary")?;
-            temp.staged
-                .file
-                .write_all(&data)
-                .map_err(|e| placement_io(&e, &temp_path))?;
-            let written = temp
-                .staged
-                .contents(data.len())
-                .map_err(|e| placement_io(&e, &temp_path))?;
+            temp.staged.file.write_all(&data).map_err(|e| {
+                placement_file_io(&e, &temp_path, crate::executor_text::IoOperation::Write)
+            })?;
+            let written = temp.staged.contents(data.len()).map_err(|e| {
+                placement_file_io(&e, &temp_path, crate::executor_text::IoOperation::Read)
+            })?;
             if Some(written.len() as u64) != pin["size"].as_u64()
                 || Some(crate::digest::sha256(&written).as_str()) != pin["sha256"].as_str()
             {
@@ -625,11 +640,9 @@ pub fn place_artifacts(
             }
             host.before_mutation(PlacementMutation::SetExecutable, &temp.staged.path)
                 .map_err(|e| placement_io(&e, &temp_path))?;
-            if temp
-                .staged
-                .contents(data.len())
-                .map_err(|e| placement_io(&e, &temp_path))?
-                != data
+            if temp.staged.contents(data.len()).map_err(|e| {
+                placement_file_io(&e, &temp_path, crate::executor_text::IoOperation::Read)
+            })? != data
             {
                 return Err(format!(
                     "native artifact integrity mismatch: {}",
@@ -666,10 +679,9 @@ pub fn place_artifacts(
                 let temp = temporary_file
                     .as_mut()
                     .ok_or("missing metadata temporary")?;
-                temp.staged
-                    .file
-                    .write_all(body.as_bytes())
-                    .map_err(|e| placement_io(&e, &metadata_temp))?;
+                temp.staged.file.write_all(body.as_bytes()).map_err(|e| {
+                    placement_file_io(&e, &metadata_temp, crate::executor_text::IoOperation::Write)
+                })?;
                 publish(
                     root,
                     temp,

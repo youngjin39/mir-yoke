@@ -199,7 +199,35 @@ pub enum IoOperation {
     Win32,
     Read,
     Handle,
+    Write,
+    Stat,
+    Lstat,
+    Scandir,
+    Listdir,
+    Mkdir,
+    Rmdir,
+    Unlink,
+    Rename,
+    Replace,
+    Chmod,
+    Readlink,
+    Symlink,
 }
+#[cfg(any(windows, test))]
+pub(crate) fn windows_error_code(
+    error: &std::io::Error,
+    operation: crate::executor_text::IoOperation,
+) -> (&'static str, &'static str, i32) {
+    use IoOperation::*;
+    let code = error.raw_os_error().unwrap_or(87);
+    let (class, errno) = crate::adoption_fs::windows_errno(code);
+    match operation {
+        Read | Write | Handle => (class, "Errno", errno),
+        Win32 | Stat | Lstat | Scandir | Listdir | Mkdir | Rmdir | Unlink | Rename | Replace
+        | Chmod | Readlink | Symlink => (class, "WinError", code),
+    }
+}
+
 pub(crate) fn io_operation(
     error: io::Error,
     path: Option<&Path>,
