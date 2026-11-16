@@ -21,7 +21,9 @@ impl Fixture {
                 NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
             ));
         fs::create_dir_all(&root).unwrap();
-        Self(handoff_packet::supply::plain(reference_path(&root)))
+        Self(handoff_packet::supply::plain(reference_path(
+            &fs::canonicalize(root).unwrap(),
+        )))
     }
 }
 impl Drop for Fixture {
@@ -43,9 +45,7 @@ fn python() -> PathBuf {
         })
         .expect("Python is required for fixture setup and observation")
 }
-// Match fixture setup: collapse filesystem aliases, then use the reference's
-// pathlib spelling. In particular, Data/private and Data/Volumes aliases need
-// not canonicalize to the same spelling on macOS.
+// Preserve pathlib's display spelling. Only fixture creation collapses aliases.
 fn reference_path(path: &Path) -> PathBuf {
     let out = Command::new(python())
         .args([
@@ -53,11 +53,20 @@ fn reference_path(path: &Path) -> PathBuf {
             "-c",
             "from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())",
         ])
-        .arg(fs::canonicalize(path).unwrap())
+        .arg(path)
         .output()
         .unwrap();
     assert!(out.status.success());
     PathBuf::from(String::from_utf8(out.stdout).unwrap().trim())
+}
+#[cfg(target_os = "macos")]
+#[test]
+fn reference_display_preserves_data_spelling() {
+    let base = fs::canonicalize(reference_path(&std::env::temp_dir())).unwrap();
+    let directory = tempfile::TempDir::new_in(base).unwrap();
+    let physical = fs::canonicalize(directory.path()).unwrap();
+    let data = Path::new("/System/Volumes/Data").join(physical.strip_prefix("/").unwrap());
+    assert_eq!(reference_path(&data), data);
 }
 fn reference(mode: &str, root: &Path, case: &str, args: &[&str]) -> Value {
     let out = Command::new(python())

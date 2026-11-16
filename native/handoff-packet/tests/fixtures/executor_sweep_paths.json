@@ -1,0 +1,31 @@
+{
+  "reference_pin": "f10edf21f5a94db1254eacabfdb06b517f9daeca",
+  "source_sha256": {
+    "tools/mir_executor/__init__.py": "83b6955cf874dd9502b7614bf26a7a5689b0135c29e6666ad98d21a947d67dec",
+    "tools/mir_executor/sweep.py": "81a58812087992733c5dc0b0549319c9e7663a1d4cf005591882bc103da52c0b",
+    "tools/mir_executor/jobs.py": "daa7dd5d0dc0136fc8ae8fc23ef057d33e56e5ffd3e5ee36cdff36bce379121c",
+    "tools/mir_executor/redaction.py": "20a51dd26a07be6f1cae9354c8961d212a2a91e2a09c2914ce2de18d9380b31a",
+    "tools/mir_executor/local_hooks.py": "9cefb2fdf9940e694fc2844d8dd7bca49edb50eb7d428a089576a2aeb8a73b87"
+  },
+  "cases": {
+    "real": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "data": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["/System/Volumes/Data$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["/System/Volumes/Data$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "link1": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "link8": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "link40": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "repo40": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "repo-cycle": {"status": 1, "result": null, "stderr": "RuntimeError: Symlink loop from '$ROOT/real/cycle'\n"},
+    "home40": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "home-cycle": {"status": 1, "result": null, "stderr": "RuntimeError: Symlink loop from '$ROOT/real/cycle'\n"},
+    "db40": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "db-cycle": {"status": 1, "result": null, "stderr": "RuntimeError: Symlink loop from '$ROOT/real/cycle/absent.db'\n"},
+    "missing-db-parent": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "data-dirty": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["/System/Volumes/Data$ROOT/real/orphan"], "preserved_worktrees": [{"path": "/System/Volumes/Data$ROOT/real/orphan", "reasons": ["worktree-dirty"]}], "reaped_jobs": [], "removable_worktrees": [], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "relative": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "registered-cycle": {"status": 0, "result": {"apply": false, "errors": ["list worktrees: Symlink loop from '$ROOT/real/cycle'"], "orphan_worktrees": [], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": [], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "registered-dangling": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/future"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/future"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "registered-repeated": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "registered-loop-parent": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/dangling"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/dangling"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""},
+    "registered-absolute": {"status": 0, "result": {"apply": false, "errors": [], "orphan_worktrees": ["$ROOT/real/orphan"], "preserved_worktrees": [], "reaped_jobs": [], "removable_worktrees": ["$ROOT/real/orphan"], "removed_worktrees": [], "stale_jobs": []}, "stderr": ""}
+  }
+}

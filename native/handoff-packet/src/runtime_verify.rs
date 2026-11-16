@@ -798,7 +798,9 @@ mod provider_tests {
     #[test]
     fn provider_long_link_chains_and_actual_cycles() {
         use std::os::unix::fs::symlink;
-        let directory = tempfile::tempdir().unwrap();
+        // Create fixtures under a physical base; aliases are explicit test inputs.
+        let base = fs::canonicalize(resolve_path(&std::env::temp_dir(), true).unwrap()).unwrap();
+        let directory = tempfile::TempDir::new_in(base).unwrap();
         let canonical_directory = fs::canonicalize(directory.path()).unwrap();
         let root = canonical_directory.join("runtime");
         fs::create_dir(&root).unwrap();

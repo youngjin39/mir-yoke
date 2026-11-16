@@ -31,6 +31,21 @@ impl From<&'static str> for ParseError {
         Self::Decline(reason)
     }
 }
+#[cfg(windows)]
+fn resolve_input(path: &Path, _cwd: &Path) -> Result<PathBuf, ParseError> {
+    // Q-LINK changes Unix admission only; retain the existing Windows checks.
+    Ok(path.to_owned())
+}
+#[cfg(unix)]
+fn resolve_input(path: &Path, cwd: &Path) -> Result<PathBuf, ParseError> {
+    let absolute = if path.is_absolute() {
+        path.to_owned()
+    } else {
+        cwd.join(path)
+    };
+    executor_sweep::python_resolved(&absolute)
+        .map_err(|error| ParseError::Refused(format!("{error}\n").into_bytes()))
+}
 fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, ParseError> {
     let mut iter = raw.iter();
     let mut command = false;
@@ -52,14 +67,10 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, ParseError> 
     if !command {
         return Err("sweep missing command".into());
     }
-    let repo = fs::canonicalize(if repo.is_absolute() {
-        repo
-    } else {
-        cwd.join(repo)
-    })
-    .map(crate::supply::plain)
-    .map_err(|_| "sweep repo canonicalization")?;
-    if fs::canonicalize(home)
+    let repo = fs::canonicalize(resolve_input(&repo, cwd)?)
+        .map(crate::supply::plain)
+        .map_err(|_| "sweep repo canonicalization")?;
+    if fs::canonicalize(resolve_input(home, cwd)?)
         .ok()
         .map(crate::supply::plain)
         .as_ref()
@@ -114,10 +125,13 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, ParseError> 
     if db.components().any(|p| p == Component::ParentDir) {
         return Err("sweep db parent traversal".into());
     }
+    // Check the complete path so genuine parent loops retain Python's filename.
+    // The final component is still left intact for ledger symlink admission.
+    resolve_input(&db, cwd)?;
     // Python resolves parent aliases (for example the platform temp directory)
     // before opening SQLite. Preserve the final component so admission can
     // still decline an actual database symlink.
-    let db = resolve_parent(db.parent().ok_or("sweep db parent")?)
+    let db = resolve_parent(&resolve_input(db.parent().ok_or("sweep db parent")?, cwd)?)
         .ok_or("sweep db parent canonicalization")?
         .join(db.file_name().ok_or("sweep db filename")?);
     let config = LocalConfig::load(&repo).map_err(|_| "sweep local config")?;
