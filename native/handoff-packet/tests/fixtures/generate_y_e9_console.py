@@ -22,7 +22,8 @@ for name, generator, flags in [
         ('y-e12a-parser', 'generate_y_e9.py', ['--e12a']),
         ('y-e12d-cli', 'generate_y_e10_constructor.py', ['--e12d-cli'])]:
     output = a.scratch / (name + '.json')
-    subprocess.run([sys.executable, '-I', '-B', '-X', 'utf8', str(Path(__file__).with_name(generator)),
+    subprocess.run([sys.executable, '-I', '-B', '-X', 'utf8',
+                    str(Path(__file__).with_name(generator)),
                     '--scratch', str(a.scratch / name), '--output', str(output), *flags],
                    check=True)
     rows = json.loads(output.read_bytes())
