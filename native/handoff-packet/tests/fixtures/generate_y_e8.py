@@ -10,6 +10,8 @@ import sys
 import tarfile
 from pathlib import Path
 
+os_env = {k: os.environ[k] for k in ('SystemRoot', 'WINDIR')
+          if os.name == 'nt' and k in os.environ}
 assert sys.flags.isolated
 p = argparse.ArgumentParser()
 p.add_argument('--scratch', type=Path, required=True)
@@ -35,6 +37,8 @@ wrapper.write_text('''import sys, pathlib, sysconfig, json, os, http.server, thr
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
 sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+if sys.platform == 'win32':
+    sys.path.append(str(pathlib.Path(sys.base_prefix) / 'DLLs'))
 import socket, ipaddress
 lookup, connect = socket.getaddrinfo, socket.socket.connect
 def resolve(host, *a, **kw):
@@ -126,10 +130,11 @@ for mode in ['hybrid', 'ties', 'limit', 'text', 'disabled', 'no-vectors', 'no-ar
     if mode != 'text':
         argv.append('--json')
     result = subprocess.run([sys.executable, '-I', '-X', 'utf8', str(wrapper), mode, *argv],
-                            cwd=work, env=dict(HOME=str(work), PATH=os.defpath,
+                            cwd=work, env=dict(os_env, HOME=str(work), USERPROFILE=str(work),
+                                              PYTHONIOENCODING="utf-8", PATH=os.defpath,
                                               SYNTHETIC_KEY='fake-only'), capture_output=True)
     records.append(dict(mode=mode, docs=docs, argv=argv, exit=result.returncode,
-                        stdout=result.stdout.decode(), stderr=result.stderr.decode(),
+                        stdout=result.stdout.decode("utf-8"), stderr=result.stderr.decode("utf-8"),
                         requests=json.loads((work / 'requests.json').read_text())))
 assert len(json.loads(records[0]['stdout'])['chunks']) == 3, records[0]
 assert json.loads(records[8]['stdout'])['degraded'] is True

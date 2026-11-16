@@ -65,7 +65,15 @@ fn provider_binding(only: Option<&str>) {
             let mut cmd = Command::new(env!("CARGO_BIN_EXE_mir"));
             cmd.args(argv)
                 .env_clear()
+                .envs(
+                    ["SystemRoot", "WINDIR"]
+                        .into_iter()
+                        .filter(|_| cfg!(windows))
+                        .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+                )
                 .env("HOME", &root)
+                .env("USERPROFILE", &root)
+                .env("PYTHONIOENCODING", "utf-8")
                 .env("HTTP_PROXY", "http://127.0.0.1:1")
                 .env("NO_PROXY", if r["mode"] == "proxy" { "" } else { "*" })
                 .current_dir(&root);
@@ -288,7 +296,15 @@ fn idna_refusal_cli() {
         let out = Command::new(env!("CARGO_BIN_EXE_mir"))
             .args(["context", "sync", "--db", "memory.db"])
             .env_clear()
+            .envs(
+                ["SystemRoot", "WINDIR"]
+                    .into_iter()
+                    .filter(|_| cfg!(windows))
+                    .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+            )
             .env("HOME", &root)
+            .env("USERPROFILE", &root)
+            .env("PYTHONIOENCODING", "utf-8")
             .env("HTTP_PROXY", "http://127.0.0.1:1")
             .env(
                 "NO_PROXY",
