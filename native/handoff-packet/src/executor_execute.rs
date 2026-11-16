@@ -1398,6 +1398,7 @@ fn update_ledger(
 
 #[cfg(test)]
 thread_local! {
+    static LEDGER_WRITE_READ_ONLY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static LEDGER_TEMP_NAMES: std::cell::RefCell<Vec<OsString>> = const { std::cell::RefCell::new(Vec::new()) };
     static LEDGER_TEMP_LIMIT: std::cell::Cell<Option<usize>> = const { std::cell::Cell::new(None) };
     static BEFORE_LEDGER_REPLACE: std::cell::RefCell<Option<Box<dyn FnOnce()>>> =
@@ -1460,6 +1461,10 @@ fn write_ledger(file: &Path, rendered: &str) -> Result<()> {
         .map_err(|e| crate::executor_text::io_error(e, parent, IoOperation::Win32))?;
     let (name, mut output) = create_ledger_temp(parent, |name| pinned.create(name, 0o600))?;
     let source = parent.join(&name);
+    #[cfg(test)]
+    if LEDGER_WRITE_READ_ONLY.with(|flag| flag.replace(false)) {
+        output = fs::File::open(&source).unwrap();
+    }
     let written = (|| -> Result<()> {
         output
             .write_all(rendered.as_bytes())

@@ -1,0 +1,10 @@
+{
+  "reference_pin": "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb",
+  "sources": {
+    "plugins/mir-core/skills/ontology/scripts/ontology_check.py": "9823e9d2dc2607a13407040917d1b8c6284a7de97cfeca8a5d2312f17e09e110",
+    "tools/mir_executor/executor.py": "8896931377cbe6a87ce7648b2b9a12af5b858e0d7e76de67080de12a54e0f001"
+  },
+  "unreadable": "PermissionError: [Errno 13] Permission denied: '<path>'",
+  "ledger_write": "OSError: [Errno 9] Bad file descriptor",
+  "ledger_statement": "with os.fdopen(fd, 'w', encoding='utf-8') as f:\n    f.write(updated_text)"
+}

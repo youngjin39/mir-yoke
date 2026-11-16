@@ -1,5 +1,27 @@
 use super::*;
 
+#[cfg(unix)]
+#[test]
+fn ledger_temp_write_error_has_no_filename() {
+    // Pinned executor.py:432-433 uses os.fdopen(fd), so filename is None.
+    // Reopen read-only to trigger the real write(2) EBADF, as in the oracle.
+    let root = tempfile::tempdir().unwrap();
+    let ledger = root.path().join("tdd.json");
+    fs::write(&ledger, "original").unwrap();
+    names(&["candidate.tmp"]);
+    LEDGER_WRITE_READ_ONLY.with(|flag| flag.set(true));
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../tests/fixtures/yfix8-diagnostic-bytes.json"
+    ))
+    .unwrap();
+    assert_eq!(
+        write_ledger(&ledger, "updated").unwrap_err(),
+        fixture["ledger_write"].as_str().unwrap()
+    );
+    assert_eq!(fs::read_to_string(&ledger).unwrap(), "original");
+    assert!(!root.path().join("candidate.tmp").exists());
+}
+
 #[cfg(windows)]
 #[test]
 fn windows_executor_input_errors() {

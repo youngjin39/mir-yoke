@@ -317,7 +317,7 @@ pub trait Reader {
 fn io_error(e: std::io::Error, p: &Path) -> Error {
     let (class, code, message) = match e.kind() {
         std::io::ErrorKind::NotFound => ("FileNotFoundError", 2, "No such file or directory"),
-        std::io::ErrorKind::PermissionDenied if cfg!(windows) => {
+        std::io::ErrorKind::PermissionDenied if cfg!(windows) || e.raw_os_error() == Some(13) => {
             ("PermissionError", 13, "Permission denied")
         }
         std::io::ErrorKind::IsADirectory => ("IsADirectoryError", 21, "Is a directory"),

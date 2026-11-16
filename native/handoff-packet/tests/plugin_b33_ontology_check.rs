@@ -95,6 +95,24 @@ fn digest(v: Value) -> Value {
     }
 }
 struct Io<'a>(&'a Path);
+#[cfg(unix)]
+#[test]
+fn unix_unreadable_file_matches_pinned_python() {
+    use std::os::unix::fs::PermissionsExt;
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("unreadable");
+    fs::write(&path, "{}").unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).unwrap();
+    let failure = q::read(&path);
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+    let failure = failure.unwrap_err();
+    let fixture: Value =
+        serde_json::from_str(include_str!("fixtures/yfix8-diagnostic-bytes.json")).unwrap();
+    assert_eq!(
+        format!("{}: {}", failure.class, failure.message).replace(path.to_str().unwrap(), "<path>"),
+        fixture["unreadable"].as_str().unwrap()
+    );
+}
 impl Reader for Io<'_> {
     fn path(&self, p: &str, _: bool) -> q::Result<PathBuf> {
         Ok(self.0.join(p))
