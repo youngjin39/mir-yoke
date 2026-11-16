@@ -285,6 +285,29 @@ fn output_admission() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn s01_resolve_failure_precedes_provider() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("loop");
+    std::os::unix::fs::symlink("loop", &root).unwrap();
+    let mut provider = Provider {
+        root: temp.path().to_owned(),
+        case: "unexpected".into(),
+    };
+    // initialize would panic if a resolver failure were swallowed or defaulted.
+    let argv = vec![
+        "status".into(),
+        "--project-root".into(),
+        root.display().to_string(),
+    ];
+    let error = b::CapabilityOutput::run(&argv, &mut provider)
+        .err()
+        .unwrap();
+    assert_eq!(error.class, "RuntimeError");
+    assert!(error.message.starts_with("Symlink loop from "));
+}
+
 #[test]
 fn scalar_surrogate_recursion() {
     // Raw Python code points, not JSON escapes which would combine the pair.
