@@ -131,7 +131,12 @@ pub fn evidence_digest(relative: &str, path: &Path, host: &mut dyn Host) -> Resu
             capture_output: true,
             check: false,
         })
-        .map_err(|e| adoption(format!("cannot digest settings hook evidence: {e}")))?;
+        .map_err(|e| {
+            adoption(format!(
+                "cannot digest settings hook evidence: {}",
+                jq_spawn_message(&e)
+            ))
+        })?;
     // bytes.strip uses ASCII whitespace, unlike the validators' Python text strip.
     if result.returncode != 0 || result.stdout.iter().all(|b| b" \t\n\r\x0b\x0c".contains(b)) {
         return Err(adoption(
@@ -263,12 +268,26 @@ pub fn write_receipt_with(
     value: &Value,
     before: impl FnOnce(&Path, &Path) -> io::Result<()>,
 ) -> Result<(), Error> {
+    write_receipt_for_platform(path, value, cfg!(windows), before)
+}
+
+fn write_receipt_for_platform(
+    path: &Path,
+    value: &Value,
+    windows: bool,
+    before: impl FnOnce(&Path, &Path) -> io::Result<()>,
+) -> Result<(), Error> {
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent).map_err(|e| io_error(parent, e))?;
-    let data = format!("{}\n", json_string(value, true)?);
+    let data = receipt_json(value, windows)?;
     #[cfg(unix)]
     {
         use io::Write;
+        // Python follows an existing linked receipt directory. Resolve it before
+        // entering the descriptor-relative writer, which requires canonical roots.
+        let canonical_parent = fs::canonicalize(parent).map_err(|e| io_error(parent, e))?;
+        let parent = canonical_parent.as_path();
+        let destination = parent.join(path.file_name().unwrap_or_default());
         let temporary = tempfile::Builder::new()
             .prefix(".bootstrap-receipt.json.")
             .make_in(parent, |candidate| {
@@ -282,7 +301,7 @@ pub fn write_receipt_with(
             .write_all(data.as_bytes())
             .map_err(|e| io_error(&staged.path, e))?;
         before(&staged.path, path).map_err(|e| io_error(path, e))?;
-        staged.publish(parent, path).map_err(|e| {
+        staged.publish(parent, &destination).map_err(|e| {
             let mut error = io_error(&staged.path, e);
             if let Error::Io { message, .. } = &mut error {
                 message.push_str(&format!(" -> {}", repr(&wire(path))));
@@ -305,11 +324,38 @@ pub fn write_receipt_with(
         if path.ancestors().any(Path::is_symlink) {
             return Err(adoption("linked receipt path"));
         }
-        temporary
-            .persist(path)
-            .map_err(|e| io_error(path, e.error))?;
-        Ok(())
+        persist_receipt(temporary, path, |source, destination, error| {
+            let operation = crate::executor_text::IoOperation::Replace;
+            let class = crate::executor_text::windows_error_code(&error, operation).0;
+            let rendered = crate::adoption_fs::windows_error(
+                &error,
+                Some(source),
+                Some(destination),
+                operation,
+                crate::executor_text::FilenameArgument::Path,
+            );
+            Error::Io {
+                class,
+                message: rendered
+                    .strip_prefix(&format!("{class}: "))
+                    .unwrap()
+                    .to_owned(),
+            }
+        })
     }
+}
+
+// Keep persistence executable on Mac while replacing only the platform renderer.
+#[cfg(any(windows, test))]
+fn persist_receipt(
+    temporary: tempfile::NamedTempFile,
+    path: &Path,
+    render: impl FnOnce(&Path, &Path, io::Error) -> Error,
+) -> Result<(), Error> {
+    temporary
+        .persist(path)
+        .map_err(|e| render(e.file.path(), path, e.error))?;
+    Ok(())
 }
 
 pub(super) fn install_evaluator<H: Host + ?Sized>(
@@ -638,6 +684,71 @@ pub fn main(
 #[cfg(test)]
 mod receipt_tests {
     use super::*;
+
+    #[test]
+    fn pc3_receipt_real_directory_failure_keeps_both_names() {
+        let root = tempfile::tempdir().unwrap();
+        let root = root.path().canonicalize().unwrap();
+        let destination = root.join("receipt.json");
+        fs::create_dir(&destination).unwrap();
+        let temporary = tempfile::Builder::new()
+            .prefix(".bootstrap-receipt.json.")
+            .tempfile_in(&root)
+            .unwrap();
+        let source = temporary.path().to_owned();
+        let result = persist_receipt(temporary, &destination, |from, to, error| {
+            assert_eq!(from, source);
+            assert_eq!(to, destination);
+            assert!(error.raw_os_error().is_some());
+            // The error is a real persist failure; only Windows rendering is simulated.
+            Error::Io {
+                class: "PermissionError",
+                message: format!(
+                    "[WinError 5] access denied: {} -> {}",
+                    repr(&wire(from)),
+                    repr(&wire(to))
+                ),
+            }
+        })
+        .unwrap_err();
+        assert_eq!(result.class(), "PermissionError");
+        assert_eq!(
+            result.to_string(),
+            format!(
+                "[WinError 5] access denied: {} -> {}",
+                repr(&wire(&source)),
+                repr(&wire(&destination))
+            )
+        );
+        assert!(!source.exists());
+        assert!(destination.is_dir());
+        assert_eq!(fs::read_dir(root).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn public_writer_selects_windows_serialization() {
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/y-e14-receipt-bytes.json"
+        ))
+        .unwrap();
+        let temp = tempfile::tempdir().unwrap();
+        let base = temp.path().canonicalize().unwrap();
+        for windows in [false, true] {
+            let path = base.join("receipt.json");
+            write_receipt_for_platform(&path, &fixture["payload"], windows, |_, _| Ok(())).unwrap();
+            let logical = fixture["logical"].as_str().unwrap();
+            let expected = if windows {
+                logical.replace('\n', "\r\n")
+            } else {
+                logical.into()
+            };
+            assert_eq!(
+                fs::read(path).unwrap(),
+                expected.as_bytes(),
+                "windows={windows}"
+            );
+        }
+    }
 
     #[test]
     fn windows_receipt_bytes_match_pinned_p3() {

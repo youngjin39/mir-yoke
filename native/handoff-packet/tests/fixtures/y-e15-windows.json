@@ -1,0 +1,74 @@
+[
+  {
+    "mode": "public",
+    "argv": [
+      "--help"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 0,
+    "stdout": "usage: mir bootstrap [-h] [--project-root PROJECT_ROOT] [--slug SLUG]\r\n                     --profile PROFILE [--purpose PURPOSE] [--stack STACK]\r\n                     [--archive CLASSIFICATION=PATH]\r\n                     [--storage-root STORAGE_ROOT] [--json] [--finalize]\r\n                     [--architecture-initialized]\r\n                     [--skip-capability-activation]\r\n\r\noptions:\r\n  -h, --help            show this help message and exit\r\n  --project-root PROJECT_ROOT\r\n  --slug SLUG\r\n  --profile PROFILE     required project archetype; no implicit code_app\r\n                        default\r\n  --purpose PURPOSE     non-placeholder project mission (required in phase 1)\r\n  --stack STACK         technology or working-medium item; repeat or pass\r\n                        comma-separated values\r\n  --archive CLASSIFICATION=PATH\r\n                        classify an existing content path for onboarding\r\n                        (content_workspace)\r\n  --storage-root STORAGE_ROOT\r\n                        shared external-volume root configured by setup.sh\r\n  --json\r\n  --finalize            phase 2: verify capabilities after restarting the\r\n                        agent runtime\r\n  --architecture-initialized\r\n                        attest that mir-core:design then mir-core:spec-\r\n                        architect initialized the project\r\n  --skip-capability-activation\r\n                        test/development only: leave bootstrap incomplete\r\n                        unless --allow-incomplete\r\n",
+    "stderr": ""
+  },
+  {
+    "mode": "public",
+    "argv": [
+      "--profile",
+      "code_app"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n"
+    },
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Native Windows automated bootstrap is unsupported. Run setup.sh inside WSL, or use agent-guided existing-repository/reference adaptation.\r\n"
+  },
+  {
+    "mode": "public",
+    "argv": [
+      "--project-root",
+      "absent",
+      "--profile",
+      "code_app"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Native Windows automated bootstrap is unsupported. Run setup.sh inside WSL, or use agent-guided existing-repository/reference adaptation.\r\n"
+  },
+  {
+    "mode": "public",
+    "argv": [
+      "--profile",
+      "bad"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Native Windows automated bootstrap is unsupported. Run setup.sh inside WSL, or use agent-guided existing-repository/reference adaptation.\r\n"
+  },
+  {
+    "mode": "public",
+    "argv": [
+      "--profile",
+      "code_app",
+      "--slug",
+      "!"
+    ],
+    "files": {
+      ".mir/repo-profile.toml": "[repo]\nslug=\"sample\"\n",
+      "config/capability-sources.json": "{\"source\":{\"url\":\"https://example.invalid/provider\"}}"
+    },
+    "exit": 2,
+    "stdout": "",
+    "stderr": "Native Windows automated bootstrap is unsupported. Run setup.sh inside WSL, or use agent-guided existing-repository/reference adaptation.\r\n"
+  }
+]

@@ -1,0 +1,1316 @@
+{
+  "operations": [
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\open\\missing\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\open\\\\missing\\\\source'",
+      "operation": "open",
+      "raw_code": 2,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\open\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\open\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "open",
+      "raw_code": 3,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\open\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\open\\\\not-directory\\\\file\\\\source'",
+      "operation": "open",
+      "raw_code": 3,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "directory",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\open\\directory\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\open\\\\directory\\\\source'",
+      "operation": "open",
+      "raw_code": 5,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "readonly",
+      "operation": "open",
+      "outcome": "success"
+    },
+    {
+      "case": "sharing",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\open\\sharing\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\open\\\\sharing\\\\source'",
+      "operation": "open",
+      "raw_code": 32,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "exists",
+      "operation": "open",
+      "outcome": "success"
+    },
+    {
+      "case": "nonempty",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\open\\nonempty\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\open\\\\nonempty\\\\source'",
+      "operation": "open",
+      "raw_code": 5,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\read\\missing\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\read\\\\missing\\\\source'",
+      "operation": "read",
+      "raw_code": 2,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\read\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\read\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "read",
+      "raw_code": 3,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\read\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\read\\\\not-directory\\\\file\\\\source'",
+      "operation": "read",
+      "raw_code": 3,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "directory",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\read\\directory\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\read\\\\directory\\\\source'",
+      "operation": "read",
+      "raw_code": 5,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "readonly",
+      "operation": "read",
+      "outcome": "success"
+    },
+    {
+      "case": "sharing",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\read\\sharing\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\read\\\\sharing\\\\source'",
+      "operation": "read",
+      "raw_code": 32,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "exists",
+      "operation": "read",
+      "outcome": "success"
+    },
+    {
+      "case": "nonempty",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\read\\nonempty\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\read\\\\nonempty\\\\source'",
+      "operation": "read",
+      "raw_code": 5,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "missing",
+      "operation": "write",
+      "outcome": "success"
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\write\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\write\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "write",
+      "raw_code": 3,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\write\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\write\\\\not-directory\\\\file\\\\source'",
+      "operation": "write",
+      "raw_code": 3,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "directory",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\write\\directory\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\write\\\\directory\\\\source'",
+      "operation": "write",
+      "raw_code": 5,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "readonly",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\write\\readonly\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\write\\\\readonly\\\\source'",
+      "operation": "write",
+      "raw_code": 5,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "sharing",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\write\\sharing\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\write\\\\sharing\\\\source'",
+      "operation": "write",
+      "raw_code": 32,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "exists",
+      "operation": "write",
+      "outcome": "success"
+    },
+    {
+      "case": "nonempty",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\write\\nonempty\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\write\\\\nonempty\\\\source'",
+      "operation": "write",
+      "raw_code": 5,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "missing",
+      "operation": "create",
+      "outcome": "success"
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\create\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\create\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "create",
+      "raw_code": 3,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\create\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[Errno 2] No such file or directory: '<tmp>\\\\operations\\\\create\\\\not-directory\\\\file\\\\source'",
+      "operation": "create",
+      "raw_code": 3,
+      "strerror": "No such file or directory",
+      "winerror": null
+    },
+    {
+      "case": "directory",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\create\\directory\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\create\\\\directory\\\\source'",
+      "operation": "create",
+      "raw_code": 5,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "readonly",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "<tmp>\\operations\\create\\readonly\\source",
+      "filename2": null,
+      "message": "[Errno 17] File exists: '<tmp>\\\\operations\\\\create\\\\readonly\\\\source'",
+      "operation": "create",
+      "raw_code": 80,
+      "strerror": "File exists",
+      "winerror": null
+    },
+    {
+      "case": "sharing",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "<tmp>\\operations\\create\\sharing\\source",
+      "filename2": null,
+      "message": "[Errno 17] File exists: '<tmp>\\\\operations\\\\create\\\\sharing\\\\source'",
+      "operation": "create",
+      "raw_code": 80,
+      "strerror": "File exists",
+      "winerror": null
+    },
+    {
+      "case": "exists",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "<tmp>\\operations\\create\\exists\\source",
+      "filename2": null,
+      "message": "[Errno 17] File exists: '<tmp>\\\\operations\\\\create\\\\exists\\\\source'",
+      "operation": "create",
+      "raw_code": 80,
+      "strerror": "File exists",
+      "winerror": null
+    },
+    {
+      "case": "nonempty",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\create\\nonempty\\source",
+      "filename2": null,
+      "message": "[Errno 13] Permission denied: '<tmp>\\\\operations\\\\create\\\\nonempty\\\\source'",
+      "operation": "create",
+      "raw_code": 5,
+      "strerror": "Permission denied",
+      "winerror": null
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\stat\\missing\\source",
+      "filename2": null,
+      "message": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\stat\\\\missing\\\\source'",
+      "operation": "stat",
+      "raw_code": 2,
+      "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 2
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\stat\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\stat\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "stat",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\stat\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\stat\\\\not-directory\\\\file\\\\source'",
+      "operation": "stat",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "operation": "stat",
+      "outcome": "success"
+    },
+    {
+      "case": "readonly",
+      "operation": "stat",
+      "outcome": "success"
+    },
+    {
+      "case": "sharing",
+      "operation": "stat",
+      "outcome": "success"
+    },
+    {
+      "case": "exists",
+      "operation": "stat",
+      "outcome": "success"
+    },
+    {
+      "case": "nonempty",
+      "operation": "stat",
+      "outcome": "success"
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\lstat\\missing\\source",
+      "filename2": null,
+      "message": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\lstat\\\\missing\\\\source'",
+      "operation": "lstat",
+      "raw_code": 2,
+      "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 2
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\lstat\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\lstat\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "lstat",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\lstat\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\lstat\\\\not-directory\\\\file\\\\source'",
+      "operation": "lstat",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "operation": "lstat",
+      "outcome": "success"
+    },
+    {
+      "case": "readonly",
+      "operation": "lstat",
+      "outcome": "success"
+    },
+    {
+      "case": "sharing",
+      "operation": "lstat",
+      "outcome": "success"
+    },
+    {
+      "case": "exists",
+      "operation": "lstat",
+      "outcome": "success"
+    },
+    {
+      "case": "nonempty",
+      "operation": "lstat",
+      "outcome": "success"
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\scandir\\missing\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\scandir\\\\missing\\\\source'",
+      "operation": "scandir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\scandir\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\scandir\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "scandir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\scandir\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\scandir\\\\not-directory\\\\file\\\\source'",
+      "operation": "scandir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "operation": "scandir",
+      "outcome": "success"
+    },
+    {
+      "case": "readonly",
+      "errno": 20,
+      "exception": "NotADirectoryError",
+      "filename": "<tmp>\\operations\\scandir\\readonly\\source",
+      "filename2": null,
+      "message": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\scandir\\\\readonly\\\\source'",
+      "operation": "scandir",
+      "raw_code": 267,
+      "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 267
+    },
+    {
+      "case": "sharing",
+      "errno": 20,
+      "exception": "NotADirectoryError",
+      "filename": "<tmp>\\operations\\scandir\\sharing\\source",
+      "filename2": null,
+      "message": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\scandir\\\\sharing\\\\source'",
+      "operation": "scandir",
+      "raw_code": 267,
+      "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 267
+    },
+    {
+      "case": "exists",
+      "errno": 20,
+      "exception": "NotADirectoryError",
+      "filename": "<tmp>\\operations\\scandir\\exists\\source",
+      "filename2": null,
+      "message": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\scandir\\\\exists\\\\source'",
+      "operation": "scandir",
+      "raw_code": 267,
+      "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 267
+    },
+    {
+      "case": "nonempty",
+      "operation": "scandir",
+      "outcome": "success"
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\listdir\\missing\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\listdir\\\\missing\\\\source'",
+      "operation": "listdir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\listdir\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\listdir\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "listdir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\listdir\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\listdir\\\\not-directory\\\\file\\\\source'",
+      "operation": "listdir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "operation": "listdir",
+      "outcome": "success"
+    },
+    {
+      "case": "readonly",
+      "errno": 20,
+      "exception": "NotADirectoryError",
+      "filename": "<tmp>\\operations\\listdir\\readonly\\source",
+      "filename2": null,
+      "message": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\listdir\\\\readonly\\\\source'",
+      "operation": "listdir",
+      "raw_code": 267,
+      "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 267
+    },
+    {
+      "case": "sharing",
+      "errno": 20,
+      "exception": "NotADirectoryError",
+      "filename": "<tmp>\\operations\\listdir\\sharing\\source",
+      "filename2": null,
+      "message": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\listdir\\\\sharing\\\\source'",
+      "operation": "listdir",
+      "raw_code": 267,
+      "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 267
+    },
+    {
+      "case": "exists",
+      "errno": 20,
+      "exception": "NotADirectoryError",
+      "filename": "<tmp>\\operations\\listdir\\exists\\source",
+      "filename2": null,
+      "message": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\listdir\\\\exists\\\\source'",
+      "operation": "listdir",
+      "raw_code": 267,
+      "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 267
+    },
+    {
+      "case": "nonempty",
+      "operation": "listdir",
+      "outcome": "success"
+    },
+    {
+      "case": "missing",
+      "operation": "mkdir",
+      "outcome": "success"
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\mkdir\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\mkdir\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "mkdir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\mkdir\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\mkdir\\\\not-directory\\\\file\\\\source'",
+      "operation": "mkdir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "<tmp>\\operations\\mkdir\\directory\\source",
+      "filename2": null,
+      "message": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\mkdir\\\\directory\\\\source'",
+      "operation": "mkdir",
+      "raw_code": 183,
+      "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 183
+    },
+    {
+      "case": "readonly",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "<tmp>\\operations\\mkdir\\readonly\\source",
+      "filename2": null,
+      "message": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\mkdir\\\\readonly\\\\source'",
+      "operation": "mkdir",
+      "raw_code": 183,
+      "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 183
+    },
+    {
+      "case": "sharing",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "<tmp>\\operations\\mkdir\\sharing\\source",
+      "filename2": null,
+      "message": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\mkdir\\\\sharing\\\\source'",
+      "operation": "mkdir",
+      "raw_code": 183,
+      "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 183
+    },
+    {
+      "case": "exists",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "<tmp>\\operations\\mkdir\\exists\\source",
+      "filename2": null,
+      "message": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\mkdir\\\\exists\\\\source'",
+      "operation": "mkdir",
+      "raw_code": 183,
+      "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 183
+    },
+    {
+      "case": "nonempty",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "<tmp>\\operations\\mkdir\\nonempty\\source",
+      "filename2": null,
+      "message": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\mkdir\\\\nonempty\\\\source'",
+      "operation": "mkdir",
+      "raw_code": 183,
+      "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 183
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\rmdir\\missing\\source",
+      "filename2": null,
+      "message": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rmdir\\\\missing\\\\source'",
+      "operation": "rmdir",
+      "raw_code": 2,
+      "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 2
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\rmdir\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rmdir\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "rmdir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\rmdir\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rmdir\\\\not-directory\\\\file\\\\source'",
+      "operation": "rmdir",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "operation": "rmdir",
+      "outcome": "success"
+    },
+    {
+      "case": "readonly",
+      "errno": 20,
+      "exception": "NotADirectoryError",
+      "filename": "<tmp>\\operations\\rmdir\\readonly\\source",
+      "filename2": null,
+      "message": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rmdir\\\\readonly\\\\source'",
+      "operation": "rmdir",
+      "raw_code": 267,
+      "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 267
+    },
+    {
+      "case": "sharing",
+      "errno": 20,
+      "exception": "NotADirectoryError",
+      "filename": "<tmp>\\operations\\rmdir\\sharing\\source",
+      "filename2": null,
+      "message": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rmdir\\\\sharing\\\\source'",
+      "operation": "rmdir",
+      "raw_code": 267,
+      "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 267
+    },
+    {
+      "case": "exists",
+      "errno": 20,
+      "exception": "NotADirectoryError",
+      "filename": "<tmp>\\operations\\rmdir\\exists\\source",
+      "filename2": null,
+      "message": "[WinError 267] \ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rmdir\\\\exists\\\\source'",
+      "operation": "rmdir",
+      "raw_code": 267,
+      "strerror": "\ub514\ub809\ud130\ub9ac \uc774\ub984\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 267
+    },
+    {
+      "case": "nonempty",
+      "errno": 41,
+      "exception": "OSError",
+      "filename": "<tmp>\\operations\\rmdir\\nonempty\\source",
+      "filename2": null,
+      "message": "[WinError 145] \ub514\ub809\ud130\ub9ac\uac00 \ube44\uc5b4 \uc788\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rmdir\\\\nonempty\\\\source'",
+      "operation": "rmdir",
+      "raw_code": 145,
+      "strerror": "\ub514\ub809\ud130\ub9ac\uac00 \ube44\uc5b4 \uc788\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+      "winerror": 145
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\unlink\\missing\\source",
+      "filename2": null,
+      "message": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\unlink\\\\missing\\\\source'",
+      "operation": "unlink",
+      "raw_code": 2,
+      "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 2
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\unlink\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\unlink\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "unlink",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\unlink\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\unlink\\\\not-directory\\\\file\\\\source'",
+      "operation": "unlink",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\unlink\\directory\\source",
+      "filename2": null,
+      "message": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\unlink\\\\directory\\\\source'",
+      "operation": "unlink",
+      "raw_code": 5,
+      "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+      "winerror": 5
+    },
+    {
+      "case": "readonly",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\unlink\\readonly\\source",
+      "filename2": null,
+      "message": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\unlink\\\\readonly\\\\source'",
+      "operation": "unlink",
+      "raw_code": 5,
+      "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+      "winerror": 5
+    },
+    {
+      "case": "sharing",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\unlink\\sharing\\source",
+      "filename2": null,
+      "message": "[WinError 32] \ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc744 \uc0ac\uc6a9 \uc911\uc774\uae30 \ub54c\ubb38\uc5d0 \ud504\ub85c\uc138\uc2a4\uac00 \uc561\uc138\uc2a4 \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\unlink\\\\sharing\\\\source'",
+      "operation": "unlink",
+      "raw_code": 32,
+      "strerror": "\ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc744 \uc0ac\uc6a9 \uc911\uc774\uae30 \ub54c\ubb38\uc5d0 \ud504\ub85c\uc138\uc2a4\uac00 \uc561\uc138\uc2a4 \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 32
+    },
+    {
+      "case": "exists",
+      "operation": "unlink",
+      "outcome": "success"
+    },
+    {
+      "case": "nonempty",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\unlink\\nonempty\\source",
+      "filename2": null,
+      "message": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\unlink\\\\nonempty\\\\source'",
+      "operation": "unlink",
+      "raw_code": 5,
+      "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+      "winerror": 5
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\rename\\missing\\source",
+      "filename2": "<tmp>\\operations\\rename\\missing\\destination",
+      "message": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rename\\\\missing\\\\source' -> '<tmp>\\\\operations\\\\rename\\\\missing\\\\destination'",
+      "operation": "rename",
+      "raw_code": 2,
+      "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 2
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\rename\\missing-parent\\absent\\source",
+      "filename2": "<tmp>\\operations\\rename\\missing-parent\\destination",
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rename\\\\missing-parent\\\\absent\\\\source' -> '<tmp>\\\\operations\\\\rename\\\\missing-parent\\\\destination'",
+      "operation": "rename",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\rename\\not-directory\\file\\source",
+      "filename2": "<tmp>\\operations\\rename\\not-directory\\destination",
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rename\\\\not-directory\\\\file\\\\source' -> '<tmp>\\\\operations\\\\rename\\\\not-directory\\\\destination'",
+      "operation": "rename",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "operation": "rename",
+      "outcome": "success"
+    },
+    {
+      "case": "readonly",
+      "operation": "rename",
+      "outcome": "success"
+    },
+    {
+      "case": "sharing",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\rename\\sharing\\source",
+      "filename2": "<tmp>\\operations\\rename\\sharing\\destination",
+      "message": "[WinError 32] \ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc744 \uc0ac\uc6a9 \uc911\uc774\uae30 \ub54c\ubb38\uc5d0 \ud504\ub85c\uc138\uc2a4\uac00 \uc561\uc138\uc2a4 \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rename\\\\sharing\\\\source' -> '<tmp>\\\\operations\\\\rename\\\\sharing\\\\destination'",
+      "operation": "rename",
+      "raw_code": 32,
+      "strerror": "\ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc744 \uc0ac\uc6a9 \uc911\uc774\uae30 \ub54c\ubb38\uc5d0 \ud504\ub85c\uc138\uc2a4\uac00 \uc561\uc138\uc2a4 \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 32
+    },
+    {
+      "case": "exists",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "<tmp>\\operations\\rename\\exists\\source",
+      "filename2": "<tmp>\\operations\\rename\\exists\\destination",
+      "message": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\rename\\\\exists\\\\source' -> '<tmp>\\\\operations\\\\rename\\\\exists\\\\destination'",
+      "operation": "rename",
+      "raw_code": 183,
+      "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 183
+    },
+    {
+      "case": "nonempty",
+      "operation": "rename",
+      "outcome": "success"
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\replace\\missing\\source",
+      "filename2": "<tmp>\\operations\\replace\\missing\\destination",
+      "message": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\replace\\\\missing\\\\source' -> '<tmp>\\\\operations\\\\replace\\\\missing\\\\destination'",
+      "operation": "replace",
+      "raw_code": 2,
+      "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 2
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\replace\\missing-parent\\absent\\source",
+      "filename2": "<tmp>\\operations\\replace\\missing-parent\\destination",
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\replace\\\\missing-parent\\\\absent\\\\source' -> '<tmp>\\\\operations\\\\replace\\\\missing-parent\\\\destination'",
+      "operation": "replace",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\replace\\not-directory\\file\\source",
+      "filename2": "<tmp>\\operations\\replace\\not-directory\\destination",
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\replace\\\\not-directory\\\\file\\\\source' -> '<tmp>\\\\operations\\\\replace\\\\not-directory\\\\destination'",
+      "operation": "replace",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "operation": "replace",
+      "outcome": "success"
+    },
+    {
+      "case": "readonly",
+      "operation": "replace",
+      "outcome": "success"
+    },
+    {
+      "case": "sharing",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "<tmp>\\operations\\replace\\sharing\\source",
+      "filename2": "<tmp>\\operations\\replace\\sharing\\destination",
+      "message": "[WinError 32] \ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc744 \uc0ac\uc6a9 \uc911\uc774\uae30 \ub54c\ubb38\uc5d0 \ud504\ub85c\uc138\uc2a4\uac00 \uc561\uc138\uc2a4 \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\replace\\\\sharing\\\\source' -> '<tmp>\\\\operations\\\\replace\\\\sharing\\\\destination'",
+      "operation": "replace",
+      "raw_code": 32,
+      "strerror": "\ub2e4\ub978 \ud504\ub85c\uc138\uc2a4\uac00 \ud30c\uc77c\uc744 \uc0ac\uc6a9 \uc911\uc774\uae30 \ub54c\ubb38\uc5d0 \ud504\ub85c\uc138\uc2a4\uac00 \uc561\uc138\uc2a4 \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 32
+    },
+    {
+      "case": "exists",
+      "operation": "replace",
+      "outcome": "success"
+    },
+    {
+      "case": "nonempty",
+      "operation": "replace",
+      "outcome": "success"
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\chmod\\missing\\source",
+      "filename2": null,
+      "message": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\chmod\\\\missing\\\\source'",
+      "operation": "chmod",
+      "raw_code": 2,
+      "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 2
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\chmod\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\chmod\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "chmod",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\chmod\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\chmod\\\\not-directory\\\\file\\\\source'",
+      "operation": "chmod",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "operation": "chmod",
+      "outcome": "success"
+    },
+    {
+      "case": "readonly",
+      "operation": "chmod",
+      "outcome": "success"
+    },
+    {
+      "case": "sharing",
+      "operation": "chmod",
+      "outcome": "success"
+    },
+    {
+      "case": "exists",
+      "operation": "chmod",
+      "outcome": "success"
+    },
+    {
+      "case": "nonempty",
+      "operation": "chmod",
+      "outcome": "success"
+    },
+    {
+      "case": "missing",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\readlink\\missing\\source",
+      "filename2": null,
+      "message": "[WinError 2] \uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\readlink\\\\missing\\\\source'",
+      "operation": "readlink",
+      "raw_code": 2,
+      "strerror": "\uc9c0\uc815\ub41c \ud30c\uc77c\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 2
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\readlink\\missing-parent\\absent\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\readlink\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "readlink",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "<tmp>\\operations\\readlink\\not-directory\\file\\source",
+      "filename2": null,
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: '<tmp>\\\\operations\\\\readlink\\\\not-directory\\\\file\\\\source'",
+      "operation": "readlink",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "errno": 22,
+      "exception": "OSError",
+      "filename": "<tmp>\\operations\\readlink\\directory\\source",
+      "filename2": null,
+      "message": "[WinError 4390] \ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4: '<tmp>\\\\operations\\\\readlink\\\\directory\\\\source'",
+      "operation": "readlink",
+      "raw_code": 4390,
+      "strerror": "\ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4",
+      "winerror": 4390
+    },
+    {
+      "case": "readonly",
+      "errno": 22,
+      "exception": "OSError",
+      "filename": "<tmp>\\operations\\readlink\\readonly\\source",
+      "filename2": null,
+      "message": "[WinError 4390] \ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4: '<tmp>\\\\operations\\\\readlink\\\\readonly\\\\source'",
+      "operation": "readlink",
+      "raw_code": 4390,
+      "strerror": "\ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4",
+      "winerror": 4390
+    },
+    {
+      "case": "sharing",
+      "errno": 22,
+      "exception": "OSError",
+      "filename": "<tmp>\\operations\\readlink\\sharing\\source",
+      "filename2": null,
+      "message": "[WinError 4390] \ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4: '<tmp>\\\\operations\\\\readlink\\\\sharing\\\\source'",
+      "operation": "readlink",
+      "raw_code": 4390,
+      "strerror": "\ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4",
+      "winerror": 4390
+    },
+    {
+      "case": "exists",
+      "errno": 22,
+      "exception": "OSError",
+      "filename": "<tmp>\\operations\\readlink\\exists\\source",
+      "filename2": null,
+      "message": "[WinError 4390] \ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4: '<tmp>\\\\operations\\\\readlink\\\\exists\\\\source'",
+      "operation": "readlink",
+      "raw_code": 4390,
+      "strerror": "\ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4",
+      "winerror": 4390
+    },
+    {
+      "case": "nonempty",
+      "errno": 22,
+      "exception": "OSError",
+      "filename": "<tmp>\\operations\\readlink\\nonempty\\source",
+      "filename2": null,
+      "message": "[WinError 4390] \ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4: '<tmp>\\\\operations\\\\readlink\\\\nonempty\\\\source'",
+      "operation": "readlink",
+      "raw_code": 4390,
+      "strerror": "\ud30c\uc77c\uc774\ub098 \ub514\ub809\ud130\ub9ac\uac00 \uc7ac\ubd84\uc11d \uc9c0\uc810\uc774 \uc544\ub2d9\ub2c8\ub2e4",
+      "winerror": 4390
+    },
+    {
+      "case": "missing",
+      "operation": "symlink",
+      "outcome": "success"
+    },
+    {
+      "case": "missing-parent",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "target",
+      "filename2": "<tmp>\\operations\\symlink\\missing-parent\\absent\\source",
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: 'target' -> '<tmp>\\\\operations\\\\symlink\\\\missing-parent\\\\absent\\\\source'",
+      "operation": "symlink",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "not-directory",
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "filename": "target",
+      "filename2": "<tmp>\\operations\\symlink\\not-directory\\file\\source",
+      "message": "[WinError 3] \uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: 'target' -> '<tmp>\\\\operations\\\\symlink\\\\not-directory\\\\file\\\\source'",
+      "operation": "symlink",
+      "raw_code": 3,
+      "strerror": "\uc9c0\uc815\ub41c \uacbd\ub85c\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 3
+    },
+    {
+      "case": "directory",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "target",
+      "filename2": "<tmp>\\operations\\symlink\\directory\\source",
+      "message": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: 'target' -> '<tmp>\\\\operations\\\\symlink\\\\directory\\\\source'",
+      "operation": "symlink",
+      "raw_code": 5,
+      "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+      "winerror": 5
+    },
+    {
+      "case": "readonly",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "target",
+      "filename2": "<tmp>\\operations\\symlink\\readonly\\source",
+      "message": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: 'target' -> '<tmp>\\\\operations\\\\symlink\\\\readonly\\\\source'",
+      "operation": "symlink",
+      "raw_code": 183,
+      "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 183
+    },
+    {
+      "case": "sharing",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "target",
+      "filename2": "<tmp>\\operations\\symlink\\sharing\\source",
+      "message": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: 'target' -> '<tmp>\\\\operations\\\\symlink\\\\sharing\\\\source'",
+      "operation": "symlink",
+      "raw_code": 183,
+      "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 183
+    },
+    {
+      "case": "exists",
+      "errno": 17,
+      "exception": "FileExistsError",
+      "filename": "target",
+      "filename2": "<tmp>\\operations\\symlink\\exists\\source",
+      "message": "[WinError 183] \ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4: 'target' -> '<tmp>\\\\operations\\\\symlink\\\\exists\\\\source'",
+      "operation": "symlink",
+      "raw_code": 183,
+      "strerror": "\ud30c\uc77c\uc774 \uc774\ubbf8 \uc788\uc73c\ubbc0\ub85c \ub9cc\ub4e4 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+      "winerror": 183
+    },
+    {
+      "case": "nonempty",
+      "errno": 13,
+      "exception": "PermissionError",
+      "filename": "target",
+      "filename2": "<tmp>\\operations\\symlink\\nonempty\\source",
+      "message": "[WinError 5] \uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4: 'target' -> '<tmp>\\\\operations\\\\symlink\\\\nonempty\\\\source'",
+      "operation": "symlink",
+      "raw_code": 5,
+      "strerror": "\uc561\uc138\uc2a4\uac00 \uac70\ubd80\ub418\uc5c8\uc2b5\ub2c8\ub2e4",
+      "winerror": 5
+    }
+  ],
+  "platform": "win32",
+  "python": "3.12.13 (main, Aug  7 2026, 02:26:41) [MSC v.1944 64 bit (AMD64)]",
+  "receipt": {
+    "exception": "FileNotFoundError",
+    "message": "[Errno 2] No such file or directory: '<tmp>\\\\project\\\\.mir\\\\bin\\\\project-hooks.json'"
+  },
+  "records": {
+    "183": {
+      "errno": 17,
+      "exception": "FileExistsError",
+      "message": "[Errno 17] File exists"
+    },
+    "2": {
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "message": "[Errno 2] No such file or directory"
+    },
+    "3": {
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "message": "[Errno 2] No such file or directory"
+    },
+    "32": {
+      "errno": 13,
+      "exception": "PermissionError",
+      "message": "[Errno 13] Permission denied"
+    },
+    "5": {
+      "errno": 13,
+      "exception": "PermissionError",
+      "message": "[Errno 13] Permission denied"
+    }
+  },
+  "reference_pin": "a61c3013dc382989c321577bb93dd937d11884fd",
+  "source_sha256": "9c237837847c141b9ec5ea813c9071e97308dae0e9d411b99f31d782e13ab301"
+}

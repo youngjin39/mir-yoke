@@ -1,0 +1,49 @@
+{
+  "reference_pin": "a61c3013dc382989c321577bb93dd937d11884fd",
+  "platform": "darwin",
+  "records": [
+    {
+      "kind": "plain",
+      "case": "existing",
+      "input": "{ROOT}",
+      "value": "{ROOT}"
+    },
+    {
+      "kind": "plain",
+      "case": "missing",
+      "input": "{ROOT}/absent/tail",
+      "value": "{ROOT}/absent/tail"
+    },
+    {
+      "kind": "plain",
+      "case": "parent",
+      "input": "{ROOT}/absent/../tail",
+      "value": "{ROOT}/tail"
+    },
+    {
+      "kind": "plain",
+      "case": "anchor",
+      "input": "{ANCHOR}",
+      "value": "{ANCHOR}"
+    },
+    {
+      "kind": "plain",
+      "case": "file-parent",
+      "input": "{ROOT}/file/child",
+      "value": "{ROOT}/file/child"
+    },
+    {
+      "kind": "plain",
+      "case": "dangling",
+      "input": "{ROOT}/dangling",
+      "value": "{ROOT}/absent"
+    },
+    {
+      "kind": "plain",
+      "case": "loop",
+      "input": "{ROOT}/loop",
+      "class": "RuntimeError",
+      "message": "Symlink loop from '{ROOT}/loop'"
+    }
+  ]
+}

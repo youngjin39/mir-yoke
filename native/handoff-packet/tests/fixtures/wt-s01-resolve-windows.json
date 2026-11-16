@@ -1,0 +1,72 @@
+{
+  "reference_pin": "a61c3013dc382989c321577bb93dd937d11884fd",
+  "platform": "win32",
+  "records": [
+    {
+      "kind": "plain",
+      "case": "existing",
+      "input": "{ROOT}",
+      "value": "{ROOT}"
+    },
+    {
+      "kind": "plain",
+      "case": "missing",
+      "input": "{ROOT}\\absent\\tail",
+      "value": "{ROOT}\\absent\\tail"
+    },
+    {
+      "kind": "plain",
+      "case": "parent",
+      "input": "{ROOT}\\absent\\..\\tail",
+      "value": "{ROOT}\\tail"
+    },
+    {
+      "kind": "plain",
+      "case": "anchor",
+      "input": "{ANCHOR}",
+      "value": "{ANCHOR}"
+    },
+    {
+      "kind": "plain",
+      "case": "file-parent",
+      "input": "{ROOT}\\file\\child",
+      "value": "{ROOT}\\file\\child"
+    },
+    {
+      "kind": "plain",
+      "case": "slash",
+      "input": "{ROOT_SLASH}",
+      "value": "{ROOT}"
+    },
+    {
+      "kind": "verbatim",
+      "case": "existing",
+      "input": "{ROOT}",
+      "value": "{ROOT}"
+    },
+    {
+      "kind": "verbatim",
+      "case": "missing",
+      "input": "{ROOT}\\absent\\tail",
+      "value": "{ROOT}\\absent\\tail"
+    },
+    {
+      "kind": "verbatim",
+      "case": "parent",
+      "input": "{ROOT}\\absent\\..\\tail",
+      "value": "{ROOT}\\tail"
+    },
+    {
+      "kind": "verbatim",
+      "case": "anchor",
+      "input": "{ANCHOR}",
+      "value": "{ANCHOR}"
+    },
+    {
+      "kind": "verbatim",
+      "case": "file-parent",
+      "input": "{ROOT}\\file\\child",
+      "value": "{ROOT}\\file\\child"
+    }
+  ]
+}

@@ -873,6 +873,42 @@ impl Observer {
     }
 }
 #[test]
+fn receipt_observation_matches_python_read_text() {
+    let temp = tempfile::tempdir().unwrap();
+    let receipt = temp.path().join("receipt");
+    fs::write(&receipt, b"a\r\nb\rc\n\\r\\n").unwrap();
+    assert_eq!(receipt_text(&receipt), receipt_os_record()["observation"]);
+}
+
+fn receipt_text(path: &Path) -> String {
+    // Path.read_text uses universal newlines; JSON escapes remain literal text.
+    fs::read_to_string(path)
+        .unwrap()
+        .replace("\r\n", "\n")
+        .replace('\r', "\n")
+}
+
+fn receipt_os_record() -> Value {
+    let name = if cfg!(windows) {
+        "b30-receipt-os-windows.json"
+    } else {
+        "b30-receipt-os-unix.json"
+    };
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures")
+        .join(name);
+    let body = fs::read_to_string(path)
+        .expect("capture OS record with tests/fixtures/generate_b30_receipt_os.py first");
+    let record: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(
+        record["reference_pin"],
+        "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+    );
+    assert_eq!(record["platform"] == "win32", cfg!(windows));
+    record
+}
+
+#[test]
 fn main_carriers_match_pinned_python() {
     use handoff_packet::python_json as py;
     let records = py::parse(include_str!("fixtures/y-e17b2b1b2b.json")).unwrap();
@@ -907,9 +943,7 @@ fn main_carriers_match_pinned_python() {
             assert!(!receipt.exists());
         } else {
             assert_eq!(
-                fs::read_to_string(receipt)
-                    .unwrap()
-                    .replace(root.to_str().unwrap(), "{ROOT}"),
+                receipt_text(&receipt).replace(root.to_str().unwrap(), "{ROOT}"),
                 r["receipt"].as_str().unwrap()
             );
         }
@@ -918,6 +952,7 @@ fn main_carriers_match_pinned_python() {
 
 #[test]
 fn receipt_os_failures_and_leaf_race() {
+    let exceptions = receipt_os_record()["exceptions"].clone();
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().canonicalize().unwrap();
     let mut host = Observer {
@@ -939,7 +974,7 @@ fn receipt_os_failures_and_leaf_race() {
         m::atomic_write_json(&target, &json!({}), &mut host)
             .unwrap_err()
             .class,
-        "IsADirectoryError"
+        exceptions["destination_directory"].as_str().unwrap()
     );
     put(&root, "file", "old");
     let file = root.join("file");
@@ -947,7 +982,7 @@ fn receipt_os_failures_and_leaf_race() {
         m::atomic_write_json(&file.join("child/receipt"), &json!({}), &mut host)
             .unwrap_err()
             .class,
-        "NotADirectoryError"
+        exceptions["parent_file"].as_str().unwrap()
     );
     #[cfg(unix)]
     {

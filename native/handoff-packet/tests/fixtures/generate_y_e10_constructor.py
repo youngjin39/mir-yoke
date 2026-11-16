@@ -4,15 +4,20 @@ import subprocess
 import sys
 from pathlib import Path
 
-source = Path(__file__).with_name('generate_y_e9.py').read_text()
+source = Path(__file__).with_name('generate_y_e9.py').read_text(encoding='utf-8')
 setup = {}
 exec(source.split("wrapper = root / 'capture.py'")[0], setup)
 root, packages, a = (setup[k] for k in ('root', 'packages', 'a'))
+def console_env(work, **extra):
+    return setup['console_env'](work, **extra)
+
 wrapper = root / 'constructor.py'
 wrapper.write_text('''import sys, pathlib, sysconfig, json
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
-sys.path[:] = [str(root/'src'),str(root),stdlib,str(pathlib.Path(stdlib)/'lib-dynload')]
+sys.path[:] = [str(root/'src'),str(root),stdlib,
+              str(pathlib.Path(stdlib)/'lib-dynload'),
+              str(pathlib.Path(sys.base_prefix)/'DLLs')]
 from mir.cli.__main__ import main
 from mir.cli import context
 from mir.core.engine.memory import store
@@ -29,6 +34,17 @@ except Exception as exc:
     print(type(exc).__name__+': '+str(exc),file=sys.stderr); code=1
 raise SystemExit(code)
 '''.replace('PACKAGE_SET', repr(set(['mir', *packages]))))
+if a.e12d_cli:
+    source = Path(__file__).with_name('generate_y_e12d.py').read_text(encoding='utf-8')
+    source = source.split('# Reuse the isolated console/migration wrapper', 1)[1]
+    source = source.split("\nrecords = []\n", 1)[1].split('wrapper.write_text', 1)[0]
+    source = source.replace("[sys.executable, '-I', str(wrapper)",
+                            "[sys.executable, '-I', '-B', '-X', 'utf8', str(wrapper)")
+    source = source.replace("env={'HOME': str(work), 'PATH': os.defpath,",
+                            "env={**console_env(work),")
+    source = source.replace("a.output.with_name('y-e12d-cli.json')", "a.output")
+    exec('records = []\n' + source)
+    raise SystemExit(0)
 records = []
 for action, archives, enabled, required, reindex in [
         ('sync', True, True, False, False), ('sync', True, True, True, False),
@@ -47,6 +63,8 @@ for action, archives, enabled, required, reindex in [
                           ('http://999.1.1.1', '', {}),
                           ('http://[bad', '', {}),
                           ('http://127.0.0.1/'+'a'*65536, '', {})]:
+        if isinstance(key, bytes) and os.name == 'nt':
+            continue
         work = root / ('constructor-' + str(len(records)))
         work.mkdir(exist_ok=True)
         (work/'notes').mkdir(exist_ok=True)
@@ -61,8 +79,9 @@ for action, archives, enabled, required, reindex in [
             argv += ['--reindex-missing-vectors']
         for suffix in ['', '-wal', '-shm']:
             (work/('memory.db'+suffix)).unlink(missing_ok=True)
-        result = subprocess.run([sys.executable,'-I',str(wrapper),json.dumps(argv)],cwd=work,
-                                env=dict(HOME=str(work),PATH=os.defpath,FAKE_KEY=key,**env),capture_output=True)
+        result = subprocess.run([sys.executable,'-I','-B','-X','utf8',str(wrapper),
+                                 json.dumps(argv)],cwd=work,
+                                env=console_env(work,FAKE_KEY=key,**env),capture_output=True)
         records.append(dict(argv=argv,config=config,key=key if isinstance(key, str) else '',
                             key_bytes=list(key) if isinstance(key, bytes) else None,
                             env=env,exit=result.returncode,

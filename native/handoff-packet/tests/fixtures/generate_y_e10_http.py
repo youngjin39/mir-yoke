@@ -6,8 +6,10 @@ import sys
 import threading
 from pathlib import Path
 
+os_env = {k: os.environ[k] for k in ('SystemRoot', 'WINDIR')
+          if os.name == 'nt' and k in os.environ}
 setup = {}
-source = Path(__file__).with_name('generate_y_e9.py').read_text()
+source = Path(__file__).with_name('generate_y_e9.py').read_text(encoding='utf-8')
 exec(source.split("wrapper = root / 'capture.py'")[0], setup)
 root, packages, a = (setup[k] for k in ('root', 'packages', 'a'))
 wrapper = root / 'http_probe.py'
@@ -15,6 +17,8 @@ wrapper.write_text('''import pathlib, socket, sys, sysconfig, json
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
 sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+if sys.platform == 'win32':
+    sys.path.append(str(pathlib.Path(sys.base_prefix) / 'DLLs'))
 lookup, connect, connect_ex = socket.getaddrinfo, socket.socket.connect, socket.socket.connect_ex
 def resolve(host, *args, **kwargs):
     assert host == '127.0.0.1', host
@@ -79,8 +83,9 @@ for response in responses:
         thread.start()
         url = f'http://127.0.0.1:{listener.getsockname()[1]}/'
         output = subprocess.check_output(
-            [sys.executable, '-I', str(wrapper), url], cwd=root,
-            env={'HOME': str(root), 'PATH': os.defpath, 'NO_PROXY': '*',
+            [sys.executable, '-I', '-X', 'utf8', str(wrapper), url], cwd=root,
+            env={**os_env, 'HOME': str(root), 'USERPROFILE': str(root),
+                 'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath, 'NO_PROXY': '*',
                  'SSL_CERT_FILE': str(root / 'certifi/cacert.pem')})
         thread.join()
         records.append(dict(wire=list(response), **json.loads(output)))

@@ -1,6 +1,6 @@
 //! Library-only bootstrap architecture evidence and installed-surface validation.
 #![forbid(unsafe_code)]
-use super::authored::{attribute_error, io_error, json_text, read_text};
+use super::authored::{attribute_error, json_text, read_error, read_text};
 use super::{Error, Host};
 use crate::mir_cli::bootstrap_adoption::phase2::load_yaml;
 use serde_json::{Map, Value, json};
@@ -169,7 +169,7 @@ pub fn validate_architecture_evidence(root: &Path) -> Validation {
             ));
             continue;
         }
-        let body = fs::read(&path).map_err(|e| io_error(&path, e))?;
+        let body = fs::read(&path).map_err(|e| read_error(&path, e))?;
         if body.iter().all(|b| b" \t\n\r\x0b\x0c".contains(b)) {
             errors.push(format!("architecture output is empty: {relative}"));
             continue;

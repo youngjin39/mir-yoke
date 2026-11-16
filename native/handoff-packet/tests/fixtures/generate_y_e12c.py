@@ -7,11 +7,13 @@ import sys
 import threading
 from pathlib import Path
 
+os_env = {k: os.environ[k] for k in ('SystemRoot', 'WINDIR')
+          if os.name == 'nt' and k in os.environ}
 scope = {'__file__': __file__}
-source = Path(__file__).with_name('generate_y_e10_http.py').read_text()
+source = Path(__file__).with_name('generate_y_e10_http.py').read_text(encoding='utf-8')
 exec(source.split('responses =')[0], scope)
 root, wrapper, a = (scope[k] for k in ('root', 'wrapper', 'a'))
-prelude = wrapper.read_text().split('backend =')[0]
+prelude = wrapper.read_text(encoding='utf-8').split('backend =')[0]
 wrapper.write_text(prelude + '''
 backend = OmlxHttpBackend(_BackendCfg(sys.argv[1], 'fake', 1,
                                     int(sys.argv[3]), .001, 'NO_KEY', 'Bearer'))
@@ -66,10 +68,11 @@ for mode in ('reuse', 'stale', 'mid', 'close', 'timeout'):
         thread = threading.Thread(target=serve)
         thread.start()
         output = subprocess.check_output(
-            [sys.executable, '-I', str(wrapper),
+            [sys.executable, '-I', '-X', 'utf8', str(wrapper),
              f'http://127.0.0.1:{listener.getsockname()[1]}/', mode,
              str(18446744073709551615 if mode == 'timeout' else 1)], cwd=root,
-            env={'HOME': str(root), 'PATH': os.defpath, 'NO_PROXY': '*',
+            env={**os_env, 'HOME': str(root), 'USERPROFILE': str(root),
+                 'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath, 'NO_PROXY': '*',
                  'SSL_CERT_FILE': str(root / 'certifi/cacert.pem')})
         thread.join()
     records.append(dict(mode=mode, connections=len(count), results=json.loads(output)))
@@ -88,7 +91,8 @@ else:
 ''')
 pem = root / 'empty.pem'
 pem.write_text('not a certificate\n')
-output = subprocess.check_output([sys.executable, '-I', str(wrapper)], cwd=root,
-                                env={'HOME': str(root), 'PATH': os.defpath,
+output = subprocess.check_output([sys.executable, '-I', '-X', 'utf8', str(wrapper)], cwd=root,
+                                env={**os_env, 'HOME': str(root), 'USERPROFILE': str(root),
+                 'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath,
                                      'SSL_CERT_FILE': str(pem)})
 a.output.with_name('y-e12c-pem.json').write_bytes(output)

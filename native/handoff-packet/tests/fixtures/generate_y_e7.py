@@ -15,6 +15,7 @@ p = argparse.ArgumentParser()
 p.add_argument('--scratch', type=Path, required=True)
 p.add_argument('--e12a', action='store_true')
 p.add_argument('--output', type=Path, required=True)
+p.add_argument('--admission-output', type=Path, required=True)
 a = p.parse_args()
 root = a.scratch.resolve() / 'oracle'
 root.mkdir(parents=True, exist_ok=True)
@@ -35,7 +36,9 @@ wrapper = root / 'capture.py'
 wrapper.write_text('''import sys, pathlib, sysconfig, json
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
-sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+sys.path[:] = [str(root / 'src'), str(root), stdlib,
+               str(pathlib.Path(stdlib) / 'lib-dynload'),
+               str(pathlib.Path(sys.base_prefix) / 'DLLs')]
 from mir.core.engine.memory import store
 from mir.core.engine.memory.external_store import ExternalStore
 import sqlite_vec
@@ -84,6 +87,17 @@ if mode.startswith('metadata-'):
     if kind == 'archived':
         c.conn.execute("UPDATE external_documents SET status='archived' WHERE relative_path='1.md'")
 scopes = ('1.md',) if mode == 'scoped' else ('absent',) if mode == 'empty' else ()
+# Trace a separate diagnostic run; frozen results always come from an untraced run.
+events = []
+def trace(frame, event, arg):
+    if frame.f_code.co_name == '_doc_created_ordinal':
+        if event == 'exception':
+            events.append(dict(exception=arg[0].__name__, message=str(arg[1])))
+        elif event == 'return':
+            events.append(dict(ordinal=arg))
+        return trace
+if len(sys.argv) > 4:
+    sys.settrace(trace)
 def embed(texts):
     assert texts == ['absentword' if mode == 'no-scores' else 'apple']
     if mode == 'failed':
@@ -105,8 +119,14 @@ try:
 except Exception as exc:
     print(type(exc).__name__ + ': ' + str(exc), file=sys.stderr)
     raise SystemExit(1)
+finally:
+    sys.settrace(None)
+    if len(sys.argv) > 4:
+        pathlib.Path(sys.argv[4]).write_text(json.dumps(dict(
+            python=sys.version, platform=sys.platform, events=events)), encoding='utf-8')
 '''.replace('PACKAGE_SET', repr(set(['mir', *packages]))))
 records = []
+admission = []
 modes = ['hybrid', 'ties', 'limit', 'zero', 'disabled', 'failed', 'mismatch', 'no-vectors',
              'recent', 'filtered', 'history', 'scoped', 'empty', 'bad-dim', 'empty-embedding',
              'unavailable', 'vec-error', 'fts-error', 'expansion', 'no-scores', 'multiple',
@@ -119,6 +139,11 @@ if a.e12a:
     for enc in ['utf-8-sig', 'utf-16-le', 'utf-16-be', 'utf-32-le', 'utf-32-be']:
         metadata['blob-' + enc] = '{"created":"2026-11-15T12:00:00"}'.encode(enc).hex()
     metadata['blob-invalid'] = 'ff'
+    if sys.platform == 'win32':
+        # Measure both neighbours of the existing native limit in this exact wrapper.
+        for depth in range(2994, 3002):
+            metadata[f'deep-{depth}'] = (
+                '{"created":"2026-11-15","x":' + '['*depth + '0' + ']'*depth + '}')
     modes = ['metadata-' + kind for kind in metadata]
 for mode in modes:
     work = root / mode
@@ -136,13 +161,26 @@ for mode in modes:
     for suffix in ['', '-wal', '-shm']:
         (work / ('memory.db' + suffix)).unlink(missing_ok=True)
     k = 1 if mode in {'limit', 'expansion'} else 0 if mode == 'zero' else 3
-    result = subprocess.run([sys.executable, '-I', '-X', 'utf8', str(wrapper), mode, str(k),
-                             metadata.get(mode.removeprefix('metadata-'), '')],
-                            cwd=work, env=dict(HOME=str(work), PATH=os.defpath),
-                            capture_output=True)
+    argv = [sys.executable, '-I', '-X', 'utf8', str(wrapper), mode, str(k),
+            metadata.get(mode.removeprefix('metadata-'), '')]
+    env = dict(HOME=str(work), USERPROFILE=str(work), PATH=os.defpath)
+    for key in ('SystemRoot', 'WINDIR'):
+        if key in os.environ:
+            env[key] = os.environ[key]
+    result = subprocess.run(argv, cwd=work, env=env, capture_output=True)
+    if mode == 'metadata-deep':
+        diagnostic = work / 'admission.json'
+        for suffix in ['', '-wal', '-shm']:
+            (work / ('memory.db' + suffix)).unlink(missing_ok=True)
+        probe = subprocess.run([*argv, str(diagnostic)], cwd=work, env=env, capture_output=True)
+        assert (probe.returncode, probe.stdout, probe.stderr) == (
+            result.returncode, result.stdout, result.stderr), mode
+        admission.append(dict(mode=mode, **json.loads(diagnostic.read_text(encoding='utf-8'))))
+    # These helper records compare logical print output, not console-entry CRLF bytes.
     records.append(dict(metadata=metadata.get(mode.removeprefix('metadata-')), mode=mode, docs=docs,
                         k=k, exit=result.returncode,
-                        stdout=result.stdout.decode(), stderr=result.stderr.decode()))
+                        stdout=result.stdout.decode('utf-8').replace('\r\n', '\n'),
+                        stderr=result.stderr.decode('utf-8').replace('\r\n', '\n')))
 if not a.e12a:
     for r in records:
         r.pop('metadata')
@@ -152,4 +190,7 @@ else:
     assert len(json.loads(records[0]['stdout'])) == 1, records[0]
     assert json.loads(records[2]['stdout'])[0]['path'] == '0.md', records[2]
     assert json.loads(records[4]['stdout'])[0]['path'] == '1.md', records[4]
-a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n')
+a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n',
+                    encoding='utf-8', newline='\n')
+a.admission_output.write_text(json.dumps(dict(pin=pin, captures=admission), indent=2) + '\n',
+                              encoding='utf-8')

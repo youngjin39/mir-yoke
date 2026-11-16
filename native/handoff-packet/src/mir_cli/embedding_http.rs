@@ -112,6 +112,15 @@ fn protocol(s: impl Into<String>) -> HttpError {
     HttpError::new("RemoteProtocolError", s)
 }
 fn io_error(e: io::Error, phase: &str) -> HttpError {
+    if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
+        eprintln!(
+            "[MIR_E6_DIAG] {}",
+            serde_json::json!({
+                "event":"io", "phase":phase, "kind":format!("{:?}", e.kind()),
+                "os_error":e.raw_os_error(), "error":format!("{e:?}")
+            })
+        );
+    }
     if matches!(
         e.kind(),
         io::ErrorKind::TimedOut | io::ErrorKind::WouldBlock
@@ -370,6 +379,7 @@ fn outgoing_value(value: &str) -> Result<(), HttpError> {
 }
 impl Transport for HttpTransport {
     fn send(&mut self, request: HttpRequest) -> Result<HttpResponse, HttpError> {
+        let started = Instant::now();
         if self.unbounded_timeout {
             return Err(HttpError::new(
                 "OverflowError",
@@ -523,6 +533,15 @@ impl Transport for HttpTransport {
                 .map(|s| String::from_utf8_lossy(s).into_owned())
                 .unwrap_or_default();
             let response_headers = headers(block)?;
+            if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
+                eprintln!(
+                    "[MIR_E6_DIAG] {}",
+                    serde_json::json!({
+                        "event":"http-head", "status":status, "headers":response_headers,
+                        "elapsed_sec":started.elapsed().as_secs_f64()
+                    })
+                );
+            }
             if self.artifact_limit.is_some() && response_headers.contains_key("set-cookie") {
                 return Err(unsupported("Artifact response cookies are not supported"));
             }
@@ -645,6 +664,16 @@ impl Transport for HttpTransport {
             {
                 self.idle = Some((authority.into(), reader, Instant::now()));
             }
+            if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
+                eprintln!(
+                    "[MIR_E6_DIAG] {}",
+                    serde_json::json!({
+                        "event":"http-body", "status":status, "body_bytes":body.len(),
+                        "body":String::from_utf8_lossy(&body),
+                        "elapsed_sec":started.elapsed().as_secs_f64()
+                    })
+                );
+            }
             return Ok(HttpResponse {
                 status,
                 reason,
@@ -748,7 +777,22 @@ mod tests {
         let mut stream = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
         let (_peer, _) = listener.accept().unwrap();
         stream.set_nonblocking(true).unwrap();
-        let error = stream.write_all(&vec![0; 16 * 1024 * 1024]).unwrap_err();
+        let payload = [0; 64 * 1024];
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let mut written = 0;
+        let error = loop {
+            assert!(
+                written < 256 * 1024 * 1024 && Instant::now() < deadline,
+                "socket did not reach WouldBlock within 256 MiB / 5 seconds ({written} bytes)"
+            );
+            let remaining = payload.len().min(256 * 1024 * 1024 - written);
+            match stream.write(&payload[..remaining]) {
+                Ok(0) => panic!("socket stopped accepting bytes without WouldBlock"),
+                Ok(n) => written += n,
+                Err(error) => break error,
+            }
+        };
+        assert_eq!(error.kind(), io::ErrorKind::WouldBlock);
         assert_eq!(io_error(error, "Write").class, "WriteTimeout");
         stream.shutdown(std::net::Shutdown::Write).unwrap();
         let error = stream.write_all(b"closed").unwrap_err();
@@ -791,7 +835,15 @@ mod e10_http_tests {
                     "--nocapture",
                 ])
                 .env_clear()
+                .envs(
+                    ["SystemRoot", "WINDIR"]
+                        .into_iter()
+                        .filter(|_| cfg!(windows))
+                        .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+                )
                 .env("HOME", root.path())
+                .env("USERPROFILE", root.path())
+                .env("PYTHONIOENCODING", "utf-8")
                 .env("NO_PROXY", "127.0.0.1")
                 .env("E12D_CONSTRUCTOR", i.to_string())
                 .envs(
@@ -816,6 +868,7 @@ mod e10_http_tests {
     #[test]
     fn e12c_lifecycle() {
         if std::env::var_os("E12C_WORKER").is_none() {
+            let home = tempfile::tempdir().unwrap();
             assert!(
                 std::process::Command::new(std::env::current_exe().unwrap())
                     .args([
@@ -824,7 +877,17 @@ mod e10_http_tests {
                         "--nocapture"
                     ])
                     .env_clear()
+                    .envs(
+                        ["SystemRoot", "WINDIR"]
+                            .into_iter()
+                            .filter(|_| cfg!(windows))
+                            .filter_map(|key| std::env::var_os(key).map(|value| (key, value)))
+                    )
                     .env("E12C_WORKER", "1")
+                    .env("HOME", home.path())
+                    .env("USERPROFILE", home.path())
+                    .env("PYTHONIOENCODING", "utf-8")
+                    .current_dir(home.path())
                     .env("NO_PROXY", "*")
                     .status()
                     .unwrap()
@@ -969,6 +1032,7 @@ mod e10_http_tests {
     #[test]
     fn frozen_loopback_protocol() {
         if std::env::var_os("E10_HTTP_WORKER").is_none() {
+            let home = tempfile::tempdir().unwrap();
             assert!(
                 std::process::Command::new(std::env::current_exe().unwrap())
                     .args([
@@ -977,7 +1041,17 @@ mod e10_http_tests {
                         "--nocapture"
                     ])
                     .env_clear()
+                    .envs(
+                        ["SystemRoot", "WINDIR"]
+                            .into_iter()
+                            .filter(|_| cfg!(windows))
+                            .filter_map(|key| std::env::var_os(key).map(|value| (key, value)))
+                    )
                     .env("E10_HTTP_WORKER", "1")
+                    .env("HOME", home.path())
+                    .env("USERPROFILE", home.path())
+                    .env("PYTHONIOENCODING", "utf-8")
+                    .current_dir(home.path())
                     .env("NO_PROXY", "*")
                     .status()
                     .unwrap()

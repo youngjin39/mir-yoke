@@ -5,9 +5,78 @@ mod entry_supply;
 use serde_json::Value;
 use std::{fs, process::Command};
 
+fn graph_input(windows: bool) -> &'static str {
+    // Match generate_y_e13.py's Path.write_text newline translation.
+    if windows {
+        "edges: [[x, implemented_in, src/a.rs]]\r\n"
+    } else {
+        "edges: [[x, implemented_in, src/a.rs]]\n"
+    }
+}
+
+fn graph_sha(records: &[Value]) -> &str {
+    records
+        .iter()
+        .flat_map(|r| r["stdout"].as_str().unwrap().split_whitespace())
+        .find_map(|word| word.strip_prefix("sha256="))
+        .unwrap()
+}
+
+#[test]
+fn graph_input_matches_platform_record() {
+    for windows in [false, true] {
+        assert_eq!(
+            digest::sha256(graph_input(windows).as_bytes()),
+            graph_sha(&records(windows)),
+            "windows={windows}"
+        );
+    }
+}
+
+fn records(windows: bool) -> Vec<Value> {
+    // Windows records were captured on the PC with generate_y_e13.py.
+    let fixture = if windows {
+        include_str!("fixtures/y-e13-windows.json")
+    } else {
+        include_str!("fixtures/y-e13.json")
+    };
+    serde_json::from_str(fixture).unwrap()
+}
+
+#[test]
+fn platform_records_preserve_console_bytes() {
+    let unix = records(false);
+    let windows = records(true);
+    assert_eq!(unix.len(), 124);
+    assert_eq!(windows.len(), 121);
+    let exercised: Vec<_> = unix
+        .iter()
+        .filter(|r| {
+            !["local", "probe", "receipt"]
+                .iter()
+                .any(|m| r["mode"] == *m)
+        })
+        .collect();
+    for (reference, captured) in exercised.into_iter().zip(&windows) {
+        for field in ["mode", "argv", "exit"] {
+            assert_eq!(reference[field], captured[field]);
+        }
+        for field in ["stdout", "stderr"] {
+            assert_eq!(
+                reference[field]
+                    .as_str()
+                    .unwrap()
+                    .replace(graph_sha(&unix), graph_sha(&windows))
+                    .replace("\n", "\r\n"),
+                captured[field]
+            );
+        }
+    }
+}
+
 #[test]
 fn frozen_relations_and_project_hooks() {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e13.json")).unwrap();
+    let records = records(cfg!(windows));
     let malformed = entry_supply::hooks_resource(&["check", "--project-root", "."], "{", None);
     assert_eq!(malformed.0, 1);
     assert!(
@@ -20,11 +89,7 @@ fn frozen_relations_and_project_hooks() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         fs::create_dir(root.join("spec")).unwrap();
-        fs::write(
-            root.join("spec/graph.yaml"),
-            "edges: [[x, implemented_in, src/a.rs]]\n",
-        )
-        .unwrap();
+        fs::write(root.join("spec/graph.yaml"), graph_input(cfg!(windows))).unwrap();
         if ["local", "probe", "receipt"]
             .iter()
             .any(|m| r["mode"] == *m)

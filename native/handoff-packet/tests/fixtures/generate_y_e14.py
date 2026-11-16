@@ -1,40 +1,137 @@
 """Freeze bootstrap-adoption from 5f8f69f, isolated and without network."""
 
+import argparse
+import ast
+import importlib
+import io
 import json
 import os
 import re
 import shutil
 import sqlite3
 import subprocess
+import sys
+import tarfile
+import tempfile
 from pathlib import Path
 
-# Reuse only the pinned archive/dependency acquisition, before its wrapper/cases.
-scope = {"__file__": __file__}
-source = Path(__file__).with_name("generate_y_e13.py").read_text()
-exec(source.split("resources =")[0].replace("yaml sqlite_vec", "yaml"), scope)
-a, root, packages = (scope[k] for k in ("a", "root", "packages"))
-with scope["tarfile"].open( fileobj=scope["io"].BytesIO(
-        subprocess.check_output(["git", "archive", scope["pin"], ".claude/hooks/_lib"]) ) ) as tar:
+# Byte-only capture is stdlib-only: execute the exact pinned function, importing
+# no repository package (including no live __init__.py).
+if "--receipt-bytes" in sys.argv:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--receipt-bytes", action="store_true")
+    parser.add_argument("--scratch", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    assert sys.flags.isolated
+    scratch = args.scratch.resolve()
+    scratch.mkdir(parents=True, exist_ok=True)
+    os.environ.update(HOME=str(scratch), USERPROFILE=str(scratch))
+    pin = "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+    repo = Path(__file__).resolve().parents[4]
+    output = args.output.resolve()
+    os.chdir(scratch)
+    source = subprocess.check_output(
+        ["git", "-C", str(repo), "show", f"{pin}:src/mir/cli/bootstrap_adoption.py"],
+        env=dict(os.environ, GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull),
+    ).decode("utf-8")
+    tree = ast.parse(source)
+    function = next(n for n in tree.body if isinstance(n, ast.FunctionDef)
+                    and n.name == "_atomic_write_json")
+    namespace = dict(Path=Path, os=os, json=json, tempfile=tempfile)
+    exec(compile(ast.Module(body=[function], type_ignores=[]),
+                 f"{pin}:bootstrap_adoption.py", "exec"), namespace)
+    payload = {"ready": True, "text": "é\nline"}
+    path = scratch / "receipt.json"
+    namespace["_atomic_write_json"](path, payload)
+    logical = path.read_text(encoding="utf-8")
+    assert json.loads(logical) == payload and "\r" not in logical
+    record = dict(reference_pin=pin, platform=sys.platform, payload=payload,
+                  logical=logical, physical_hex=path.read_bytes().hex())
+    output.write_text(json.dumps(record, ensure_ascii=True) + "\n", encoding="utf-8")
+    raise SystemExit(0)
+
+def path_spellings(path):
+    native = path.removeprefix("\\\\?\\")
+    forms = {path, native, path.replace("\\", "/"), native.replace("\\", "/")}
+    if "\\" in native:
+        forms.add("\\\\?\\" + native)
+    for form in tuple(forms):
+        for _ in range(2):
+            form = form.replace("\\", "\\\\")
+            forms.add(form)
+    return sorted(forms, key=len, reverse=True)
+
+
+def observe_root(text, root):
+    # Longest first prevents raw suffix matches inside escaped/verbatim roots.
+    for spelling in path_spellings(root):
+        text = text.replace(spelling, "{ROOT}")
+    return text
+
+
+def assert_scrubbed(text, paths):
+    for path in paths:
+        assert all(spelling not in text for spelling in path_spellings(path)), (
+            "absolute scratch path remains in captured record")
+
+
+assert sys.flags.isolated
+parser = argparse.ArgumentParser()
+parser.add_argument("--scratch", type=Path, required=True)
+parser.add_argument("--output", type=Path, required=True)
+a = parser.parse_args()
+a.output = a.output.resolve()
+root = a.scratch.resolve() / "oracle"
+root.mkdir(parents=True, exist_ok=True)
+pin = "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+repo = Path(__file__).resolve().parents[4]
+git = shutil.which("git")
+assert git, "Git must be installed for E14"
+git = str(Path(git).resolve())
+os.environ.update(HOME=str(root), USERPROFILE=str(root))
+os.chdir(root)
+git_env = dict(os.environ, GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)
+with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(
+        [git, "-C", str(repo), "archive", pin, "src/mir", ".claude/hooks/_lib",
+         "config/project-hooks-provider.json", "config/adopter-boundary.schema.json",
+         "config/adopter-payload.schema.json"], env=git_env))) as tar:
     tar.extractall(root, filter="data")
+# Copy existing dependencies only; no installation or network resolution.
+packages = ("pydantic pydantic_core typing_extensions typing_inspection annotated_types "
+            "yaml jsonschema attrs attr referencing rpds jsonschema_specifications "
+            "httpx httpcore h11 anyio idna certifi").split()
+for name in packages:
+    path = Path(importlib.import_module(name).__file__)
+    if path.name == "__init__.py":
+        shutil.copytree(path.parent, root / name, dirs_exist_ok=True)
+    else:
+        shutil.copy2(path, root / path.name)
 wrapper = root / "capture.py"
 wrapper.write_text( """import sys, pathlib, sysconfig, socket
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
-sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
-from mir.cli.__main__ import main
-from mir.cli import bootstrap_adoption
-for name, module in list(sys.modules.items()):
-    if name.split('.')[0] in PACKAGE_SET:
-        paths = [module.__file__] if module.__file__ else module.__path__
-        assert all(pathlib.Path(p).resolve().is_relative_to(root) for p in paths), name
+sys.path[:] = [str(root / 'src'), str(root), stdlib,
+               str(pathlib.Path(stdlib) / 'lib-dynload'),
+               str(pathlib.Path(sys.base_prefix) / 'DLLs')]
+def check_modules():
+    for name, module in list(sys.modules.items()):
+        if name.split('.')[0] in PACKAGE_SET:
+            paths = [module.__file__] if module.__file__ else module.__path__
+            assert all(pathlib.Path(p).resolve().is_relative_to(root) for p in paths), name
 def forbidden(*args, **kwargs):
     raise AssertionError('network forbidden')
+from mir.cli.__main__ import main
+from mir.cli import bootstrap_adoption
+check_modules()
 socket.socket = forbidden
 try:
     code = main(sys.argv[1:])
 except Exception as exc:
     print(type(exc).__name__ + ': ' + str(exc), file=sys.stderr)
     code = 1
+finally:
+    check_modules()
 raise SystemExit(code)
 """.replace("PACKAGE_SET", repr(set(["mir", *packages]))) )
 keys = [ "bootstrap_start_gate", "project_profile", "identity_finalize",
@@ -91,7 +188,7 @@ for mode, tail in cases:
     for name, body in files.items():
         path = work / name
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(body)
+        path.write_text(body, encoding="utf-8")
     sql = ""
     if mode in ["memory-hit", "memory-miss"]:
         sql = ( "CREATE TABLE external_archives(id,slug,root_path);"
@@ -111,21 +208,31 @@ for mode, tail in cases:
     if mode == "receipt-dir":
         (work / ".mir/bootstrap-receipt.json").unlink()
         (work / ".mir/bootstrap-receipt.json").mkdir()
-    env = dict( HOME=str(work),
-        PATH=os.defpath, MIR_CAPABILITY_NATIVE_ARTIFACTS="1" if mode == "local" else "0",
+    env = dict( HOME=str(work), USERPROFILE=str(work), PYTHONIOENCODING="utf-8",
+        PATH=str(Path(git).parent), MIR_CAPABILITY_NATIVE_ARTIFACTS="1" if mode == "local" else "0",
         GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull, )
-    subprocess.run(["git", "init", "-q", str(work)], env=env, check=True)
+    for name in ("SystemRoot", "WINDIR"):
+        if name in os.environ:
+            env[name] = os.environ[name]
+    subprocess.run([git, "init", "-q", str(work)], env=env, check=True)
     if mode != "untracked":
-        subprocess.run(["git", "-C", str(work), "add", "."], env=env, check=True)
+        subprocess.run([git, "-C", str(work), "add", "."], env=env, check=True)
     argv = ["bootstrap-adoption", *tail]
-    result = subprocess.run( [scope["sys"].executable, "-I", str(wrapper), *argv],
+    result = subprocess.run( [sys.executable, "-I", "-B", "-X", "utf8", str(wrapper), *argv],
         cwd=work, env=env, capture_output=True, timeout=20, )
     receipt = work / ".mir/bootstrap-receipt.json"
     records.append( dict( mode=mode, files=files, sql=sql, argv=argv,
-            exit=result.returncode, stdout=result.stdout.decode().replace(str(work), "{ROOT}"),
+            exit=result.returncode, stdout=observe_root(result.stdout.decode("utf-8"), str(work)),
             stderr=re.sub( r"\.bootstrap-receipt\.json\.[^\']+", ".bootstrap-receipt.json.<TEMP>",
-                result.stderr.decode().replace(str(work), "{ROOT}"),
-            ), receipt=receipt.read_text() if receipt.is_file() else None, ) )
+                observe_root(result.stderr.decode("utf-8"), str(work)),
+            ), receipt=observe_root(receipt.read_text(encoding="utf-8"), str(work))
+                if receipt.is_file() else None, ) )
+    if sys.platform == "win32":
+        records[-1]["receipt_physical_hex"] = (
+            receipt.read_bytes().hex() if receipt.is_file() else None)
+assert len(records) == 42
 assert records[2]["exit"] == 0 and records[2]["receipt"] != "old receipt\n"
 assert records[9]["exit"] == 2 and records[9]["receipt"] == "old receipt\n"
-a.output.write_text(json.dumps(records, separators=(",", ":")) + "\n")
+captured = json.dumps(records, separators=(",", ":")) + "\n"
+assert_scrubbed(captured, [str(a.scratch.resolve()), str(root)])
+a.output.write_text(captured, encoding="utf-8")

@@ -1,10 +1,9 @@
 //! Library-only bootstrap capability selection, activation and lock evidence.
 #![forbid(unsafe_code)]
-use super::authored::{io_error, json_text, python_str, read_text, value_error};
+use super::authored::{json_text, python_str, read_error, read_text, value_error};
 use super::content::truthy;
 use super::{Error, Host, release};
 use crate::executor_execute::repr;
-use crate::mir_cli::bootstrap_adoption::wire;
 use crate::plugin_scripts::ontology_check::{Doc, object};
 use crate::python_json::{self as py, Object, Text, Value as PyValue};
 use serde_json::{Value, json};
@@ -136,7 +135,7 @@ pub fn activate_capabilities(
         "--profile",
         profile,
         "--project-root",
-        &wire(root),
+        &root.display().to_string(),
         "--apply",
         "--json",
     ]
@@ -216,7 +215,7 @@ pub fn capability_lock_evidence(
             "capability lock requires source.commit and non-empty plugins",
         ));
     }
-    let hash = crate::digest::sha256(&fs::read(&path).map_err(|e| io_error(&path, e))?);
+    let hash = crate::digest::sha256(&fs::read(&path).map_err(|e| read_error(&path, e))?);
     let mut plugins: Vec<_> = lock["plugins"]
         .as_object()
         .into_iter()
@@ -295,7 +294,7 @@ pub fn finalize_capabilities(
     let argv = [
         "finalize",
         "--project-root",
-        &wire(root),
+        &root.display().to_string(),
         "--apply",
         "--after-restart",
         "--json",
@@ -358,7 +357,7 @@ pub fn compile_adopter_agent_catalog(root: &Path, profile: &str) -> Result<Vec<S
         return Ok(vec![]);
     };
     if !release::is_safe_existing_project_file(root, &path)
-        || crate::digest::sha256(&fs::read(&path).map_err(|e| io_error(&path, e))?) != *expected
+        || crate::digest::sha256(&fs::read(&path).map_err(|e| read_error(&path, e))?) != *expected
     {
         return Ok(vec![]);
     }

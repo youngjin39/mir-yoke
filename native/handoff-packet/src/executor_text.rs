@@ -199,7 +199,54 @@ pub enum IoOperation {
     Win32,
     Read,
     Handle,
+    Write,
+    Stat,
+    Lstat,
+    Scandir,
+    Listdir,
+    Mkdir,
+    Rmdir,
+    Unlink,
+    Rename,
+    Replace,
+    Chmod,
+    Readlink,
+    Symlink,
 }
+/// Object supplied to Python's filesystem call; str arguments retain their spelling.
+#[derive(Clone, Copy)]
+pub enum FilenameArgument {
+    Path,
+    Str,
+}
+impl FilenameArgument {
+    #[cfg(any(windows, test))]
+    pub(crate) fn windows_points(self, path: &Path) -> Vec<u32> {
+        os_points(path.as_os_str())
+            .into_iter()
+            .map(|point| match (self, point) {
+                (Self::Path, 47) => 92,
+                _ => point,
+            })
+            .collect()
+    }
+}
+
+#[cfg(any(windows, test))]
+pub(crate) fn windows_error_code(
+    error: &std::io::Error,
+    operation: crate::executor_text::IoOperation,
+) -> (&'static str, &'static str, i32) {
+    use IoOperation::*;
+    let code = error.raw_os_error().unwrap_or(87);
+    let (class, errno) = crate::adoption_fs::windows_errno(code);
+    match operation {
+        Read | Write | Handle => (class, "Errno", errno),
+        Win32 | Stat | Lstat | Scandir | Listdir | Mkdir | Rmdir | Unlink | Rename | Replace
+        | Chmod | Readlink | Symlink => (class, "WinError", code),
+    }
+}
+
 pub(crate) fn io_operation(
     error: io::Error,
     path: Option<&Path>,
@@ -208,7 +255,13 @@ pub(crate) fn io_operation(
 ) -> String {
     #[cfg(windows)]
     {
-        crate::adoption_fs::windows_error(&error, path, destination, operation)
+        crate::adoption_fs::windows_error(
+            &error,
+            path,
+            destination,
+            operation,
+            FilenameArgument::Str,
+        )
     }
     #[cfg(not(windows))]
     {

@@ -1,16 +1,68 @@
 """Capture pinned schema readers in isolated roots; no network or database."""
+import argparse
+import importlib
+import io
 import json
+import os
+import shutil
 import subprocess
+import sys
+import tarfile
 from pathlib import Path
 
-scope = {"__file__": __file__}
-exec(Path(__file__).with_name("generate_y_e13.py").read_text().split("resources =")[0], scope)
-a, root, packages = (scope[k] for k in ("a", "root", "packages"))
+assert sys.flags.isolated
+parser = argparse.ArgumentParser()
+parser.add_argument('--scratch', type=Path, required=True)
+parser.add_argument('--output', type=Path, required=True)
+a = parser.parse_args()
+assert os.name != 'nt' or a.output.name == 'y-e16-windows.json'
+root = a.scratch.resolve() / 'oracle'
+root.mkdir(parents=True, exist_ok=True)
+pin = '5f8f69f94e09b64c5e4d07d329ed17797c35e6cb'
+git = shutil.which('git')
+assert git, 'git must be on PATH before isolation'
+env = {k: os.environ[k] for k in ('SystemRoot', 'WINDIR') if k in os.environ}
+env.update(HOME=str(root), USERPROFILE=str(root), PATH=str(Path(git).parent),
+           GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull,
+           PYTHONIOENCODING='utf-8')
+with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(
+        [git, '-C', str(Path(__file__).resolve().parents[4]), 'archive', pin,
+         'src/mir', 'config/adopter-boundary.schema.json',
+         'config/adopter-payload.schema.json'], env=env))) as tar:
+    tar.extractall(root, filter='data')
+packages = ('pydantic pydantic_core typing_extensions typing_inspection annotated_types '
+            'yaml sqlite_vec jsonschema attrs attr referencing rpds jsonschema_specifications '
+            'httpx httpcore h11 anyio idna certifi').split()
+for name in packages:
+    path = Path(importlib.import_module(name).__file__)
+    if path.name == '__init__.py':
+        shutil.copytree(path.parent, root / name, dirs_exist_ok=True)
+    else:
+        shutil.copy2(path, root / path.name)
+
+
+def capture(work, mode):
+    child_env = env | {'HOME': str(work), 'USERPROFILE': str(work)}
+    out = subprocess.run([sys.executable, '-I', str(wrapper), mode],
+                         cwd=work, env=child_env, capture_output=True, check=True)
+    assert not out.stderr, out.stderr
+    result = json.loads(out.stdout)
+    if 'message' in result:
+        # Decode JSON first, then replace repr-escaped roots before display roots.
+        spelling = str(work.resolve())
+        result['message'] = result['message'].replace(
+            spelling.replace('\\', '\\\\'), '{ROOT}').replace(spelling, '{ROOT}')
+        assert spelling not in result['message']
+    return result
+
+
 wrapper = root / "capture.py"
 wrapper.write_text('''import sys, pathlib, sysconfig, socket, json
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
-sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+sys.path[:] = [str(root / 'src'), str(root), stdlib,
+               str(pathlib.Path(stdlib) / 'lib-dynload'),
+               str(pathlib.Path(sys.base_prefix) / 'DLLs')]
 from mir.core.adoption import boundary, slim
 for name, module in list(sys.modules.items()):
     if name.split('.')[0] in PACKAGE_SET:
@@ -66,16 +118,12 @@ for mode in ['boundary', 'payload']:
         work = root / f'{mode}-{case}'
         (work / 'config').mkdir(parents=True, exist_ok=True)
         path = 'config/adopter-boundary.json' if mode == 'boundary' else 'config/p.json'
-        (work / path).write_text(document)
+        (work / path).write_text(document, encoding='utf-8')
         if schema is not None:
-            (work / 'config/s').write_text(schema)
+            (work / 'config/s').write_text(schema, encoding='utf-8')
         if case == 'directory':
             (work / 'config/s').mkdir(exist_ok=True)
-        out = subprocess.run([str(scope['sys'].executable), '-I', str(wrapper), mode],
-                             cwd=work, env={'HOME': str(work), 'PATH': '/usr/bin:/bin'},
-                             capture_output=True, check=True)
-        result = json.loads(out.stdout.replace(str(work).encode(), b'{ROOT}'))
-        assert not out.stderr, out.stderr
+        result = capture(work, mode)
         records.append(dict(mode=mode, case=case, document=document, schema=schema,
                             refused=case in ['bad-schema', 'unsupported', 'type-fail', 'false',
                                             'wide-error', 'unicode-error',
@@ -87,7 +135,7 @@ a.output.write_text('[\n' + ',\n'.join(json.dumps(r, sort_keys=True) for r in re
 # Keep the original 42 records byte-identical; capture shipped composite schemas separately.
 shipped = []
 for mode in ['boundary', 'payload']:
-    schema = (root / f'config/adopter-{mode}.schema.json').read_text()
+    schema = (root / f'config/adopter-{mode}.schema.json').read_text(encoding='utf-8')
     value = dict(schema_version=1, **{'$schema': 's'})
     value.update(dict(provider_owners=[dict(slug='test', repository_types=['test'])],
                       provider_markers=['a'], provider_text_markers=[], ephemeral_globs=['x'],
@@ -101,21 +149,21 @@ for mode in ['boundary', 'payload']:
                  {'files': [dict(path='', sha256='bad', classification='bad', disposition='bad')]},
                  {'files': [dict(path='a', sha256='bad', classification='starter',
                                  disposition='remove')]}])
-    for valid in [True, False, *mutations, {'extra': 1}]:
-        work = root / f'shipped-{mode}-{valid}'
+    for index, valid in enumerate([True, False, *mutations, {'extra': 1}]):
+        work = root / f'shipped-{mode}-{index}'
         (work / 'config').mkdir(parents=True, exist_ok=True)
         document = json.dumps(value | valid if isinstance(valid, dict) else
                               value if valid else {'schema_version': 1, '$schema': 's'})
         path = 'config/adopter-boundary.json' if mode == 'boundary' else 'config/p.json'
-        (work / path).write_text(document)
-        (work / 'config/s').write_text(schema)
-        out = subprocess.run([str(scope['sys'].executable), '-I', str(wrapper), mode],
-                             cwd=work, env={'HOME': str(work), 'PATH': '/usr/bin:/bin'},
-                             capture_output=True, check=True)
-        assert not out.stderr, out.stderr
-        result = json.loads(out.stdout.replace(str(work).encode(), b'{ROOT}'))
+        (work / path).write_text(document, encoding='utf-8')
+        (work / 'config/s').write_text(schema, encoding='utf-8')
+        result = capture(work, mode)
         assert ('value' in result) == (valid is True), result
         shipped.append(dict(mode=mode, case=f'shipped-{valid}', document=document,
                             schema=schema, result=result))
-a.output.with_name('y-e16b.json').write_text(
-    json.dumps(shipped, sort_keys=True, separators=(',', ':')) + '\n')
+if os.name == 'nt':
+    # PC-only capture: never infer Windows errno or separators from Mac records.
+    a.output.write_text(json.dumps(records + shipped, sort_keys=True) + '\n', encoding='utf-8')
+else:
+    a.output.with_name('y-e16b.json').write_text(
+        json.dumps(shipped, sort_keys=True, separators=(',', ':')) + '\n', encoding='utf-8')

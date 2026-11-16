@@ -6,19 +6,55 @@ use std::{
     net::TcpListener,
     process::Command,
     thread,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 #[test]
 fn frozen_pull_console_provider() {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e8.json")).unwrap();
+    pull(None, false);
+}
+#[test]
+fn diagnostics_preserve_console() {
+    pull(Some("bad-json"), true);
+    pull(Some("status"), true);
+}
+#[test]
+#[should_panic(expected = "missing E8 reference")]
+fn missing_record_fails_explicitly() {
+    records("s10-missing-record-do-not-create");
+}
+fn records(name: &str) -> Vec<Value> {
+    let suffix = if cfg!(windows) { "-windows" } else { "" };
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(format!("tests/fixtures/{name}{suffix}.json"));
+    let text = fs::read_to_string(&path).unwrap_or_else(|e| {
+        panic!(
+            "missing E8 reference {}: {e}; run generate_y_e8.py on this platform",
+            path.display()
+        )
+    });
+    serde_json::from_str(&text).unwrap()
+}
+fn pull(only: Option<&str>, diagnostic: bool) {
+    let records = records("y-e8");
     for r in records {
         let mode = r["mode"].as_str().unwrap();
+        if only.is_some_and(|selected| selected != mode) {
+            continue;
+        }
+        let diagnostic_enabled = diagnostic || std::env::var("MIR_E6_DIAG").as_deref() == Ok("1");
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         fs::create_dir(root.join("notes")).unwrap();
         for (i, doc) in r["docs"].as_array().unwrap().iter().enumerate() {
-            fs::write(root.join(format!("notes/{i}.md")), doc.as_str().unwrap()).unwrap();
+            // Match the generator's Python text-mode write before indexing bytes.
+            let doc = doc.as_str().unwrap();
+            let bytes = if cfg!(windows) {
+                doc.replace('\n', "\r\n")
+            } else {
+                doc.to_owned()
+            };
+            fs::write(root.join(format!("notes/{i}.md")), bytes).unwrap();
         }
         let c = store::connect(
             &root.join("memory.db"),
@@ -91,68 +127,9 @@ fn frozen_pull_console_provider() {
         fs::write(root.join("harness_a.toml"), format!(
             "[memory]\nvector_mode='optional'\n[memory.embedding]\nenabled={}\nfingerprint='synthetic-v1'\nbase_url='http://{}/v1/'\nmodel='synthetic-model'\napi_key_env='SYNTHETIC_KEY'\n",
             mode != "disabled", listener.local_addr().unwrap())).unwrap();
-        let mode_owned = mode.to_owned();
-        let server = thread::spawn(move || {
-            let deadline = Instant::now() + Duration::from_secs(2);
-            loop {
-                match listener.accept() {
-                    Ok((mut stream, _)) => {
-                        // macOS accepted sockets inherit the listener's O_NONBLOCK.
-                        stream.set_nonblocking(false).unwrap();
-                        stream
-                            .set_read_timeout(Some(Duration::from_secs(2)))
-                            .unwrap();
-                        let mut header = Vec::new();
-                        let mut byte = [0];
-                        while !header.ends_with(b"\r\n\r\n") {
-                            stream.read_exact(&mut byte).unwrap();
-                            header.push(byte[0]);
-                        }
-                        let header = String::from_utf8(header).unwrap();
-                        assert!(header.starts_with("POST /v1/embeddings HTTP/1.1\r\n"));
-                        assert!(
-                            header
-                                .to_ascii_lowercase()
-                                .contains("authorization: bearer fake-only\r\n")
-                        );
-                        let size: usize = header
-                            .lines()
-                            .find_map(|s| {
-                                s.to_ascii_lowercase()
-                                    .strip_prefix("content-length:")
-                                    .map(|v| v.trim().parse().unwrap())
-                            })
-                            .unwrap();
-                        let mut body = vec![0; size];
-                        stream.read_exact(&mut body).unwrap();
-                        let response = if mode_owned == "bad-json" {
-                            "{".into()
-                        } else {
-                            serde_json::json!({"data":[{"embedding": ([vec![1.0],vec![0.0;1023]].concat())}]}).to_string()
-                        };
-                        let status = if mode_owned == "status" {
-                            "503 Service Unavailable"
-                        } else {
-                            "200 OK"
-                        };
-                        let _ = write!(
-                            stream,
-                            "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",
-                            response.len()
-                        );
-                        return vec![serde_json::from_slice::<Value>(&body).unwrap()];
-                    }
-                    Err(e)
-                        if e.kind() == std::io::ErrorKind::WouldBlock
-                            && Instant::now() < deadline =>
-                    {
-                        thread::sleep(Duration::from_millis(5))
-                    }
-                    Err(_) => return vec![],
-                }
-            }
-        });
-        let out = Command::new(env!("CARGO_BIN_EXE_mir"))
+        let (cancel, server) = synthetic_server(listener, mode);
+        let mut command = Command::new(env!("CARGO_BIN_EXE_mir"));
+        command
             .args(
                 r["argv"]
                     .as_array()
@@ -161,27 +138,273 @@ fn frozen_pull_console_provider() {
                     .map(|s| s.as_str().unwrap()),
             )
             .env_clear()
+            .envs(
+                ["SystemRoot", "WINDIR"]
+                    .into_iter()
+                    .filter(|_| cfg!(windows))
+                    .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+            )
             .env("HOME", &root)
+            .env("USERPROFILE", &root)
+            .env("PYTHONIOENCODING", "utf-8")
             .env("SYNTHETIC_KEY", "fake-only")
-            .current_dir(&root)
-            .output()
-            .unwrap();
+            .env("MIR_E6_DIAG", if diagnostic_enabled { "1" } else { "" })
+            .current_dir(&root);
+        let mut out = bounded_output(&mut command);
+        let _ = cancel.send(());
         let requests = server.join().unwrap();
+        let mut diagnostics = Vec::new();
+        if diagnostic_enabled {
+            eprintln!(
+                "[MIR_E6_DIAG] {}",
+                serde_json::json!({
+                    "event":"native-console", "mode":mode, "exit":out.status.code(),
+                    "stdout":String::from_utf8_lossy(&out.stdout),
+                    "stderr":String::from_utf8_lossy(&out.stderr), "requests":requests
+                })
+            );
+            out.stderr = out
+                .stderr
+                .split_inclusive(|b| *b == b'\n')
+                .filter(|line| {
+                    if let Some(data) = line.strip_prefix(b"[MIR_E6_DIAG] ") {
+                        diagnostics.push(serde_json::from_slice::<Value>(data).unwrap());
+                        eprint!("{}", String::from_utf8_lossy(line));
+                        false
+                    } else {
+                        true
+                    }
+                })
+                .flatten()
+                .copied()
+                .collect();
+        }
+        if diagnostic {
+            let data = diagnostics
+                .iter()
+                .find(|d| d["event"] == "pull-search")
+                .unwrap_or_else(|| panic!("missing pull-search: {out:?}"));
+            let reason = data["error"].as_str().unwrap();
+            assert!(
+                reason.contains(if mode == "status" {
+                    "503"
+                } else {
+                    "Expecting property name enclosed in double quotes"
+                }),
+                "{data}"
+            );
+        }
         assert_eq!(
             out.status.code(),
             Some(r["exit"].as_i64().unwrap() as i32),
             "{mode}: {out:?}"
         );
         assert_eq!(
-            String::from_utf8(out.stdout).unwrap(),
-            r["stdout"],
+            out.stdout,
+            r["stdout"].as_str().unwrap().as_bytes(),
             "{mode}"
         );
         assert_eq!(
-            String::from_utf8(out.stderr).unwrap(),
-            r["stderr"],
+            out.stderr,
+            r["stderr"].as_str().unwrap().as_bytes(),
             "{mode}"
         );
         assert_eq!(serde_json::json!(requests), r["requests"], "{mode}");
     }
+}
+
+fn synthetic_server(
+    listener: TcpListener,
+    mode: &str,
+) -> (std::sync::mpsc::Sender<()>, thread::JoinHandle<Vec<Value>>) {
+    let mode_owned = mode.to_owned();
+    let (cancel, cancelled) = std::sync::mpsc::channel();
+    let server_started = std::time::Instant::now();
+    let server = thread::spawn(move || {
+        let mut requests = Vec::new();
+        loop {
+            match accept_request(&listener, &cancelled) {
+                Ok((mut stream, _)) => {
+                    eprintln!(
+                        "[MIR_E6_DIAG] connection={} request_after={:?}",
+                        requests.len() + 1,
+                        server_started.elapsed()
+                    );
+                    // macOS accepted sockets inherit the listener's O_NONBLOCK.
+                    stream.set_nonblocking(false).unwrap();
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(2)))
+                        .unwrap();
+                    let mut header = Vec::new();
+                    let mut byte = [0];
+                    while !header.ends_with(b"\r\n\r\n") {
+                        stream.read_exact(&mut byte).unwrap();
+                        header.push(byte[0]);
+                    }
+                    let header = String::from_utf8(header).unwrap();
+                    assert!(header.starts_with("POST /v1/embeddings HTTP/1.1\r\n"));
+                    assert!(
+                        header
+                            .to_ascii_lowercase()
+                            .contains("authorization: bearer fake-only\r\n")
+                    );
+                    let size: usize = header
+                        .lines()
+                        .find_map(|s| {
+                            s.to_ascii_lowercase()
+                                .strip_prefix("content-length:")
+                                .map(|v| v.trim().parse().unwrap())
+                        })
+                        .unwrap();
+                    let mut body = vec![0; size];
+                    stream.read_exact(&mut body).unwrap();
+                    let response = if mode_owned == "bad-json" {
+                        "{".into()
+                    } else {
+                        serde_json::json!({"data":[{"embedding": ([vec![1.0],vec![0.0;1023]].concat())}]}).to_string()
+                    };
+                    let status = if mode_owned == "status" {
+                        "503 Service Unavailable"
+                    } else {
+                        "200 OK"
+                    };
+                    let written = write!(
+                        stream,
+                        "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",
+                        response.len()
+                    );
+                    eprintln!(
+                        "[MIR_E6_DIAG] connection={} response_after={:?} write={written:?}",
+                        requests.len() + 1,
+                        server_started.elapsed()
+                    );
+                    requests.push(serde_json::from_slice::<Value>(&body).unwrap());
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::Interrupted => return requests,
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                Err(e) => panic!("accept failed: {e:?}"),
+            }
+        }
+    });
+    (cancel, server)
+}
+
+fn accept_request(
+    listener: &TcpListener,
+    cancelled: &std::sync::mpsc::Receiver<()>,
+) -> std::io::Result<(std::net::TcpStream, std::net::SocketAddr)> {
+    let result = listener.accept();
+    if result
+        .as_ref()
+        .is_err_and(|e| e.kind() == std::io::ErrorKind::WouldBlock)
+    {
+        return match cancelled.recv_timeout(std::time::Duration::from_millis(5)) {
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => result,
+            _ => {
+                eprintln!("[MIR_E6_DIAG] accept_exit=child-completed");
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::Interrupted,
+                    "child completed",
+                ))
+            }
+        };
+    }
+    eprintln!(
+        "[MIR_E6_DIAG] accept_exit={:?}",
+        result.as_ref().map(|_| "request-received")
+    );
+    result
+}
+
+fn bounded_output(command: &mut Command) -> std::process::Output {
+    let stdout = tempfile::NamedTempFile::new().unwrap();
+    let stderr = tempfile::NamedTempFile::new().unwrap();
+    let mut child = command
+        .stdin(std::process::Stdio::null())
+        .stdout(stdout.reopen().unwrap())
+        .stderr(stderr.reopen().unwrap())
+        .spawn()
+        .unwrap();
+    let started = std::time::Instant::now();
+    let status = loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            break status;
+        }
+        if started.elapsed() > std::time::Duration::from_secs(180) {
+            child.kill().unwrap();
+            child.wait().unwrap();
+            panic!("synthetic child exceeded 180s watchdog");
+        }
+        thread::sleep(std::time::Duration::from_millis(10));
+    };
+    eprintln!(
+        "[MIR_E6_DIAG] child_elapsed_sec={}",
+        started.elapsed().as_secs_f64()
+    );
+    std::process::Output {
+        status,
+        stdout: fs::read(stdout.path()).unwrap(),
+        stderr: fs::read(stderr.path()).unwrap(),
+    }
+}
+
+#[test]
+fn delayed_request_and_no_request_shutdown() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let address = listener.local_addr().unwrap();
+    let (cancel, cancelled) = std::sync::mpsc::channel();
+    let server = thread::spawn(move || {
+        loop {
+            match accept_request(&listener, &cancelled) {
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                result => break result,
+            }
+        }
+    });
+    thread::sleep(std::time::Duration::from_secs(2 + 1));
+    let client = std::net::TcpStream::connect(address);
+    let received = server.join().unwrap();
+    assert!(
+        client.is_ok() && received.is_ok(),
+        "delayed child lost listener: {client:?} {received:?}"
+    );
+    drop(cancel);
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let (cancel, cancelled) = std::sync::mpsc::channel();
+    cancel.send(()).unwrap();
+    let started = std::time::Instant::now();
+    assert_eq!(
+        accept_request(&listener, &cancelled).unwrap_err().kind(),
+        std::io::ErrorKind::Interrupted
+    );
+    assert!(started.elapsed() < std::time::Duration::from_secs(1));
+}
+
+#[test]
+fn synthetic_server_answers_reconnects_until_client_completes() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let address = listener.local_addr().unwrap();
+    let (cancel, server) = synthetic_server(listener, "bad-json");
+    let responses: Vec<_> = (0..2)
+        .map(|_| -> std::io::Result<String> {
+            let mut client = std::net::TcpStream::connect(address)?;
+            client.set_read_timeout(Some(Duration::from_secs(2)))?;
+            client.write_all(b"POST /v1/embeddings HTTP/1.1\r\nAuthorization: Bearer fake-only\r\nContent-Length: 2\r\n\r\n{}")?;
+            let mut response = String::new();
+            client.read_to_string(&mut response)?;
+            Ok(response)
+        })
+        .collect();
+    let _ = cancel.send(());
+    let requests = server.join().unwrap();
+    for (connection, response) in responses.into_iter().enumerate() {
+        assert_eq!(
+            response.unwrap_or_else(|e| panic!("connection {} failed: {e}", connection + 1)),
+            "HTTP/1.1 200 OK\r\nContent-Length: 1\r\nConnection: close\r\n\r\n{"
+        );
+    }
+    assert_eq!(requests, vec![serde_json::json!({}); 2]);
 }

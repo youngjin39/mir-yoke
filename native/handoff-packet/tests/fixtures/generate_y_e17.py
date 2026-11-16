@@ -1,17 +1,61 @@
 """Y-E17A acquisition: pinned local boundaries; no real provider or database."""
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
 
 scope = {"__file__": __file__}
-exec(Path(__file__).with_name("generate_y_e13.py").read_text().split("resources =")[0], scope)
+exec(Path(__file__).with_name("generate_y_e13.py").read_text(encoding="utf-8")
+     .split("resources =")[0], scope)
 a, root, packages = (scope[k] for k in ("a", "root", "packages"))
+if os.name == 'nt':
+    assert scope['sys'].version_info[:2] == (3, 12), 'PC oracle requires Python 3.12'
+    assert a.output.name == 'y-e17-windows.json', 'do not overwrite the Mac record'
+env = scope['env'] | {'PYTHONIOENCODING': 'utf-8'}
+
+
+def observe_project_roots(result, work):
+    # Decode JSON first. Record exactly str(root), never wire()/as_posix().
+    for argv in result['calls']:
+        index = argv.index('--project-root') + 1
+        assert argv[index] == str(work), ('--project-root spelling', argv[index], str(work))
+        argv[index] = '{ROOT}'
+    return result
+
+def observe_capture_round(records, scratch):
+    # Only validated structured roots and their matching argv may vary by round.
+    import copy
+    from pathlib import PureWindowsPath
+
+    observed = copy.deepcopy(records)
+    for i, record in enumerate(observed):
+        assert record['platform'] == 'win32'
+        assert record['reference_pin'] == '5f8f69f94e09b64c5e4d07d329ed17797c35e6cb'
+        expected = str(PureWindowsPath(scratch) / 'oracle' / f'case-{i}')
+        assert PureWindowsPath(expected).is_absolute(), 'absolute round root required'
+        assert record['project_root'] == expected, 'project_root spelling'
+        observe_project_roots(record, expected)
+        record['project_root'] = '{ROOT}'
+    return observed
+
+
+def run_oracle(argv, **kwargs):
+    result = subprocess.run(argv, capture_output=True, **kwargs)
+    if result.returncode:
+        raise RuntimeError(
+            f"oracle child argv={argv!r} exit={result.returncode}\n"
+            f"stdout={result.stdout.decode('utf-8', errors='backslashreplace')}\n"
+            f"stderr={result.stderr.decode('utf-8', errors='backslashreplace')}")
+    return result
+
+
 wrapper = root / "capture.py"
 wrapper.write_text('''import sys, pathlib, sysconfig, socket, json, io, contextlib, types, os
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
-sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload'),
+               str(pathlib.Path(sys.base_prefix) / 'DLLs')]
 from mir.cli import bootstrap, capability
 from mir.core.capabilities import manager as impl
 from mir.core.capabilities.config import load_capability_config
@@ -19,7 +63,10 @@ for name, module in list(sys.modules.items()):
     if name.split('.')[0] in PACKAGE_SET:
         paths = [module.__file__] if module.__file__ else module.__path__
         assert all(pathlib.Path(p).resolve().is_relative_to(root) for p in paths), name
-assert set(os.environ) <= {'HOME', 'PATH', 'LC_CTYPE', '__CF_USER_TEXT_ENCODING'}
+assert {k.upper() for k in os.environ} <= {k.upper() for k in {
+                           'HOME', 'USERPROFILE', 'PATH', 'SystemRoot', 'WINDIR',
+                           'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_GLOBAL',
+                           'PYTHONIOENCODING', 'LC_CTYPE', '__CF_USER_TEXT_ENCODING'}}
 def forbidden(*args, **kwargs):
     raise AssertionError('external action forbidden')
 socket.socket = forbidden
@@ -92,8 +139,8 @@ print(json.dumps(dict(result=result, stdout=out.getvalue(), stderr=err.getvalue(
 lock = dict(schema_version=1, source={'commit': 'a' * 40}, profile='code_app',
             plugins={'mir-core': {}}, agents={}, registration={'status': 'active'})
 config = subprocess.check_output(
-    ['/usr/bin/git', 'show', scope['pin'] + ':config/capability-sources.json'],
-    env={'HOME': str(root), 'PATH': '/usr/bin:/bin'})
+    [scope['git'], '-C', str(Path(__file__).resolve().parents[4]),
+     'show', scope['pin'] + ':config/capability-sources.json'], env=env)
 records = []
 cases = [
     dict(mode='activate', case='streams', code=7, out=' out\n', err='err\n'),
@@ -149,12 +196,18 @@ for i, r in enumerate(cases):
     for name, body in files.items():
         path = work / name
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(body)
-    out = subprocess.run([scope['sys'].executable, '-I', str(wrapper), json.dumps(r)],
-                         cwd=work, env={'HOME': str(work), 'PATH': '/usr/bin:/bin'},
-                         capture_output=True, check=True)
+        path.write_text(body, encoding='utf-8')
+    out = run_oracle([scope['sys'].executable, '-I', '-B', '-X', 'utf8', str(wrapper),
+                          json.dumps(r)],
+                         cwd=work, env=env | {'HOME': str(work), 'USERPROFILE': str(work)})
     assert not out.stderr, out.stderr
-    result = json.loads(out.stdout.replace(str(work).encode(), b'{ROOT}'))
+    result = json.loads(out.stdout)
+    if os.name == 'nt':
+        # Retain raw Windows argv and its input spelling; only the replay observes tokens.
+        result.update(project_root=str(work), reference_pin=scope['pin'], platform='win32')
+        observe_project_roots(json.loads(out.stdout), work)  # assert exact forwarding
+    else:
+        result = observe_project_roots(result, work)
     records.append(r | dict(files=files, **result))
 assert records[0]['result']['value'] == ['failed', {'reason': 'out\nerr'}]
 assert records[2]['result']['value'][0] == 'failed'
@@ -162,4 +215,5 @@ assert records[3]['result']['value'][0] == 'ready'
 assert records[25]['result']['value']['status'] == 'verified'
 assert records[23]['result']['value']['runtimes']['claude-code']['status'] == 'session-stale'
 assert records[-1]['result']['class'] == 'CapabilityError'
-a.output.write_text('[\n' + ',\n'.join(json.dumps(r, sort_keys=True) for r in records) + '\n]\n')
+a.output.write_text('[\n' + ',\n'.join(json.dumps(r, sort_keys=True) for r in records) + '\n]\n',
+                    encoding='utf-8')

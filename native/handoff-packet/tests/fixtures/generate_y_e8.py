@@ -10,6 +10,8 @@ import sys
 import tarfile
 from pathlib import Path
 
+os_env = {k: os.environ[k] for k in ('SystemRoot', 'WINDIR')
+          if os.name == 'nt' and k in os.environ}
 assert sys.flags.isolated
 p = argparse.ArgumentParser()
 p.add_argument('--scratch', type=Path, required=True)
@@ -35,6 +37,8 @@ wrapper.write_text('''import sys, pathlib, sysconfig, json, os, http.server, thr
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
 sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+if sys.platform == 'win32':
+    sys.path.append(str(pathlib.Path(sys.base_prefix) / 'DLLs'))
 import socket, ipaddress
 lookup, connect = socket.getaddrinfo, socket.socket.connect
 def resolve(host, *a, **kw):
@@ -49,6 +53,28 @@ from mir.core.engine.memory import store
 from mir.core.engine.memory.backends import omlx_http
 from mir.core.engine.memory.external_store import ExternalStore
 import sqlite_vec
+import os, json, time
+if os.environ.get('MIR_E6_DIAG') == '1':
+    import httpx
+    send = httpx.Client.send
+    def observed(self, *args, **kwargs):
+        started = time.monotonic()
+        data = dict(event='reference-http')
+        try:
+            response = send(self, *args, **kwargs)
+            data.update(status=response.status_code, body_hex=response.content.hex())
+            return response
+        except Exception as exc:
+            chain = []
+            while exc is not None:
+                chain.append(repr(exc))
+                exc = exc.__cause__ or exc.__context__
+            data['errors'] = chain
+            raise
+        finally:
+            data['elapsed_sec'] = time.monotonic() - started
+            print('[MIR_E6_DIAG] ' + json.dumps(data), file=sys.stderr)
+    httpx.Client.send = observed
 for name, module in list(sys.modules.items()):
     if name.split('.')[0] in PACKAGE_SET:
         paths = [module.__file__] if module.__file__ else module.__path__
@@ -78,7 +104,7 @@ if mode in {'vec-error', 'both-error'}:
 c.conn.commit()
 c.conn.close()
 if mode == 'stale':
-    (work / 'notes/2.md').write_text('changed')
+    (work / 'notes/2.md').write_text('changed', encoding='utf-8')
 requests = []
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
@@ -98,7 +124,7 @@ config += 'enabled='+('false' if mode == 'disabled' else 'true')+'\\n'
 config += 'fingerprint="synthetic-v1"\\n'
 config += 'base_url="http://127.0.0.1:'+str(server.server_port)+'/v1/"\\n'
 config += 'model="synthetic-model"\\napi_key_env="SYNTHETIC_KEY"\\n'
-(work / 'harness_a.toml').write_text(config)
+(work / 'harness_a.toml').write_text(config, encoding='utf-8')
 try:
     code = main(sys.argv[2:])
 except Exception as exc:
@@ -108,9 +134,9 @@ finally:
     server.shutdown()
     thread.join()
     server.server_close()
-(work / 'requests.json').write_text(json.dumps(requests))
+(work / 'requests.json').write_text(json.dumps(requests), encoding='utf-8')
 raise SystemExit(code)
-'''.replace('PACKAGE_SET', repr(set(['mir', *packages]))))
+'''.replace('PACKAGE_SET', repr(set(['mir', *packages]))), encoding='utf-8')
 records = []
 for mode in ['hybrid', 'ties', 'limit', 'text', 'disabled', 'no-vectors', 'no-archives',
              'mismatch', 'bad-json', 'status', 'vec-error', 'fts-error', 'both-error', 'stale']:
@@ -119,19 +145,30 @@ for mode in ['hybrid', 'ties', 'limit', 'text', 'disabled', 'no-vectors', 'no-ar
     (work / 'notes').mkdir(exist_ok=True)
     docs = ['alpha apple orchard.\n', 'beta ocean harbor.\n', 'gamma desert dunes.\n']
     for i, text in enumerate(docs):
-        (work / f'notes/{i}.md').write_text(text)
+        (work / f'notes/{i}.md').write_text(text, encoding='utf-8')
     for suffix in ['', '-wal', '-shm']:
         (work / ('memory.db' + suffix)).unlink(missing_ok=True)
     argv = ['context', 'pull', 'apple', '--db', 'memory.db', '--k', '1' if mode == 'limit' else '3']
     if mode != 'text':
         argv.append('--json')
-    result = subprocess.run([sys.executable, '-I', '-X', 'utf8', str(wrapper), mode, *argv],
-                            cwd=work, env=dict(HOME=str(work), PATH=os.defpath,
-                                              SYNTHETIC_KEY='fake-only'), capture_output=True)
+    result = subprocess.run([sys.executable, '-I', '-X', 'utf8', '-B', str(wrapper), mode, *argv],
+                            cwd=work, env=dict(os_env, HOME=str(work), USERPROFILE=str(work),
+                                              PYTHONIOENCODING="utf-8", PATH=os.defpath,
+                                              SYNTHETIC_KEY='fake-only',
+                                              MIR_E6_DIAG=os.environ.get('MIR_E6_DIAG', '')),
+                            capture_output=True)
+    if os.environ.get('MIR_E6_DIAG') == '1':
+        print(json.dumps(dict(event='reference-console', mode=mode, exit=result.returncode,
+                              stdout=result.stdout.decode('utf-8'),
+                              stderr=result.stderr.decode('utf-8'))), file=sys.stderr)
+        result.stderr = b''.join(line for line in result.stderr.splitlines(keepends=True)
+                                 if not line.startswith(b'[MIR_E6_DIAG] '))
     records.append(dict(mode=mode, docs=docs, argv=argv, exit=result.returncode,
-                        stdout=result.stdout.decode(), stderr=result.stderr.decode(),
-                        requests=json.loads((work / 'requests.json').read_text())))
+                        stdout=result.stdout.decode("utf-8"), stderr=result.stderr.decode("utf-8"),
+                        requests=json.loads((work / 'requests.json').read_text(encoding='utf-8'))))
 assert len(json.loads(records[0]['stdout'])['chunks']) == 3, records[0]
+assert json.loads(records[0]['stdout'])['degraded'] is False, records[0]
+assert records[0]['requests'], records[0]
 assert json.loads(records[8]['stdout'])['degraded'] is True
 assert not records[6]['requests']
-a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n')
+a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n', encoding='utf-8')

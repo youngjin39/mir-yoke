@@ -9,7 +9,9 @@ fn frozen_artifact_redirects() {
         let home = tempfile::tempdir().unwrap();
         let worker = Command::new(std::env::current_exe().unwrap()).args(["--exact",
             "mir_cli::artifact_redirect_tests::frozen_artifact_redirects", "--nocapture"])
-            .env_clear().env("HOME", home.path()).env("E14C_WORKER", "1").env("HTTP_PROXY", "http://127.0.0.1:1").env("NO_PROXY", "127.0.0.1")
+            .env_clear()
+                .envs(["SystemRoot", "WINDIR"].into_iter().filter(|_| cfg!(windows))
+                    .filter_map(|key| std::env::var_os(key).map(|value| (key, value)))).env("HOME", home.path()).env("USERPROFILE", home.path()).env("PYTHONIOENCODING", "utf-8").env("E14C_WORKER", "1").env("HTTP_PROXY", "http://127.0.0.1:1").env("NO_PROXY", "127.0.0.1")
             .current_dir(home.path()).output().unwrap();
         assert!(worker.status.success(), "worker status: {}\nstdout:\n{}\nstderr:\n{}", worker.status, String::from_utf8_lossy(&worker.stdout), String::from_utf8_lossy(&worker.stderr));
         return;

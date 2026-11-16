@@ -157,6 +157,10 @@ impl Host for ProductionHost {
         for part in absolute.components() {
             match part {
                 Component::CurDir => (),
+                // A Windows prefix is not an absolute anchor by itself: in
+                // particular, \\?\C: cannot be canonicalized before RootDir.
+                // UNC prefixes likewise need their (possibly implicit) root.
+                Component::Prefix(_) => resolved.push(part),
                 Component::ParentDir => {
                     resolved.pop();
                 }
@@ -191,6 +195,13 @@ impl Host for ProductionHost {
                     }
                 }
             }
+        }
+        #[cfg(windows)]
+        if !matches!(absolute.components().next(), Some(Component::Prefix(p)) if p.kind().is_verbatim())
+        {
+            // pathlib preserves an explicitly supplied verbatim prefix, but
+            // ordinary drive/UNC paths keep their ordinary spelling.
+            resolved = crate::supply::plain(resolved);
         }
         Ok(resolved)
     }
