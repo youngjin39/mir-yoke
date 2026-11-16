@@ -153,6 +153,27 @@ fn ledger_temp_failure_cleans_its_own_file() {
     assert!(ledger.is_dir());
 }
 
+#[cfg(unix)]
+#[test]
+fn ledger_replace_directory_error_has_both_filenames() {
+    let root = tempfile::tempdir().unwrap();
+    let ledger = root.path().join("tdd.json");
+    fs::create_dir(&ledger).unwrap();
+    names(&["candidate.tmp"]);
+    // A real renameat failure beyond the permission-denied regression.
+    assert_eq!(
+        write_ledger(&ledger, "updated").unwrap_err(),
+        format!(
+            "IsADirectoryError: [Errno {}] Is a directory: {} -> {}",
+            libc::EISDIR,
+            repr(&root.path().join("candidate.tmp").to_string_lossy()),
+            repr(&ledger.to_string_lossy())
+        )
+    );
+    assert!(ledger.is_dir());
+    assert!(!root.path().join("candidate.tmp").exists());
+}
+
 fn directory_alias(link: &Path, target: &Path) {
     #[cfg(unix)]
     std::os::unix::fs::symlink(target, link).unwrap();

@@ -1463,13 +1463,15 @@ fn write_ledger(file: &Path, rendered: &str) -> Result<()> {
     let written = (|| -> Result<()> {
         output
             .write_all(rendered.as_bytes())
-            .map_err(|e| crate::executor_text::io_error(e, &source, IoOperation::Handle))?;
+            .map_err(|e| crate::executor_text::io_operation(e, None, None, IoOperation::Handle))?;
         let replacement = crate::adoption_fs::Move::prepare(
             &resolved_parent,
             &resolved_parent.join(&name),
             &resolved_file,
         )
-        .map_err(|e| crate::executor_text::io_error(e, file, IoOperation::Win32))?;
+        .map_err(|e| {
+            crate::executor_text::io_operation(e, Some(&source), Some(file), IoOperation::Win32)
+        })?;
         #[cfg(test)]
         BEFORE_LEDGER_REPLACE.with(|hook| {
             if let Some(hook) = hook.borrow_mut().take() {
@@ -1479,9 +1481,9 @@ fn write_ledger(file: &Path, rendered: &str) -> Result<()> {
         if !crate::adoption_fs::owns_file(&pinned, &name, &output) {
             return Err("OSError: ledger temporary file identity changed".into());
         }
-        replacement
-            .rename()
-            .map_err(|e| crate::executor_text::io_error(e, file, IoOperation::Win32))
+        replacement.rename().map_err(|e| {
+            crate::executor_text::io_operation(e, Some(&source), Some(file), IoOperation::Win32)
+        })
     })();
     // Keep the creation fd open: a substituted entry must never acquire
     // the original inode through reuse while cleanup checks its identity.
