@@ -4763,7 +4763,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e17.py",
-      "sha256": "0ff2d4e93009cc7117327d739cd5e8ee38d1f95261daf33dc91d854d3e9db384"
+      "sha256": "47e6011160bbe454e5d08dfc3a8f1894f37e5a536b02a04c0b1216ec7edb28c3"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4943,7 +4943,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e9_console.py",
-      "sha256": "6dd43df64911a4484de76cd6dc5feeb53788d646bd996a0ecbc3a8b9e2d25da3"
+      "sha256": "1adf90791277d17bad2eff1de216c4fadc37decd5d8c23190178f2f48e57ebb0"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5530,6 +5530,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e12a-metadata-windows.json",
+      "sha256": "5583ce352049475b05ec775df795379d3d3b1379560b4923497d7084130e4a75"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e12a-metadata.json",
       "sha256": "ab2ed680a79fd2febfb9ac7a69a9a2421cbbafe241048fb3f0ecca695ae405ff"
     },
@@ -5614,6 +5620,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e14b-windows.json",
+      "sha256": "3798491c75557de53a97f4adb60c86db262129ea20c4ec5165181f53521f1ef5"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e14b.json",
       "sha256": "cbcde843e62a689e41a3ba5f795798ebfec96637e6312afc4096b9e3f1a81df4"
     },
@@ -5622,6 +5634,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e14c.json",
       "sha256": "00e238ec6ef5ff72fe79818d5675c9186beadab141a22e069ebe4d3ecb86ab73"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e15-windows.json",
+      "sha256": "5424a1ae461852334ba8a5b9ec4fb3c9eb7ec499a04d5784c05b2a3d6aabd4a0"
     },
     {
       "classification": "template-maintainer-tool",
