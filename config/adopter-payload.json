@@ -3167,7 +3167,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_status.rs",
-      "sha256": "ff5893f7a854d364ccf558ec41c3b6a08f0481afa95949d86198fedafc5066c0"
+      "sha256": "4acc4bcccc19b32ab6d416bcb810e00cf1463814d91d46c36be24c15f15cd789"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3281,7 +3281,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/bootstrap_adoption_main.rs",
-      "sha256": "ccba1df5fa5c2e5f66b29398af9158d1cc0fb3286ee7e912435d7f4b563020ba"
+      "sha256": "210a7c8b6659f258b32ccab6723b01b70883aed583c38e26ad6c32634b03e075"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3815,7 +3815,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/runtime_verify.rs",
-      "sha256": "17e84d4073b4475a4a0ef2a39617e60888dbba69fc1e03c96b94f32b2402e34e"
+      "sha256": "fe050f2fdbd756492d872f4048c0be8da0588bffad9862789c35f8610ed8c2ea"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4139,13 +4139,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_status.rs",
-      "sha256": "7f8e81f2c0503a65bd9462f2c9269d4781ccdcf77fbca78a5864eabed8d9ad6f"
+      "sha256": "c4487251a8fcabe643b35af8b37cc0c682938ae6ead7c0587a47462f62fbfe9b"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_sweep.rs",
-      "sha256": "942c45cf19c538dcbc9df042ac42ff5b0ffdaaca322d5a02fdcfd7f9c4fa8ca8"
+      "sha256": "2f98e61dbcfa0e09437daec2da21db830d43a6f293ea8983be56dd18a326bcb3"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4828,6 +4828,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/select_unify2_s5.py",
+      "sha256": "0367f1c40172f02c49694672509fc5d027ad92fa364bea3b247a2174de843a79"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/stage-e01-core-adoption.json",
       "sha256": "e6d4a7288ad66e7f9920172e441ad210828d46f9af5e585e23bcbef62cf77541"
     },
@@ -4860,6 +4866,18 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/test_executor_sweep_git.py",
       "sha256": "4d54239ff78af7ecd15b4b2f6ff9aab103db7eec9005bca351d8abbc3fcbe175"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/unify2_c_recursion_windows.json",
+      "sha256": "c4e0b5d8cf0b5b7a8c11727cb52f113bb9f5c53a7b3821b599c3c8eb8e37daf0"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/unify2_s3_sweep_windows.json",
+      "sha256": "f6a2d31f0c0e1db5d337de1ed0fc79601d718794b07149b00e425a1cad241068"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5022,6 +5040,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w2/b10-pure-helpers.json",
       "sha256": "a8644e42ab40f01ff4d540e67ab20d1f26af8aa770457428af44b7ca75e5dddc"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w2/b11-ingest-windows.json",
+      "sha256": "90bd3debcf2e73086b0fe1441d233a78c5024d90450f2a5efcf9c880e495f721"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5206,8 +5230,20 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w2/capture_unify2_s4.py",
+      "sha256": "0a478ab445ed5445644d593a08879d853cb1009c34ab09c64fb3bb905b7cab5b"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w2/cli-root.json",
       "sha256": "2bb3fab6d8cb07342643e085b3e12e5f562c0c0beef37fdd041c003f67a631e8"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w2/unify2-s4.json",
+      "sha256": "29164133416bde8cf9db4d1a34c7ce1885af96d65d29d00ed438f9a1f584a0da"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5470,6 +5506,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e2-windows.json",
+      "sha256": "62b379693a268752c9c9ff636149ebfe0c2006c0f0b7b27d4971c7b310f4ee2a"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e2.json",
       "sha256": "7d09324a007e14f243690192d825baa608db79c398e2fef29d2549f08eac7f25"
     },
@@ -5567,7 +5609,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_cli_b30_adoption_main.rs",
-      "sha256": "1effe95a9fccecc849a7f1003dedb6ec303b9fb1727535c9b8b02d98f955fbcc"
+      "sha256": "b1e9ff6456ed521b22e8b2bf45bcaa100db364b9420e592e299a5089f4be34af"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5693,7 +5735,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_core_b11.rs",
-      "sha256": "c8a7beed9349d5b57cf7b1950e2d35f4bc95c08c68803c6d0cac3cf336166bfc"
+      "sha256": "db2187045eb16fff7d93d671aa9910693b168f5596a723770d79c9e5ddbf34e0"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5801,7 +5843,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e2.rs",
-      "sha256": "c202a363f29fb10e3a845deb5e8bade273ff52aa9cb90638aa9fd07d2fd0aef9"
+      "sha256": "fd9adb4feb795223f2b638bb96a6101df2e53bd4a6a2bc4e5f9a09f88a5da290"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5813,13 +5855,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e4.rs",
-      "sha256": "62d2d4803f25ff7cda59d37d7dbf1a2d4775710ad530c4bd9f656818226898dd"
+      "sha256": "dc66984580876e4d8e68757c8461504c9358dc46f56bc90c31c365ea46931f41"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e5.rs",
-      "sha256": "093ebd8d6ae318190a2cbaebd8ab997795faf6c397a19c9fd612a82fd9e59181"
+      "sha256": "5ab2210ca5db3dfdd234bd8265090a5c63cb9279985dcdc14f0eb487731b604d"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5855,7 +5897,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/native_hooks.rs",
-      "sha256": "a6d348e18e30a72386a8ec2b78e215f0a652a08a8a475a46ec1b8c6a512fbb12"
+      "sha256": "b0c2005411f94f07686b19a430073d02f157dd4c5b8cc9b34c2f7549f37ffd34"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5992,6 +6034,18 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/support/unify2_c_recursion.rs",
+      "sha256": "048db602c11eade006b7f5abc5d55bda462eda93f18d198dc5c5fabf88e9c3ba"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/support/unify2_s6.rs",
+      "sha256": "c13918dff1de48c8ec26b57818da1842db07347068655c4e1f743e93abed3ca8"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/support/worktree_errors.rs",
       "sha256": "c40933944b1a81cf4e87d3af9f61832515f0ca26a0b390060378b8bea1594cc0"
     },
@@ -6035,7 +6089,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/yoke_local_brief.rs",
-      "sha256": "eae4593803030e8268e572ab0bacd311ac1bcce2f87ee3a7e405b88554acc055"
+      "sha256": "9e6650239d641795baf3276b8f70e0a575e43bea055a216b9af1ef7e27d330dd"
     },
     {
       "classification": "template-maintainer-tool",
@@ -8262,6 +8316,18 @@
       "disposition": "remove",
       "path": "tests/fixtures/generate_executor_status.py",
       "sha256": "939a232da8ebc085cce65eb29ce4446a740cc506a471b9bddfee141bf3c6397f"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/generate_unify2_c_recursion.py",
+      "sha256": "82ea539913ff8e0a84cff2b0f62c4460a8ca24e26983f3ab53637fba61cb049b"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/generate_unify2_s3_sweep.py",
+      "sha256": "6c1730c2004efdf165ad979c8136b8812474d6fff031edacf38043d43fa69260"
     },
     {
       "classification": "template-maintainer-tool",
