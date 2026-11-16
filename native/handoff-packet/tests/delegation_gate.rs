@@ -31,6 +31,140 @@ fn remaining(path: &Path) {
     }
 }
 
+#[cfg(windows)]
+fn directory_users(path: &Path, capacity: usize) -> std::io::Result<Vec<usize>> {
+    use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
+    use windows_sys::{
+        Wdk::Storage::FileSystem::{FileProcessIdsUsingFileInformation, NtQueryInformationFile},
+        Win32::{Storage::FileSystem::*, System::IO::IO_STATUS_BLOCK},
+    };
+    let directory = fs::OpenOptions::new()
+        .access_mode(FILE_READ_ATTRIBUTES)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+        .open(path)?;
+    // ULONG count followed by pointer-aligned ULONG_PTR process IDs. The
+    // diagnostic's own runner PID is expected because of this scoped handle.
+    let mut buffer = vec![0usize; capacity];
+    let mut iosb = IO_STATUS_BLOCK::default();
+    // SAFETY: valid synchronous handle, aligned initialized buffer, exact byte
+    // capacity, live IO_STATUS_BLOCK; no pointers escape this call.
+    let status = unsafe {
+        NtQueryInformationFile(
+            directory.as_raw_handle(),
+            &mut iosb,
+            buffer.as_mut_ptr().cast(),
+            std::mem::size_of_val(buffer.as_slice()) as u32,
+            FileProcessIdsUsingFileInformation,
+        )
+    };
+    if status < 0 {
+        return Err(std::io::Error::other(format!(
+            "NtQueryInformationFile status={status:#x}"
+        )));
+    }
+    let count = buffer.first().copied().unwrap_or_default() as u32 as usize;
+    if count >= buffer.len() || iosb.Information < (count + 1) * size_of::<usize>() {
+        return Err(std::io::Error::other("incomplete directory user list"));
+    }
+    Ok(buffer[1..count + 1].to_vec())
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_directory_users() {
+    use std::io::Read;
+    if std::env::var("MIR_GATE_HOLDER").as_deref() == Ok("1") {
+        std::io::stderr().write_all(b"R").unwrap();
+        std::io::stdin().read_to_end(&mut Vec::new()).unwrap();
+        return;
+    }
+    let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir);
+    let directory = tempfile::tempdir_in(base).unwrap();
+    let mut child = Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "windows_directory_users", "--nocapture"])
+        .current_dir(directory.path())
+        .env("HOME", directory.path())
+        .env("MIR_GATE_HOLDER", "1")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let pid = child.id() as usize;
+    let ready = child.stderr.take().unwrap().read_exact(&mut [0u8]);
+    let close = fs::remove_dir(directory.path());
+    let users = directory_users(directory.path(), 1024);
+    let short = directory_users(directory.path(), 0);
+    let missing = directory_users(&directory.path().join("absent"), 1024);
+    drop(child.stdin.take());
+    let status = child.wait().unwrap();
+    drop(child);
+    directory.close().unwrap();
+    assert!(ready.is_ok() && status.success());
+    assert_eq!(close.unwrap_err().raw_os_error(), Some(32));
+    assert!(
+        users.as_ref().is_ok_and(|users| users.contains(&pid)),
+        "{users:?}"
+    );
+    assert!(
+        short
+            .unwrap_err()
+            .to_string()
+            .starts_with("NtQueryInformationFile status=")
+    );
+    assert_eq!(missing.unwrap_err().kind(), std::io::ErrorKind::NotFound);
+}
+
+#[test]
+fn spawn_boundary_probe() {
+    if std::env::var("MIR_GATE_DIAG").as_deref() != Ok("1") {
+        return;
+    }
+    let start = Instant::now();
+    for stream in ["stdin", "stdout", "stderr"] {
+        eprintln!(
+            "[gate-diag] probe=pipe stream={stream} stage=begin elapsed_us={}",
+            start.elapsed().as_micros()
+        );
+        let pipe = std::io::pipe().unwrap();
+        eprintln!(
+            "[gate-diag] probe=pipe stream={stream} stage=done elapsed_us={}",
+            start.elapsed().as_micros()
+        );
+        drop(pipe);
+    }
+    let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir);
+    let directory = tempfile::tempdir_in(base).unwrap();
+    for piped in [false, true] {
+        let stdio = || if piped { Stdio::piped() } else { Stdio::null() };
+        let mut command = Command::new(env!("CARGO_BIN_EXE_delegation-gate"));
+        command
+            .arg("--mir-warmup")
+            .current_dir(directory.path())
+            .env("HOME", directory.path())
+            .stdin(stdio())
+            .stdout(stdio())
+            .stderr(stdio());
+        eprintln!(
+            "[gate-diag] probe=warmup piped={piped} stage=spawn_call elapsed_us={} command={command:?}",
+            start.elapsed().as_micros()
+        );
+        let child = command.spawn().unwrap();
+        eprintln!(
+            "[gate-diag] probe=warmup piped={piped} stage=spawn_done elapsed_us={} gate_pid={}",
+            start.elapsed().as_micros(),
+            child.id()
+        );
+        assert!(child.wait_with_output().unwrap().status.success());
+    }
+    directory.close().unwrap();
+}
+
 #[test]
 fn diagnostic_opt_in() {
     let cases: Vec<Value> =
@@ -48,6 +182,8 @@ fn diagnostic_opt_in() {
         let log = String::from_utf8(output.stderr).unwrap();
         for stage in [
             "spawn_begin",
+            "command_ready",
+            "spawn_call",
             "spawn_done",
             "stdin_closed",
             "wait_done",
@@ -132,7 +268,8 @@ fn decision_fixtures() {
             fs::write(&overlay, raw).unwrap();
         }
         diag("spawn_begin", "grandchildren=none_by_source_audit");
-        let mut child = Command::new(env!("CARGO_BIN_EXE_delegation-gate"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_delegation-gate"));
+        command
             .current_dir(root)
             .env("HOME", root)
             .env_remove("CLAUDE_PROJECT_DIR")
@@ -144,9 +281,18 @@ fn decision_fixtures() {
             )
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .unwrap();
+            .stderr(Stdio::piped());
+        diag(
+            "command_ready",
+            &format!(
+                "program={:?} argv={:?} child_cwd={:?}",
+                command.get_program(),
+                command.get_args().collect::<Vec<_>>(),
+                command.get_current_dir()
+            ),
+        );
+        diag("spawn_call", "stdio=piped,piped,piped");
+        let mut child = command.spawn().unwrap();
         let gate_pid = child.id();
         diag("spawn_done", &format!("gate_pid={gate_pid}"));
         let input = case["raw"]
@@ -203,6 +349,8 @@ fn decision_fixtures() {
                 &format!("gate_pid={gate_pid} error={error:?} ({error})"),
             );
             if std::env::var("MIR_GATE_DIAG").as_deref() == Ok("1") {
+                #[cfg(windows)]
+                eprintln!("[gate-diag] directory_users root={path:?} runner_pid={} gate_pid={gate_pid} result={:?}", std::process::id(), directory_users(&path, 1024));
                 remaining(&path);
             }
             panic!(
