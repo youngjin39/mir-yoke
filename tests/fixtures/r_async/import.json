@@ -1,0 +1,10 @@
+{
+  "reference_pin": "5906400250462673691bbb72b66db91d0cb4e556",
+  "import": {
+    "message": "No module named 'mir.core.worker'",
+    "name": "mir.core.worker",
+    "registered": false,
+    "status": "error",
+    "type": "ModuleNotFoundError"
+  }
+}
