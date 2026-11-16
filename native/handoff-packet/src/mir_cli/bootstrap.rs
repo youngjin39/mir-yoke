@@ -106,7 +106,14 @@ pub trait Host: Sized {
     fn replace(&mut self, source: &Path, destination: &Path) -> Result<(), Error> {
         tempfile::TempPath::try_from_path(source)
             .and_then(|p| p.persist(destination).map_err(|e| e.error))
-            .map_err(|e| authored::io_error(destination, e))
+            .map_err(|e| {
+                let mut error = authored::io_error(source, e);
+                error.message.push_str(&format!(
+                    " -> {}",
+                    crate::executor_execute::repr(&destination.to_string_lossy())
+                ));
+                error
+            })
     }
     fn resolve(&mut self, path: &Path) -> Result<PathBuf, Error>;
     fn expanduser(&mut self, path: &Path) -> Result<PathBuf, Error>;

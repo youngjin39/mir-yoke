@@ -63,7 +63,7 @@ fn invalid(errors: &mut Vec<String>, invalid_config: &mut bool, error: Error) {
     *invalid_config = true;
 }
 fn snapshot(root: &Path) -> Result<BTreeMap<String, String>, Error> {
-    crate::mir_cli::changes::snapshot_project(root).map_err(|error| authored::io_error(root, error))
+    crate::mir_cli::changes::snapshot_project_with_error(root, authored::io_error)
 }
 fn unlink(path: &Path, missing_ok: bool) -> Result<(), Error> {
     match fs::remove_file(path) {
