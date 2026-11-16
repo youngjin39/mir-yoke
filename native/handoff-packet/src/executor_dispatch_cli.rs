@@ -481,26 +481,20 @@ pub fn dispatch(
     })?;
     let registry =
         JobRegistry::open(&db).map_err(|e| crate::executor_text::registry_error(e, &db))?;
-    let previous = registry
-        .connection()
-        .query_row(
-            "SELECT ai_run_metadata,dispatch_options_json FROM jobs WHERE job_id=?",
-            [&id],
-            |r| {
-                Ok((
-                    r.get::<_, Option<String>>(0)?,
-                    r.get::<_, Option<String>>(1)?,
-                ))
-            },
-        )
-        .ok();
-    let mut metadata = previous
-        .as_ref()
-        .and_then(|(m, _)| m.as_ref())
-        .and_then(|s| serde_json::from_str::<Value>(s).ok())
-        .filter(Value::is_object)
-        .unwrap_or_else(|| json!({}));
-    let mut ids = strings(&metadata["dispatch_ids"]);
+    let previous = executor_registry::saved_dispatch_metadata(registry.connection(), &id)
+        .map_err(|e| resume_uncaught(args, e))?;
+    let mut metadata = executor_registry::saved_dict(
+        previous
+            .as_ref()
+            .map_or(&crate::python_json::Value::Null, |(m, _)| m),
+    )
+    .map_err(|e| resume_uncaught(args, e))?;
+    let mut ids = metadata["dispatch_ids"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|v| v.as_str().map(str::to_owned))
+        .collect::<Vec<_>>();
     if let Some(old) = metadata["dispatch_id"].as_str()
         && !ids.iter().any(|s| s == old)
     {
@@ -509,8 +503,16 @@ pub fn dispatch(
     if !ids.contains(&dispatch_id) {
         ids.push(dispatch_id.clone());
     }
-    metadata["dispatch_id"] = json!(dispatch_id);
-    metadata["dispatch_ids"] = json!(ids);
+    if let crate::python_json::Value::Object(object) = &mut metadata {
+        object.insert(
+            "dispatch_id".into(),
+            crate::python_json::Value::from(&json!(dispatch_id)),
+        );
+        object.insert(
+            "dispatch_ids".into(),
+            crate::python_json::Value::from(&json!(ids)),
+        );
+    }
     let mut pending = json!({"job_id":id,"change_id":change,"category":args["category"].as_str().unwrap_or("unclassified"),"family":args["family"],"repo_root":root,"codex_args":codex_args,"dispatch_brief_path":brief,"allow_harness_self_modify":args["allow_harness_self_modify"]==true,"timeout_seconds":args["timeout"].as_i64().unwrap_or(600),"status":"running","started_at":utc_now(),"cancel_requested":false,"resume_count":0});
     let mut errors = Vec::new();
     let work = (|| -> Result<_> {
@@ -549,7 +551,7 @@ pub fn dispatch(
             let saved = previous
                 .as_ref()
                 .and_then(|(_, s)| s.as_ref())
-                .and_then(|s| serde_json::from_str::<Value>(s).ok());
+                .map(crate::python_json::Value::to_serde);
             emit_event(
                 bridge,
                 "job_resumed",
@@ -630,7 +632,7 @@ pub fn dispatch(
             )?;
         }
         registry
-            .update_ai_run_metadata(&id, &metadata)
+            .update_python_metadata(&id, &metadata)
             .map_err(|e| crate::executor_text::registry_error(e, &db))?;
         for key in ["model", "reasoning_effort"] {
             if let Some(points) = crate::executor_execute::argument_codepoints(args, key)
@@ -893,12 +895,12 @@ pub fn dispatch(
         };
         // The initial write preserves the previous attempt's context; the
         // completed attempt replaces it with only its result and dispatch IDs.
-        metadata = json!({
+        let metadata = json!({
             "model_id": outcome.model_id.as_ref().map_or(json!(model), |v| json!(v)),
             "tokens_used": outcome.tokens_used.iter().cloned().collect::<BTreeMap<_, _>>(),
             "mcp_protocol": outcome.mcp_protocol,
             "dispatch_id": dispatch_id,
-            "dispatch_ids": metadata["dispatch_ids"],
+            "dispatch_ids": ids,
         });
         registry
             .update_ai_run_metadata(&id, &metadata)

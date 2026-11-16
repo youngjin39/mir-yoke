@@ -96,13 +96,26 @@ pub fn prepare(row: &Value, defaults: &Value, timeout: Option<Value>) -> Result<
     }
     let saved = match row.get("dispatch_options_json").filter(|v| !v.is_null()) {
         Some(value) => {
-            let source = value
-                .as_str()
-                .ok_or_else(|| invalid("stored dispatch options must be a JSON object"))?;
-            // Validate Python diagnostics first; retain strict execution
-            // representation so unsupported numeric/Unicode values never become defaults.
-            let decoded = crate::python_json::parse(source).map_err(|e| invalid(&e.to_string()))?;
-            let options: Value = serde_json::from_str(source).map_err(Error::Json)?;
+            let blob = value["__saved_blob"].as_array().map(|v| {
+                v.iter()
+                    .filter_map(Value::as_u64)
+                    .map(|n| n as u8)
+                    .collect::<Vec<_>>()
+            });
+            let raw = if let Some(bytes) = &blob {
+                rusqlite::types::ValueRef::Blob(bytes)
+            } else if let Some(text) = value.as_str() {
+                rusqlite::types::ValueRef::Text(text.as_bytes())
+            } else {
+                return Err(invalid("stored dispatch options must be a JSON object"));
+            };
+            let decoded = crate::executor_registry::saved_json(raw).map_err(|e| {
+                invalid(
+                    e.split_once(": ")
+                        .map_or(e.as_str(), |(_, message)| message),
+                )
+            })?;
+            let options = decoded.to_serde();
             if !options.is_object() {
                 return Err(invalid("stored dispatch options must be a JSON object"));
             }
@@ -296,10 +309,11 @@ impl PreparedResume {
             return Err(invalid("resume requires reauthorization"));
         }
         let id = text(&self.row, "job_id")?;
-        let mut metadata = self.row["ai_run_metadata"].clone();
-        if !metadata.is_object() {
-            metadata = json!({});
-        }
+        let mut metadata = crate::executor_registry::saved_dict(&crate::python_json::Value::from(
+            &self.row["ai_run_metadata"],
+        ))
+        .map_err(|e| invalid(&e))?
+        .to_serde();
         let mut ids = Vec::<String>::new();
         for v in metadata["dispatch_ids"]
             .as_array()

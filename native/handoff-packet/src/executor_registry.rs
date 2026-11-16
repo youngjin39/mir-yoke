@@ -1,6 +1,9 @@
 //! Native writes matching the Python JobRegistry contract.
-use crate::executor_text::IoOperation;
-use rusqlite::{Connection, params_from_iter, types::Value as SqlValue};
+use crate::{executor_text::IoOperation, python_json::Value as PythonValue};
+use rusqlite::{
+    Connection, params_from_iter,
+    types::{Value as SqlValue, ValueRef},
+};
 use serde_json::Value;
 use std::{
     fs, io,
@@ -40,6 +43,109 @@ impl From<crate::Error> for Error {
     }
 }
 pub type Result<T> = std::result::Result<T, Error>;
+// JobRecord decodes argv and run metadata; identity remains opaque SQL data.
+pub(crate) fn saved_json(value: ValueRef<'_>) -> std::result::Result<PythonValue, String> {
+    let points = match value {
+        ValueRef::Text(bytes) => std::str::from_utf8(bytes)
+            .map_err(|e| e.to_string())?
+            .chars()
+            .map(u32::from)
+            .collect(),
+        ValueRef::Blob(bytes) => crate::mir_cli::bootstrap_adoption::json_bytes_codepoints(bytes)
+            .map_err(|e| format!("UnicodeDecodeError: {e}"))?,
+        value => {
+            return Err(format!(
+                "TypeError: the JSON object must be str, bytes or bytearray, not {}",
+                match value {
+                    ValueRef::Null => "NoneType",
+                    ValueRef::Integer(_) => "int",
+                    _ => "float",
+                }
+            ));
+        }
+    };
+    crate::python_json::parse_codepoints(points).map_err(|e| format!("{}: {e}", e.exception))
+}
+
+pub(crate) fn saved_dict(value: &PythonValue) -> std::result::Result<PythonValue, String> {
+    use crate::python_json::{Object, Value as Py};
+    if !value.truthy() {
+        return Ok(Py::Object(Object::default()));
+    }
+    if value.is_object() {
+        return Ok(value.clone());
+    }
+    let mut object = Object::default();
+    let Some(items) = value.as_array() else {
+        return Err(if matches!(value, Py::String(_)) {
+            "ValueError: dictionary update sequence element #0 has length 1; 2 is required".into()
+        } else {
+            format!("TypeError: '{}' object is not iterable", value.type_name())
+        });
+    };
+    for (index, item) in items.iter().enumerate() {
+        let pair = match item {
+            Py::Array(items) => items.clone(),
+            Py::String(text) => text
+                .codepoints
+                .iter()
+                .map(|c| Py::String(crate::python_json::Text::new(vec![*c])))
+                .collect(),
+            Py::Object(object) => object.keys().cloned().map(Py::String).collect(),
+            _ => {
+                return Err(format!(
+                    "TypeError: cannot convert dictionary update sequence element #{index} to a sequence"
+                ));
+            }
+        };
+        if pair.len() != 2 {
+            return Err(format!(
+                "ValueError: dictionary update sequence element #{index} has length {}; 2 is required",
+                pair.len()
+            ));
+        }
+        let key = match &pair[0] {
+            Py::String(key) => key.clone(),
+            Py::Null => "null".into(),
+            Py::Bool(b) => b.to_string().into(),
+            Py::Number(n) => n.py_str().into(),
+            key => return Err(format!("TypeError: unhashable type: '{}'", key.type_name())),
+        };
+        object.insert(key, pair[1].clone());
+    }
+    Ok(Py::Object(object))
+}
+pub(crate) fn saved_dispatch_metadata(
+    db: &Connection,
+    id: &str,
+) -> std::result::Result<Option<(PythonValue, Option<PythonValue>)>, String> {
+    use rusqlite::OptionalExtension;
+    db.query_row(
+        "SELECT ai_run_metadata,dispatch_options_json FROM jobs WHERE job_id=?",
+        [id],
+        |r| {
+            let metadata = r.get_ref(0)?;
+            let options = r.get_ref(1)?;
+            Ok((|| {
+                Ok((
+                    if metadata == ValueRef::Null {
+                        PythonValue::Null
+                    } else {
+                        saved_json(metadata)?
+                    },
+                    if options == ValueRef::Null {
+                        None
+                    } else {
+                        Some(saved_json(options)?)
+                    },
+                ))
+            })())
+        },
+    )
+    .optional()
+    .map_err(crate::executor_text::sql_error)?
+    .transpose()
+}
 const DDL: &str = include_str!("executor_registry.sql");
 const EXTRA: &[&str] = &[
     "target_agent",
@@ -430,6 +536,14 @@ impl JobRegistry {
             "UPDATE jobs SET ai_run_metadata=? WHERE job_id=?",
             &[value, SqlValue::Text(id.into())],
         )?;
+        Ok(())
+    }
+    pub(crate) fn update_python_metadata(&self, id: &str, metadata: &PythonValue) -> Result<()> {
+        let values = [
+            SqlValue::Text(metadata.json_sorted(false)),
+            SqlValue::Text(id.into()),
+        ];
+        self.write("UPDATE jobs SET ai_run_metadata=? WHERE job_id=?", &values)?;
         Ok(())
     }
     pub fn update_status(&self, id: &str, status: &str, options: &Value) -> Result<()> {

@@ -215,11 +215,29 @@ fn read_row(path: &Path, id: &str) -> Result<Option<Value>> {
         return Ok(None);
     };
     let mut result = json!({});
+    // sqlite3 decodes the complete SQL row before _row_to_record loads JSON.
     for (index, name) in names.iter().enumerate() {
-        let value = match row
+        if let ValueRef::Text(bytes) = row
             .get_ref(index)
             .map_err(crate::executor_text::sql_error)?
         {
+            std::str::from_utf8(bytes).map_err(|_| {
+                format!(
+                    "OperationalError: Could not decode to UTF-8 column '{name}' with text {}",
+                    execute::repr(&String::from_utf8_lossy(bytes))
+                )
+            })?;
+        }
+    }
+    for (index, name) in names.iter().enumerate() {
+        let raw = row
+            .get_ref(index)
+            .map_err(crate::executor_text::sql_error)?;
+        if name == "codex_args" || (name == "ai_run_metadata" && raw != ValueRef::Null) {
+            result[name] = crate::executor_registry::saved_json(raw)?.to_serde();
+            continue;
+        }
+        let value = match raw {
             ValueRef::Null => Value::Null,
             ValueRef::Integer(n) => {
                 if matches!(
@@ -235,16 +253,13 @@ fn read_row(path: &Path, id: &str) -> Result<Option<Value>> {
             ValueRef::Text(bytes) => {
                 let text =
                     std::str::from_utf8(bytes).map_err(|e| format!("resume registry read: {e}"))?;
-                if matches!(
-                    name.as_str(),
-                    "codex_args" | "identity_json" | "ai_run_metadata"
-                ) {
-                    serde_json::from_str(text).map_err(|e| format!("resume registry read: {e}"))?
-                } else {
-                    json!(text)
-                }
+                json!(text)
             }
-            ValueRef::Blob(_) => return Err("resume registry blob column unsupported".into()),
+            ValueRef::Blob(bytes) if name == "dispatch_options_json" => {
+                // Decode at the integrity phase, inside its caught error boundary.
+                json!({"__saved_blob":bytes})
+            }
+            ValueRef::Blob(bytes) => json!(bytes),
         };
         result[name] = value;
     }
@@ -639,6 +654,9 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         let row = read_row(&cli.db, &cli.job)
             .map_err(|e| format!("\0resume_uncaught:{e}"))?
             .ok_or("resume requires an existing job with a dispatch_brief_path")?;
+        if !row["codex_args"].is_array() {
+            return Err("stored codex_args must be a list".into());
+        }
         if row["dispatch_brief_path"]
             .as_str()
             .is_none_or(str::is_empty)
@@ -833,6 +851,120 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn metadata_row(column: &str, value: rusqlite::types::Value) -> Result<Value> {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("jobs.db");
+        let db = Connection::open(&path).unwrap();
+        db.execute_batch("CREATE TABLE jobs(job_id TEXT, codex_args TEXT, identity_json TEXT, ai_run_metadata TEXT, dispatch_options_json TEXT); INSERT INTO jobs VALUES('saved','[]',NULL,NULL,NULL);").unwrap();
+        db.execute(&format!("UPDATE jobs SET {column}=?"), [value])
+            .unwrap();
+        read_row(&path, "saved").map(Option::unwrap)
+    }
+
+    #[test]
+    fn saved_metadata_sqlite_storage_classes() {
+        use rusqlite::types::Value as Sql;
+        for value in [
+            Sql::Text("[]".into()),
+            Sql::Blob(b"[]".to_vec()),
+            Sql::Blob(vec![0xff, 0xfe, 91, 0, 93, 0]),
+            Sql::Blob(vec![0xff, 0xfe, 0, 0, 91, 0, 0, 0, 93, 0, 0, 0]),
+        ] {
+            assert_eq!(
+                metadata_row("codex_args", value).unwrap()["codex_args"],
+                json!([])
+            );
+        }
+        for (value, expected) in [
+            (Sql::Integer(42), json!(42)),
+            (Sql::Real(4.25), json!(4.25)),
+            (Sql::Null, Value::Null),
+        ] {
+            assert_eq!(
+                metadata_row("ai_run_metadata", value).unwrap()["ai_run_metadata"],
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn saved_identity_is_opaque() {
+        use rusqlite::types::Value as Sql;
+        assert!(metadata_row("identity_json", Sql::Text("{".into())).is_ok());
+        assert!(metadata_row("identity_json", Sql::Blob(vec![0xff])).is_ok());
+    }
+
+    #[test]
+    fn saved_metadata_diagnostics() {
+        use rusqlite::types::Value as Sql;
+        assert_eq!(
+            metadata_row("codex_args", Sql::Text("{".into())).unwrap_err(),
+            "JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+        );
+        assert_eq!(
+            metadata_row("ai_run_metadata", Sql::Blob(vec![0xff])).unwrap_err(),
+            "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+        );
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("jobs.db");
+        let db = Connection::open(&path).unwrap();
+        db.execute_batch("CREATE TABLE jobs(job_id,codex_args,identity_json); INSERT INTO jobs VALUES('saved','{',CAST(x'ff' AS TEXT));").unwrap();
+        assert_eq!(
+            read_row(&path, "saved").unwrap_err(),
+            "OperationalError: Could not decode to UTF-8 column 'identity_json' with text '�'"
+        );
+    }
+
+    #[test]
+    fn saved_metadata_python_json_shapes() {
+        use rusqlite::types::Value as Sql;
+        for source in [
+            format!("{{\"extra\":{}0{}}}", "[".repeat(180), "]".repeat(180)),
+            r#"{"extra":"\ud800"}"#.into(),
+        ] {
+            assert!(metadata_row("ai_run_metadata", Sql::Text(source)).is_ok());
+        }
+    }
+
+    #[test]
+    fn saved_metadata_scalar_dict_refusal() {
+        for (source, kind) in [("42", "int"), ("4.25", "float"), ("true", "bool")] {
+            let value = crate::python_json::parse(source).unwrap();
+            assert_eq!(
+                crate::executor_registry::saved_dict(&value).unwrap_err(),
+                format!("TypeError: '{kind}' object is not iterable")
+            );
+        }
+        for source in [
+            "0",
+            "false",
+            "null",
+            "[]",
+            "{}",
+            r#"[["k",1],"ab",{"x":1,"y":2},[null,0],[true,1],[2,2]]"#,
+        ] {
+            let value = crate::python_json::parse(source).unwrap();
+            assert!(
+                crate::executor_registry::saved_dict(&value)
+                    .unwrap()
+                    .is_object()
+            );
+        }
+        for source in [r#""k""#, "[1]", "[[]]", "[[[],0]]"] {
+            let value = crate::python_json::parse(source).unwrap();
+            assert!(crate::executor_registry::saved_dict(&value).is_err());
+        }
+        for raw in [ValueRef::Null, ValueRef::Integer(42), ValueRef::Real(4.25)] {
+            assert!(
+                crate::executor_registry::saved_json(raw)
+                    .unwrap_err()
+                    .starts_with(
+                        "TypeError: the JSON object must be str, bytes or bytearray, not "
+                    )
+            );
+        }
+    }
 
     #[test]
     fn saved_option_resume_reports_python_resume_root_errors() {
