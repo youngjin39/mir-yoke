@@ -37,19 +37,30 @@ fn isolated_command(executable: &Path, root: &Path, git: &Path) -> Command {
 }
 
 fn observe_root(text: &str, root: &str, windows: bool) -> String {
-    // Replace the canonical native spelling and bootstrap_adoption::wire's
-    // report spelling only. Error suffixes, other paths and CRLF stay literal.
-    let observed = text.replace(root, "{ROOT}");
-    if windows {
-        let native = root.trim_start_matches(r"\\?\");
-        observed
-            .replace(&root.replace('\\', r"\\"), "{ROOT}")
-            .replace(&native.replace('\\', r"\\"), "{ROOT}")
-            .replace(native, "{ROOT}")
-            .replace(&native.replace('\\', "/"), "{ROOT}")
-    } else {
-        observed
+    if !windows {
+        return text.replace(root, "{ROOT}");
     }
+    let native = root.trim_start_matches(r"\\?\");
+    let mut forms = vec![
+        root.to_owned(),
+        native.to_owned(),
+        root.replace('\\', "/"),
+        native.replace('\\', "/"),
+    ];
+    if native.contains('\\') {
+        forms.push(format!(r"\\?\{native}"));
+    }
+    for mut form in forms.clone() {
+        for _ in 0..2 {
+            form = form.replace('\\', r"\\");
+            forms.push(form.clone());
+        }
+    }
+    forms.sort_by_key(|s| std::cmp::Reverse(s.len()));
+    forms.dedup();
+    forms.into_iter().fold(text.to_owned(), |text, spelling| {
+        text.replace(&spelling, "{ROOT}")
+    })
 }
 
 #[test]
@@ -307,4 +318,23 @@ fn receipt_leaf_substitution_preserves_outside_target() {
     assert_eq!(fs::read(outside).unwrap(), b"preserve");
     assert!(!path.is_symlink());
     assert_eq!(fs::read_dir(parent).unwrap().count(), 1);
+}
+
+#[test]
+fn nested_repr_json_root_observation() {
+    for root in [
+        r"C:\scratch\case",
+        r"\\?\C:\scratch\case",
+        r"\\?\UNC\server\share\case",
+    ] {
+        let mut spelling = root.to_owned();
+        for _ in 0..3 {
+            let text = format!("{spelling}\\suffix | C:\\other\\file\r\n");
+            assert_eq!(
+                observe_root(&text, root, true),
+                "{ROOT}\\suffix | C:\\other\\file\r\n"
+            );
+            spelling = spelling.replace('\\', r"\\");
+        }
+    }
 }

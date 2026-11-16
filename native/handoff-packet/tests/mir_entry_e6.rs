@@ -66,7 +66,15 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
         let temp = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(temp.path()).unwrap();
         fs::create_dir(root.join("notes")).unwrap();
-        fs::write(root.join("notes/a.md"), "Synthetic archive document.\n").unwrap();
+        fs::write(
+            root.join("notes/a.md"),
+            if cfg!(windows) {
+                "Synthetic archive document.\r\n"
+            } else {
+                "Synthetic archive document.\n"
+            },
+        )
+        .unwrap();
         let c = handoff_packet::mir_core::memory::store::connect(&root.join("memory.db"), None)
             .unwrap();
         handoff_packet::mir_core::memory::store::apply_migrations(&c.conn).unwrap();
@@ -108,7 +116,7 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
             if diagnostic || std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
                 cmd.env("MIR_E6_DIAG", "1");
             }
-            cmd.output().unwrap()
+            bounded_output(&mut cmd)
         };
         if r["mode"].as_str().unwrap().starts_with("reindex") {
             fs::write(
@@ -129,12 +137,14 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
         let status = r["status"].as_u64().unwrap();
         let mode = r["mode"].as_str().unwrap().to_owned();
         let diagnostic_enabled = diagnostic || std::env::var("MIR_E6_DIAG").as_deref() == Ok("1");
+        let (cancel, cancelled) = std::sync::mpsc::channel();
+        let server_started = std::time::Instant::now();
         let server = thread::spawn(move || {
             let listener = listener?;
-            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(4);
             loop {
-                match listener.accept() {
+                match accept_request(&listener, &cancelled) {
                     Ok((mut stream, _)) => {
+                        eprintln!("[MIR_E6_DIAG] request_after={:?}", server_started.elapsed());
                         stream
                             .set_read_timeout(Some(std::time::Duration::from_secs(2)))
                             .unwrap();
@@ -203,13 +213,9 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
                         }
                         return Some((header, String::from_utf8(input).unwrap()));
                     }
-                    Err(e)
-                        if e.kind() == std::io::ErrorKind::WouldBlock
-                            && std::time::Instant::now() < deadline =>
-                    {
-                        thread::sleep(std::time::Duration::from_millis(10))
-                    }
-                    _ => return None,
+                    Err(e) if e.kind() == std::io::ErrorKind::Interrupted => return None,
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                    Err(e) => panic!("accept failed: {e:?}"),
                 }
             }
         });
@@ -221,6 +227,7 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
             .map(|v| v.as_str().unwrap())
             .collect());
         let elapsed = started.elapsed().as_secs_f64();
+        let _ = cancel.send(());
         let request = server.join().unwrap();
         if diagnostic_enabled {
             eprintln!(
@@ -378,7 +385,15 @@ fn idna_refusal_cli() {
         let temp = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(temp.path()).unwrap();
         fs::create_dir(root.join("notes")).unwrap();
-        fs::write(root.join("notes/a.md"), "Synthetic archive document.\n").unwrap();
+        fs::write(
+            root.join("notes/a.md"),
+            if cfg!(windows) {
+                "Synthetic archive document.\r\n"
+            } else {
+                "Synthetic archive document.\n"
+            },
+        )
+        .unwrap();
         fs::write(root.join("harness_a.toml"), &config).unwrap();
         let c = handoff_packet::mir_core::memory::store::connect(&root.join("memory.db"), None)
             .unwrap();
@@ -420,4 +435,97 @@ fn idna_refusal_cli() {
         );
         assert!(out.stderr.is_empty(), "{r}: {out:?}");
     }
+}
+
+fn accept_request(
+    listener: &TcpListener,
+    cancelled: &std::sync::mpsc::Receiver<()>,
+) -> std::io::Result<(std::net::TcpStream, std::net::SocketAddr)> {
+    let result = listener.accept();
+    if result
+        .as_ref()
+        .is_err_and(|e| e.kind() == std::io::ErrorKind::WouldBlock)
+    {
+        return match cancelled.recv_timeout(std::time::Duration::from_millis(5)) {
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => result,
+            _ => {
+                eprintln!("[MIR_E6_DIAG] accept_exit=child-completed");
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::Interrupted,
+                    "child completed",
+                ))
+            }
+        };
+    }
+    eprintln!(
+        "[MIR_E6_DIAG] accept_exit={:?}",
+        result.as_ref().map(|_| "request-received")
+    );
+    result
+}
+
+fn bounded_output(command: &mut Command) -> std::process::Output {
+    let stdout = tempfile::NamedTempFile::new().unwrap();
+    let stderr = tempfile::NamedTempFile::new().unwrap();
+    let mut child = command
+        .stdin(std::process::Stdio::null())
+        .stdout(stdout.reopen().unwrap())
+        .stderr(stderr.reopen().unwrap())
+        .spawn()
+        .unwrap();
+    let started = std::time::Instant::now();
+    let status = loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            break status;
+        }
+        if started.elapsed() > std::time::Duration::from_secs(180) {
+            child.kill().unwrap();
+            child.wait().unwrap();
+            panic!("synthetic child exceeded 180s watchdog");
+        }
+        thread::sleep(std::time::Duration::from_millis(10));
+    };
+    eprintln!(
+        "[MIR_E6_DIAG] child_elapsed_sec={}",
+        started.elapsed().as_secs_f64()
+    );
+    std::process::Output {
+        status,
+        stdout: fs::read(stdout.path()).unwrap(),
+        stderr: fs::read(stderr.path()).unwrap(),
+    }
+}
+
+#[test]
+fn delayed_request_and_no_request_shutdown() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let address = listener.local_addr().unwrap();
+    let (cancel, cancelled) = std::sync::mpsc::channel();
+    let server = thread::spawn(move || {
+        loop {
+            match accept_request(&listener, &cancelled) {
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                result => break result,
+            }
+        }
+    });
+    thread::sleep(std::time::Duration::from_secs(4 + 1));
+    let client = std::net::TcpStream::connect(address);
+    let received = server.join().unwrap();
+    assert!(
+        client.is_ok() && received.is_ok(),
+        "delayed child lost listener: {client:?} {received:?}"
+    );
+    drop(cancel);
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let (cancel, cancelled) = std::sync::mpsc::channel();
+    cancel.send(()).unwrap();
+    let started = std::time::Instant::now();
+    assert_eq!(
+        accept_request(&listener, &cancelled).unwrap_err().kind(),
+        std::io::ErrorKind::Interrupted
+    );
+    assert!(started.elapsed() < std::time::Duration::from_secs(1));
 }

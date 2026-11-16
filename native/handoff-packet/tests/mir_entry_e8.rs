@@ -6,7 +6,7 @@ use std::{
     net::TcpListener,
     process::Command,
     thread,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 #[test]
@@ -128,11 +128,13 @@ fn pull(only: Option<&str>, diagnostic: bool) {
             "[memory]\nvector_mode='optional'\n[memory.embedding]\nenabled={}\nfingerprint='synthetic-v1'\nbase_url='http://{}/v1/'\nmodel='synthetic-model'\napi_key_env='SYNTHETIC_KEY'\n",
             mode != "disabled", listener.local_addr().unwrap())).unwrap();
         let mode_owned = mode.to_owned();
+        let (cancel, cancelled) = std::sync::mpsc::channel();
+        let server_started = std::time::Instant::now();
         let server = thread::spawn(move || {
-            let deadline = Instant::now() + Duration::from_secs(2);
             loop {
-                match listener.accept() {
+                match accept_request(&listener, &cancelled) {
                     Ok((mut stream, _)) => {
+                        eprintln!("[MIR_E6_DIAG] request_after={:?}", server_started.elapsed());
                         // macOS accepted sockets inherit the listener's O_NONBLOCK.
                         stream.set_nonblocking(false).unwrap();
                         stream
@@ -178,17 +180,14 @@ fn pull(only: Option<&str>, diagnostic: bool) {
                         );
                         return vec![serde_json::from_slice::<Value>(&body).unwrap()];
                     }
-                    Err(e)
-                        if e.kind() == std::io::ErrorKind::WouldBlock
-                            && Instant::now() < deadline =>
-                    {
-                        thread::sleep(Duration::from_millis(5))
-                    }
-                    Err(_) => return vec![],
+                    Err(e) if e.kind() == std::io::ErrorKind::Interrupted => return vec![],
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                    Err(e) => panic!("accept failed: {e:?}"),
                 }
             }
         });
-        let mut out = Command::new(env!("CARGO_BIN_EXE_mir"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_mir"));
+        command
             .args(
                 r["argv"]
                     .as_array()
@@ -208,9 +207,9 @@ fn pull(only: Option<&str>, diagnostic: bool) {
             .env("PYTHONIOENCODING", "utf-8")
             .env("SYNTHETIC_KEY", "fake-only")
             .env("MIR_E6_DIAG", if diagnostic_enabled { "1" } else { "" })
-            .current_dir(&root)
-            .output()
-            .unwrap();
+            .current_dir(&root);
+        let mut out = bounded_output(&mut command);
+        let _ = cancel.send(());
         let requests = server.join().unwrap();
         let mut diagnostics = Vec::new();
         if diagnostic_enabled {
@@ -270,4 +269,97 @@ fn pull(only: Option<&str>, diagnostic: bool) {
         );
         assert_eq!(serde_json::json!(requests), r["requests"], "{mode}");
     }
+}
+
+fn accept_request(
+    listener: &TcpListener,
+    cancelled: &std::sync::mpsc::Receiver<()>,
+) -> std::io::Result<(std::net::TcpStream, std::net::SocketAddr)> {
+    let result = listener.accept();
+    if result
+        .as_ref()
+        .is_err_and(|e| e.kind() == std::io::ErrorKind::WouldBlock)
+    {
+        return match cancelled.recv_timeout(std::time::Duration::from_millis(5)) {
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => result,
+            _ => {
+                eprintln!("[MIR_E6_DIAG] accept_exit=child-completed");
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::Interrupted,
+                    "child completed",
+                ))
+            }
+        };
+    }
+    eprintln!(
+        "[MIR_E6_DIAG] accept_exit={:?}",
+        result.as_ref().map(|_| "request-received")
+    );
+    result
+}
+
+fn bounded_output(command: &mut Command) -> std::process::Output {
+    let stdout = tempfile::NamedTempFile::new().unwrap();
+    let stderr = tempfile::NamedTempFile::new().unwrap();
+    let mut child = command
+        .stdin(std::process::Stdio::null())
+        .stdout(stdout.reopen().unwrap())
+        .stderr(stderr.reopen().unwrap())
+        .spawn()
+        .unwrap();
+    let started = std::time::Instant::now();
+    let status = loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            break status;
+        }
+        if started.elapsed() > std::time::Duration::from_secs(180) {
+            child.kill().unwrap();
+            child.wait().unwrap();
+            panic!("synthetic child exceeded 180s watchdog");
+        }
+        thread::sleep(std::time::Duration::from_millis(10));
+    };
+    eprintln!(
+        "[MIR_E6_DIAG] child_elapsed_sec={}",
+        started.elapsed().as_secs_f64()
+    );
+    std::process::Output {
+        status,
+        stdout: fs::read(stdout.path()).unwrap(),
+        stderr: fs::read(stderr.path()).unwrap(),
+    }
+}
+
+#[test]
+fn delayed_request_and_no_request_shutdown() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let address = listener.local_addr().unwrap();
+    let (cancel, cancelled) = std::sync::mpsc::channel();
+    let server = thread::spawn(move || {
+        loop {
+            match accept_request(&listener, &cancelled) {
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                result => break result,
+            }
+        }
+    });
+    thread::sleep(std::time::Duration::from_secs(2 + 1));
+    let client = std::net::TcpStream::connect(address);
+    let received = server.join().unwrap();
+    assert!(
+        client.is_ok() && received.is_ok(),
+        "delayed child lost listener: {client:?} {received:?}"
+    );
+    drop(cancel);
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let (cancel, cancelled) = std::sync::mpsc::channel();
+    cancel.send(()).unwrap();
+    let started = std::time::Instant::now();
+    assert_eq!(
+        accept_request(&listener, &cancelled).unwrap_err().kind(),
+        std::io::ErrorKind::Interrupted
+    );
+    assert!(started.elapsed() < std::time::Duration::from_secs(1));
 }
