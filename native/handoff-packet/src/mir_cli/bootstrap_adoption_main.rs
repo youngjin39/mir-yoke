@@ -283,6 +283,11 @@ fn write_receipt_for_platform(
     #[cfg(unix)]
     {
         use io::Write;
+        // Python follows an existing linked receipt directory. Resolve it before
+        // entering the descriptor-relative writer, which requires canonical roots.
+        let canonical_parent = fs::canonicalize(parent).map_err(|e| io_error(parent, e))?;
+        let parent = canonical_parent.as_path();
+        let destination = parent.join(path.file_name().unwrap_or_default());
         let temporary = tempfile::Builder::new()
             .prefix(".bootstrap-receipt.json.")
             .make_in(parent, |candidate| {
@@ -296,7 +301,7 @@ fn write_receipt_for_platform(
             .write_all(data.as_bytes())
             .map_err(|e| io_error(&staged.path, e))?;
         before(&staged.path, path).map_err(|e| io_error(path, e))?;
-        staged.publish(parent, path).map_err(|e| {
+        staged.publish(parent, &destination).map_err(|e| {
             let mut error = io_error(&staged.path, e);
             if let Error::Io { message, .. } = &mut error {
                 message.push_str(&format!(" -> {}", repr(&wire(path))));

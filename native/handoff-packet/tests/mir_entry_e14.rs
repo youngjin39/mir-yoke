@@ -338,3 +338,95 @@ fn nested_repr_json_root_observation() {
         }
     }
 }
+
+// Public-command oracle: Python 5f8f69f, archived in this repository. Captured
+// with s14-symlink-3/probe.py (-I -B -X utf8, synthetic HOME, network forbidden).
+#[cfg(unix)]
+#[test]
+fn public_adoption_linked_mir_matches_python() {
+    fn unhex(value: &Value) -> Vec<u8> {
+        value
+            .as_str()
+            .unwrap()
+            .as_bytes()
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+            .collect()
+    }
+    fn snapshot(root: &Path, directory: &Path, output: &mut serde_json::Map<String, Value>) {
+        for entry in fs::read_dir(directory).unwrap() {
+            let path = entry.unwrap().path();
+            if path.file_name().unwrap() == ".git" || path.is_symlink() {
+                continue;
+            }
+            if path.is_dir() {
+                snapshot(root, &path, output);
+            } else {
+                let hex: String = fs::read(&path)
+                    .unwrap()
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect();
+                output.insert(
+                    path.strip_prefix(root).unwrap().to_str().unwrap().into(),
+                    Value::String(hex),
+                );
+            }
+        }
+    }
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/s14-symlink.json")).unwrap();
+    assert_eq!(
+        fixture["reference_pin"],
+        "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+    );
+    let git = test_git();
+    for record in fixture["records"].as_array().unwrap() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        for (name, body) in record["files_before"].as_object().unwrap() {
+            let path = root.join(name);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(path, unhex(body)).unwrap();
+        }
+        let project = root.join("project");
+        std::os::unix::fs::symlink("../sibling", project.join(".mir")).unwrap();
+        for args in [vec!["init", "-q"], vec!["add", "."]] {
+            assert!(
+                isolated_command(&git, &project, &git)
+                    .args(args)
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+        }
+        let out = isolated_command(Path::new(env!("CARGO_BIN_EXE_mir")), &project, &git)
+            .env("MIR_CAPABILITY_NATIVE_ARTIFACTS", "0")
+            .args([
+                "bootstrap-adoption",
+                "--project-root",
+                project.to_str().unwrap(),
+                "--apply",
+                "--json",
+            ])
+            .output()
+            .unwrap();
+        assert_eq!(
+            out.status.code(),
+            record["exit"].as_i64().map(|n| n as i32),
+            "{}",
+            record["case"]
+        );
+        assert_eq!(out.stdout, unhex(&record["stdout_hex"]));
+        assert_eq!(out.stderr, unhex(&record["stderr_hex"]));
+        assert_eq!(
+            fs::read_link(project.join(".mir")).unwrap(),
+            Path::new("../sibling")
+        );
+        let mut after = serde_json::Map::new();
+        snapshot(&root, &project, &mut after);
+        snapshot(&root, &root.join("sibling"), &mut after);
+        assert_eq!(Value::Object(after), record["files_after"]);
+    }
+}
