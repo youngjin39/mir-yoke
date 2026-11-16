@@ -9,7 +9,7 @@ from pathlib import Path
 os_env = {k: os.environ[k] for k in ('SystemRoot', 'WINDIR')
           if os.name == 'nt' and k in os.environ}
 setup = {}
-source = Path(__file__).with_name('generate_y_e9.py').read_text()
+source = Path(__file__).with_name('generate_y_e9.py').read_text(encoding='utf-8')
 exec(source.split("wrapper = root / 'capture.py'")[0], setup)
 root, packages, a = (setup[k] for k in ('root', 'packages', 'a'))
 wrapper = root / 'http_probe.py'
@@ -83,7 +83,7 @@ for response in responses:
         thread.start()
         url = f'http://127.0.0.1:{listener.getsockname()[1]}/'
         output = subprocess.check_output(
-            [sys.executable, '-I', str(wrapper), url], cwd=root,
+            [sys.executable, '-I', '-X', 'utf8', str(wrapper), url], cwd=root,
             env={**os_env, 'HOME': str(root), 'USERPROFILE': str(root),
                  'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath, 'NO_PROXY': '*',
                  'SSL_CERT_FILE': str(root / 'certifi/cacert.pem')})

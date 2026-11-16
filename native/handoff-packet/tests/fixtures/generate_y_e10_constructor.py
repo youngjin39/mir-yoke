@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-source = Path(__file__).with_name('generate_y_e9.py').read_text()
+source = Path(__file__).with_name('generate_y_e9.py').read_text(encoding='utf-8')
 setup = {}
 exec(source.split("wrapper = root / 'capture.py'")[0], setup)
 root, packages, a = (setup[k] for k in ('root', 'packages', 'a'))
@@ -35,7 +35,7 @@ except Exception as exc:
 raise SystemExit(code)
 '''.replace('PACKAGE_SET', repr(set(['mir', *packages]))))
 if a.e12d_cli:
-    source = Path(__file__).with_name('generate_y_e12d.py').read_text()
+    source = Path(__file__).with_name('generate_y_e12d.py').read_text(encoding='utf-8')
     source = source.split('# Reuse the isolated console/migration wrapper', 1)[1]
     source = source.split("\nrecords = []\n", 1)[1].split('wrapper.write_text', 1)[0]
     source = source.replace("[sys.executable, '-I', str(wrapper)",
