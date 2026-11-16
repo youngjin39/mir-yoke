@@ -161,7 +161,15 @@ fn frozen_pull_console_provider() {
                     .map(|s| s.as_str().unwrap()),
             )
             .env_clear()
+            .envs(
+                ["SystemRoot", "WINDIR"]
+                    .into_iter()
+                    .filter(|_| cfg!(windows))
+                    .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+            )
             .env("HOME", &root)
+            .env("USERPROFILE", &root)
+            .env("PYTHONIOENCODING", "utf-8")
             .env("SYNTHETIC_KEY", "fake-only")
             .current_dir(&root)
             .output()

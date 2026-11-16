@@ -17,6 +17,8 @@ from pathlib import Path
 
 import sqlite_vec
 
+os_env = {k: os.environ[k] for k in ('SystemRoot', 'WINDIR')
+          if os.name == 'nt' and k in os.environ}
 assert sys.flags.isolated
 PIN = "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
 p = argparse.ArgumentParser()
@@ -47,6 +49,8 @@ wrapper.write_text('''import sys, pathlib, sysconfig
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
 sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+if sys.platform == 'win32':
+    sys.path.append(str(pathlib.Path(sys.base_prefix) / 'DLLs'))
 import ipaddress, socket
 lookup, connect = socket.getaddrinfo, socket.socket.connect
 connect_ex = socket.socket.connect_ex
@@ -100,7 +104,8 @@ for pattern in ['localhost', 'LOCALHOST', '.localhost', 'example.com', '.example
                 '127.0.0.1', '*', '', ' localhost , example.com ', 'unrelated.test']:
     for host in ['localhost', 'child.localhost', 'example.com', 'child.example.com',
                  'badexample.com', '127.0.0.1', 'child.127.0.0.1']:
-        env = {'HOME': str(root), 'PATH': os.defpath,
+        env = {**os_env, 'HOME': str(root), 'USERPROFILE': str(root),
+                 'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath,
                'HTTP_PROXY': 'http://127.0.0.1:1', 'NO_PROXY': pattern}
         result = subprocess.run([sys.executable, '-I', str(wrapper), 'proxy',
                                  f'http://{host}:12345/'], cwd=root, env=env,
@@ -125,7 +130,8 @@ for host, pattern in [
     ('example.com', '*,HTTP://XN--BCHER-KVA.test'),
     ('example.com', '*,http://bücher.test'),
 ]:
-    env = {'HOME': str(root), 'PATH': os.defpath,
+    env = {**os_env, 'HOME': str(root), 'USERPROFILE': str(root),
+                 'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath,
            'HTTP_PROXY': 'http://127.0.0.1:1', 'NO_PROXY': pattern}
     result = subprocess.run([sys.executable, '-I', str(wrapper), 'proxy',
                              f'http://{host}:12345/'], cwd=root, env=env,
@@ -136,7 +142,7 @@ for host, pattern in [
                   native_message='IDNA proxy matching is not supported',
                   native_exit=1)
     if result.returncode:
-        error = result.stderr.decode().splitlines()[-1]
+        error = result.stderr.decode("utf-8").splitlines()[-1]
         assert error.startswith('httpx.InvalidURL:'), error
         record['error'] = error
     else:
@@ -171,7 +177,7 @@ for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "st
         def do_POST(self, requests=requests, status=status, body=body, mode=mode):
             data = self.rfile.read(int(self.headers['Content-Length']))
             requests.append(dict(path=self.path, auth=self.headers.get('Authorization'),
-                                 body=json.loads(data), raw_body=data.decode(),
+                                 body=json.loads(data), raw_body=data.decode("utf-8"),
                                  headers={k.lower(): self.headers[k].replace(
                                      str(self.server.server_port), "@PORT@")
                                      for k in ["Host", "Content-Type", "Content-Length"]}))
@@ -231,7 +237,8 @@ slug="notes"
 root="notes"
 """
     (work / 'harness_a.toml').write_text(config)
-    env = {'HOME': str(work), 'PATH': os.defpath, 'PYTHONIOENCODING': 'utf-8', 'NO_PROXY': '*'}
+    env = {**os_env, 'HOME': str(work), 'USERPROFILE': str(work),
+                 'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath, 'NO_PROXY': '*'}
     if mode != 'no-key':
         env['SYNTHETIC_KEY'] = 'fake-only'
 
@@ -265,9 +272,9 @@ root="notes"
                   for table in ['external_documents', 'external_chunks', 'external_chunks_vec']]
     records.append(dict(mode=mode, argv=argv,
                         config=config.replace(url.split('#')[0].split('?')[0], '@URL@'),
-                        body=body.decode(), status=status, requests=requests,
-                        exit=result.returncode, stdout=result.stdout.decode().replace(
+                        body=body.decode("utf-8"), status=status, requests=requests,
+                        exit=result.returncode, stdout=result.stdout.decode("utf-8").replace(
                             url.rstrip('/'), '@URLBASE@'),
-                        stderr=result.stderr.decode(), counts=counts))
+                        stderr=result.stderr.decode("utf-8"), counts=counts))
 assert records[0]['exit'] == 0 and records[0]['requests'][0]['path'] == '/v1/embeddings'
 a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n')

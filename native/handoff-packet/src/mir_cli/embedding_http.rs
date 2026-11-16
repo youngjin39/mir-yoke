@@ -791,7 +791,15 @@ mod e10_http_tests {
                     "--nocapture",
                 ])
                 .env_clear()
+                .envs(
+                    ["SystemRoot", "WINDIR"]
+                        .into_iter()
+                        .filter(|_| cfg!(windows))
+                        .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+                )
                 .env("HOME", root.path())
+                .env("USERPROFILE", root.path())
+                .env("PYTHONIOENCODING", "utf-8")
                 .env("NO_PROXY", "127.0.0.1")
                 .env("E12D_CONSTRUCTOR", i.to_string())
                 .envs(
@@ -816,6 +824,7 @@ mod e10_http_tests {
     #[test]
     fn e12c_lifecycle() {
         if std::env::var_os("E12C_WORKER").is_none() {
+            let home = tempfile::tempdir().unwrap();
             assert!(
                 std::process::Command::new(std::env::current_exe().unwrap())
                     .args([
@@ -824,7 +833,17 @@ mod e10_http_tests {
                         "--nocapture"
                     ])
                     .env_clear()
+                    .envs(
+                        ["SystemRoot", "WINDIR"]
+                            .into_iter()
+                            .filter(|_| cfg!(windows))
+                            .filter_map(|key| std::env::var_os(key).map(|value| (key, value)))
+                    )
                     .env("E12C_WORKER", "1")
+                    .env("HOME", home.path())
+                    .env("USERPROFILE", home.path())
+                    .env("PYTHONIOENCODING", "utf-8")
+                    .current_dir(home.path())
                     .env("NO_PROXY", "*")
                     .status()
                     .unwrap()
@@ -969,6 +988,7 @@ mod e10_http_tests {
     #[test]
     fn frozen_loopback_protocol() {
         if std::env::var_os("E10_HTTP_WORKER").is_none() {
+            let home = tempfile::tempdir().unwrap();
             assert!(
                 std::process::Command::new(std::env::current_exe().unwrap())
                     .args([
@@ -977,7 +997,17 @@ mod e10_http_tests {
                         "--nocapture"
                     ])
                     .env_clear()
+                    .envs(
+                        ["SystemRoot", "WINDIR"]
+                            .into_iter()
+                            .filter(|_| cfg!(windows))
+                            .filter_map(|key| std::env::var_os(key).map(|value| (key, value)))
+                    )
                     .env("E10_HTTP_WORKER", "1")
+                    .env("HOME", home.path())
+                    .env("USERPROFILE", home.path())
+                    .env("PYTHONIOENCODING", "utf-8")
+                    .current_dir(home.path())
                     .env("NO_PROXY", "*")
                     .status()
                     .unwrap()
