@@ -1,0 +1,9 @@
+{
+  "exceptions": {
+    "destination_directory": "IsADirectoryError",
+    "parent_file": "NotADirectoryError"
+  },
+  "observation": "a\nb\nc\n\\r\\n",
+  "platform": "darwin",
+  "reference_pin": "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+}
