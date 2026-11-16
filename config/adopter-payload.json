@@ -3179,13 +3179,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_sweep.rs",
-      "sha256": "4f9d1b028096dcbf2851ee26415484a69b41b683e3d89565f0392f08cfdde4ec"
+      "sha256": "709972d69d53237445c5852d013a9490ebca7e2258b4cb835aea0af7368db1e0"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_sweep_cli.rs",
-      "sha256": "26a9aa2f9a885959cd8f0efd3a8105b163b3accbc4977a486c30ecb2343cf92d"
+      "sha256": "9aa33bb4383d1024c0ef4bff0e392d333b74809f5aae364459cb4e68021d8089"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3815,7 +3815,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/runtime_verify.rs",
-      "sha256": "fe050f2fdbd756492d872f4048c0be8da0588bffad9862789c35f8610ed8c2ea"
+      "sha256": "8ca1c23bfc9ff0913324e30b41c2f03726eb58e2e689830988cc9a14a6cbdfe9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4145,13 +4145,19 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_sweep.rs",
-      "sha256": "2f98e61dbcfa0e09437daec2da21db830d43a6f293ea8983be56dd18a326bcb3"
+      "sha256": "6e604e73f328126f7d05f106a495c14b898dd890e3c6710ccb51bef918eff479"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_sweep_cli.rs",
       "sha256": "4a5485987947bd134b7da25e3b9a3e26573a520b4ca0d0b5e1c545b9a2628429"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/executor_sweep_paths.rs",
+      "sha256": "ebf843a37eb9601b2aae4a6d765620c95b529d8a0109f8ba2dd506d8ac864950"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4420,6 +4426,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/executor_sweep_paths.json",
+      "sha256": "7d54c55dd4f51faef1bccc4d9c8e60fe71c33715fc8b8b102c5d989cd75cde3c"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/executor_tmpdir.json",
       "sha256": "12f44a4bba3ceef19fb9a49c1a12473ea9c4487b0c9e13633bbc0639fdc72be4"
     },
@@ -4584,6 +4596,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_executor_sweep_firmlink.py",
       "sha256": "e70a68eb16191ca6f2ac0d701ab9475cb1fce4fe9257bb078ba7ba2d7cbb1000"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/generate_executor_sweep_paths.py",
+      "sha256": "e77586082f176a1cc0309448c0e34680e0f4a280329adca55fc7488a3e6d082a"
     },
     {
       "classification": "template-maintainer-tool",
