@@ -4031,7 +4031,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/delegation_gate.rs",
-      "sha256": "6259e879ed3a98a3fccf00a9f112b4c688957e8acb74876c682e06b917998d2c"
+      "sha256": "e292689181d103e34d1a1b42b9a20e3fcede8ba1146b910973910f4b1e0fd39c"
     },
     {
       "classification": "template-maintainer-tool",
