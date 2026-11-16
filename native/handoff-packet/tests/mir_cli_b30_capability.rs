@@ -153,7 +153,6 @@ fn s01_windows_drive_roots() {
 
 #[cfg(windows)]
 #[test]
-#[ignore = "first capture wt-s01-resolve-windows.json on the PC with the pinned generator"]
 fn s01_windows_frozen_root_resolution() {
     use handoff_packet::mir_cli::bootstrap::{Host, ProductionHost};
     let records: Value = serde_json::from_slice(
