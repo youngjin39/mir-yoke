@@ -10,7 +10,7 @@ fn missing_jq_child() {
     let Some(root) = env::var_os("PC3_SPAWN_ROOT").map(PathBuf::from) else {
         return;
     };
-    assert_eq!(env::current_dir().unwrap(), root);
+    assert_eq!(env::current_dir().unwrap().canonicalize().unwrap(), root);
     assert_eq!(env::var_os("HOME").unwrap(), root);
     let error = evidence_digest(
         ".claude/settings.json",
