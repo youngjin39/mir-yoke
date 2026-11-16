@@ -34,6 +34,21 @@ for tag, values in {
 rows.extend([dict(case='int-index', text='requirements: [!!int nope]', path='spec/index.yaml'),
              dict(case='float-graph', text='nodes: [!!float NOPE]', path='spec/graph.yaml'),
              dict(case='int-digit-limit', text='!!int "'+'9'*4301+'"')])
+for tag, values in {
+    'int': ['1:١٢:BAD', '1:\u00a0१२\u3000:BAD', '\u00a0１２\u2007',
+            '0x١٢', '0٧', '0b١٠', '\x1c١٢', '²'],
+    'float': ['1:١٢:BAD', '1:\u00a0१२.٥\u2007:BAD', '\u202f१२.٥\u3000',
+              '-١٢.٥', '\x1f١٢', '²',
+              *[':'.join(['0']*n) for n in (173, 174, 175, 176)],
+              ':'.join(['1']+['0']*173), ':'.join(['0']*175+['BAD'])],
+}.items():
+    for index, value in enumerate(values):
+        rows.append(dict(case=f'closing-{tag}-{index}', text=f'!!{tag} {json.dumps(value)}'))
+for name, value in [('unicode-int', '!!int "1:١٢:BAD"'),
+                    ('unicode-float', '!!float "1:١٢:BAD"'),
+                    ('overflow', '!!float "'+':'.join(['0']*175)+'"')]:
+    for path in ['spec/index.yaml', 'spec/graph.yaml']:
+        rows.append(dict(case=f'closing-{name}-{Path(path).stem}', text=value, path=path))
 wrapper = root/'capture.py'
 wrapper.write_text('''import sys, sysconfig, pathlib, json
 root = pathlib.Path(__file__).resolve().parent
@@ -51,7 +66,7 @@ for r in rows:
     else: r.update(error=None, message=None, value=value)
 print(json.dumps(rows, ensure_ascii=True, separators=(',', ':')))
 ''')
-run = subprocess.run([sys.executable, '-I', str(wrapper)], cwd=root,
+run = subprocess.run([sys.executable, '-I', '-X', 'utf8', str(wrapper)], cwd=root,
     env=dict(HOME=str(root), PATH='/usr/bin:/bin'), input=json.dumps(rows).encode(),
     capture_output=True, check=True)
 a.output.write_bytes(run.stdout)

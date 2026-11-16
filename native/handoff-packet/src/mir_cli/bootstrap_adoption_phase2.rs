@@ -564,8 +564,26 @@ fn yaml_number_text(s: &str, float: bool) -> Result<(bool, String), Error> {
         },
     ))
 }
+fn yaml_decimal_text(text: &str) -> String {
+    text.trim_matches(char::is_whitespace)
+        .chars()
+        .map(|c| match c as u32 {
+            // These Nd blocks postdate CPython 3.12's Unicode 15 database.
+            0x10d40..=0x10d49
+            | 0x116d0..=0x116e3
+            | 0x11bf0..=0x11bf9
+            | 0x16130..=0x16139
+            | 0x16d70..=0x16d79
+            | 0x1ccf0..=0x1ccf9
+            | 0x1e5f1..=0x1e5fa => c,
+            _ => crate::python_decimal::decimal_digit(c)
+                .and_then(|d| char::from_digit(d, 10))
+                .unwrap_or(c),
+        })
+        .collect()
+}
 fn yaml_int_part(text: &str, base: u32) -> Result<i64, Error> {
-    i64::from_str_radix(text.trim_matches(char::is_whitespace), base).map_err(|_| {
+    i64::from_str_radix(&yaml_decimal_text(text), base).map_err(|_| {
         let digits = text.trim_matches(char::is_whitespace);
         let digits = digits.strip_prefix(['+', '-']).unwrap_or(digits);
         let count = digits.chars().count();
@@ -613,30 +631,53 @@ fn yaml_int(s: &str) -> Result<i64, Error> {
 fn yaml_float(s: &str) -> Result<f64, Error> {
     let (negative, text) = yaml_number_text(s, true)?;
     let part = |text: &str| {
-        text.trim_matches(char::is_whitespace)
-            .parse::<f64>()
-            .map_err(|_| {
-                yaml_error(
-                    "ValueError",
-                    format!(
-                        "could not convert string to float: {}",
-                        crate::executor_text::repr(text)
-                    ),
-                )
-            })
+        yaml_decimal_text(text).parse::<f64>().map_err(|_| {
+            yaml_error(
+                "ValueError",
+                format!(
+                    "could not convert string to float: {}",
+                    crate::executor_text::repr(text)
+                ),
+            )
+        })
     };
     let value = if text.contains(':') {
-        let mut base = 1.0;
-        text.split(':')
+        // PyYAML keeps base as an integer and converts it anew for each product.
+        let mut base = vec![1u8]; // little-endian decimal digits of 60**power
+        let mut sum = 0.0;
+        for digit in text
+            .split(':')
             .map(part)
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .rev()
-            .fold(0.0, |sum, digit| {
-                let sum = sum + digit * base;
-                base *= 60.0;
-                sum
-            })
+        {
+            let weight = part(
+                &base
+                    .iter()
+                    .rev()
+                    .map(|d| char::from(b'0' + d))
+                    .collect::<String>(),
+            )?;
+            if !weight.is_finite() {
+                return Err(yaml_error(
+                    "OverflowError",
+                    "int too large to convert to float".into(),
+                ));
+            }
+            sum += digit * weight;
+            let mut carry = 0u16;
+            for d in &mut base {
+                carry += u16::from(*d) * 60;
+                *d = (carry % 10) as u8;
+                carry /= 10;
+            }
+            while carry != 0 {
+                base.push((carry % 10) as u8);
+                carry /= 10;
+            }
+        }
+        sum
     } else {
         part(&text)?
     };
@@ -778,7 +819,7 @@ pub fn validate_phase2(
                 Ok(doc) => doc,
                 Err(
                     e @ Error::Yaml {
-                        class: "ValueError" | "IndexError",
+                        class: "ValueError" | "IndexError" | "OverflowError",
                         ..
                     },
                 ) => return Err(e),

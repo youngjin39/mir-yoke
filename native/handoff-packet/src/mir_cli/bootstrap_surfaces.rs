@@ -183,7 +183,12 @@ pub fn validate_architecture_evidence(root: &Path) -> Validation {
     }
     let mut open_gaps = -1i128;
     match invalid_document(&root.join("spec/gaps.yaml")) {
-        Err(e) if matches!(e.class.as_str(), "ValueError" | "IndexError") => {
+        Err(e)
+            if matches!(
+                e.class.as_str(),
+                "ValueError" | "IndexError" | "OverflowError"
+            ) =>
+        {
             return Err(e);
         }
         Err(e) => errors.push(format!("spec/gaps.yaml is invalid: {e}")),
@@ -217,7 +222,12 @@ pub fn validate_architecture_evidence(root: &Path) -> Validation {
     for name in ["index.yaml", "graph.yaml"] {
         let doc = match invalid_document(&root.join("spec").join(name)) {
             Ok(doc) => doc,
-            Err(e) if matches!(e.class.as_str(), "ValueError" | "IndexError") => {
+            Err(e)
+                if matches!(
+                    e.class.as_str(),
+                    "ValueError" | "IndexError" | "OverflowError"
+                ) =>
+            {
                 return Err(e);
             }
             Err(e) => {
