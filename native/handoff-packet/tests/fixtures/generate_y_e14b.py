@@ -1,16 +1,28 @@
 """Capture Y-E14b from pinned Python, with loopback-only networking."""
+import os
 import subprocess
 from pathlib import Path
 
 scope = {"__file__": __file__}
 source = Path(__file__).with_name("generate_y_e13.py").read_text()
-exec(source.split("resources =")[0].replace("yaml sqlite_vec", "yaml"), scope)
+prefix = source.split("resources =")[0].replace("yaml sqlite_vec", "yaml")
+prefix = prefix.replace("'/usr/bin/git'", "shutil.which('git')")
+prefix = prefix.replace("'/dev/null'", "os.devnull")
+prefix = prefix.replace("env={'HOME':", "env={**{k: os.environ[k] for k in "
+                        "('SystemRoot', 'WINDIR') if k in os.environ}, 'HOME':")
+exec(prefix, scope)
+if os.name == 'nt':
+    assert scope['sys'].version_info[:2] == (3, 12), 'PC oracle requires Python 3.12'
+    assert 'windows' in scope['a'].output.name, 'do not overwrite the Mac record'
+
 root, a = scope["root"], scope["a"]
 wrapper = root / "capture_e14b.py"
 wrapper.write_text('''import sys, pathlib, sysconfig, json, socket, threading, hashlib, os
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
-sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+sys.path[:] = [str(root / 'src'), str(root), stdlib,
+               str(pathlib.Path(stdlib) / 'lib-dynload'),
+               str(pathlib.Path(sys.base_prefix) / 'DLLs')]
 from mir.cli import bootstrap_adoption as adoption
 from mir.cli import _adoption_native as native
 for name, module in list(sys.modules.items()):
@@ -33,13 +45,22 @@ for argv in [['-hgarbage=abc'], ['--project-root', '-1\\n', '--help']]:
             code = exc.code
     records.append(dict(argv=argv, exit=code, stdout=out.getvalue(), stderr=err.getvalue()))
 body = b'synthetic evaluator\\n'
-for mode in ['http-ok', 'http-error', 'https-refusal', 'http-disconnect', 'http-oversize']:
+modes = ['http-ok', 'http-error', 'https-refusal', 'http-disconnect', 'http-oversize']
+if os.name == 'nt':
+    modes.append('proxy-refusal')
+for mode in modes:
     listener = socket.socket()
     listener.bind(('127.0.0.1', 0))
     listener.listen()
+    listener.settimeout(0.25 if os.name == 'nt' else 5)
+    contacted = []
     def serve():
         with listener:
-            stream, _ = listener.accept()
+            try:
+                stream, _ = listener.accept()
+            except TimeoutError:
+                return
+            contacted.append(True)
             with stream:
                 stream.recv(65536)
                 if mode == 'http-disconnect':
@@ -56,19 +77,35 @@ for mode in ['http-ok', 'http-error', 'https-refusal', 'http-disconnect', 'http-
     pin = dict(url=url, size=len(body), sha256=hashlib.sha256(body).hexdigest())
     work = pathlib.Path.cwd() / mode
     work.mkdir(exist_ok=True)
-    result = native._install(work, source_root=None, name='bootstrap-gate', artifact_pin=pin)
+    if mode == 'proxy-refusal':
+        os.environ['HTTP_PROXY'] = 'http://127.0.0.1:1'
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+        result = native._install(work, source_root=None, name='bootstrap-gate', artifact_pin=pin)
+    os.environ.pop('HTTP_PROXY', None)
     thread.join()
     dest = work / '.mir/bin/bootstrap-gate'
-    records.append(dict(mode=mode, result=result,
-                        installed=dest.read_text() if dest.exists() else None))
+    record = dict(mode=mode, result=result,
+                  installed=dest.read_text() if dest.exists() else None)
+    if os.name == 'nt':
+        record.update(contacted=bool(contacted), stderr=err.getvalue())
+        assert result is None and not dest.exists()
+        assert not dest.with_suffix('.exe').exists()
+        assert not contacted and not err.getvalue()
+    records.append(record)
 assert records[0]['exit'] == records[1]['exit'] == 0
-assert records[2]['installed'] == body.decode()
+if os.name == 'nt':
+    assert records[2]['installed'] is None
+else:
+    assert records[2]['installed'] == body.decode()
 assert records[3]['result'] is records[4]['result'] is None
 print(json.dumps(records, separators=(',', ':')))
 '''.replace('PACKAGE_SET', repr(set(['mir', *scope['packages']]))))
 work = a.scratch.resolve() / "work"
 work.mkdir(exist_ok=True)
 result = subprocess.run([scope["sys"].executable, "-I", str(wrapper)], cwd=work,
-                        env={"HOME": str(work), "PATH": "/usr/bin:/bin"},
+                        env={"HOME": str(work), "USERPROFILE": str(work), "PATH": "/usr/bin:/bin",
+                             **{k: os.environ[k] for k in ('SystemRoot', 'WINDIR')
+                                if k in os.environ}},
                         check=True, capture_output=True, timeout=60)
 a.output.write_bytes(result.stdout)

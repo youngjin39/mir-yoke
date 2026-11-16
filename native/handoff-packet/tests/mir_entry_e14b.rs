@@ -9,7 +9,16 @@ use std::{
 };
 
 fn records() -> Vec<Value> {
-    serde_json::from_str(include_str!("fixtures/y-e14b.json")).unwrap()
+    let text = if cfg!(windows) {
+        fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/y-e14b-windows.json"
+        ))
+        .expect("capture on Windows first: generate_y_e14b.py")
+    } else {
+        include_str!("fixtures/y-e14b.json").to_owned()
+    };
+    serde_json::from_str(&text).unwrap()
 }
 
 #[test]
@@ -37,21 +46,33 @@ fn parser_regressions() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
+fn evaluator_target(os: &str, arch: &str) -> Option<String> {
+    handoff_packet::mir_core::capabilities::native::host_target(
+        match os {
+            "macos" => "Darwin",
+            "linux" => "Linux",
+            "windows" => "Windows",
+            _ => "",
+        },
+        arch,
+    )
+}
+
+#[test]
+fn evaluator_worker_host_target() {
+    assert_eq!(
+        evaluator_target("windows", "x86_64").as_deref(),
+        Some("x86_64-pc-windows-msvc")
+    );
+}
+
 #[test]
 fn remote_evaluator() {
     if let Ok(mode) = std::env::var("E14B_WORKER") {
         let root = std::env::current_dir().unwrap();
-        let target = handoff_packet::mir_core::capabilities::native::host_target(
-            if cfg!(target_os = "macos") {
-                "Darwin"
-            } else {
-                "Linux"
-            },
-            std::env::consts::ARCH,
-        )
-        .unwrap();
+        let target = evaluator_target(std::env::consts::OS, std::env::consts::ARCH).unwrap();
         let pin = json!({"url":std::env::var("E14B_URL").unwrap(), "size":20,
-            "sha256":records()[2]["result"]["sha256"]});
+            "sha256":"e75a835d98bf762a52bd437cea5d6c93ffceb5019914975c6918df6f9f7e746d"});
         let lock = json!({"plugins":{"test":{}},"native_artifacts":{"bootstrap-gate":{
             "plugin":"test","install_path":"bin/bootstrap-gate","targets":{target:pin}}}});
         let source = root.join("source");
@@ -62,6 +83,11 @@ fn remote_evaluator() {
         let r = records().into_iter().find(|r| r["mode"] == mode).unwrap();
         assert_eq!(json!(result), r["result"]);
         assert_eq!(json!(installed), r["installed"]);
+        assert!(!root.join(".mir/bin/bootstrap-gate.exe").exists());
+        if cfg!(windows) {
+            assert!(result.is_none());
+            assert!(installed.is_none());
+        }
         return;
     }
     let mut failures = Vec::new();
@@ -123,9 +149,10 @@ fn remote_evaluator() {
             .args(["--exact", "remote_evaluator", "--nocapture"])
             .env_clear()
             .env("HOME", &root)
+            .env("USERPROFILE", &root)
             .env(
                 "E14B_WORKER",
-                if mode == "proxy-refusal" {
+                if mode == "proxy-refusal" && !cfg!(windows) {
                     "https-refusal"
                 } else {
                     mode
@@ -133,20 +160,34 @@ fn remote_evaluator() {
             )
             .env("E14B_URL", url)
             .current_dir(&root);
+        for key in ["SystemRoot", "WINDIR"] {
+            if let Some(value) = std::env::var_os(key) {
+                command.env(key, value);
+            }
+        }
         if mode == "proxy-refusal" {
             command.env("HTTP_PROXY", "http://127.0.0.1:1");
         }
         let out = command.output().unwrap();
         let contacted = server.join().unwrap();
         let stderr = String::from_utf8_lossy(&out.stderr);
-        let refusal = if mode == "proxy-refusal" {
+        if cfg!(windows) {
+            let record = records().into_iter().find(|r| r["mode"] == mode).unwrap();
+            assert_eq!(record["contacted"], false);
+            assert_eq!(record["stderr"], "");
+            assert_eq!(json!(contacted), record["contacted"]);
+            assert_eq!(json!(stderr), record["stderr"]);
+        }
+        let refusal = if cfg!(windows) {
+            ""
+        } else if mode == "proxy-refusal" {
             "UnsupportedProtocol: Environment proxy embedding transport is not supported\n"
         } else {
             "UnsupportedProtocol: HTTPS embedding transport is not supported\n"
         };
         if !out.status.success()
-            || contacted != mode.starts_with("http-")
-            || (mode.ends_with("refusal") && stderr != refusal)
+            || contacted != (!cfg!(windows) && mode.starts_with("http-"))
+            || ((cfg!(windows) || mode.ends_with("refusal")) && stderr != refusal)
         {
             failures.push(format!(
                 "{mode}: contacted={contacted} stdout={} stderr={stderr}",
