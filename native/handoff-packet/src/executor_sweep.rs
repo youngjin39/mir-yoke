@@ -30,6 +30,59 @@ fn resolved(path: &Path) -> Result<PathBuf> {
         .unwrap_or(Path::new("."));
     Ok(resolved(parent)?.join(path.file_name().ok_or("missing path name")?))
 }
+// pathlib resolves each link separately, without libc's chain-length limit or
+// firmlink spelling changes. Keep this display/admission path separate from
+// the physical path and device/inode checks used for removal.
+#[cfg(windows)]
+pub(crate) fn python_resolved(path: &Path) -> Result<PathBuf> {
+    // Preserve Windows final-path normalization (including short-name expansion).
+    resolved(path)
+}
+#[cfg(unix)]
+pub(crate) fn python_resolved(path: &Path) -> Result<PathBuf> {
+    fn walk(path: &Path, mut out: PathBuf, active: &mut BTreeSet<PathBuf>) -> (PathBuf, bool) {
+        let mut unresolved = false;
+        for part in path.components() {
+            match part {
+                std::path::Component::CurDir => continue,
+                std::path::Component::ParentDir => {
+                    out.pop();
+                    continue;
+                }
+                _ => out.push(part.as_os_str()),
+            }
+            if !unresolved && let Ok(target) = fs::read_link(&out) {
+                let link = out.clone();
+                if active.insert(link.clone()) {
+                    out.pop();
+                    (out, unresolved) = walk(&target, out, active);
+                    active.remove(&link);
+                } else {
+                    // realpath stops resolving the entire suffix after a loop;
+                    // only lexical normalization continues, even across '..'.
+                    unresolved = true;
+                }
+            }
+        }
+        (out, unresolved)
+    }
+    // Callers supply absolute paths, using the cwd already captured at admission.
+    let output = crate::supply::plain(walk(path, PathBuf::new(), &mut BTreeSet::new()).0);
+    // Python 3.12's non-strict realpath leaves a loop unresolved, then stat()
+    // raises with the complete remaining path (including a DB filename).
+    if let Err(error) = fs::metadata(&output) {
+        let cycle = error.raw_os_error() == Some(libc::ELOOP);
+        if cycle {
+            return Err(format!(
+                "RuntimeError: Symlink loop from {}",
+                crate::executor_text::repr_points(&crate::executor_text::os_points(
+                    output.as_os_str()
+                ))
+            ));
+        }
+    }
+    Ok(output)
+}
 fn git(root: &Path, args: &[&str]) -> std::io::Result<Output> {
     Command::new("git")
         .env("GIT_OPTIONAL_LOCKS", "0")
@@ -221,6 +274,7 @@ fn directory_identity(path: &Path) -> std::io::Result<(u64, u64)> {
 #[derive(Clone)]
 struct Worktree {
     path: PathBuf,
+    display: PathBuf,
     registered: PathBuf,
     identity: Option<(u64, u64)>,
     branch: String,
@@ -303,11 +357,19 @@ fn list(repo: &Path) -> Result<Vec<Worktree>> {
             && let Some(id) = branch.strip_prefix("refs/heads/mir-dispatch/")
         {
             let registered = PathBuf::from(path);
-            let path = resolved(&registered)?;
+            // Git emits absolute paths. Retain baseline handling for relative listings.
+            let absolute = if registered.is_absolute() {
+                registered.clone()
+            } else {
+                resolved(&registered)?
+            };
+            let display = python_resolved(&absolute)?;
+            let path = resolved(&display)?;
             if path != repo {
                 result.push(Worktree {
                     identity: directory_identity(&path).ok(),
                     path,
+                    display,
                     registered,
                     branch: branch.trim_start_matches("refs/heads/").into(),
                     id: id.into(),
@@ -315,7 +377,7 @@ fn list(repo: &Path) -> Result<Vec<Worktree>> {
             }
         }
     }
-    result.sort_by(|a, b| a.path.cmp(&b.path));
+    result.sort_by(|a, b| a.display.cmp(&b.display));
     Ok(result)
 }
 pub fn sweep_run_state(
@@ -356,7 +418,9 @@ pub fn sweep_run_state_with_observer(
     let worktrees = match list(&repo) {
         Ok(w) => w,
         Err(e) => {
-            errors.push(format!("list worktrees: {e}"));
+            // Python catches listing exceptions and reports str(exc), not its class.
+            let message = e.strip_prefix("RuntimeError: ").unwrap_or(&e);
+            errors.push(format!("list worktrees: {message}"));
             vec![]
         }
     };
@@ -370,7 +434,7 @@ pub fn sweep_run_state_with_observer(
     let mut removed = vec![];
     let inspections: Vec<_> = orphans.iter().map(|w| inspect(&repo, w)).collect();
     for (wt, initial) in orphans.iter().zip(inspections) {
-        let path = wire(&wt.path)?;
+        let path = wire(&wt.display)?;
         if !initial.reasons.is_empty() {
             preserved.push(json!({"path":path,"reasons":initial.reasons}));
             continue;
@@ -385,7 +449,7 @@ pub fn sweep_run_state_with_observer(
                 continue;
             }
             observer("before-remove", &wt.path)?;
-            // Keep inspection/reporting canonical, but Git requires its registered spelling.
+            // Inspection stays physical; Git requires its registered spelling.
             // Revalidate after the observer so retargeted aliases and replaced directories
             // cannot turn a previously inspected tree into authority to remove another.
             if resolved(&wt.registered).ok().as_ref() != Some(&wt.path)
@@ -420,7 +484,7 @@ pub fn sweep_run_state_with_observer(
     }
     preserved.extend(drifted);
     Ok(
-        json!({"stale_jobs":stale,"orphan_worktrees":orphans.iter().map(|w|wire(&w.path)).collect::<Result<Vec<_>>>()?,"removable_worktrees":removable,"preserved_worktrees":preserved,"reaped_jobs":[],"removed_worktrees":removed,"errors":errors,"apply":apply}),
+        json!({"stale_jobs":stale,"orphan_worktrees":orphans.iter().map(|w|wire(&w.display)).collect::<Result<Vec<_>>>()?,"removable_worktrees":removable,"preserved_worktrees":preserved,"reaped_jobs":[],"removed_worktrees":removed,"errors":errors,"apply":apply}),
     )
 }
 fn identity(text: &str) -> bool {
