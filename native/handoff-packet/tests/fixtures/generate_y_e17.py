@@ -23,6 +23,23 @@ def observe_project_roots(result, work):
         argv[index] = '{ROOT}'
     return result
 
+def observe_capture_round(records, scratch):
+    # Only validated structured roots and their matching argv may vary by round.
+    import copy
+    from pathlib import PureWindowsPath
+
+    observed = copy.deepcopy(records)
+    for i, record in enumerate(observed):
+        assert record['platform'] == 'win32'
+        assert record['reference_pin'] == '5f8f69f94e09b64c5e4d07d329ed17797c35e6cb'
+        expected = str(PureWindowsPath(scratch) / 'oracle' / f'case-{i}')
+        assert PureWindowsPath(expected).is_absolute(), 'absolute round root required'
+        assert record['project_root'] == expected, 'project_root spelling'
+        observe_project_roots(record, expected)
+        record['project_root'] = '{ROOT}'
+    return observed
+
+
 def run_oracle(argv, **kwargs):
     result = subprocess.run(argv, capture_output=True, **kwargs)
     if result.returncode:
@@ -46,7 +63,8 @@ for name, module in list(sys.modules.items()):
     if name.split('.')[0] in PACKAGE_SET:
         paths = [module.__file__] if module.__file__ else module.__path__
         assert all(pathlib.Path(p).resolve().is_relative_to(root) for p in paths), name
-assert {k.upper() for k in os.environ} <= {k.upper() for k in {'HOME', 'USERPROFILE', 'PATH', 'SystemRoot', 'WINDIR',
+assert {k.upper() for k in os.environ} <= {k.upper() for k in {
+                           'HOME', 'USERPROFILE', 'PATH', 'SystemRoot', 'WINDIR',
                            'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_GLOBAL',
                            'PYTHONIOENCODING', 'LC_CTYPE', '__CF_USER_TEXT_ENCODING'}}
 def forbidden(*args, **kwargs):

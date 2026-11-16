@@ -4,7 +4,6 @@ use super::authored::{json_text, python_str, read_error, read_text, value_error}
 use super::content::truthy;
 use super::{Error, Host, release};
 use crate::executor_execute::repr;
-use crate::mir_cli::bootstrap_adoption::wire;
 use crate::plugin_scripts::ontology_check::{Doc, object};
 use crate::python_json::{self as py, Object, Text, Value as PyValue};
 use serde_json::{Value, json};
@@ -136,7 +135,7 @@ pub fn activate_capabilities(
         "--profile",
         profile,
         "--project-root",
-        &wire(root),
+        &root.display().to_string(),
         "--apply",
         "--json",
     ]
@@ -295,7 +294,7 @@ pub fn finalize_capabilities(
     let argv = [
         "finalize",
         "--project-root",
-        &wire(root),
+        &root.display().to_string(),
         "--apply",
         "--after-restart",
         "--json",

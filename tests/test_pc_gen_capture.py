@@ -61,3 +61,24 @@ def test_e17_failed_child_diagnostics(tmp_path):
         assert expected in message
     assert scope['run_oracle']([sys.executable, '-I', '-c', 'print("ok")'],
                                cwd=tmp_path).stdout == b'ok\n'
+
+
+def test_e17_round_comparison_preserves_other_paths():
+    scope = helpers('e17')
+    roots = [r'C:\scratch\r1', r'C:\scratch\r2']
+    records = [[{'project_root': root + r'\oracle\case-0', 'platform': 'win32',
+                 'reference_pin': '5f8f69f94e09b64c5e4d07d329ed17797c35e6cb',
+                 'calls': [['sync', '--project-root', root + r'\oracle\case-0']],
+                 'stderr': 'unchanged'}] for root in roots]
+    observed = [scope['observe_capture_round'](r, root)
+                for r, root in zip(records, roots, strict=True)]
+    assert observed[0] == observed[1]
+    assert records[0][0]['project_root'] != records[1][0]['project_root']
+    records[1][0]['stderr'] = roots[1]
+    assert scope['observe_capture_round'](records[1], roots[1]) != observed[0]
+    records[1][0]['calls'][0][2] = roots[1].replace('\\', '/') + '/oracle/case-0'
+    with pytest.raises(AssertionError, match='--project-root spelling'):
+        scope['observe_capture_round'](records[1], roots[1])
+    records[1][0]['project_root'] = roots[1] + r'\other'
+    with pytest.raises(AssertionError, match='project_root'):
+        scope['observe_capture_round'](records[1], roots[1])

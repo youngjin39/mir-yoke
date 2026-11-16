@@ -191,9 +191,10 @@ fn windows_spawn_message(error: &io::Error, render: impl FnOnce(&io::Error) -> S
         error
     };
     let rendered = render(error);
-    rendered
-        .split_once(": ")
-        .map_or_else(|| rendered.clone(), |(_, message)| message.to_owned())
+    rendered.split_once(": ").map_or_else(
+        || rendered.clone(),
+        |(_, message)| message.trim_end_matches('.').to_owned(),
+    )
 }
 
 fn jq_spawn_message(error: &io::Error) -> String {
@@ -243,7 +244,7 @@ fn pc3_missing_jq_windows_mapping() {
         .unwrap();
     let actual = windows_spawn_message(&error, |mapped| {
         assert_eq!(mapped.raw_os_error(), Some(2));
-        format!("FileNotFoundError: {expected}")
+        format!("FileNotFoundError: {expected}.")
     });
     assert_eq!(actual, expected);
     // Preserve the real spawn failure as the source while reproducing Rust's
@@ -253,7 +254,7 @@ fn pc3_missing_jq_windows_mapping() {
     assert_eq!(
         windows_spawn_message(&without_code, |mapped| {
             assert_eq!(mapped.raw_os_error(), Some(2));
-            format!("FileNotFoundError: {expected}")
+            format!("FileNotFoundError: {expected}.")
         }),
         expected
     );
