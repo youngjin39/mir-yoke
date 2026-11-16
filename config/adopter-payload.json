@@ -3281,7 +3281,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/bootstrap_adoption_main.rs",
-      "sha256": "978a204b6f72db1274607ae741171e05919be049014f7610942e77e6d87a4eb5"
+      "sha256": "3af3f306d10ac45de996d3d4063f443ba118ebaa13180e7dd77948ece861fa31"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6035,7 +6035,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e14.rs",
-      "sha256": "8ca220bf1c63f769e57ff655c70e963f354d66eb2c8ede82c9c18439f407a25b"
+      "sha256": "bb1f5d1969ed6a726b8446d80b414a1df34313c99f8d93fa6b04c7ecfd6af994"
     },
     {
       "classification": "template-maintainer-tool",

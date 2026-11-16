@@ -275,7 +275,7 @@ fn public_receipt_physical_bytes_match_pinned_python() {
             .replace("windows", "win32")
     );
     let temp = tempfile::tempdir().unwrap();
-    let path = temp.path().join("receipt.json");
+    let path = temp.path().canonicalize().unwrap().join("receipt.json");
     write_receipt_with(&path, &record["payload"], |_, _| Ok(())).unwrap();
     let bytes = fs::read(path).unwrap();
     let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();

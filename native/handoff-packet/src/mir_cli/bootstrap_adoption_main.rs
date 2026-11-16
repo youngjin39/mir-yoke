@@ -655,8 +655,9 @@ mod receipt_tests {
         ))
         .unwrap();
         let temp = tempfile::tempdir().unwrap();
+        let base = temp.path().canonicalize().unwrap();
         for windows in [false, true] {
-            let path = temp.path().join("receipt.json");
+            let path = base.join("receipt.json");
             write_receipt_for_platform(&path, &fixture["payload"], windows, |_, _| Ok(())).unwrap();
             let logical = fixture["logical"].as_str().unwrap();
             let expected = if windows {
