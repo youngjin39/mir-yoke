@@ -9,18 +9,40 @@ use std::{
 
 #[test]
 fn context_embedding_provider_binding() {
-    provider_binding(None);
+    provider_binding(None, false);
 }
 #[test]
 fn no_body_204_keep_alive() {
-    provider_binding(Some("required-204"));
+    provider_binding(Some("required-204"), false);
 }
 #[test]
 fn no_body_304_keep_alive() {
-    provider_binding(Some("required-304"));
+    provider_binding(Some("required-304"), false);
 }
-fn provider_binding(only: Option<&str>) {
-    let mut records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e6.json")).unwrap();
+#[test]
+fn diagnostics_preserve_console() {
+    provider_binding(Some("required-timeout"), true);
+    provider_binding(Some("shape"), true);
+}
+#[test]
+#[should_panic(expected = "missing E6 reference")]
+fn missing_record_fails_explicitly() {
+    records("s09-missing-record-do-not-create");
+}
+fn records(name: &str) -> Vec<Value> {
+    let suffix = if cfg!(windows) { "-windows" } else { "" };
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(format!("tests/fixtures/{name}{suffix}.json"));
+    let text = fs::read_to_string(&path).unwrap_or_else(|e| {
+        panic!(
+            "missing E6 reference {}: {e}; run generate_y_e6.py on this platform",
+            path.display()
+        )
+    });
+    serde_json::from_str(&text).unwrap()
+}
+fn provider_binding(only: Option<&str>, diagnostic: bool) {
+    let mut records = records("y-e6");
     for (mode, error) in [
         ("tls", "HTTPS embedding transport is not supported"),
         (
@@ -83,6 +105,9 @@ fn provider_binding(only: Option<&str>) {
             if r["mode"] != "no-key" {
                 cmd.env("SYNTHETIC_KEY", "fake-only");
             }
+            if diagnostic || std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
+                cmd.env("MIR_E6_DIAG", "1");
+            }
             cmd.output().unwrap()
         };
         if r["mode"].as_str().unwrap().starts_with("reindex") {
@@ -103,6 +128,7 @@ fn provider_binding(only: Option<&str>) {
         let body = r["body"].as_str().unwrap().to_owned();
         let status = r["status"].as_u64().unwrap();
         let mode = r["mode"].as_str().unwrap().to_owned();
+        let diagnostic_enabled = diagnostic || std::env::var("MIR_E6_DIAG").as_deref() == Ok("1");
         let server = thread::spawn(move || {
             let listener = listener?;
             let deadline = std::time::Instant::now() + std::time::Duration::from_secs(4);
@@ -129,6 +155,7 @@ fn provider_binding(only: Option<&str>) {
                             .unwrap();
                         let mut input = vec![0; size];
                         stream.read_exact(&mut input).unwrap();
+                        let started = std::time::Instant::now();
                         if mode == "required-timeout" {
                             thread::sleep(std::time::Duration::from_secs(3));
                         }
@@ -146,6 +173,15 @@ fn provider_binding(only: Option<&str>) {
                                 "HTTP/1.1 {status} {reason}\r\nConnection: keep-alive\r\n\r\n"
                             )
                             .unwrap();
+                            if diagnostic_enabled {
+                                eprintln!(
+                                    "[MIR_E6_DIAG] {}",
+                                    serde_json::json!({
+                                        "event":"server-head", "mode":mode, "status":status,
+                                        "body_bytes":0, "elapsed_sec":started.elapsed().as_secs_f64()
+                                    })
+                                );
+                            }
                             thread::sleep(std::time::Duration::from_secs(3));
                         } else if mode == "required-garbage" {
                             stream.write_all(b"garbage\r\n\r\n").unwrap();
@@ -177,13 +213,68 @@ fn provider_binding(only: Option<&str>) {
                 }
             }
         });
-        let out = run(r["argv"]
+        let started = std::time::Instant::now();
+        let mut out = run(r["argv"]
             .as_array()
             .unwrap()
             .iter()
             .map(|v| v.as_str().unwrap())
             .collect());
+        let elapsed = started.elapsed().as_secs_f64();
         let request = server.join().unwrap();
+        if diagnostic_enabled {
+            eprintln!(
+                "[MIR_E6_DIAG] {}",
+                serde_json::json!({
+                    "event":"native-console", "mode":r["mode"], "exit":out.status.code(),
+                    "elapsed_sec":elapsed, "request":request, "server_status":r["status"],
+                    "stdout":String::from_utf8_lossy(&out.stdout),
+                    "stderr":String::from_utf8_lossy(&out.stderr)
+                })
+            );
+        }
+        let mut diagnostics = Vec::new();
+        out.stderr = out
+            .stderr
+            .split_inclusive(|b| *b == b'\n')
+            .filter(|line| {
+                if let Some(data) = line.strip_prefix(b"[MIR_E6_DIAG] ")
+                    && diagnostic_enabled
+                {
+                    diagnostics.push(serde_json::from_slice::<Value>(data).unwrap());
+                    eprint!("{}", String::from_utf8_lossy(line));
+                    false
+                } else {
+                    true
+                }
+            })
+            .flatten()
+            .copied()
+            .collect();
+        if diagnostic {
+            let event = if r["mode"] == "required-timeout" {
+                "io"
+            } else {
+                "sync"
+            };
+            let data = diagnostics
+                .iter()
+                .find(|d| d["event"] == event)
+                .unwrap_or_else(|| panic!("missing {event}: {out:?}"));
+            if event == "io" {
+                assert_eq!(data["phase"], "Read");
+                assert!(matches!(
+                    data["kind"].as_str(),
+                    Some("WouldBlock" | "TimedOut")
+                ));
+                assert!(data["os_error"].is_number());
+                assert!(data["error"].as_str().is_some_and(|s| !s.is_empty()));
+            } else {
+                assert_eq!(data["vec_available"], true);
+                assert_eq!(data["vec_reason"], Value::Null);
+                assert_eq!(data["failed"][0][1], "insert: row 0: dim=1023 != 1024");
+            }
+        }
         if r["native_error"].is_string() || r["mode"] == "required-gzip" {
             assert_eq!(out.status.code(), Some(1));
             assert!(
@@ -206,14 +297,15 @@ fn provider_binding(only: Option<&str>) {
         assert_eq!(
             String::from_utf8(out.stdout)
                 .unwrap()
-                .replace(url.trim_end_matches('/'), "@URLBASE@"),
-            r["stdout"],
+                .replace(url.trim_end_matches('/'), "@URLBASE@")
+                .as_bytes(),
+            r["stdout"].as_str().unwrap().as_bytes(),
             "{}",
             r["mode"]
         );
         assert_eq!(
-            String::from_utf8(out.stderr).unwrap(),
-            r["stderr"],
+            out.stderr,
+            r["stderr"].as_str().unwrap().as_bytes(),
             "{}",
             r["mode"]
         );
@@ -276,9 +368,8 @@ fn provider_binding(only: Option<&str>) {
 // move that host into NO_PROXY so even a broken guard can only dial loopback.
 #[test]
 fn idna_refusal_cli() {
-    let records: Vec<Value> =
-        serde_json::from_str(include_str!("fixtures/y-e6-proxy.json")).unwrap();
-    let wire: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e6.json")).unwrap();
+    let records = records("y-e6-proxy");
+    let wire = self::records("y-e6");
     let config = wire.iter().find(|r| r["mode"] == "required-shape").unwrap()["config"]
         .as_str()
         .unwrap()

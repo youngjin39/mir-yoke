@@ -77,6 +77,28 @@ for probe in (lambda: resolve(*addr), lambda: dial(None, addr), lambda: dial_ex(
 from mir.cli.__main__ import main
 from mir.cli import context
 from mir.core.engine.memory import store
+import os, json, time
+if os.environ.get('MIR_E6_DIAG') == '1':
+    import httpx
+    send = httpx.Client.send
+    def observed(self, *args, **kwargs):
+        started = time.monotonic()
+        data = dict(event='reference-http')
+        try:
+            response = send(self, *args, **kwargs)
+            data.update(status=response.status_code, body_hex=response.content.hex())
+            return response
+        except Exception as exc:
+            chain = []
+            while exc is not None:
+                chain.append(repr(exc))
+                exc = exc.__cause__ or exc.__context__
+            data['errors'] = chain
+            raise
+        finally:
+            data['elapsed_sec'] = time.monotonic() - started
+            print('[MIR_E6_DIAG] ' + json.dumps(data), file=sys.stderr)
+    httpx.Client.send = observed
 for name, module in list(sys.modules.items()):
     if name.split('.')[0] in SET:
         paths = [module.__file__] if module.__file__ else module.__path__
@@ -97,7 +119,7 @@ try:
 except Exception as exc:
     print(type(exc).__name__ + ': ' + str(exc), file=sys.stderr)
     raise SystemExit(1)
-'''.replace('SET', repr(set(['mir', *packages]))))
+'''.replace('SET', repr(set(['mir', *packages]))), encoding='utf-8')
 
 proxy_records = []
 for pattern in ['localhost', 'LOCALHOST', '.localhost', 'example.com', '.example.com',
@@ -107,7 +129,7 @@ for pattern in ['localhost', 'LOCALHOST', '.localhost', 'example.com', '.example
         env = {**os_env, 'HOME': str(root), 'USERPROFILE': str(root),
                  'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath,
                'HTTP_PROXY': 'http://127.0.0.1:1', 'NO_PROXY': pattern}
-        result = subprocess.run([sys.executable, '-I', str(wrapper), 'proxy',
+        result = subprocess.run([sys.executable, '-I', '-X', 'utf8', '-B', str(wrapper), 'proxy',
                                  f'http://{host}:12345/'], cwd=root, env=env,
                                 capture_output=True, check=True)
         proxy_records.append(dict(pattern=pattern, host=host,
@@ -133,7 +155,7 @@ for host, pattern in [
     env = {**os_env, 'HOME': str(root), 'USERPROFILE': str(root),
                  'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath,
            'HTTP_PROXY': 'http://127.0.0.1:1', 'NO_PROXY': pattern}
-    result = subprocess.run([sys.executable, '-I', str(wrapper), 'proxy',
+    result = subprocess.run([sys.executable, '-I', '-X', 'utf8', '-B', str(wrapper), 'proxy',
                              f'http://{host}:12345/'], cwd=root, env=env,
                             capture_output=True)
     # Native-only refusal is derived from the FIX4/FIX5 owner decision,
@@ -148,7 +170,7 @@ for host, pattern in [
     else:
         record['applies'] = json.loads(result.stdout)
     proxy_records.append(record)
-a.proxy_output.write_text(json.dumps(proxy_records, separators=(',', ':')) + '\n')
+a.proxy_output.write_text(json.dumps(proxy_records, separators=(',', ':')) + '\n', encoding='utf-8')
 records = []
 for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "status",
              "required-shape", "required-norm", "required-missing-data",
@@ -159,7 +181,7 @@ for mode in ["valid", "no-key", "shape", "norm", "missing-data", "bad-json", "st
     work = root / mode
     work.mkdir(exist_ok=True)
     (work / "notes").mkdir(exist_ok=True)
-    (work / "notes/a.md").write_text("Synthetic archive document.\n")
+    (work / "notes/a.md").write_text("Synthetic archive document.\n", encoding="utf-8")
     requests = []
     vector = [1.0] + [0.0] * (1022 if "shape" in mode else 1023)
     if mode.endswith("norm"):
@@ -236,15 +258,25 @@ timeout_sec=2
 slug="notes"
 root="notes"
 """
-    (work / 'harness_a.toml').write_text(config)
+    (work / 'harness_a.toml').write_text(config, encoding="utf-8")
     env = {**os_env, 'HOME': str(work), 'USERPROFILE': str(work),
-                 'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath, 'NO_PROXY': '*'}
+                 'PYTHONIOENCODING': 'utf-8', 'PATH': os.defpath, 'NO_PROXY': '*',
+           'MIR_E6_DIAG': os.environ.get('MIR_E6_DIAG', '')}
     if mode != 'no-key':
         env['SYNTHETIC_KEY'] = 'fake-only'
 
     def run(args, work=work, env=env):
-        return subprocess.run([sys.executable, '-I', str(wrapper), *args], cwd=work,
-                              env=env, capture_output=True)
+        started = time.monotonic()
+        result = subprocess.run(
+            [sys.executable, '-I', '-X', 'utf8', '-B', str(wrapper), *args], cwd=work,
+            env=env, capture_output=True)
+        if env['MIR_E6_DIAG'] == '1':
+            print(json.dumps(dict(mode=work.name, argv=args, exit=result.returncode,
+                                  elapsed_sec=time.monotonic() - started,
+                                  stderr=result.stderr.decode('utf-8'))), file=sys.stderr)
+            result.stderr = b''.join(line for line in result.stderr.splitlines(keepends=True)
+                                     if not line.startswith(b'[MIR_E6_DIAG] '))
+        return result
 
     # Re-create only this synthetic database on regeneration.
     for suffix in ['', '-wal', '-shm']:
@@ -254,9 +286,9 @@ root="notes"
     if mode.startswith('reindex'):
         disabled = config.replace('enabled=true', 'enabled=false').replace(
             'fingerprint="synthetic-v1"', 'fingerprint=""')
-        (work / 'harness_a.toml').write_text(disabled)
+        (work / 'harness_a.toml').write_text(disabled, encoding="utf-8")
         assert run(argv).returncode == 0
-        (work / 'harness_a.toml').write_text(config)
+        (work / 'harness_a.toml').write_text(config, encoding="utf-8")
         argv.append('--reindex-missing-vectors')
     try:
         result = run(argv)
@@ -277,4 +309,4 @@ root="notes"
                             url.rstrip('/'), '@URLBASE@'),
                         stderr=result.stderr.decode("utf-8"), counts=counts))
 assert records[0]['exit'] == 0 and records[0]['requests'][0]['path'] == '/v1/embeddings'
-a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n')
+a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n', encoding='utf-8')

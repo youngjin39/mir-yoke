@@ -11,14 +11,50 @@ use std::{
 
 #[test]
 fn frozen_pull_console_provider() {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e8.json")).unwrap();
+    pull(None, false);
+}
+#[test]
+fn diagnostics_preserve_console() {
+    pull(Some("bad-json"), true);
+    pull(Some("status"), true);
+}
+#[test]
+#[should_panic(expected = "missing E8 reference")]
+fn missing_record_fails_explicitly() {
+    records("s10-missing-record-do-not-create");
+}
+fn records(name: &str) -> Vec<Value> {
+    let suffix = if cfg!(windows) { "-windows" } else { "" };
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(format!("tests/fixtures/{name}{suffix}.json"));
+    let text = fs::read_to_string(&path).unwrap_or_else(|e| {
+        panic!(
+            "missing E8 reference {}: {e}; run generate_y_e8.py on this platform",
+            path.display()
+        )
+    });
+    serde_json::from_str(&text).unwrap()
+}
+fn pull(only: Option<&str>, diagnostic: bool) {
+    let records = records("y-e8");
     for r in records {
         let mode = r["mode"].as_str().unwrap();
+        if only.is_some_and(|selected| selected != mode) {
+            continue;
+        }
+        let diagnostic_enabled = diagnostic || std::env::var("MIR_E6_DIAG").as_deref() == Ok("1");
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         fs::create_dir(root.join("notes")).unwrap();
         for (i, doc) in r["docs"].as_array().unwrap().iter().enumerate() {
-            fs::write(root.join(format!("notes/{i}.md")), doc.as_str().unwrap()).unwrap();
+            // Match the generator's Python text-mode write before indexing bytes.
+            let doc = doc.as_str().unwrap();
+            let bytes = if cfg!(windows) {
+                doc.replace('\n', "\r\n")
+            } else {
+                doc.to_owned()
+            };
+            fs::write(root.join(format!("notes/{i}.md")), bytes).unwrap();
         }
         let c = store::connect(
             &root.join("memory.db"),
@@ -152,7 +188,7 @@ fn frozen_pull_console_provider() {
                 }
             }
         });
-        let out = Command::new(env!("CARGO_BIN_EXE_mir"))
+        let mut out = Command::new(env!("CARGO_BIN_EXE_mir"))
             .args(
                 r["argv"]
                     .as_array()
@@ -171,23 +207,65 @@ fn frozen_pull_console_provider() {
             .env("USERPROFILE", &root)
             .env("PYTHONIOENCODING", "utf-8")
             .env("SYNTHETIC_KEY", "fake-only")
+            .env("MIR_E6_DIAG", if diagnostic_enabled { "1" } else { "" })
             .current_dir(&root)
             .output()
             .unwrap();
         let requests = server.join().unwrap();
+        let mut diagnostics = Vec::new();
+        if diagnostic_enabled {
+            eprintln!(
+                "[MIR_E6_DIAG] {}",
+                serde_json::json!({
+                    "event":"native-console", "mode":mode, "exit":out.status.code(),
+                    "stdout":String::from_utf8_lossy(&out.stdout),
+                    "stderr":String::from_utf8_lossy(&out.stderr), "requests":requests
+                })
+            );
+            out.stderr = out
+                .stderr
+                .split_inclusive(|b| *b == b'\n')
+                .filter(|line| {
+                    if let Some(data) = line.strip_prefix(b"[MIR_E6_DIAG] ") {
+                        diagnostics.push(serde_json::from_slice::<Value>(data).unwrap());
+                        eprint!("{}", String::from_utf8_lossy(line));
+                        false
+                    } else {
+                        true
+                    }
+                })
+                .flatten()
+                .copied()
+                .collect();
+        }
+        if diagnostic {
+            let data = diagnostics
+                .iter()
+                .find(|d| d["event"] == "pull-search")
+                .unwrap_or_else(|| panic!("missing pull-search: {out:?}"));
+            let reason = data["error"].as_str().unwrap();
+            assert!(
+                reason.contains(if mode == "status" {
+                    "503"
+                } else {
+                    "Expecting property name enclosed in double quotes"
+                }),
+                "{data}"
+            );
+        }
         assert_eq!(
             out.status.code(),
             Some(r["exit"].as_i64().unwrap() as i32),
             "{mode}: {out:?}"
         );
         assert_eq!(
-            String::from_utf8(out.stdout).unwrap(),
-            r["stdout"],
+            out.stdout,
+            r["stdout"].as_str().unwrap().as_bytes(),
             "{mode}"
         );
         assert_eq!(
-            String::from_utf8(out.stderr).unwrap(),
-            r["stderr"],
+            out.stderr,
+            r["stderr"].as_str().unwrap().as_bytes(),
             "{mode}"
         );
         assert_eq!(serde_json::json!(requests), r["requests"], "{mode}");
