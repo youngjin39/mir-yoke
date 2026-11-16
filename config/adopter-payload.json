@@ -4691,13 +4691,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e10_constructor.py",
-      "sha256": "1996de90cfd495f8d389ffc851c768b568a0f832fb4e887f0e1cb08b05f8ea9c"
+      "sha256": "e2f5f777ec450a01721de2e1f45d877e66f66ce038f5e3f4a3791ad04fe87013"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e10_http.py",
-      "sha256": "54e74edaae2581d3ddf0c019bba8ddecc9abaff0d7c7c47244b147302f0ad78e"
+      "sha256": "a8b91a95f0edc193d1fa661a04bc215072176e2679fe9d0c498c1a8857a3b8ec"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4709,7 +4709,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e12c.py",
-      "sha256": "a5a4c5360a5943775fa8263e2e87008966d43f8fdb1a24d280561e8ef550e9b1"
+      "sha256": "58aa35ba0ca97330601beca8cb0af2462ddc8e0b1f3d802d2c61bf9944b87082"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4727,7 +4727,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e14.py",
-      "sha256": "8ad5443ff5af01944ca142dfee9687abe26291d5433580cbc73d7e0f2553ce66"
+      "sha256": "654e8dce0e27e945f239f492306b74e829752cbd32358aa65a7c796585dd9cf0"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4763,7 +4763,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e17.py",
-      "sha256": "2d8a7d8dd0c2b11c6ead63f0299e165ce00d3ca883d9045e18a4c7bb08efda66"
+      "sha256": "0ff2d4e93009cc7117327d739cd5e8ee38d1f95261daf33dc91d854d3e9db384"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4943,7 +4943,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e9_console.py",
-      "sha256": "9996609962ea1b74a5ad17c19ccec69ad96b6e4c7e3fb10993aa8228e0225af5"
+      "sha256": "6dd43df64911a4484de76cd6dc5feeb53788d646bd996a0ecbc3a8b9e2d25da3"
     },
     {
       "classification": "template-maintainer-tool",
