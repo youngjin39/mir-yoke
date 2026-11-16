@@ -748,7 +748,22 @@ mod tests {
         let mut stream = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
         let (_peer, _) = listener.accept().unwrap();
         stream.set_nonblocking(true).unwrap();
-        let error = stream.write_all(&vec![0; 16 * 1024 * 1024]).unwrap_err();
+        let payload = [0; 64 * 1024];
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let mut written = 0;
+        let error = loop {
+            assert!(
+                written < 256 * 1024 * 1024 && Instant::now() < deadline,
+                "socket did not reach WouldBlock within 256 MiB / 5 seconds ({written} bytes)"
+            );
+            let remaining = payload.len().min(256 * 1024 * 1024 - written);
+            match stream.write(&payload[..remaining]) {
+                Ok(0) => panic!("socket stopped accepting bytes without WouldBlock"),
+                Ok(n) => written += n,
+                Err(error) => break error,
+            }
+        };
+        assert_eq!(error.kind(), io::ErrorKind::WouldBlock);
         assert_eq!(io_error(error, "Write").class, "WriteTimeout");
         stream.shutdown(std::net::Shutdown::Write).unwrap();
         let error = stream.write_all(b"closed").unwrap_err();
