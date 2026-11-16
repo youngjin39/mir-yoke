@@ -31,6 +31,9 @@ pub mod bootstrap_state;
 pub mod codex_binary;
 #[forbid(unsafe_code)]
 mod digest;
+#[cfg(test)]
+#[path = "adoption_fs/errno_tests.rs"]
+mod errno_tests;
 #[forbid(unsafe_code)]
 pub mod executor_admission;
 #[forbid(unsafe_code)]
