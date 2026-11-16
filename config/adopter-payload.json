@@ -4751,7 +4751,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e17.py",
-      "sha256": "9bec03bb9f800575731fbf71617f53d90372cd00bda2c2e3b5368e4039aef727"
+      "sha256": "2d8a7d8dd0c2b11c6ead63f0299e165ce00d3ca883d9045e18a4c7bb08efda66"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6053,7 +6053,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e17.rs",
-      "sha256": "720c3f482857db901e610ff51000c83b88e2b338607c05b7c2ec5727a588f118"
+      "sha256": "e3c86c84d6b7a8819919c74cf7a24c555b4b6b47d3071a154115de9f65a49ef1"
     },
     {
       "classification": "template-maintainer-tool",
