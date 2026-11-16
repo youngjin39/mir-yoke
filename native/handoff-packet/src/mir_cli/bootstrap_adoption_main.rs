@@ -263,9 +263,18 @@ pub fn write_receipt_with(
     value: &Value,
     before: impl FnOnce(&Path, &Path) -> io::Result<()>,
 ) -> Result<(), Error> {
+    write_receipt_for_platform(path, value, cfg!(windows), before)
+}
+
+fn write_receipt_for_platform(
+    path: &Path,
+    value: &Value,
+    windows: bool,
+    before: impl FnOnce(&Path, &Path) -> io::Result<()>,
+) -> Result<(), Error> {
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(parent).map_err(|e| io_error(parent, e))?;
-    let data = format!("{}\n", json_string(value, true)?);
+    let data = receipt_json(value, windows)?;
     #[cfg(unix)]
     {
         use io::Write;
@@ -638,6 +647,30 @@ pub fn main(
 #[cfg(test)]
 mod receipt_tests {
     use super::*;
+
+    #[test]
+    fn public_writer_selects_windows_serialization() {
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/y-e14-receipt-bytes.json"
+        ))
+        .unwrap();
+        let temp = tempfile::tempdir().unwrap();
+        for windows in [false, true] {
+            let path = temp.path().join("receipt.json");
+            write_receipt_for_platform(&path, &fixture["payload"], windows, |_, _| Ok(())).unwrap();
+            let logical = fixture["logical"].as_str().unwrap();
+            let expected = if windows {
+                logical.replace('\n', "\r\n")
+            } else {
+                logical.into()
+            };
+            assert_eq!(
+                fs::read(path).unwrap(),
+                expected.as_bytes(),
+                "windows={windows}"
+            );
+        }
+    }
 
     #[test]
     fn windows_receipt_bytes_match_pinned_p3() {
