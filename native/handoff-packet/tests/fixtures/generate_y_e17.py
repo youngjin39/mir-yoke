@@ -46,9 +46,9 @@ for name, module in list(sys.modules.items()):
     if name.split('.')[0] in PACKAGE_SET:
         paths = [module.__file__] if module.__file__ else module.__path__
         assert all(pathlib.Path(p).resolve().is_relative_to(root) for p in paths), name
-assert set(os.environ) <= {'HOME', 'USERPROFILE', 'PATH', 'SystemRoot', 'WINDIR',
+assert {k.upper() for k in os.environ} <= {k.upper() for k in {'HOME', 'USERPROFILE', 'PATH', 'SystemRoot', 'WINDIR',
                            'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_GLOBAL',
-                           'PYTHONIOENCODING', 'LC_CTYPE', '__CF_USER_TEXT_ENCODING'}
+                           'PYTHONIOENCODING', 'LC_CTYPE', '__CF_USER_TEXT_ENCODING'}}
 def forbidden(*args, **kwargs):
     raise AssertionError('external action forbidden')
 socket.socket = forbidden
