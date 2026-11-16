@@ -3179,7 +3179,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_sweep.rs",
-      "sha256": "709972d69d53237445c5852d013a9490ebca7e2258b4cb835aea0af7368db1e0"
+      "sha256": "09cca1cb135761a48ee03eb04e6720815240eec757528fab7e73d55313743099"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4145,7 +4145,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_sweep.rs",
-      "sha256": "6e604e73f328126f7d05f106a495c14b898dd890e3c6710ccb51bef918eff479"
+      "sha256": "c7afb883bfdf5f4eb6820d8399d434b02d6c1f5f49e38a1423f77df895e4dab3"
     },
     {
       "classification": "template-maintainer-tool",
