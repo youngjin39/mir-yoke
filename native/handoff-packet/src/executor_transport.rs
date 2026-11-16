@@ -144,6 +144,15 @@ struct Turn {
     usage: Option<Value>,
     completed: Option<Value>,
 }
+// Until Client owns every pipe/worker, an exit cannot acknowledge effect release.
+struct SpawnSetup<'a>(Option<&'a mut dyn FnMut(bool)>);
+impl Drop for SpawnSetup<'_> {
+    fn drop(&mut self) {
+        if let Some(teardown) = self.0.take() {
+            teardown(true);
+        }
+    }
+}
 /// Serial request owner; Unix stdout/stderr are read only by this owner.
 /// Close sends SIGTERM on Unix, then escalates after kill_timeout; Windows uses Child::kill.
 /// Descendant-held pipes cannot extend the bounded exit drain.
@@ -178,13 +187,14 @@ impl Client {
         initialize_timeout: Duration,
         kill_timeout: Duration,
     ) -> Result<Self> {
-        let mut client = Self::spawn_uninitialized(command, kill_timeout)?;
+        let mut client = Self::spawn_uninitialized(command, kill_timeout, &mut |_| {})?;
         client.initialize(initialize_timeout)?;
         Ok(client)
     }
     pub(crate) fn spawn_uninitialized(
         mut command: Command,
         kill_timeout: Duration,
+        teardown: &mut dyn FnMut(bool),
     ) -> Result<Self> {
         #[cfg(unix)]
         {
@@ -204,6 +214,7 @@ impl Client {
             .stderr(Stdio::piped())
             .spawn()
             .map_err(Error::from)?;
+        let mut setup = SpawnSetup(Some(teardown));
         let stdout = child
             .stdout
             .take()
@@ -271,7 +282,7 @@ impl Client {
                 }
             }
         });
-        Ok(Self {
+        let client = Self {
             child,
             #[cfg(unix)]
             stdout: Some(Pipe::new(stdout)?),
@@ -297,7 +308,9 @@ impl Client {
             teardown_uncertain: false,
             #[cfg(all(test, unix))]
             frame_delay: Duration::ZERO,
-        })
+        };
+        setup.0 = None;
+        Ok(client)
     }
     pub(crate) fn initialize(&mut self, initialize_timeout: Duration) -> Result<()> {
         let mut progress = |_: &str, _: &Value| Ok(());

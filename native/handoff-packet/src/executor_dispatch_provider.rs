@@ -274,7 +274,7 @@ pub fn codex_attempt_with_teardown(
     options.approval_policy = "never".into();
     let mut progress_error = None;
     let mut initialized = false;
-    let result = match Client::spawn_uninitialized(command, kill_timeout) {
+    let result = match Client::spawn_uninitialized(command, kill_timeout, teardown) {
         Ok(mut client) => {
             let result = client.initialize(initialize_timeout).and_then(|()| {
                 initialized = true;

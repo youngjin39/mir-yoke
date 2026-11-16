@@ -104,7 +104,19 @@ pub(crate) fn signal_group(child: &Child, number: i32) {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    static FAIL_PIPE_SETUP: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 pub(crate) fn nonblocking(fd: std::os::fd::RawFd) -> io::Result<()> {
+    // Tests exercise a real fcntl EBADF without invalidating an owned descriptor.
+    #[cfg(test)]
+    let fd = FAIL_PIPE_SETUP.with(|remaining| {
+        let nth = remaining.get();
+        remaining.set(nth.saturating_sub(1));
+        if nth == 1 { -1 } else { fd }
+    });
     // SAFETY: caller borrows the descriptor from its live owned pipe.
     unsafe {
         let flags = libc::fcntl(fd, libc::F_GETFL);
@@ -148,6 +160,60 @@ mod tests {
         fn drop(&mut self) {
             let _ = self.0.kill();
             let _ = self.0.wait();
+        }
+    }
+
+    #[test]
+    fn partial_provider_setup_retains_ownership() {
+        use crate::{
+            executor_dispatch_provider::codex_attempt_with_teardown,
+            executor_transport::CallOptions,
+        };
+        let scratch = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/d18-yfix-5")
+            });
+        std::fs::create_dir_all(&scratch).unwrap();
+        let root = tempfile::tempdir_in(scratch).unwrap();
+        for nth in [1, 2] {
+            let pid_file = root.path().join(format!("pid-{nth}"));
+            let mut command = Command::new("/bin/sh");
+            command
+                .args(["-c", "printf '%s' $$ > \"$1\"", "provider"])
+                .arg(&pid_file)
+                .current_dir(root.path())
+                .env("HOME", root.path());
+            let mut ownership = vec![];
+            FAIL_PIPE_SETUP.with(|remaining| remaining.set(nth));
+            let result = codex_attempt_with_teardown(
+                command,
+                CallOptions::new("offline", root.path().to_str().unwrap()),
+                Duration::from_secs(1),
+                Duration::from_millis(10),
+                None,
+                &mut |uncertain| ownership.push(uncertain),
+            );
+            // Reap only the finite child whose PID our synthetic command recorded.
+            let deadline = Instant::now() + Duration::from_secs(2);
+            let pid = loop {
+                if let Ok(text) = std::fs::read_to_string(&pid_file)
+                    && let Ok(pid) = text.parse::<libc::pid_t>()
+                {
+                    break pid;
+                }
+                assert!(Instant::now() < deadline, "provider PID not recorded");
+                std::thread::sleep(Duration::from_millis(5));
+            };
+            // SAFETY: pid is the unreaped child created above; no ambient process is touched.
+            assert_eq!(unsafe { libc::waitpid(pid, std::ptr::null_mut(), 0) }, pid);
+            let attempt = result.unwrap();
+            assert_eq!(attempt.exit_code, 1);
+            assert_eq!(
+                attempt.stderr,
+                io::Error::from_raw_os_error(libc::EBADF).to_string()
+            );
+            assert_eq!(ownership, [true], "partial pipe {nth} lost ownership");
         }
     }
 

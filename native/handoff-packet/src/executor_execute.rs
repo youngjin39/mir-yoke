@@ -1614,7 +1614,12 @@ fn provider(
     }
     options.config = Some(config);
     let raw = (|| {
-        let mut client = Client::spawn_uninitialized(command, Duration::from_secs(2))?;
+        let mut client =
+            Client::spawn_uninitialized(command, Duration::from_secs(2), &mut |uncertain| {
+                if let Some(bridge) = bridge.as_mut() {
+                    bridge.provider_teardown(uncertain);
+                }
+            })?;
         let result = client.initialize(Duration::from_secs(10)).and_then(|()| {
             if let Some(error) = timeout_error.filter(|error| error.contains("int too large")) {
                 return Err(TransportError::Encoding(error.into()));
