@@ -291,6 +291,16 @@ pub fn do_sync_with_embedding<'e>(
             }
             other => other?,
         };
+        if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
+            eprintln!(
+                "[MIR_E6_DIAG] {}",
+                serde_json::json!({
+                    "event":"sync", "slug":slug, "failed":result.failed,
+                    "vec_available":db.connection.vec_available,
+                    "vec_reason":db.connection.vec_reason()
+                })
+            );
+        }
         if !result.failed.is_empty()
             && embed_fn.is_some()
             && cfg["memory"]["vector_mode"] == "optional"
