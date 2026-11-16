@@ -31,6 +31,113 @@ fn remaining(path: &Path) {
     }
 }
 
+fn close_error_details(
+    error: &std::io::Error,
+    users: std::io::Result<Vec<usize>>,
+    metadata: impl Fn(usize) -> String,
+) -> String {
+    let mut details = format!("close_error={error:?} directory_users={users:?}");
+    if let Ok(users) = users {
+        for pid in users {
+            details.push_str(&format!(
+                "\n[gate-diag] directory_user pid={pid} {}",
+                metadata(pid)
+            ));
+        }
+    }
+    details
+}
+
+#[test]
+fn injected_close_error_metadata() {
+    let error = std::io::Error::other("injected sharing violation");
+    let details = close_error_details(&error, Ok(vec![17, 23]), |pid| {
+        if pid == 17 {
+            "image=Ok(\"holder.exe\") parent=Ok(7)".into()
+        } else {
+            "image=Err(access denied) parent=Err(process exited)".into()
+        }
+    });
+    for expected in [
+        "injected sharing violation",
+        "Ok([17, 23])",
+        "pid=17 image=Ok(\"holder.exe\") parent=Ok(7)",
+        "pid=23 image=Err(access denied) parent=Err(process exited)",
+    ] {
+        assert!(details.contains(expected), "{details}");
+    }
+    let failed = close_error_details(&error, Err(std::io::Error::other("query failed")), |_| {
+        panic!("metadata must not run after directory query failure")
+    });
+    assert!(failed.contains("query failed"), "{failed}");
+}
+#[cfg(windows)]
+fn process_metadata(pid: usize) -> String {
+    use std::{
+        ffi::c_void,
+        os::windows::{
+            ffi::OsStringExt,
+            io::{FromRawHandle, OwnedHandle},
+        },
+    };
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn OpenProcess(access: u32, inherit: i32, pid: u32) -> *mut c_void;
+        fn QueryFullProcessImageNameW(
+            handle: *mut c_void,
+            flags: u32,
+            name: *mut u16,
+            size: *mut u32,
+        ) -> i32;
+    }
+    #[link(name = "ntdll")]
+    unsafe extern "system" {
+        fn NtQueryInformationProcess(
+            handle: *mut c_void,
+            class: u32,
+            info: *mut c_void,
+            size: u32,
+            returned: *mut u32,
+        ) -> i32;
+    }
+    // SAFETY: read-only limited-query handle, owned once below; no inheritance.
+    let handle = unsafe { OpenProcess(0x1000, 0, pid as u32) };
+    if handle.is_null() {
+        return format!("open_process=Err({:?})", std::io::Error::last_os_error());
+    }
+    // SAFETY: successful OpenProcess returns an owned, non-null process handle.
+    let _owned = unsafe { OwnedHandle::from_raw_handle(handle) };
+    let mut name = vec![0u16; 32768];
+    let mut length = name.len() as u32;
+    // SAFETY: live handle and writable buffer with its exact capacity.
+    let image =
+        if unsafe { QueryFullProcessImageNameW(handle, 0, name.as_mut_ptr(), &mut length) } == 0 {
+            Err(std::io::Error::last_os_error())
+        } else {
+            Ok(std::ffi::OsString::from_wide(&name[..length as usize]))
+        };
+    // Class 0 PROCESS_BASIC_INFORMATION: status, PEB, affinity, priority, PID,
+    // parent PID, each in one pointer-aligned slot on supported Windows targets.
+    let mut basic = [0usize; 6];
+    // SAFETY: live handle, correctly sized/aligned initialized class 0 buffer;
+    // the optional return length is null. No pointers escape the call.
+    let status = unsafe {
+        NtQueryInformationProcess(
+            handle,
+            0,
+            basic.as_mut_ptr().cast(),
+            std::mem::size_of_val(&basic) as u32,
+            std::ptr::null_mut(),
+        )
+    };
+    let parent = if status < 0 {
+        Err(format!("NtQueryInformationProcess status={status:#x}"))
+    } else {
+        Ok(basic[5])
+    };
+    format!("image={image:?} parent={parent:?}")
+}
+
 #[cfg(windows)]
 fn directory_users(path: &Path, capacity: usize) -> std::io::Result<Vec<usize>> {
     use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
@@ -97,6 +204,8 @@ fn windows_directory_users() {
     let ready = child.stderr.take().unwrap().read_exact(&mut [0u8]);
     let close = fs::remove_dir(directory.path());
     let users = directory_users(directory.path(), 1024);
+    let metadata = process_metadata(pid);
+    let invalid = process_metadata(0);
     let short = directory_users(directory.path(), 0);
     let missing = directory_users(&directory.path().join("absent"), 1024);
     drop(child.stdin.take());
@@ -104,6 +213,15 @@ fn windows_directory_users() {
     drop(child);
     directory.close().unwrap();
     assert!(ready.is_ok() && status.success());
+    assert!(
+        metadata.contains(&format!("parent=Ok({})", std::process::id())),
+        "{metadata}"
+    );
+    assert!(
+        metadata.contains(&format!("image=Ok({:?})", std::env::current_exe().unwrap())),
+        "{metadata}"
+    );
+    assert!(invalid.contains("open_process=Err("), "{invalid}");
     assert_eq!(close.unwrap_err().raw_os_error(), Some(32));
     assert!(
         users.as_ref().is_ok_and(|users| users.contains(&pid)),
@@ -350,7 +468,7 @@ fn decision_fixtures() {
             );
             if std::env::var("MIR_GATE_DIAG").as_deref() == Ok("1") {
                 #[cfg(windows)]
-                eprintln!("[gate-diag] directory_users root={path:?} runner_pid={} gate_pid={gate_pid} result={:?}", std::process::id(), directory_users(&path, 1024));
+                eprintln!("[gate-diag] directory_users root={path:?} runner_pid={} gate_pid={gate_pid} details={}", std::process::id(), close_error_details(&error, directory_users(&path, 1024), process_metadata));
                 remaining(&path);
             }
             panic!(
