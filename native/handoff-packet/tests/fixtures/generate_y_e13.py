@@ -17,13 +17,18 @@ p.add_argument('--output', type=Path, required=True)
 a = p.parse_args()
 root = a.scratch.resolve() / 'oracle'
 root.mkdir(parents=True, exist_ok=True)
+# Keep Windows' loader locations while isolating HOME and all writable state.
+host_env = {k: os.environ[k] for k in ('SystemRoot', 'WINDIR') if k in os.environ}
+env = dict(host_env, HOME=str(root), USERPROFILE=str(root), PATH=os.defpath,
+           GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull)
+git = shutil.which('git')
+assert git, 'git must be available on PATH'
 pin = '5f8f69f94e09b64c5e4d07d329ed17797c35e6cb'
 with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(
-        ['/usr/bin/git', '-C', str(Path(__file__).resolve().parents[4]),
+        [git, '-C', str(Path(__file__).resolve().parents[4]),
          'archive', pin, 'src/mir', 'config/project-hooks-provider.json',
          'config/adopter-boundary.schema.json', 'config/adopter-payload.schema.json'],
-        env={'HOME': str(root), 'PATH': '/usr/bin:/bin', 'GIT_CONFIG_NOSYSTEM': '1',
-             'GIT_CONFIG_GLOBAL': '/dev/null'}))) as tar:
+        env=env))) as tar:
     tar.extractall(root, filter='data')
 packages = ('pydantic pydantic_core typing_extensions typing_inspection annotated_types '
             'yaml sqlite_vec jsonschema attrs attr referencing rpds jsonschema_specifications '
@@ -41,7 +46,9 @@ wrapper = root / 'capture.py'
 wrapper.write_text("""import sys, pathlib, sysconfig, json, hashlib
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
-sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+sys.path[:] = [str(root / 'src'), str(root), stdlib,
+               str(pathlib.Path(stdlib) / 'lib-dynload'),
+               str(pathlib.Path(sys.base_prefix) / 'DLLs')]
 from mir.cli.__main__ import main
 from mir.cli import relations, project_hooks
 from mir.core.engine.memory import store
@@ -125,6 +132,9 @@ for action in ['install', 'check']:
 cases += [('empty', ['relations', '--he']), ('empty', ['relations', '--help=yes'])]
 records = []
 for mode, argv in cases:
+    # These routes execute Unix shell artifacts and are excluded by the Rust test too.
+    if os.name == 'nt' and mode in ('local', 'probe', 'receipt'):
+        continue
     work = root / ('case-' + str(len(records)))
     work.mkdir(exist_ok=True)
     (work / 'spec').mkdir(exist_ok=True)
@@ -134,12 +144,24 @@ for mode, argv in cases:
         (work / '.mir/memory.db').write_bytes(b'not a database')
     result = subprocess.run([sys.executable, '-I', '-X', 'utf8', str(wrapper), mode,
                              *[v.replace('{ROOT}', str(work)) for v in argv]],
-                            cwd=work, env=dict(HOME=str(work), PATH=os.defpath),
+                            cwd=work, env=dict(host_env, HOME=str(work), USERPROFILE=str(work),
+                                               PATH=os.defpath, TMP=str(work), TEMP=str(work)),
                             capture_output=True, timeout=20)
     records.append(dict(mode=mode, argv=argv, exit=result.returncode,
                         stdout=result.stdout.decode().replace(str(work), '{ROOT}'),
                         stderr=result.stderr.decode().replace(str(work), '{ROOT}')))
-assert records[23]['exit'] == 1 and 'no published host pin' in records[23]['stdout']
-assert records[24]['exit'] == 0, records[24]
+assert len(records) == (121 if os.name == 'nt' else 124)
+by_case = {(r['mode'], tuple(r['argv'])): r for r in records}
+install = by_case['empty', ('project-hooks', 'install', '--project-root', '.')]
+assert install['exit'] == 1 and 'no published host pin' in install['stdout']
+check = by_case['empty', ('project-hooks', 'check', '--project-root', '.')]
+assert check['exit'] == 1 and 'no published host pin' in check['stdout']
+if os.name != 'nt':
+    assert by_case['local', ('project-hooks', 'install', '--project-root', '.')]['exit'] == 0
 assert records[8]['exit'] == 2 and 'unavailable' in records[8]['stderr']
-a.output.write_text(json.dumps(records, separators=(',', ':')) + '\n')
+if os.name == 'nt':
+    # Decode raw UTF-8 bytes above, never universal-newline translate console output.
+    for record in records:
+        for field in ('stdout', 'stderr'):
+            assert '\n' not in record[field].replace('\r\n', ''), record
+a.output.write_bytes((json.dumps(records, separators=(',', ':')) + '\n').encode('utf-8'))

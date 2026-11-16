@@ -5,9 +5,47 @@ mod entry_supply;
 use serde_json::Value;
 use std::{fs, process::Command};
 
+fn records(windows: bool) -> Vec<Value> {
+    // Regenerate the Windows counterpart with generate_y_e13.py on Windows.
+    // Initial CRLF projection requires the PC capture recorded in the S11 report.
+    let fixture = if windows {
+        include_str!("fixtures/y-e13-windows.json")
+    } else {
+        include_str!("fixtures/y-e13.json")
+    };
+    serde_json::from_str(fixture).unwrap()
+}
+
+#[test]
+fn platform_records_preserve_console_bytes() {
+    let unix = records(false);
+    let windows = records(true);
+    assert_eq!(unix.len(), 124);
+    assert_eq!(windows.len(), 121);
+    let exercised: Vec<_> = unix
+        .iter()
+        .filter(|r| {
+            !["local", "probe", "receipt"]
+                .iter()
+                .any(|m| r["mode"] == *m)
+        })
+        .collect();
+    for (reference, captured) in exercised.into_iter().zip(windows) {
+        for field in ["mode", "argv", "exit"] {
+            assert_eq!(reference[field], captured[field]);
+        }
+        for field in ["stdout", "stderr"] {
+            assert_eq!(
+                reference[field].as_str().unwrap().replace("\n", "\r\n"),
+                captured[field]
+            );
+        }
+    }
+}
+
 #[test]
 fn frozen_relations_and_project_hooks() {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e13.json")).unwrap();
+    let records = records(cfg!(windows));
     let malformed = entry_supply::hooks_resource(&["check", "--project-root", "."], "{", None);
     assert_eq!(malformed.0, 1);
     assert!(
