@@ -20,10 +20,10 @@ fn observe_root(name: &str, mut value: Value, root: &str) -> Value {
         }
         spellings.sort_by_key(|s| std::cmp::Reverse(s.len()));
         for spelling in spellings {
-            for separator in ["/", r"\"] {
+            for separator in ["/", r"\", r"\\"] {
                 text = text.replace(
-                    &format!("directory: '{spelling}{separator}"),
-                    &format!("directory: '<tmp>{separator}"),
+                    &format!(": '{spelling}{separator}"),
+                    &format!(": '<tmp>{separator}"),
                 );
             }
         }
@@ -67,6 +67,21 @@ fn wt_core_a_d_roots() {
             );
         }
     }
+}
+
+#[test]
+fn w_errno_observe_localized_filename() {
+    let root = r"C:\synthetic\case";
+    let filename = format!(r"{root}\project\.mir\bin\project-hooks.json");
+    let filename = handoff_packet::executor_text::repr(&filename);
+    let text =
+        format!("project-hooks: degraded: [Errno 3] 지정된 경로를 찾을 수 없습니다.: {filename}\n");
+    let expected = text.replace(&root.replace('\\', r"\\"), "<tmp>");
+    let input = json!({"value":[1,text,"",{},[]]});
+    assert_eq!(
+        observe_root("hooks.check.uninstalled", input, root)["value"][1],
+        expected
+    );
 }
 
 #[path = "b30_capability_support/mod.rs"]

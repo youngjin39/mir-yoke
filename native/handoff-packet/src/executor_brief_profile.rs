@@ -518,6 +518,20 @@ pub(crate) fn python_os_error_message(error: &std::io::Error, path: &Path) -> St
     }
 }
 
+/// Path.read_bytes/open failures use CRT errno on Windows, unlike stat/rename.
+#[cfg(any(windows, test))]
+pub(crate) fn python_read_error_message(error: &std::io::Error, path: &Path) -> String {
+    #[cfg(windows)]
+    if error.raw_os_error().is_some() {
+        let (_, errno, text) = crate::adoption_fs::windows_crt_error(error);
+        return format!(
+            "[Errno {errno}] {text}: {}",
+            crate::executor_execute::repr(&path.display().to_string())
+        );
+    }
+    python_os_error_message(error, path)
+}
+
 /// Platform errno text without Rust's numeric suffix.
 pub fn python_os_error_text(error: &std::io::Error) -> String {
     let message = error.to_string();

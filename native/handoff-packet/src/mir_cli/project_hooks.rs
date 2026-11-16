@@ -387,9 +387,14 @@ fn check(
     let binary = project_path(root, relative)?;
     let receipt = project_path(root, ".mir/bin/project-hooks.json")?;
     let bytes = fs::read(&receipt).map_err(|error| {
+        // a61c3013 project_hooks.py:61: read_bytes uses CRT errno and str(Path).
+        #[cfg(windows)]
+        let message = crate::executor_brief_profile::python_read_error_message(
+            &error,
+            Path::new(&super::bootstrap_adoption::wire(&receipt)),
+        );
+        #[cfg(not(windows))]
         let message = super::bootstrap_adoption::io_error(&receipt, error).to_string();
-        // a61c3013 project_hooks.py:61: read_text uses str(Path), not as_posix.
-        // Preserve the shared errno mapping; replace only its filename repr.
         let filename = receipt.to_string_lossy();
         let filename = filename.strip_prefix(r"\\?\").unwrap_or(&filename);
         message.replace(

@@ -1,4 +1,44 @@
 //! Descriptor-relative adoption mutations; never follow substituted parent symlinks.
+// Keep the existing Win32-to-errno map shared by CRT and Win32 operations.
+#[cfg(any(windows, test))]
+fn windows_errno(code: i32) -> (&'static str, i32) {
+    let errno = match code {
+        2 | 3 => 2,
+        5 | 19 | 32 | 33 => 13,
+        6 => 9,
+        80 | 183 => 17,
+        267 => 20,
+        145 => 41,
+        17 => 18,
+        112 => 28,
+        _ => 22,
+    };
+    let class = match errno {
+        2 => "FileNotFoundError",
+        13 => "PermissionError",
+        17 => "FileExistsError",
+        20 => "NotADirectoryError",
+        _ => "OSError",
+    };
+    (class, errno)
+}
+
+#[cfg(any(windows, test))]
+pub(crate) fn windows_crt_error(error: &std::io::Error) -> (&'static str, i32, String) {
+    let (class, errno) = windows_errno(error.raw_os_error().unwrap_or(87));
+    let text = match errno {
+        2 => "No such file or directory".into(),
+        13 => "Permission denied".into(),
+        17 => "File exists".into(),
+        // Other existing mappings retain the Windows CRT's English strerror.
+        // SAFETY: strerror returns a static NUL-terminated CRT message.
+        _ => unsafe { std::ffi::CStr::from_ptr(libc::strerror(errno)) }
+            .to_string_lossy()
+            .into_owned(),
+    };
+    (class, errno, text)
+}
+
 #[cfg(windows)]
 #[rustfmt::skip]
 pub(crate) fn windows_error(error: &std::io::Error, path: Option<&std::path::Path>, destination: Option<&std::path::Path>, operation: crate::executor_text::IoOperation) -> String {
@@ -6,12 +46,9 @@ pub(crate) fn windows_error(error: &std::io::Error, path: Option<&std::path::Pat
     use windows_sys::Win32::System::Diagnostics::Debug::{FormatMessageW, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS};
     let code = error.raw_os_error().unwrap_or(87);
     let crt = matches!(operation, IoOperation::Read | IoOperation::Handle);
-    // CPython PC/errmap.h: Win32 codes map to Windows CRT errno, not Unix errno.
-    let errno = match code { 2 | 3 => 2, 5 | 19 | 32 | 33 => 13, 6 => 9, 80 | 183 => 17, 267 => 20, 145 => 41, 17 => 18, 112 => 28, _ => 22 };
-    let class = match errno { 2 => "FileNotFoundError", 13 => "PermissionError", 17 => "FileExistsError", 20 => "NotADirectoryError", _ => "OSError" };
+    let (class, errno) = windows_errno(code);
     let message = if crt {
-        // SAFETY: strerror returns a static NUL-terminated CRT message.
-        unsafe { std::ffi::CStr::from_ptr(libc::strerror(errno)) }.to_string_lossy().into_owned()
+        windows_crt_error(error).2
     } else {
         let mut buffer = [0u16; 32768];
         // SAFETY: windows-sys 0.61.2 Debug::FormatMessageW takes a writable UTF-16
