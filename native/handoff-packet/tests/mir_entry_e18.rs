@@ -130,6 +130,17 @@ fn public_bootstrap_journal_commit() {
 #[cfg(target_os = "macos")]
 #[test]
 fn public_bootstrap_interrupted_recovery() {
+    replay_recovery(&[]);
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn public_bootstrap_immutable_receipt_eperm() {
+    replay_recovery(&["--case", "receipt-immutable"]);
+}
+
+#[cfg(target_os = "macos")]
+fn replay_recovery(extra: &[&str]) {
     let package = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let scratch = package.join("target/mig-scratch/Y-E18-p4c");
     fs::create_dir_all(&scratch).unwrap();
@@ -137,6 +148,7 @@ fn public_bootstrap_interrupted_recovery() {
     let out = Command::new(package.join("../../.venv/bin/python"))
         .args(["-I", "-X", "utf8"])
         .arg(package.join("tests/fixtures/generate_y_e18_p4c.py"))
+        .args(extra)
         .arg("--scratch")
         .arg(tmp.path())
         .arg("--output")

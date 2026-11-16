@@ -1,8 +1,21 @@
 """Interrupted recovery: isolated pinned capture before literal public replay."""
 import json
+import os
 import shutil
 import subprocess
+from contextlib import contextmanager
 from pathlib import Path
+
+
+@contextmanager
+def receipt_flags_guard(project):
+    try:
+        yield
+    finally:
+        receipt = project/'.mir/bootstrap-receipt.json'
+        if receipt.is_file() and not receipt.is_symlink():
+            os.chflags(receipt, 0)  # Drop guard: always clear scratch uchg, including RED.
+
 
 fixture = Path(__file__).with_name('generate_y_e18_p4.py').read_text()
 scope = {'__file__': __file__}
@@ -30,7 +43,8 @@ subprocess.run(['/usr/bin/clang', '-dynamiclib', '-Wall', '-Wextra', '-Werror',
 cases = ['clean', 'stale-lock', 'invalid-lock', 'unicode-lock', 'live-lock', 'live-journal',
          'committed', 'rollback', 'receipt-missing', 'receipt-json', 'receipt-unreadable',
          'receipt-array',
-         'receipt-directory', 'receipt-link', 'receipt-mismatch', 'receipt-slim-array',
+         'receipt-directory', 'receipt-immutable', 'receipt-link', 'receipt-mismatch',
+         'receipt-slim-array',
          'partial', 'quarantine-link', 'restore-link', 'restore-file', 'move-failure',
          'source-swap', 'parent-swap', 'cleanup-journal', 'cleanup-lock', 'lock-link',
          'journal-link', 'journal-directory', 'journal-json', 'journal-shape',
@@ -118,6 +132,10 @@ elif case in ('journal-link', 'journal-directory'):
     else: journal.mkdir()
 elif case == 'journal-json': journal.write_text('{')
 elif case == 'journal-shape': journal.write_text('{"paths":[]}')
+if case == 'receipt-immutable':
+    import stat
+    os.chflags(receipt, stat.UF_IMMUTABLE)  # Real chflags uchg, scratch only.
+    assert receipt.stat().st_flags & stat.UF_IMMUTABLE
 '''.replace('__ROOT__', repr(str(project))).replace('__CASE__', repr(case)))
     if publication:
         (work/'inject.py').write_text('pass\n')
@@ -138,7 +156,8 @@ elif case == 'journal-shape': journal.write_text('{"paths":[]}')
                     moves=moves.read_text().splitlines() if moves.exists() else [])
     prepare()
     state['observe'].touch()
-    out = reference(argv)
+    with receipt_flags_guard(project):
+        out = reference(argv)
     record = dict(case=case, exit=out.returncode, stdout=list(out.stdout),
                   stderr=list(out.stderr), **snapshot_all())
     (work/'reference-output.json').write_text(json.dumps(dict(exit=out.returncode,
@@ -163,6 +182,9 @@ elif case == 'journal-shape': journal.write_text('{"paths":[]}')
             assert len(receipt['errors']) == (2 if case == 'publish-partial' else 1), receipt
             assert (project/'.mir/slim.lock').exists() == (case == 'publish-partial')
             assert 'provider-marker/retire.txt' in record['files'] or case == 'publish-parent-swap'
+        elif case == 'receipt-immutable':
+            assert receipt['errors'][0].startswith(
+                'bootstrap receipt publish failed: [Errno 1] Operation not permitted:'), receipt
         elif not success:
             assert receipt['errors'][0].startswith('adopter slim failed: '), receipt
     if case == 'partial':
@@ -170,7 +192,7 @@ elif case == 'journal-shape': journal.write_text('{"paths":[]}')
         assert '.mir/slim-transaction.json' in record['files']
         assert 'restore/a.txt: ambiguous rollback state; restored/already.txt: ambiguous' in (
             receipt['errors'][0]), receipt
-    if case in ('rollback', 'receipt-unreadable'):
+    if case in ('rollback', 'receipt-unreadable', 'receipt-immutable'):
         assert record['moves'] == ['b.txt', 'a.txt'], record['moves']
         assert record['files']['restore/a.txt'] and record['files']['restore/b.txt']
     records.append(record)
@@ -180,8 +202,9 @@ elif case == 'journal-shape': journal.write_text('{"paths":[]}')
         state['observe'].touch()
         moves.unlink(missing_ok=True)
         shutil.copy2(binary, install/'bin/mir')
-        actual = subprocess.run([str(install/'bin/mir'), 'bootstrap', *argv], cwd=project,
-            env=env, capture_output=True, check=False, timeout=30)
+        with receipt_flags_guard(project):
+            actual = subprocess.run([str(install/'bin/mir'), 'bootstrap', *argv], cwd=project,
+                env=env, capture_output=True, check=False, timeout=30)
         replay = dict(case=case, exit=actual.returncode, stdout=list(actual.stdout),
                       stderr=list(actual.stderr), **snapshot_all())
         (work/'actual.json').write_text(json.dumps(replay)+'\n')

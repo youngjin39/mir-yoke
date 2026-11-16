@@ -165,6 +165,14 @@ pub(super) fn io_error(path: &Path, e: io::Error) -> Error {
             };
         }
     };
+    let (errno, message) = if let Some(errno) = e.raw_os_error() {
+        (
+            errno,
+            crate::executor_brief_profile::python_os_error_text(&e),
+        )
+    } else {
+        (errno, message.to_owned())
+    };
     Error::Io {
         class,
         message: format!("[Errno {errno}] {message}: {}", repr(&wire(path))),
