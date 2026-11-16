@@ -246,20 +246,39 @@ fn unavailable(error: &TransportError) -> bool {
 /// The optional event file's parent must already exist; event write errors surface.
 pub fn codex_attempt(
     command: Command,
+    options: CallOptions,
+    initialize_timeout: Duration,
+    kill_timeout: Duration,
+    events_file: Option<&Path>,
+) -> Result<CodexAttempt> {
+    codex_attempt_with_teardown(
+        command,
+        options,
+        initialize_timeout,
+        kill_timeout,
+        events_file,
+        &mut |_| {},
+    )
+}
+
+pub fn codex_attempt_with_teardown(
+    command: Command,
     mut options: CallOptions,
     initialize_timeout: Duration,
     kill_timeout: Duration,
     events_file: Option<&Path>,
+    teardown: &mut dyn FnMut(bool),
 ) -> Result<CodexAttempt> {
     let started = Instant::now();
     let requested_model = options.model.clone();
     options.approval_policy = "never".into();
     let mut progress_error = None;
     let mut initialized = false;
-    let result = match Client::spawn(command, initialize_timeout, kill_timeout) {
+    let result = match Client::spawn_uninitialized(command, kill_timeout) {
         Ok(mut client) => {
-            initialized = true;
-            let result = client.call(options, &mut |method, _| {
+            let result = client.initialize(initialize_timeout).and_then(|()| {
+                initialized = true;
+                client.call(options, &mut |method, _| {
                 match event(events_file, &json!({"transport":"app-server", "event":"progress", "duration_s":started.elapsed().as_secs_f64(), "method":method})) {
                     Ok(()) => Ok(()),
                     Err(error) => {
@@ -268,12 +287,18 @@ pub fn codex_attempt(
                         Err(message)
                     }
                 }
+                })
             });
             client.close();
+            teardown(client.teardown_uncertain());
             result
         }
         Err(error) => Err(error),
     };
+    #[cfg(unix)]
+    if crate::executor_process_unix::interruption() != 0 {
+        return Err(Error::Output("\0interrupted".into()));
+    }
     if let Some(error) = progress_error {
         return Err(error);
     }

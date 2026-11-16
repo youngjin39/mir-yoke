@@ -530,6 +530,10 @@ pub fn finalize_dispatch_with_observer(
         match completed(wt, options, reviewer, observer, &config) {
             Ok(result) => result,
             Err(e) => {
+                // Controlled interruption must bypass ordinary exception file effects.
+                if matches!(&e, Error::Invalid(message) if message == "\0interrupted") {
+                    return Err(e);
+                }
                 // Like the reference's exception handler, do not mask the cause.
                 let _ = persist(wt, options, observer);
                 FinalizeResult::new("blocked", format!("error:{e}"), vec![])

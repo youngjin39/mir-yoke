@@ -673,6 +673,7 @@ pub fn dispatch(
         } else {
             &text
         };
+        let mut provider_uncertain = false;
         let mut context = DispatchContext {
             bridge: bridge
                 .as_deref_mut()
@@ -724,12 +725,13 @@ pub fn dispatch(
                 request.stall_timeout = stall;
                 let call = provider::codex_call_options(root, &request)
                     .map_err(|e| executor_dispatch::Error::Runner(e.to_string()))?;
-                provider::codex_attempt(
+                provider::codex_attempt_with_teardown(
                     cmd,
                     call,
                     Duration::from_secs(15),
                     Duration::from_secs(1),
                     Some(&events),
+                    &mut |uncertain| provider_uncertain |= uncertain,
                 )
             }
             .map_err(|e| executor_dispatch::Error::Runner(e.to_string()))
@@ -765,6 +767,9 @@ pub fn dispatch(
         });
         errors.append(&mut context.event_errors);
         drop(context);
+        if let Some(bridge) = bridge.as_mut() {
+            bridge.provider_teardown(provider_uncertain);
+        }
         let outcome = outcome?;
         let final_result = if let Some(wt) = &outcome.worktree {
             let mut reviewer = |wt: &crate::executor_worktree::DispatchWorktree,
@@ -779,7 +784,7 @@ pub fn dispatch(
                     &root.join("tasks").join("codex-exec-events.jsonl"),
                 );
                 cmd.arg("app-server");
-                executor_review::review(
+                executor_review::review_with_teardown(
                     cmd,
                     root,
                     &wt.path,
@@ -815,6 +820,7 @@ pub fn dispatch(
                             .map_err(|e| provider::Error::Output(e.to_string()))
                         }
                     },
+                    &mut |uncertain| provider_uncertain |= uncertain,
                 )
                 .map(|r| r.evidence)
                 .map_err(|e| executor_finalize::Error::Invalid(e.to_string()))
@@ -846,8 +852,15 @@ pub fn dispatch(
                 &final_options,
                 if required { Some(&mut reviewer) } else { None },
                 None,
-            )
-            .map_err(|e| e.to_string())?;
+            );
+            if let Some(bridge) = bridge.as_mut() {
+                bridge.provider_teardown(provider_uncertain);
+            }
+            let final_result = final_result.map_err(|e| e.to_string())?;
+            #[cfg(unix)]
+            if crate::executor_process_unix::interruption() != 0 {
+                return Err("\0interrupted".into());
+            }
             let review = fs::read(
                 artifacts
                     .clone()
@@ -955,6 +968,10 @@ pub fn dispatch(
             Ok(code)
         }
         Err(e) => {
+            #[cfg(unix)]
+            if crate::executor_process_unix::interruption() != 0 {
+                return Err("\0interrupted".into());
+            }
             if e.starts_with("\0uncaught:") {
                 return Err(e);
             }

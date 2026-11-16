@@ -61,6 +61,7 @@ pub(crate) fn terminate_owned_child(child: &mut Child) -> io::Result<()> {
 // All process operations happen in the transport owner, outside signal context.
 use std::sync::atomic::{AtomicI32, Ordering};
 static INTERRUPTED: AtomicI32 = AtomicI32::new(0);
+static SELECTED_INTERRUPTION: AtomicI32 = AtomicI32::new(0);
 extern "C" fn interrupted(number: libc::c_int) {
     INTERRUPTED.store(number, Ordering::SeqCst);
 }
@@ -75,7 +76,10 @@ pub fn install_interrupts() {
     }
 }
 pub fn interruption() -> i32 {
-    INTERRUPTED.load(Ordering::SeqCst)
+    // Select outside signal context; later teardown signals cannot replace it.
+    let number = INTERRUPTED.load(Ordering::SeqCst);
+    let _ = SELECTED_INTERRUPTION.compare_exchange(0, number, Ordering::SeqCst, Ordering::SeqCst);
+    SELECTED_INTERRUPTION.load(Ordering::SeqCst)
 }
 pub(crate) fn signal_group(child: &Child, number: i32) {
     // A prior EOF path may already have reaped the provider. Never signal a

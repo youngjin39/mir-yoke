@@ -46,6 +46,7 @@ pub struct CommandHooks {
     token_points: Option<Vec<u32>>,
     error_points: Option<Vec<u32>>,
     outcome: TeardownOutcome,
+    provider_uncertain: bool,
     brief_profile: Option<crate::executor_brief_profile::BriefProfile>,
     job_identity: Option<crate::executor_job_identity::JobIdentity>,
     instruction: Option<(std::path::PathBuf, String)>,
@@ -119,6 +120,7 @@ impl CommandHooks {
             token_points: None,
             error_points: None,
             outcome: TeardownOutcome::Uncertain,
+            provider_uncertain: false,
         }))
     }
     /// Supply the invocation instruction explicitly; rendering consumes it once.
@@ -193,7 +195,14 @@ impl CommandHooks {
         })
     }
     pub fn teardown_outcome(&mut self, outcome: TeardownOutcome) {
-        self.outcome = outcome;
+        self.outcome = if self.provider_uncertain {
+            TeardownOutcome::Uncertain
+        } else {
+            outcome
+        };
+    }
+    pub(crate) fn provider_teardown(&mut self, uncertain: bool) {
+        self.provider_uncertain |= uncertain;
     }
     pub(crate) fn take_error_points(&mut self) -> Option<Vec<u32>> {
         self.error_points.take()
@@ -521,6 +530,7 @@ mod execution_tests {
             token_points: None,
             error_points: None,
             outcome: TeardownOutcome::Clean,
+            provider_uncertain: false,
             brief_profile: Some(profile),
             job_identity: None,
             instruction: Some((target, "  active café 漢字 😀  ".into())),

@@ -167,21 +167,30 @@ pub struct Client {
     turn: Option<Turn>,
     next_wait_error: Option<&'static str>,
     closed: bool,
+    teardown_uncertain: bool,
     #[cfg(all(test, unix))]
     frame_delay: Duration,
 }
 impl Client {
     /// Spawn the explicit command supplied by the owner and initialize it.
     pub fn spawn(
-        mut command: Command,
+        command: Command,
         initialize_timeout: Duration,
+        kill_timeout: Duration,
+    ) -> Result<Self> {
+        let mut client = Self::spawn_uninitialized(command, kill_timeout)?;
+        client.initialize(initialize_timeout)?;
+        Ok(client)
+    }
+    pub(crate) fn spawn_uninitialized(
+        mut command: Command,
         kill_timeout: Duration,
     ) -> Result<Self> {
         #[cfg(unix)]
         {
             let number = crate::executor_process_unix::interruption();
             if number != 0 {
-                std::process::exit(128 + number);
+                return Err(process("Codex app-server client closed"));
             }
         }
         #[cfg(unix)]
@@ -262,7 +271,7 @@ impl Client {
                 }
             }
         });
-        let mut client = Self {
+        Ok(Self {
             child,
             #[cfg(unix)]
             stdout: Some(Pipe::new(stdout)?),
@@ -285,23 +294,26 @@ impl Client {
             turn: None,
             next_wait_error: None,
             closed: false,
+            teardown_uncertain: false,
             #[cfg(all(test, unix))]
             frame_delay: Duration::ZERO,
-        };
+        })
+    }
+    pub(crate) fn initialize(&mut self, initialize_timeout: Duration) -> Result<()> {
         let mut progress = |_: &str, _: &Value| Ok(());
-        let initialized = client.request(
+        let initialized = self.request(
             "initialize",
             json!({"capabilities":{},"clientInfo":{"name":"mir_executor","version":"0.1.0"}}),
             Some(initialize_timeout),
             None,
             &mut progress,
         )?;
-        client.tool_version = nonempty(&initialized["userAgent"]).map(|s| s.trim().to_owned());
-        client.send_flushed(
+        self.tool_version = nonempty(&initialized["userAgent"]).map(|s| s.trim().to_owned());
+        self.send_flushed(
             json!({"method":"initialized","params":{}}),
             initialize_timeout,
         )?;
-        Ok(client)
+        Ok(())
     }
     pub fn cancellation(&self) -> Cancellation {
         self.cancel.clone()
@@ -318,7 +330,10 @@ impl Client {
     pub fn is_running(&mut self) -> bool {
         self.child.try_wait().is_ok_and(|status| status.is_none())
     }
-    fn check_interruption(&mut self) {
+    pub fn teardown_uncertain(&self) -> bool {
+        self.teardown_uncertain
+    }
+    fn check_interruption(&mut self) -> Result<()> {
         #[cfg(unix)]
         {
             let number = crate::executor_process_unix::interruption();
@@ -327,17 +342,17 @@ impl Client {
                 thread::sleep(Duration::from_millis(5));
                 crate::executor_process_unix::signal_group(&self.child, libc::SIGKILL);
                 let _ = self.child.wait();
-                self.close();
-                std::process::exit(128 + number);
+                return Err(process("Codex app-server client closed"));
             }
         }
+        Ok(())
     }
     pub fn close(&mut self) {
         if self.closed {
             return;
         }
         self.closed = true;
-        self.check_interruption();
+        let _ = self.check_interruption();
         self.pending = 0;
         // Python terminates first, then escalates after kill_timeout. A blocked
         // stdin worker is released when the child exits, including on Windows.
@@ -348,7 +363,7 @@ impl Client {
             while self.child.try_wait().is_ok_and(|status| status.is_none())
                 && Instant::now() < deadline
             {
-                self.check_interruption();
+                let _ = self.check_interruption();
                 let _ = self.read_stderr();
                 if let Some(out) = &mut self.stdout {
                     let _ = out.read_once();
@@ -361,6 +376,15 @@ impl Client {
             let _ = self.child.kill();
         }
         let _ = self.child.wait();
+        #[cfg(unix)]
+        {
+            // Observe the group we created, without extending the kill policy.
+            // Unknown liveness cannot acknowledge release of effect ownership.
+            self.teardown_uncertain = !matches!(
+                crate::executor_process_unix::process_alive(-(self.child.id() as libc::pid_t)),
+                Ok(false)
+            );
+        }
         // Python retains stdin through terminate/wait. Keep its writer alive
         // until the child has exited, then release the queue before joining.
         self.send.take();
@@ -368,7 +392,7 @@ impl Client {
         // are drained synchronously below, without waiting for descendants.
         let deadline = Instant::now() + self.kill_timeout;
         while self.workers.iter().any(|worker| !worker.is_finished()) && Instant::now() < deadline {
-            self.check_interruption();
+            let _ = self.check_interruption();
             thread::sleep(Duration::from_millis(5));
         }
         #[cfg(unix)]
@@ -376,7 +400,7 @@ impl Client {
             // Only this owner can publish pipe data; drop handles before return.
             let until = Instant::now() + Duration::from_millis(25);
             while Instant::now() < until {
-                self.check_interruption();
+                let _ = self.check_interruption();
                 if !self.read_stderr().unwrap_or(false) {
                     break;
                 }
@@ -397,7 +421,7 @@ impl Client {
                 let _ = worker.join();
             }
         }
-        self.check_interruption();
+        let _ = self.check_interruption();
     }
     fn send(&self, value: Value) -> Result<()> {
         self.send
@@ -564,7 +588,7 @@ impl Client {
         });
         let mut next_watch = interval.map(|interval| start + interval);
         loop {
-            self.check_interruption();
+            self.check_interruption()?;
             if self.cancel.0.load(Ordering::SeqCst) {
                 return Err(process("Codex app-server client closed"));
             }
@@ -607,7 +631,7 @@ impl Client {
                 Ok(Event::Eof) | Err(mpsc::RecvTimeoutError::Disconnected) => {
                     let until = Instant::now() + self.kill_timeout;
                     loop {
-                        self.check_interruption();
+                        self.check_interruption()?;
                         match self.child.try_wait() {
                             Ok(Some(code)) => {
                                 return Err(process(format!(
@@ -1061,7 +1085,7 @@ impl Client {
         let mut stdout_closed = None;
         let mut exit_bytes = [0; 2];
         loop {
-            self.check_interruption();
+            self.check_interruption()?;
             let timed_out = || deadline.is_some_and(|d| Instant::now() >= d);
             let timeout_error = || {
                 Error::Timeout(format!(
@@ -1157,7 +1181,7 @@ impl Client {
                 }
                 if let Some(message) = message {
                     if let Some(value) = self.handle(message, &line, id, progress)? {
-                        self.check_interruption();
+                        self.check_interruption()?;
                         if timed_out() {
                             return Err(timeout_error());
                         }
@@ -1242,6 +1266,7 @@ mod poll_regression_tests {
             turn: None,
             next_wait_error: None,
             closed: false,
+            teardown_uncertain: false,
             frame_delay: Duration::ZERO,
         }
     }

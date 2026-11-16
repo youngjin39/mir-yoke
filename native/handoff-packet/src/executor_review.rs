@@ -1,7 +1,7 @@
 //! Independent read-only review evidence for an embedding finalizer.
 use crate::{
     executor_dispatch::CodexAttempt,
-    executor_dispatch_provider::{Error, Result, codex_attempt},
+    executor_dispatch_provider::{Error, Result, codex_attempt_with_teardown},
     executor_transport::CallOptions,
 };
 use serde_json::{Value, json};
@@ -113,6 +113,26 @@ pub fn review(
     timeout: Option<Duration>,
     after_provider_call: &mut dyn FnMut(CodexAttempt, &Value) -> Result<CodexAttempt>,
 ) -> Result<ReviewOutput> {
+    review_with_teardown(
+        command,
+        main_repo_root,
+        cwd,
+        changed_files,
+        timeout,
+        after_provider_call,
+        &mut |_| {},
+    )
+}
+
+pub fn review_with_teardown(
+    command: Command,
+    main_repo_root: &Path,
+    cwd: &Path,
+    changed_files: &[String],
+    timeout: Option<Duration>,
+    after_provider_call: &mut dyn FnMut(CodexAttempt, &Value) -> Result<CodexAttempt>,
+    teardown: &mut dyn FnMut(bool),
+) -> Result<ReviewOutput> {
     crate::executor_local::LocalConfig::load(main_repo_root)
         .map_err(Error::Local)?
         .validate_timeout(timeout.map(|value| json!(value.as_secs_f64())).as_ref())
@@ -134,12 +154,13 @@ pub fn review(
     options.base_instructions = Some(BASE_INSTRUCTIONS.into());
     options.timeout = timeout;
     let started = Instant::now();
-    let mut attempt = codex_attempt(
+    let mut attempt = codex_attempt_with_teardown(
         command,
         options,
         Duration::from_secs(15),
         Duration::from_secs(1),
         None,
+        teardown,
     )?;
     if attempt.exit_code != 0 {
         attempt.blocked_reason = Some(

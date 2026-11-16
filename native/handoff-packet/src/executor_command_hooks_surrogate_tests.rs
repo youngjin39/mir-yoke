@@ -56,6 +56,7 @@ fn native_command_hook_surrogate_token_and_error_provenance() {
             token_points: None,
             error_points: None,
             outcome: TeardownOutcome::Clean,
+            provider_uncertain: false,
             brief_profile: None,
             job_identity: None,
             instruction: None,

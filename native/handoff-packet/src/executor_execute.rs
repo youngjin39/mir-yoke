@@ -480,6 +480,10 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     };
     let mut code = match result {
         Ok(code) => code,
+        #[cfg(unix)]
+        Err(error) if error == "\0interrupted" => {
+            128 + crate::executor_process_unix::interruption()
+        }
         Err(error) => {
             if let Some(error) = error.strip_prefix("\0uncaught:") {
                 let _ = emit(&format!("{error}\n"), true);
@@ -873,6 +877,9 @@ fn execute(
             Ok(())
         })();
         if let Err(error) = completed {
+            if error == "\0interrupted" {
+                return Err(error);
+            }
             fail_job(&registry, &id, &strip_class(&error))?;
         }
         let exit_code = registry
@@ -1605,15 +1612,23 @@ fn provider(
     }
     options.config = Some(config);
     let raw = (|| {
-        let mut client = Client::spawn(command, Duration::from_secs(10), Duration::from_secs(2))?;
-        if let Some(error) = timeout_error.filter(|error| error.contains("int too large")) {
-            client.close();
-            return Err(TransportError::Encoding(error.into()));
-        }
-        let result = client.call(options, &mut |_, _| Ok(()));
+        let mut client = Client::spawn_uninitialized(command, Duration::from_secs(2))?;
+        let result = client.initialize(Duration::from_secs(10)).and_then(|()| {
+            if let Some(error) = timeout_error.filter(|error| error.contains("int too large")) {
+                return Err(TransportError::Encoding(error.into()));
+            }
+            client.call(options, &mut |_, _| Ok(()))
+        });
         client.close();
+        if let Some(bridge) = bridge.as_mut() {
+            bridge.provider_teardown(client.teardown_uncertain());
+        }
         result
     })();
+    #[cfg(unix)]
+    if crate::executor_process_unix::interruption() != 0 {
+        return Err("\0interrupted".into());
+    }
     let (mut result, metadata) = match raw {
         Err(TransportError::Encoding(error)) => return Err(error),
         Ok(raw) => {
