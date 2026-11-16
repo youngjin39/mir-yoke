@@ -76,6 +76,147 @@ mod hooks;
 #[path = "b30_native_support/mod.rs"]
 mod native;
 
+#[test]
+fn s01_frozen_root_resolution() {
+    use handoff_packet::mir_cli::bootstrap::{Host, ProductionHost};
+    let oracle: Value = serde_json::from_str(include_str!("fixtures/wt-s01-resolve.json")).unwrap();
+    assert_eq!(
+        oracle["reference_pin"],
+        "a61c3013dc382989c321577bb93dd937d11884fd"
+    );
+    let temp = tempfile::tempdir().unwrap();
+    let root = handoff_packet::supply::plain(temp.path().canonicalize().unwrap());
+    fs::write(root.join("file"), "synthetic").unwrap();
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink("absent", root.join("dangling")).unwrap();
+        std::os::unix::fs::symlink("loop", root.join("loop")).unwrap();
+    }
+    // Only path-valued fields are translated to the host's separator/anchor.
+    let expand = |text: &str| {
+        if text == "{ANCHOR}" {
+            root.ancestors().last().unwrap().to_owned()
+        } else {
+            text.strip_prefix("{ROOT}")
+                .unwrap()
+                .split('/')
+                .filter(|s| !s.is_empty())
+                .fold(root.clone(), |path, part| path.join(part))
+        }
+    };
+    for r in oracle["records"].as_array().unwrap() {
+        if cfg!(windows) && matches!(r["case"].as_str(), Some("dangling" | "loop")) {
+            continue; // These two frozen records require Unix symlink semantics.
+        }
+        let actual = ProductionHost::default().resolve(&expand(r["input"].as_str().unwrap()));
+        if let Some(value) = r["value"].as_str() {
+            assert_eq!(actual.unwrap(), expand(value), "{r}");
+        } else {
+            let error = actual.unwrap_err();
+            assert_eq!(error.class, r["class"].as_str().unwrap());
+            assert_eq!(
+                error.message,
+                r["message"]
+                    .as_str()
+                    .unwrap()
+                    .replace("{ROOT}", root.to_str().unwrap())
+            );
+        }
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn s01_windows_drive_roots() {
+    use handoff_packet::mir_cli::bootstrap::{Host, ProductionHost};
+    let temp = tempfile::tempdir().unwrap();
+    let verbatim = temp.path().canonicalize().unwrap();
+    for root in [handoff_packet::supply::plain(verbatim.clone()), verbatim] {
+        let anchor = root.ancestors().last().unwrap();
+        for (input, expected) in [
+            (root.clone(), root.clone()),
+            (anchor.to_owned(), anchor.to_owned()),
+            (
+                root.join("missing").join("tail"),
+                root.join("missing").join("tail"),
+            ),
+            (
+                root.join("missing").join("..").join("tail"),
+                root.join("tail"),
+            ),
+        ] {
+            let actual = ProductionHost::default().resolve(&input).unwrap();
+            assert_eq!(actual.as_os_str(), expected.as_os_str(), "{input:?}");
+        }
+    }
+}
+
+#[cfg(windows)]
+#[test]
+#[ignore = "first capture wt-s01-resolve-windows.json on the PC with the pinned generator"]
+fn s01_windows_frozen_root_resolution() {
+    use handoff_packet::mir_cli::bootstrap::{Host, ProductionHost};
+    let records: Value = serde_json::from_slice(
+        &fs::read(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/wt-s01-resolve-windows.json"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        records["reference_pin"],
+        "a61c3013dc382989c321577bb93dd937d11884fd"
+    );
+    assert_eq!(records["platform"], "win32");
+    assert!(matches!(
+        records["records"].as_array().unwrap().len(),
+        11 | 19
+    ));
+    // Captured paths are tokenized against the exact synthetic capture roots.
+    let temp = tempfile::tempdir().unwrap();
+    let plain = handoff_packet::supply::plain(temp.path().canonicalize().unwrap());
+    fs::write(plain.join("file"), "synthetic").unwrap();
+    for r in records["records"].as_array().unwrap() {
+        let root = match r["kind"].as_str().unwrap() {
+            "plain" => plain.clone(),
+            "verbatim" => plain.canonicalize().unwrap(),
+            "unc" | "verbatim-unc" => {
+                let root = std::path::PathBuf::from(
+                    std::env::var_os("MIR_WT_S01_UNC_ROOT").expect("synthetic UNC root required"),
+                );
+                if r["kind"] == "verbatim-unc" {
+                    root.canonicalize().unwrap()
+                } else {
+                    root
+                }
+            }
+            other => panic!("unknown root kind {other}"),
+        };
+        let expand = |text: &str| {
+            text.replace("{ROOT_SLASH}", &root.to_str().unwrap().replace('\\', "/"))
+                .replace("{ROOT}", root.to_str().unwrap())
+                .replace(
+                    "{ANCHOR}",
+                    root.ancestors().last().unwrap().to_str().unwrap(),
+                )
+        };
+        let actual =
+            ProductionHost::default().resolve(Path::new(&expand(r["input"].as_str().unwrap())));
+        if let Some(value) = r["value"].as_str() {
+            assert_eq!(
+                actual.unwrap().as_os_str(),
+                Path::new(&expand(value)).as_os_str(),
+                "{r}"
+            );
+        } else {
+            let error = actual.unwrap_err();
+            assert_eq!(error.class, r["class"].as_str().unwrap());
+            assert_eq!(error.message, expand(r["message"].as_str().unwrap()));
+        }
+    }
+}
+
 fn windows_exemption(name: &str) -> Option<&'static str> {
     if cfg!(windows) {
         match name {
