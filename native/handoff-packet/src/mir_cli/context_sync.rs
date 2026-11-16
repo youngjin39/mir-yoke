@@ -278,6 +278,9 @@ fn console_parent(
         }
         let cfg = match loader::load_config(Some(&root), &home, &cwd) {
             Ok(c) => c.to_dict(),
+            Err(e) if e.class == "ValueError" => {
+                return Ok((1, String::new(), format!("ValueError: {e}\n")));
+            }
             Err(e) => {
                 return Ok((
                     2,

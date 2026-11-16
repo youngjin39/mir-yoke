@@ -1,4 +1,79 @@
 //! Shared, bounded tomllib diagnostic compatibility.
+/// Preserve oversized integer timeouts without coercing other TOML numbers.
+pub(crate) fn load_config(text: &str) -> Result<(serde_json::Value, Option<String>), String> {
+    let error = match toml::from_str::<toml::Value>(text) {
+        Ok(value) => {
+            return serde_json::to_value(value)
+                .map(|v| (v, None))
+                .map_err(|e| e.to_string());
+        }
+        Err(error) => error,
+    };
+    let fallback = || tomllib_error(&error, text);
+    if error.message() != "number too large to fit in target type" {
+        return Err(fallback());
+    }
+    let span = error.span().ok_or_else(fallback)?;
+    let start = span.start;
+    let end = text[start..]
+        .find(|c: char| c.is_whitespace() || ",]}#".contains(c))
+        .map_or(text.len(), |n| start + n);
+    let token = &text[start..end];
+    let valid = regex::Regex::new(r"^(?:\+?[1-9](?:_?[0-9])*|0x[0-9a-fA-F](?:_?[0-9a-fA-F])*|0o[0-7](?:_?[0-7])*|0b[01](?:_?[01])*)$").map_err(|e| e.to_string())?;
+    if !valid.is_match(token) {
+        return Err(fallback());
+    }
+    // Prove the overflowing token's destination, including quoted/dotted keys,
+    // without matching source lines, comments or string contents.
+    let mut result = None;
+    for replacement in [0, 1] {
+        let mut probe = text.to_owned();
+        probe.replace_range(start..end, &replacement.to_string());
+        let parsed: toml::Value = toml::from_str(&probe).map_err(|_| fallback())?;
+        let value = serde_json::to_value(parsed).map_err(|e| e.to_string())?;
+        if value.pointer("/memory/embedding/timeout_sec") != Some(&serde_json::json!(replacement)) {
+            return Err(fallback());
+        }
+        result = Some(value);
+    }
+    let clean = token.replace('_', "");
+    let unsigned = clean.trim_start_matches('+');
+    let (base, digits) = match unsigned.get(..2) {
+        Some("0x") => (16, &unsigned[2..]),
+        Some("0o") => (8, &unsigned[2..]),
+        Some("0b") => (2, &unsigned[2..]),
+        _ => (10, unsigned),
+    };
+    if base == 10 && digits.len() > 4300 {
+        return Err(format!(
+            "Exceeds the limit (4300 digits) for integer string conversion: value has {} digits; use sys.set_int_max_str_digits() to increase the limit",
+            digits.len()
+        ));
+    }
+    // Convert power-of-two TOML bases without a machine integer bound.
+    let mut decimal = vec![0u32];
+    for digit in digits.chars() {
+        let mut carry = digit.to_digit(base).ok_or_else(fallback)?;
+        for place in &mut decimal {
+            carry += *place * base;
+            *place = carry % 10;
+            carry /= 10;
+        }
+        while carry > 0 {
+            decimal.push(carry % 10);
+            carry /= 10;
+        }
+    }
+    let number: String = decimal
+        .iter()
+        .rev()
+        .filter_map(|d| char::from_digit(*d, 10))
+        .collect();
+    let mut result = result.ok_or_else(fallback)?;
+    result["memory"]["embedding"]["timeout_sec"] = serde_json::json!(i64::MAX);
+    Ok((result, Some(number)))
+}
+
 pub(crate) fn tomllib_error(error: &toml::de::Error, text: &str) -> String {
     if error.message().contains("invalid array")
         && error.span().is_some_and(|s| s.start >= text.len())
@@ -78,6 +153,41 @@ fn array_expects_value(text: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn yfix9_timeout_scope() {
+        for text in [
+            "[memory.embedding]\ntimeout_sec=18446744073709551616\n",
+            "memory.embedding.timeout_sec=18446744073709551616\n",
+            "[\"memory\".'embedding']\n\"timeout_sec\"=18446744073709551616 # comment\n",
+        ] {
+            let (_, number) = super::load_config(text).unwrap();
+            assert_eq!(number.as_deref(), Some("18446744073709551616"));
+        }
+        for text in [
+            "other=18446744073709551616\n[memory.embedding]\ntimeout_sec=0\n",
+            "other=18446744073709551616\n[memory.embedding]\ntimeout_sec=1\n",
+            "[memory.embedding]\ndim=18446744073709551616\n",
+            "[memory.embedding]\ntimeout_sec=18446744073709551616z\n",
+            "[memory.embedding]\ntimeout_sec=018446744073709551616\n",
+        ] {
+            assert!(super::load_config(text).is_err(), "{text}");
+        }
+    }
+    #[test]
+    fn yfix9_integer_validation_and_limit() {
+        for token in ["18446744073709551615", "123456789012345678901234567890"] {
+            let (_, number) =
+                super::load_config(&format!("[memory.embedding]\ntimeout_sec={token}")).unwrap();
+            assert_eq!(number.as_deref(), Some(token));
+        }
+        let text = format!("[memory.embedding]\ntimeout_sec={}", "1".repeat(4301));
+        assert!(
+            super::load_config(&text)
+                .unwrap_err()
+                .contains("value has 4301 digits")
+        );
+        assert!(super::load_config("[memory.embedding]\ntimeout_sec=30\na=[").is_err());
+    }
     #[test]
     fn y_e5_eof_array_python_parity() {
         let records: Vec<serde_json::Value> =

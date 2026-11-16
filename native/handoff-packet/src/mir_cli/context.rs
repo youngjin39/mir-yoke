@@ -892,6 +892,9 @@ fn main_inner(
         cwd,
     ) {
         Ok(cfg) => cfg.to_dict(),
+        Err(e) if e.class == "ValueError" => {
+            return Ok((1, Vec::new(), format!("ValueError: {e}\n").into_bytes()));
+        }
         Err(e) => {
             return Ok((
                 2,
