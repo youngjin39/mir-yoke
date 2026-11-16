@@ -1,0 +1,37 @@
+{
+  "platform": "win32",
+  "python": "3.12.13 (main, Aug  7 2026, 02:26:41) [MSC v.1944 64 bit (AMD64)]",
+  "receipt": {
+    "exception": "FileNotFoundError",
+    "message": "[Errno 2] No such file or directory: '<tmp>\\\\project\\\\.mir\\\\bin\\\\project-hooks.json'"
+  },
+  "records": {
+    "183": {
+      "errno": 17,
+      "exception": "FileExistsError",
+      "message": "[Errno 17] File exists"
+    },
+    "2": {
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "message": "[Errno 2] No such file or directory"
+    },
+    "3": {
+      "errno": 2,
+      "exception": "FileNotFoundError",
+      "message": "[Errno 2] No such file or directory"
+    },
+    "32": {
+      "errno": 13,
+      "exception": "PermissionError",
+      "message": "[Errno 13] Permission denied"
+    },
+    "5": {
+      "errno": 13,
+      "exception": "PermissionError",
+      "message": "[Errno 13] Permission denied"
+    }
+  },
+  "reference_pin": "a61c3013dc382989c321577bb93dd937d11884fd",
+  "source_sha256": "9c237837847c141b9ec5ea813c9071e97308dae0e9d411b99f31d782e13ab301"
+}
