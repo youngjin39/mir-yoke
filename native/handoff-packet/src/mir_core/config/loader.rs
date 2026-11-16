@@ -105,7 +105,7 @@ fn memory_policy(v: &Value) -> Result<(), std::string::String> {
     Err(message.into())
 }
 #[derive(Clone, Debug, PartialEq)]
-pub struct ResolvedConfig(Value);
+pub struct ResolvedConfig(Value, std::string::String);
 impl ResolvedConfig {
     pub fn from_dict(data: &Value) -> Result<Self, ValidationError> {
         let fields = [(
@@ -122,13 +122,13 @@ impl ResolvedConfig {
         let validated = crate::mir_core::contracts::validate(&selected, &fields)?;
         let mut output = data.clone();
         output["memory"] = validated.dump["memory"].clone();
-        Ok(Self(output))
+        Ok(Self(output, std::string::String::new()))
     }
     pub fn to_dict(&self) -> Value {
         self.0.clone()
     }
     pub fn to_json(&self) -> std::string::String {
-        crate::mir_core::canonical::canonical_json(&self.0, Some(&[]))
+        crate::mir_core::canonical::canonical_json_with_numbers(&self.0, Some(&[]), &self.1)
     }
 }
 #[derive(Debug)]
@@ -371,7 +371,7 @@ pub fn load_config_with_reader(
         home,
     )?;
     let path = root.join("harness_a.toml");
-    let raw = match fs::metadata(&path) {
+    let (raw, large_timeout) = match fs::metadata(&path) {
         Ok(meta) if !meta.is_file() => {
             return Err(fail(format!(
                 "harness_a.toml is not a regular file: {}",
@@ -380,18 +380,21 @@ pub fn load_config_with_reader(
         }
         Ok(_) => {
             let text = read(&path).map_err(|e| fail(format!("harness_a.toml: {e}")))?;
-            let parsed: toml::Value = toml::from_str(&text).map_err(|e| {
-                fail(format!(
-                    "harness_a.toml: {}",
-                    crate::mir_core::tomllib::tomllib_error(&e, &text)
-                ))
-            })?;
-            serde_json::to_value(parsed).map_err(|e| fail(e.to_string()))?
+            crate::mir_core::tomllib::load_config(&text).map_err(|message| {
+                if message.starts_with("Exceeds the limit") {
+                    ConfigLoadError {
+                        class: "ValueError",
+                        message,
+                    }
+                } else {
+                    fail(format!("harness_a.toml: {message}"))
+                }
+            })?
         }
-        Err(e) if e.kind() == io::ErrorKind::NotFound => json!({}),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => (json!({}), None),
         Err(e) => return Err(e.into()),
     };
-    let cfg = ResolvedConfig::from_dict(&raw).map_err(|e| {
+    let mut cfg = ResolvedConfig::from_dict(&raw).map_err(|e| {
         fail(format!(
             "harness_a.toml memory configuration: {}",
             validation_error("resolved", &raw, e).message
@@ -399,5 +402,16 @@ pub fn load_config_with_reader(
     })?;
     validate_archive_set(&root, &cfg, home)?;
     resolve_memory_db(&root, &cfg, home)?;
+    if let Some(number) = large_timeout {
+        // Match LocalConfig's lossless numeric representation. Only this field
+        // gets a marker, after validation; as_i64() remains None for timeouts
+        // that cannot be passed to a bounded native socket timeout.
+        let mut tag = "__mir_toml_integer".to_owned();
+        while cfg.0.to_string().contains(&tag) {
+            tag.push('_');
+        }
+        cfg.0["memory"]["embedding"]["timeout_sec"] = json!({&tag: number});
+        cfg.1 = tag;
+    }
     Ok(cfg)
 }
