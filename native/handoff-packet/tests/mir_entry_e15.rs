@@ -9,7 +9,16 @@ fn scratch() -> tempfile::TempDir {
 
 #[test]
 fn frozen_bootstrap_process_entry() {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e15.json")).unwrap();
+    let text = if cfg!(windows) {
+        fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/y-e15-windows.json"
+        ))
+        .expect("capture on Windows first: generate_y_e15.py")
+    } else {
+        include_str!("fixtures/y-e15.json").to_owned()
+    };
+    let records: Vec<Value> = serde_json::from_str(&text).unwrap();
     for r in records.iter().filter(|r| r["mode"] == "public") {
         let temp = scratch();
         let root = temp.path().canonicalize().unwrap();
@@ -18,7 +27,8 @@ fn frozen_bootstrap_process_entry() {
             fs::create_dir_all(path.parent().unwrap()).unwrap();
             fs::write(path, body.as_str().unwrap()).unwrap();
         }
-        let out = Command::new(env!("CARGO_BIN_EXE_mir"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_mir"));
+        command
             .arg("bootstrap")
             .args(
                 r["argv"]
@@ -30,11 +40,19 @@ fn frozen_bootstrap_process_entry() {
             .current_dir(&root)
             .env_clear()
             .env("HOME", &root)
+            .env("USERPROFILE", &root)
             .env("PATH", "/usr/bin:/bin")
             .env("GIT_CONFIG_NOSYSTEM", "1")
-            .env("GIT_CONFIG_GLOBAL", "/dev/null")
-            .output()
-            .unwrap();
+            .env(
+                "GIT_CONFIG_GLOBAL",
+                if cfg!(windows) { "NUL" } else { "/dev/null" },
+            );
+        for key in ["SystemRoot", "WINDIR"] {
+            if let Some(value) = std::env::var_os(key) {
+                command.env(key, value);
+            }
+        }
+        let out = command.output().unwrap();
         assert_eq!(
             out.status.code(),
             r["exit"].as_i64().map(|v| v as i32),
