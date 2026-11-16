@@ -1,7 +1,7 @@
 use serde_json::Value;
 use std::{
     fs,
-    io::{Read, Write},
+    io::{BufRead, Read, Write},
     net::TcpListener,
     process::Command,
     thread,
@@ -145,14 +145,15 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
                 match accept_request(&listener, &cancelled) {
                     Ok((mut stream, _)) => {
                         eprintln!("[MIR_E6_DIAG] request_after={:?}", server_started.elapsed());
+                        stream.set_nonblocking(false).unwrap();
+                        stream.set_nodelay(true).unwrap();
                         stream
                             .set_read_timeout(Some(std::time::Duration::from_secs(2)))
                             .unwrap();
                         let mut bytes = Vec::new();
-                        let mut byte = [0];
+                        let mut reader = std::io::BufReader::new(&mut stream);
                         while !bytes.ends_with(b"\r\n\r\n") {
-                            stream.read_exact(&mut byte).unwrap();
-                            bytes.push(byte[0]);
+                            assert_ne!(reader.read_until(b'\n', &mut bytes).unwrap(), 0);
                         }
                         let header = String::from_utf8(bytes).unwrap();
                         let size: usize = header
@@ -164,12 +165,18 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
                             })
                             .unwrap();
                         let mut input = vec![0; size];
-                        stream.read_exact(&mut input).unwrap();
+                        reader.read_exact(&mut input).unwrap();
+                        drop(reader);
                         let started = std::time::Instant::now();
+                        eprintln!(
+                            "[MIR_E6_DIAG] event=request-read mode={mode} unix_ms={}",
+                            unix_ms()
+                        );
                         if mode == "required-timeout" {
-                            thread::sleep(std::time::Duration::from_secs(3));
+                            hold_socket(stream, &cancelled, std::time::Duration::ZERO);
+                            return Some((header, String::from_utf8(input).unwrap()));
                         }
-                        if mode == "required-disconnect" || mode == "required-timeout" {
+                        if mode == "required-disconnect" {
                             return Some((header, String::from_utf8(input).unwrap()));
                         }
                         if matches!(mode.as_str(), "required-204" | "required-304") {
@@ -178,39 +185,50 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
                             } else {
                                 "Not Modified"
                             };
-                            write!(
-                                stream,
+                            stream.write_all(format!(
                                 "HTTP/1.1 {status} {reason}\r\nConnection: keep-alive\r\n\r\n"
-                            )
+                            ).as_bytes())
                             .unwrap();
                             if diagnostic_enabled {
                                 eprintln!(
                                     "[MIR_E6_DIAG] {}",
                                     serde_json::json!({
                                         "event":"server-head", "mode":mode, "status":status,
-                                        "body_bytes":0, "elapsed_sec":started.elapsed().as_secs_f64()
+                                        "body_bytes":0, "elapsed_sec":started.elapsed().as_secs_f64(),
+                                        "unix_ms":unix_ms()
                                     })
                                 );
                             }
-                            thread::sleep(std::time::Duration::from_secs(3));
+                            hold_socket(stream, &cancelled, std::time::Duration::from_secs(3));
+                            return Some((header, String::from_utf8(input).unwrap()));
                         } else if mode == "required-garbage" {
                             stream.write_all(b"garbage\r\n\r\n").unwrap();
                         } else if mode == "required-short" {
-                            write!(
-                                stream,
-                                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
-                                body.len() + 1
-                            )
-                            .unwrap();
+                            stream
+                                .write_all(
+                                    format!(
+                                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
+                                        body.len() + 1
+                                    )
+                                    .as_bytes(),
+                                )
+                                .unwrap();
                         } else if mode == "chunked" {
-                            write!(stream, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n{:x};fake=yes\r\n{body}\r\n0\r\nX-Fake: yes\r\n\r\n", body.len()).unwrap();
+                            stream.write_all(format!("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n{:x};fake=yes\r\n{body}\r\n0\r\nX-Fake: yes\r\n\r\n", body.len()).as_bytes()).unwrap();
                         } else if mode == "close" {
-                            write!(stream, "HTTP/1.1 200 OK\r\n\r\n{body}").unwrap();
+                            stream
+                                .write_all(format!("HTTP/1.1 200 OK\r\n\r\n{body}").as_bytes())
+                                .unwrap();
                         } else if mode == "required-gzip" {
                             stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Length: 0\r\n\r\n").unwrap();
                         } else {
-                            write!(stream, "HTTP/1.1 {status} {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", if status == 200 { "OK" } else { "Service Unavailable" }, body.len()).unwrap();
+                            stream.write_all(format!("HTTP/1.1 {status} {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", if status == 200 { "OK" } else { "Service Unavailable" }, body.len()).as_bytes()).unwrap();
                         }
+                        eprintln!(
+                            "[MIR_E6_DIAG] event=server-write mode={mode} unix_ms={} elapsed_sec={}",
+                            unix_ms(),
+                            started.elapsed().as_secs_f64()
+                        );
                         return Some((header, String::from_utf8(input).unwrap()));
                     }
                     Err(e) if e.kind() == std::io::ErrorKind::Interrupted => return None,
@@ -464,15 +482,76 @@ fn accept_request(
     result
 }
 
+// The server owns its socket until the client lifecycle ends.
+fn hold_socket(
+    stream: std::net::TcpStream,
+    completed: &std::sync::mpsc::Receiver<()>,
+    minimum: std::time::Duration,
+) {
+    let started = std::time::Instant::now();
+    let _ = completed.recv();
+    thread::sleep(minimum.saturating_sub(started.elapsed()));
+    drop(stream);
+}
+
+fn unix_ms() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+}
+
+#[test]
+fn socket_hold_waits_for_client_completion() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let mut client = std::net::TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+    let (socket, _) = listener.accept().unwrap();
+    let (complete, completed) = std::sync::mpsc::channel();
+    let server = thread::spawn(move || hold_socket(socket, &completed, std::time::Duration::ZERO));
+    // A delayed client must see its own read timeout, never a server timer's EOF.
+    thread::sleep(std::time::Duration::from_millis(3100));
+    client
+        .set_read_timeout(Some(std::time::Duration::from_millis(20)))
+        .unwrap();
+    let observed = client.read(&mut [0]);
+    complete.send(()).ok();
+    server.join().unwrap();
+    assert!(
+        observed.as_ref().is_err_and(|e| matches!(
+            e.kind(),
+            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+        )),
+        "{observed:?}"
+    );
+}
+
 fn bounded_output(command: &mut Command) -> std::process::Output {
     let stdout = tempfile::NamedTempFile::new().unwrap();
-    let stderr = tempfile::NamedTempFile::new().unwrap();
     let mut child = command
         .stdin(std::process::Stdio::null())
         .stdout(stdout.reopen().unwrap())
-        .stderr(stderr.reopen().unwrap())
+        .stderr(std::process::Stdio::piped())
         .spawn()
         .unwrap();
+    let stderr = child.stderr.take().unwrap();
+    let reader = thread::spawn(move || {
+        let mut reader = std::io::BufReader::new(stderr);
+        let mut bytes = Vec::new();
+        let mut line = Vec::new();
+        while reader.read_until(b'\n', &mut line).unwrap() != 0 {
+            if line.starts_with(b"[MIR_E6_DIAG] ") {
+                // Receipt time brackets the provider's read together with its
+                // own elapsed_sec field; this is observation, not an OS trace.
+                eprintln!(
+                    "[MIR_E6_DIAG] event=client-read-observed unix_ms={} diagnostic={}",
+                    unix_ms(),
+                    String::from_utf8_lossy(&line).trim_end()
+                );
+            }
+            bytes.append(&mut line);
+        }
+        bytes
+    });
     let started = std::time::Instant::now();
     let status = loop {
         if let Some(status) = child.try_wait().unwrap() {
@@ -481,6 +560,7 @@ fn bounded_output(command: &mut Command) -> std::process::Output {
         if started.elapsed() > std::time::Duration::from_secs(180) {
             child.kill().unwrap();
             child.wait().unwrap();
+            reader.join().unwrap();
             panic!("synthetic child exceeded 180s watchdog");
         }
         thread::sleep(std::time::Duration::from_millis(10));
@@ -492,7 +572,7 @@ fn bounded_output(command: &mut Command) -> std::process::Output {
     std::process::Output {
         status,
         stdout: fs::read(stdout.path()).unwrap(),
-        stderr: fs::read(stderr.path()).unwrap(),
+        stderr: reader.join().unwrap(),
     }
 }
 

@@ -127,65 +127,7 @@ fn pull(only: Option<&str>, diagnostic: bool) {
         fs::write(root.join("harness_a.toml"), format!(
             "[memory]\nvector_mode='optional'\n[memory.embedding]\nenabled={}\nfingerprint='synthetic-v1'\nbase_url='http://{}/v1/'\nmodel='synthetic-model'\napi_key_env='SYNTHETIC_KEY'\n",
             mode != "disabled", listener.local_addr().unwrap())).unwrap();
-        let mode_owned = mode.to_owned();
-        let (cancel, cancelled) = std::sync::mpsc::channel();
-        let server_started = std::time::Instant::now();
-        let server = thread::spawn(move || {
-            loop {
-                match accept_request(&listener, &cancelled) {
-                    Ok((mut stream, _)) => {
-                        eprintln!("[MIR_E6_DIAG] request_after={:?}", server_started.elapsed());
-                        // macOS accepted sockets inherit the listener's O_NONBLOCK.
-                        stream.set_nonblocking(false).unwrap();
-                        stream
-                            .set_read_timeout(Some(Duration::from_secs(2)))
-                            .unwrap();
-                        let mut header = Vec::new();
-                        let mut byte = [0];
-                        while !header.ends_with(b"\r\n\r\n") {
-                            stream.read_exact(&mut byte).unwrap();
-                            header.push(byte[0]);
-                        }
-                        let header = String::from_utf8(header).unwrap();
-                        assert!(header.starts_with("POST /v1/embeddings HTTP/1.1\r\n"));
-                        assert!(
-                            header
-                                .to_ascii_lowercase()
-                                .contains("authorization: bearer fake-only\r\n")
-                        );
-                        let size: usize = header
-                            .lines()
-                            .find_map(|s| {
-                                s.to_ascii_lowercase()
-                                    .strip_prefix("content-length:")
-                                    .map(|v| v.trim().parse().unwrap())
-                            })
-                            .unwrap();
-                        let mut body = vec![0; size];
-                        stream.read_exact(&mut body).unwrap();
-                        let response = if mode_owned == "bad-json" {
-                            "{".into()
-                        } else {
-                            serde_json::json!({"data":[{"embedding": ([vec![1.0],vec![0.0;1023]].concat())}]}).to_string()
-                        };
-                        let status = if mode_owned == "status" {
-                            "503 Service Unavailable"
-                        } else {
-                            "200 OK"
-                        };
-                        let _ = write!(
-                            stream,
-                            "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",
-                            response.len()
-                        );
-                        return vec![serde_json::from_slice::<Value>(&body).unwrap()];
-                    }
-                    Err(e) if e.kind() == std::io::ErrorKind::Interrupted => return vec![],
-                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
-                    Err(e) => panic!("accept failed: {e:?}"),
-                }
-            }
-        });
+        let (cancel, server) = synthetic_server(listener, mode);
         let mut command = Command::new(env!("CARGO_BIN_EXE_mir"));
         command
             .args(
@@ -269,6 +211,82 @@ fn pull(only: Option<&str>, diagnostic: bool) {
         );
         assert_eq!(serde_json::json!(requests), r["requests"], "{mode}");
     }
+}
+
+fn synthetic_server(
+    listener: TcpListener,
+    mode: &str,
+) -> (std::sync::mpsc::Sender<()>, thread::JoinHandle<Vec<Value>>) {
+    let mode_owned = mode.to_owned();
+    let (cancel, cancelled) = std::sync::mpsc::channel();
+    let server_started = std::time::Instant::now();
+    let server = thread::spawn(move || {
+        let mut requests = Vec::new();
+        loop {
+            match accept_request(&listener, &cancelled) {
+                Ok((mut stream, _)) => {
+                    eprintln!(
+                        "[MIR_E6_DIAG] connection={} request_after={:?}",
+                        requests.len() + 1,
+                        server_started.elapsed()
+                    );
+                    // macOS accepted sockets inherit the listener's O_NONBLOCK.
+                    stream.set_nonblocking(false).unwrap();
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(2)))
+                        .unwrap();
+                    let mut header = Vec::new();
+                    let mut byte = [0];
+                    while !header.ends_with(b"\r\n\r\n") {
+                        stream.read_exact(&mut byte).unwrap();
+                        header.push(byte[0]);
+                    }
+                    let header = String::from_utf8(header).unwrap();
+                    assert!(header.starts_with("POST /v1/embeddings HTTP/1.1\r\n"));
+                    assert!(
+                        header
+                            .to_ascii_lowercase()
+                            .contains("authorization: bearer fake-only\r\n")
+                    );
+                    let size: usize = header
+                        .lines()
+                        .find_map(|s| {
+                            s.to_ascii_lowercase()
+                                .strip_prefix("content-length:")
+                                .map(|v| v.trim().parse().unwrap())
+                        })
+                        .unwrap();
+                    let mut body = vec![0; size];
+                    stream.read_exact(&mut body).unwrap();
+                    let response = if mode_owned == "bad-json" {
+                        "{".into()
+                    } else {
+                        serde_json::json!({"data":[{"embedding": ([vec![1.0],vec![0.0;1023]].concat())}]}).to_string()
+                    };
+                    let status = if mode_owned == "status" {
+                        "503 Service Unavailable"
+                    } else {
+                        "200 OK"
+                    };
+                    let written = write!(
+                        stream,
+                        "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",
+                        response.len()
+                    );
+                    eprintln!(
+                        "[MIR_E6_DIAG] connection={} response_after={:?} write={written:?}",
+                        requests.len() + 1,
+                        server_started.elapsed()
+                    );
+                    requests.push(serde_json::from_slice::<Value>(&body).unwrap());
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::Interrupted => return requests,
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                Err(e) => panic!("accept failed: {e:?}"),
+            }
+        }
+    });
+    (cancel, server)
 }
 
 fn accept_request(
@@ -362,4 +380,31 @@ fn delayed_request_and_no_request_shutdown() {
         std::io::ErrorKind::Interrupted
     );
     assert!(started.elapsed() < std::time::Duration::from_secs(1));
+}
+
+#[test]
+fn synthetic_server_answers_reconnects_until_client_completes() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let address = listener.local_addr().unwrap();
+    let (cancel, server) = synthetic_server(listener, "bad-json");
+    let responses: Vec<_> = (0..2)
+        .map(|_| -> std::io::Result<String> {
+            let mut client = std::net::TcpStream::connect(address)?;
+            client.set_read_timeout(Some(Duration::from_secs(2)))?;
+            client.write_all(b"POST /v1/embeddings HTTP/1.1\r\nAuthorization: Bearer fake-only\r\nContent-Length: 2\r\n\r\n{}")?;
+            let mut response = String::new();
+            client.read_to_string(&mut response)?;
+            Ok(response)
+        })
+        .collect();
+    let _ = cancel.send(());
+    let requests = server.join().unwrap();
+    for (connection, response) in responses.into_iter().enumerate() {
+        assert_eq!(
+            response.unwrap_or_else(|e| panic!("connection {} failed: {e}", connection + 1)),
+            "HTTP/1.1 200 OK\r\nContent-Length: 1\r\nConnection: close\r\n\r\n{"
+        );
+    }
+    assert_eq!(requests, vec![serde_json::json!({}); 2]);
 }
