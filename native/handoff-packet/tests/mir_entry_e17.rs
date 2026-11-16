@@ -94,9 +94,49 @@ impl b::Host for Host {
         })
     }
 }
+// Compare only the structured argv field; never rewrite unrelated diagnostics.
+fn observe_project_roots(actual: &mut Value, root: &str) {
+    for argv in actual["calls"].as_array_mut().unwrap() {
+        let argv = argv.as_array_mut().unwrap();
+        let index = argv
+            .iter()
+            .position(|value| value == "--project-root")
+            .unwrap()
+            + 1;
+        assert_eq!(argv[index], root, "--project-root spelling");
+        argv[index] = json!("{ROOT}");
+    }
+}
+
+#[test]
+fn project_root_observer_handles_json_escaping() {
+    let root = r"\\?\C:\scratch\repo";
+    let mut actual = json!({"calls": [["sync", "--project-root", root, "--json"]],
+                            "stderr": root, "result": {"value": root}});
+    observe_project_roots(&mut actual, root);
+    assert_eq!(actual["calls"][0][2], "{ROOT}");
+    assert_eq!(actual["stderr"], root);
+    assert_eq!(actual["result"]["value"], root);
+}
+
+#[test]
+#[should_panic(expected = "--project-root spelling")]
+fn project_root_observer_rejects_wire_spelling() {
+    let mut actual = json!({"calls": [["finalize", "--project-root", "C:/scratch/repo"]]});
+    observe_project_roots(&mut actual, r"\\?\C:\scratch\repo");
+}
+
 #[test]
 fn frozen_capability_acquisition() {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e17.json")).unwrap();
+    let source = if cfg!(windows) {
+        fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/y-e17-windows.json"),
+        )
+        .expect("PC capture required: generate_y_e17.py --output y-e17-windows.json")
+    } else {
+        include_str!("fixtures/y-e17.json").to_owned()
+    };
+    let records: Vec<Value> = serde_json::from_str(&source).unwrap();
     let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/mig-scratch/Y-E17");
     fs::create_dir_all(&scratch).unwrap();
     let mut checked = 0;
@@ -168,15 +208,22 @@ fn frozen_capability_acquisition() {
             Ok(v) => json!({"value": v}),
             Err(e) => json!({"class": e.class, "message": e.message}),
         };
-        let actual =
+        let mut actual =
             json!({"result": value, "stdout": stdout, "stderr": stderr, "calls": host.calls});
-        let actual: Value =
-            serde_json::from_str(&actual.to_string().replace(root.to_str().unwrap(), "{ROOT}"))
-                .unwrap();
+        observe_project_roots(&mut actual, root.to_str().unwrap());
+        let mut expected = r.clone();
+        if cfg!(windows) {
+            assert_eq!(
+                r["reference_pin"],
+                "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+            );
+            assert_eq!(r["platform"], "win32");
+            observe_project_roots(&mut expected, r["project_root"].as_str().unwrap());
+        }
         for field in ["result", "stdout", "stderr", "calls"] {
             // Python sorts CLI output keys, so byte comparison (not parsed JSON) is intentional.
             assert_eq!(
-                actual[field], r[field],
+                actual[field], expected[field],
                 "{}: {} {field}",
                 r["mode"], r["case"]
             );
