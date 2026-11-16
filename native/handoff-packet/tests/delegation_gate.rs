@@ -7,6 +7,83 @@ use std::{
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
+#[cfg(windows)]
+#[path = "../src/executor_hooks_windows.rs"]
+mod process_job;
+
+struct CaseProcess {
+    child: Option<std::process::Child>,
+    #[cfg(windows)]
+    job: Option<process_job::ProcessJob>,
+}
+
+impl CaseProcess {
+    fn spawn(command: &mut Command) -> Self {
+        #[cfg(windows)]
+        let job = {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x4); // CREATE_SUSPENDED
+            process_job::ProcessJob::new().unwrap()
+        };
+        let process = Self {
+            child: Some(command.spawn().unwrap()),
+            #[cfg(windows)]
+            job: Some(job),
+        };
+        #[cfg(windows)]
+        process
+            .job
+            .as_ref()
+            .unwrap()
+            .assign_and_resume(process.child.as_ref().unwrap())
+            .unwrap();
+        process
+    }
+
+    fn output(mut self) -> std::process::Output {
+        self.child.take().unwrap().wait_with_output().unwrap()
+    }
+}
+
+impl Drop for CaseProcess {
+    fn drop(&mut self) {
+        if let Some(mut child) = self.child.take() {
+            let _ = child.kill();
+            child.wait().expect("reap owned gate process");
+        }
+        #[cfg(windows)]
+        drop(self.job.take());
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn owned_process_is_reaped_on_drop() {
+    let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir);
+    let root = tempfile::tempdir_in(base).unwrap();
+    let mut command = Command::new("/bin/sh");
+    command
+        .args(["-c", "exec sleep 30"])
+        .current_dir(root.path())
+        .env("HOME", root.path())
+        .env("USERPROFILE", root.path());
+    let process = CaseProcess::spawn(&mut command);
+    let pid = process.child.as_ref().unwrap().id() as i32;
+    drop(process);
+    // SAFETY: pid is this test's own child; WNOHANG cannot block.
+    let reaped = unsafe { libc::waitpid(pid, std::ptr::null_mut(), libc::WNOHANG) };
+    if reaped == 0 {
+        // SAFETY: clean up the deliberately surviving child during RED too.
+        unsafe {
+            libc::kill(pid, libc::SIGKILL);
+            libc::waitpid(pid, std::ptr::null_mut(), 0);
+        }
+    }
+    assert_eq!(reaped, -1, "owned child {pid} survived guard cleanup");
+}
+
 fn remaining(path: &Path) {
     eprintln!("[gate-diag] inspect path={path:?}");
     match fs::read_dir(path) {
@@ -175,6 +252,51 @@ fn directory_users(path: &Path, capacity: usize) -> std::io::Result<Vec<usize>> 
         return Err(std::io::Error::other("incomplete directory user list"));
     }
     Ok(buffer[1..count + 1].to_vec())
+}
+
+#[cfg(windows)]
+fn reap_directory_holders(path: &Path, gate_pid: u32) {
+    use std::{
+        ffi::c_void,
+        os::windows::io::{FromRawHandle, OwnedHandle},
+    };
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn OpenProcess(access: u32, inherit: i32, pid: u32) -> *mut c_void;
+        fn WaitForSingleObject(handle: *mut c_void, milliseconds: u32) -> u32;
+    }
+    for pid in directory_users(path, 1024).expect("query case directory holders") {
+        if pid == std::process::id() as usize {
+            continue;
+        }
+        let metadata = process_metadata(pid);
+        let owned = [std::process::id(), gate_pid].iter().any(|parent| {
+            metadata
+                == format!(
+                    "image=Ok({:?}) parent=Ok({parent})",
+                    env!("CARGO_BIN_EXE_delegation-gate")
+                )
+        });
+        assert!(owned, "unowned case directory holder pid={pid} {metadata}");
+        // SAFETY: request only synchronization on the identified test child.
+        let handle = unsafe { OpenProcess(0x00100000, 0, pid as u32) };
+        if handle.is_null() {
+            let error = std::io::Error::last_os_error();
+            if error.raw_os_error() == Some(87) {
+                continue;
+            } // exited before open
+            panic!("open case holder pid={pid} {metadata}: {error:?}");
+        }
+        // SAFETY: successful OpenProcess returns an owned handle; bounded wait.
+        let _owned = unsafe { OwnedHandle::from_raw_handle(handle) };
+        let result = unsafe { WaitForSingleObject(handle, 2_000) };
+        assert_eq!(
+            result,
+            0,
+            "case holder pid={pid} {metadata} wait={result:#x}: {:?}",
+            std::io::Error::last_os_error()
+        );
+    }
 }
 
 #[cfg(windows)]
@@ -410,7 +532,8 @@ fn decision_fixtures() {
             ),
         );
         diag("spawn_call", "stdio=piped,piped,piped");
-        let mut child = command.spawn().unwrap();
+        let mut process = CaseProcess::spawn(&mut command);
+        let child = process.child.as_mut().unwrap();
         let gate_pid = child.id();
         diag("spawn_done", &format!("gate_pid={gate_pid}"));
         let input = case["raw"]
@@ -424,7 +547,7 @@ fn decision_fixtures() {
             .write_all(input.as_bytes())
             .unwrap();
         diag("stdin_closed", &format!("gate_pid={gate_pid}"));
-        let output = child.wait_with_output().unwrap();
+        let output = process.output();
         diag(
             "wait_done",
             &format!("gate_pid={gate_pid} status={:?}", output.status),
@@ -453,7 +576,9 @@ fn decision_fixtures() {
         } else {
             assert!(error.starts_with("[mir BLOCKED]"), "{error}");
         }
-        // wait_with_output consumes Child and closes its handles before cleanup.
+        #[cfg(windows)]
+        reap_directory_holders(root, gate_pid);
+        // The owned process and its Windows job are closed before cleanup.
         // Preserve the exact OS error and remaining entries; do not retry away
         // a sharing violation or attribute it to an unobserved external holder.
         let path = root.to_owned();
@@ -466,11 +591,9 @@ fn decision_fixtures() {
                 "close_error",
                 &format!("gate_pid={gate_pid} error={error:?} ({error})"),
             );
-            if std::env::var("MIR_GATE_DIAG").as_deref() == Ok("1") {
-                #[cfg(windows)]
-                eprintln!("[gate-diag] directory_users root={path:?} runner_pid={} gate_pid={gate_pid} details={}", std::process::id(), close_error_details(&error, directory_users(&path, 1024), process_metadata));
-                remaining(&path);
-            }
+            #[cfg(windows)]
+            eprintln!("[gate-diag] directory_users root={path:?} runner_pid={} gate_pid={gate_pid} details={}", std::process::id(), close_error_details(&error, directory_users(&path, 1024), process_metadata));
+            remaining(&path);
             panic!(
                 "cleanup case={} root={} runner_pid={} gate_pid={} cwd={:?}: {error:?} ({error})",
                 case["name"],
