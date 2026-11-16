@@ -178,6 +178,115 @@ pub(crate) fn io_error(path: &Path, e: io::Error) -> Error {
         message: format!("[Errno {errno}] {message}: {}", repr(&wire(path))),
     }
 }
+// Keep the platform renderer replaceable for a Mac simulation of Windows.
+#[cfg(any(windows, test))]
+fn windows_spawn_message(error: &io::Error, render: impl FnOnce(&io::Error) -> String) -> String {
+    // Rust's Windows PATH lookup can return NotFound without a Win32 code;
+    // Python CreateProcess raises WinError 2 for the same missing executable.
+    let missing;
+    let error = if error.raw_os_error().is_none() && error.kind() == io::ErrorKind::NotFound {
+        missing = io::Error::from_raw_os_error(2);
+        &missing
+    } else {
+        error
+    };
+    let rendered = render(error);
+    rendered
+        .split_once(": ")
+        .map_or_else(|| rendered.clone(), |(_, message)| message.to_owned())
+}
+
+fn jq_spawn_message(error: &io::Error) -> String {
+    #[cfg(windows)]
+    {
+        windows_spawn_message(error, |error| {
+            crate::adoption_fs::windows_error(
+                error,
+                None,
+                None,
+                crate::executor_text::IoOperation::Win32,
+                crate::executor_text::FilenameArgument::Str,
+            )
+        })
+    }
+    #[cfg(not(windows))]
+    error.to_string()
+}
+
+#[cfg(test)]
+#[test]
+fn pc3_missing_jq_windows_mapping() {
+    let root = tempfile::tempdir().unwrap();
+    let error = Command::new("jq")
+        .env_clear()
+        .env("HOME", root.path())
+        .env("PATH", root.path())
+        .current_dir(root.path())
+        .output()
+        .unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::NotFound);
+    let records: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/y-e14-windows.json")).unwrap();
+    let record = records
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["mode"] == "settings")
+        .unwrap();
+    let report: Value = serde_json::from_str(record["stdout"].as_str().unwrap()).unwrap();
+    let expected = report["errors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(Value::as_str)
+        .find_map(|s| s.strip_prefix("cannot digest settings hook evidence: "))
+        .unwrap();
+    let actual = windows_spawn_message(&error, |mapped| {
+        assert_eq!(mapped.raw_os_error(), Some(2));
+        format!("FileNotFoundError: {expected}")
+    });
+    assert_eq!(actual, expected);
+    // Preserve the real spawn failure as the source while reproducing Rust's
+    // code-less Windows PATH lookup error on Mac.
+    let without_code = io::Error::new(error.kind(), error);
+    assert_eq!(without_code.raw_os_error(), None);
+    assert_eq!(
+        windows_spawn_message(&without_code, |mapped| {
+            assert_eq!(mapped.raw_os_error(), Some(2));
+            format!("FileNotFoundError: {expected}")
+        }),
+        expected
+    );
+    #[cfg(unix)]
+    {
+        let denied = root.path().join("denied-jq");
+        fs::write(&denied, "not executable").unwrap();
+        let error = Command::new(&denied)
+            .env_clear()
+            .env("HOME", root.path())
+            .current_dir(root.path())
+            .output()
+            .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+        let code = error.raw_os_error();
+        assert_eq!(
+            windows_spawn_message(&error, |mapped| {
+                assert_eq!(mapped.raw_os_error(), code);
+                "PermissionError: preserved".into()
+            }),
+            "preserved"
+        );
+        let without_code = io::Error::new(error.kind(), error);
+        assert_eq!(
+            windows_spawn_message(&without_code, |mapped| {
+                assert_eq!(mapped.raw_os_error(), None);
+                "OSError: preserved".into()
+            }),
+            "preserved"
+        );
+    }
+}
+
 pub(crate) fn read_error(path: &Path, e: io::Error) -> Error {
     #[cfg(windows)]
     {

@@ -131,7 +131,12 @@ pub fn evidence_digest(relative: &str, path: &Path, host: &mut dyn Host) -> Resu
             capture_output: true,
             check: false,
         })
-        .map_err(|e| adoption(format!("cannot digest settings hook evidence: {e}")))?;
+        .map_err(|e| {
+            adoption(format!(
+                "cannot digest settings hook evidence: {}",
+                jq_spawn_message(&e)
+            ))
+        })?;
     // bytes.strip uses ASCII whitespace, unlike the validators' Python text strip.
     if result.returncode != 0 || result.stdout.iter().all(|b| b" \t\n\r\x0b\x0c".contains(b)) {
         return Err(adoption(
