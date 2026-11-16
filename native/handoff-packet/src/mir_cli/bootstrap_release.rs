@@ -1,6 +1,6 @@
 //! Release identity, byte guards and Git ownership helpers for the library port.
 use super::authored::{
-    atomic_write_text, attribute_error, decode, io_error, json_text, python_str, read_text, run,
+    atomic_write_text, attribute_error, decode, json_text, python_str, read_error, read_text, run,
     valid_commit,
 };
 use super::{Error, Host};
@@ -160,7 +160,7 @@ pub fn is_raw_provider_checkout(root: &Path, host: &mut impl Host) -> Result<boo
         if output.returncode != 0 || !is_safe_existing_project_file(root, &path) {
             return Ok(false);
         }
-        if fs::read(&path).map_err(|e| io_error(&path, e))? != output.stdout {
+        if fs::read(&path).map_err(|e| read_error(&path, e))? != output.stdout {
             return Ok(false);
         }
     }
@@ -169,7 +169,7 @@ pub fn is_raw_provider_checkout(root: &Path, host: &mut impl Host) -> Result<boo
     if !is_safe_existing_project_file(root, &contract) {
         return Ok(false);
     }
-    let digest = crate::digest::sha256(&fs::read(&contract).map_err(|e| io_error(&contract, e))?);
+    let digest = crate::digest::sha256(&fs::read(&contract).map_err(|e| read_error(&contract, e))?);
     if digests.get("CLAUDE.md") != Some(&digest) {
         return Ok(false);
     }
@@ -212,7 +212,7 @@ pub fn rewrite_release_matched(
         if !is_safe_existing_project_file(root, &path) {
             continue;
         }
-        if crate::digest::sha256(&fs::read(&path).map_err(|e| io_error(&path, e))?) == *expected {
+        if crate::digest::sha256(&fs::read(&path).map_err(|e| read_error(&path, e))?) == *expected {
             atomic_write_text(&path, body)?;
             changed.push(relative.clone());
         }

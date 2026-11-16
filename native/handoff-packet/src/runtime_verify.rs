@@ -545,7 +545,21 @@ pub(crate) fn runtime_entries(root: &Path, manifest: &Path) -> Result<Vec<PyValu
                     quote_codes(&path_codes(&target))
                 ));
             } else {
-                let contents = fs::read(&path).map_err(|e| io_failure(&path, e))?;
+                let contents = fs::read(&path).map_err(|e| {
+                    #[cfg(windows)]
+                    {
+                        Failure::Error(
+                            handoff_packet::executor_brief_profile::python_file_error_message(
+                                &e,
+                                &path,
+                                handoff_packet::executor_text::IoOperation::Read,
+                                handoff_packet::executor_text::FilenameArgument::Path,
+                            ),
+                        )
+                    }
+                    #[cfg(not(windows))]
+                    io_failure(&path, e)
+                })?;
                 body.push_str(&format!(
                     ",\"type\":\"file\",\"sha256\":\"{}\"}}",
                     digest::sha256(&contents)

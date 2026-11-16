@@ -178,6 +178,24 @@ pub(crate) fn io_error(path: &Path, e: io::Error) -> Error {
         message: format!("[Errno {errno}] {message}: {}", repr(&wire(path))),
     }
 }
+pub(crate) fn read_error(path: &Path, e: io::Error) -> Error {
+    #[cfg(windows)]
+    {
+        if e.raw_os_error().is_none() {
+            return io_error(path, e);
+        }
+        Error::Io {
+            class: crate::adoption_fs::windows_crt_error(&e).0,
+            message: crate::executor_brief_profile::python_read_error_message(
+                &e,
+                path,
+                crate::executor_text::FilenameArgument::Path,
+            ),
+        }
+    }
+    #[cfg(not(windows))]
+    io_error(path, e)
+}
 pub(crate) fn decode(bytes: Vec<u8>) -> Result<String, Error> {
     String::from_utf8(bytes).map_err(|e| {
         let start = e.utf8_error().valid_up_to();
@@ -287,7 +305,7 @@ pub trait Host {
 pub struct LocalHost;
 impl Host for LocalHost {}
 fn read(path: &Path, host: &mut dyn Host) -> Result<Vec<u8>, Error> {
-    host.read(path).map_err(|e| io_error(path, e))
+    host.read(path).map_err(|e| read_error(path, e))
 }
 fn read_text(path: &Path, host: &mut dyn Host) -> Result<String, Error> {
     decode(read(path, host)?).map(|s| s.replace("\r\n", "\n").replace('\r', "\n"))

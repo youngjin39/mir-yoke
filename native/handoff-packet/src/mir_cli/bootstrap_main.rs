@@ -652,7 +652,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
         };
         let path = super::main_host::abspath(&absolute);
         if path.is_file() {
-            let bytes = fs::read(&path).map_err(|error| authored::io_error(&path, error))?;
+            let bytes = fs::read(&path).map_err(|error| authored::read_error(&path, error))?;
             receipt_cli_hash = Some(crate::digest::sha256(&bytes));
         }
         receipt_cli_path = Some(path);
