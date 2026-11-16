@@ -265,7 +265,46 @@ impl Host for ProductionHost {
             ))
         }
     }
-    // A native executable has no Python interpreter version/prefix to attest.
+    fn python_runtime(&mut self) -> Result<(String, bool), Error> {
+        // Match run-python's installed-console binding, never a PATH interpreter.
+        // Only stdlib observations run here; no provider code is imported.
+        let cli = std::env::current_exe().map_err(|e| os_error(Path::new("."), e))?;
+        let directory = cli.parent().unwrap_or(Path::new("."));
+        let python = directory.join(if cfg!(windows) {
+            "python.exe"
+        } else {
+            "python"
+        });
+        let result = Command::new(&python)
+            .args([
+                "-I",
+                "-X",
+                "utf8",
+                "-c",
+                concat!(
+                    "import json, os, platform, sys; ",
+                    "print('\\0' + json.dumps([platform.python_version(), ",
+                    "bool(os.environ.get('VIRTUAL_ENV') or sys.prefix != sys.base_prefix)]) + '\\0')"
+                ),
+            ])
+            .stdin(Stdio::null())
+            .output()
+            .map_err(|e| os_error(&python, e))?;
+        if !result.status.success() {
+            return Err(Error::new(
+                "RuntimeError",
+                format!("Python runtime attestation failed: {}", result.status),
+            ));
+        }
+        // Keep site's Python 3.12 venv prefixes, excluding startup output from the frame.
+        let mut frame = result.stdout.rsplitn(3, |byte| *byte == 0);
+        let observation = match (frame.next(), frame.next(), frame.next()) {
+            (Some(_), Some(json), Some(_)) => json,
+            _ => &[],
+        };
+        serde_json::from_slice(observation)
+            .map_err(|_| Error::new("RuntimeError", "invalid Python runtime attestation"))
+    }
     fn python_argv0(&mut self) -> PathBuf {
         std::env::args_os()
             .next()

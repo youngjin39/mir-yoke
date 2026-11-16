@@ -33,12 +33,39 @@ pub struct NodeData {
     pub line: usize,
     pub column: usize,
     pub end_line: usize,
+    index: usize,
 }
 /// Arena indices preserve shared and cyclic aliases without reference-count cycles.
 #[derive(Debug)]
 pub struct Node {
     pub arena: Vec<NodeData>,
     pub root: usize,
+    chars: Vec<char>,
+}
+impl Node {
+    pub(crate) fn constructor_error(
+        &self,
+        index: usize,
+        context: Option<usize>,
+        problem: &str,
+    ) -> String {
+        let mark = |i: usize| {
+            let n = &self.arena[i];
+            Mark {
+                index: n.index,
+                line: n.line,
+                column: n.column,
+            }
+        };
+        marked(
+            "ConstructorError",
+            &self.chars,
+            context.map(|i| ("while constructing a mapping", mark(i))),
+            problem,
+            mark(index),
+        )
+        .message
+    }
 }
 const PREFIX: &str = "tag:yaml.org,2002:";
 // PyYAML raises RecursionError near 490 levels, a threshold that moves with the caller's
@@ -46,45 +73,138 @@ const PREFIX: &str = "tag:yaml.org,2002:";
 // known divergence band (PyYAML accepts from a shallow caller, this rejects).
 const DEPTH_LIMIT: usize = 450;
 fn reader(input: Input<'_>) -> Result<Vec<char>> {
+    let name = if matches!(input, Input::Text(_)) {
+        "<unicode string>"
+    } else {
+        "<byte string>"
+    };
+    let failure = |code: u32, pos: usize, reason: &str| YamlError {
+        class: "ReaderError",
+        message: format!(
+            "unacceptable character #x{code:04x}: {reason}\n  in \"{name}\", position {pos}"
+        ),
+    };
     let text = match input {
         Input::Text(s) => s.to_owned(),
         Input::Bytes(b) => {
             if b.starts_with(&[0xff, 0xfe]) || b.starts_with(&[0xfe, 0xff]) {
-                if b.len() % 2 != 0 {
-                    return Err(error("ReaderError"));
-                }
                 let le = b[0] == 0xff;
                 let units = b.as_chunks::<2>().0.iter().map(|p| {
                     if le {
-                        u16::from_le_bytes([p[0], p[1]])
+                        u16::from_le_bytes(*p)
                     } else {
-                        u16::from_be_bytes([p[0], p[1]])
+                        u16::from_be_bytes(*p)
                     }
                 });
-                char::decode_utf16(units)
-                    .collect::<std::result::Result<String, _>>()
-                    .map_err(|_| error("ReaderError"))?
+                let mut text = String::new();
+                let mut i = 0;
+                for decoded in char::decode_utf16(units) {
+                    let c = decoded.map_err(|e| {
+                        failure(
+                            b[i] as u32,
+                            i,
+                            if e.unpaired_surrogate() >= 0xdc00 {
+                                "illegal encoding"
+                            } else if i + 3 >= b.len() {
+                                "unexpected end of data"
+                            } else {
+                                "illegal UTF-16 surrogate"
+                            },
+                        )
+                    })?;
+                    i += c.len_utf16() * 2;
+                    text.push(c);
+                }
+                if i < b.len() {
+                    return Err(failure(b[i] as u32, i, "truncated data"));
+                }
+                text
             } else {
                 std::str::from_utf8(b)
-                    .map_err(|_| error("ReaderError"))?
+                    .map_err(|e| {
+                        let i = e.valid_up_to();
+                        failure(
+                            b[i] as u32,
+                            i,
+                            if e.error_len().is_none() {
+                                "unexpected end of data"
+                            } else if (0xc2..=0xf4).contains(&b[i]) {
+                                "invalid continuation byte"
+                            } else {
+                                "invalid start byte"
+                            },
+                        )
+                    })?
                     .to_owned()
             }
         }
     };
     let chars: Vec<_> = text.chars().collect();
-    if chars.iter().any(|&c| {
+    if let Some((i, &c)) = chars.iter().enumerate().find(|&(_, &c)| {
         !matches!(c as u32,
         0x9 | 0xa | 0xd | 0x20..=0x7e | 0x85 | 0xa0..=0xd7ff |
         0xe000..=0xfffd | 0x10000..=0x10ffff)
     }) {
-        return Err(error("ReaderError"));
+        return Err(failure(c as u32, i, "special characters are not allowed"));
     }
     Ok(chars)
 }
 #[derive(Clone, Copy, Debug, Default)]
 struct Mark {
+    index: usize,
     line: usize,
     column: usize,
+}
+// PyYAML Mark.get_snippet uses character offsets, including a leading BOM.
+impl Mark {
+    fn render(self, chars: &[char]) -> String {
+        let (mut start, mut end) = (self.index, self.index);
+        let (mut head, mut tail) = ("", "");
+        while start > 0 && chars[start - 1] != '\0' && !br(chars[start - 1]) {
+            start -= 1;
+            if self.index - start > 36 {
+                head = " ... ";
+                start += 5;
+                break;
+            }
+        }
+        while end < chars.len() && chars[end] != '\0' && !br(chars[end]) {
+            end += 1;
+            if end - self.index > 36 {
+                tail = " ... ";
+                end -= 5;
+                break;
+            }
+        }
+        format!(
+            "  in \"<unicode string>\", line {}, column {}:\n    {head}{}{tail}\n{}^",
+            self.line + 1,
+            self.column + 1,
+            chars[start..end].iter().collect::<String>(),
+            " ".repeat(4 + self.index - start + head.len())
+        )
+    }
+}
+fn marked(
+    class: &'static str,
+    chars: &[char],
+    context: Option<(&str, Mark)>,
+    problem: &str,
+    mark: Mark,
+) -> YamlError {
+    let mut lines = Vec::new();
+    if let Some((text, start)) = context {
+        lines.push(text.to_owned());
+        if (start.line, start.column) != (mark.line, mark.column) {
+            lines.push(start.render(chars));
+        }
+    }
+    lines.push(problem.to_owned());
+    lines.push(mark.render(chars));
+    YamlError {
+        class,
+        message: lines.join("\n"),
+    }
 }
 #[derive(Clone, Debug, PartialEq)]
 enum TokenKind {
@@ -107,6 +227,31 @@ enum TokenKind {
     Anchor(String),
     Alias(String),
     Tag(String, String),
+}
+impl TokenKind {
+    fn name(&self) -> &'static str {
+        match self {
+            Self::End => "<stream end>",
+            Self::Doc => "<document start>",
+            Self::DocEnd => "<document end>",
+            Self::Directive(_) => "<directive>",
+            Self::Seq => "<block sequence start>",
+            Self::Map => "<block mapping start>",
+            Self::BlockEnd => "<block end>",
+            Self::Dash => "-",
+            Self::Key => "?",
+            Self::Value => ":",
+            Self::OpenSeq => "[",
+            Self::CloseSeq => "]",
+            Self::OpenMap => "{",
+            Self::CloseMap => "}",
+            Self::Comma => ",",
+            Self::Scalar(..) => "<scalar>",
+            Self::Anchor(_) => "<anchor>",
+            Self::Alias(_) => "<alias>",
+            Self::Tag(..) => "<tag>",
+        }
+    }
 }
 #[derive(Clone, Debug)]
 struct Token {
@@ -139,12 +284,19 @@ fn blank(c: char) -> bool {
     c == '\0' || c == ' ' || c == '\t' || br(c)
 }
 impl Scanner {
+    fn failure(&self, context: Option<(&str, Mark)>, problem: &str) -> YamlError {
+        marked("ScannerError", &self.chars, context, problem, self.mark)
+    }
+    fn found(&self) -> String {
+        crate::executor_text::repr(&self.peek(0).to_string())
+    }
     fn peek(&self, n: usize) -> char {
         self.chars.get(self.pos + n).copied().unwrap_or('\0')
     }
     fn advance(&mut self) {
         let c = self.peek(0);
         self.pos += 1;
+        self.mark.index = self.pos;
         if c == '\n'
             || c == '\u{85}'
             || c == '\u{2028}'
@@ -180,8 +332,11 @@ impl Scanner {
         });
     }
     fn remove_key(&mut self) -> Result<()> {
-        if self.keys.remove(&self.flow).is_some_and(|k| k.required) {
-            return Err(error("ScannerError"));
+        if let Some(k) = self.keys.remove(&self.flow).filter(|k| k.required) {
+            return Err(self.failure(
+                Some(("while scanning a simple key", k.mark)),
+                "could not find expected ':'",
+            ));
         }
         Ok(())
     }
@@ -251,8 +406,11 @@ impl Scanner {
                 .map(|(&level, _)| level)
                 .collect();
             for level in stale {
-                if self.keys.remove(&level).is_some_and(|k| k.required) {
-                    return Err(error("ScannerError"));
+                if let Some(k) = self.keys.remove(&level).filter(|k| k.required) {
+                    return Err(self.failure(
+                        Some(("while scanning a simple key", k.mark)),
+                        "could not find expected ':'",
+                    ));
                 }
             }
             self.unwind(self.mark.column as isize);
@@ -328,7 +486,14 @@ impl Scanner {
                 '-' | '?' if blank(self.peek(1)) || (c == '?' && self.flow > 0) => {
                     if self.flow == 0 {
                         if !self.allow {
-                            return Err(error("ScannerError"));
+                            return Err(self.failure(
+                                None,
+                                if c == '-' {
+                                    "sequence entries are not allowed here"
+                                } else {
+                                    "mapping keys are not allowed here"
+                                },
+                            ));
                         }
                         if self.add_indent(start.column) {
                             self.emit(
@@ -380,7 +545,7 @@ impl Scanner {
                         self.allow = false;
                     } else {
                         if self.flow == 0 && !self.allow {
-                            return Err(error("ScannerError"));
+                            return Err(self.failure(None, "mapping values are not allowed here"));
                         }
                         if self.flow == 0 && self.add_indent(start.column) {
                             self.emit(TokenKind::Map, start);
@@ -403,7 +568,20 @@ impl Scanner {
                     if value.is_empty()
                         || !(blank(self.peek(0)) || "?:,]}%@`".contains(self.peek(0)))
                     {
-                        return Err(error("ScannerError"));
+                        return Err(self.failure(
+                            Some((
+                                if c == '&' {
+                                    "while scanning an anchor"
+                                } else {
+                                    "while scanning an alias"
+                                },
+                                start,
+                            )),
+                            &format!(
+                                "expected alphabetic or numeric character, but found {}",
+                                self.found()
+                            ),
+                        ));
                     }
                     self.emit(
                         if c == '*' {
@@ -437,7 +615,13 @@ impl Scanner {
                         || "-?:,[]{}#&*!|>'\"%@`".contains(c)
                             && !("-?:".contains(c) && !blank(self.peek(1)))
                     {
-                        return Err(error("ScannerError"));
+                        return Err(self.failure(
+                            Some(("while scanning for the next token", start)),
+                            &format!(
+                                "found character {} that cannot start any token",
+                                self.found()
+                            ),
+                        ));
                     }
                     self.save_key()?;
                     self.allow = false;
@@ -540,12 +724,16 @@ impl Scanner {
         Ok(s)
     }
     fn quoted(&mut self, quote: char) -> Result<String> {
+        let start = self.mark;
         self.advance();
         let mut value = String::new();
         loop {
             let c = self.peek(0);
             if c == '\0' {
-                return Err(error("ScannerError"));
+                return Err(self.failure(
+                    Some(("while scanning a quoted scalar", start)),
+                    "found unexpected end of stream",
+                ));
             }
             if c == quote {
                 self.advance();
@@ -591,17 +779,22 @@ impl Scanner {
                             8
                         };
                         let mut code = 0u32;
+                        for k in 0..n {
+                            let digit = self.peek(k).to_digit(16).ok_or_else(|| self.failure(Some(("while scanning a double-quoted scalar", start)), &format!("expected escape sequence of {n} hexadecimal numbers, but found {}", crate::executor_text::repr(&self.peek(k).to_string()))))?;
+                            code = code * 16 + digit;
+                        }
                         for _ in 0..n {
-                            code = code
-                                .checked_mul(16)
-                                .and_then(|v| self.peek(0).to_digit(16).map(|d| v + d))
-                                .ok_or_else(|| error("ScannerError"))?;
                             self.advance();
                         }
                         value.push(char::from_u32(code).ok_or_else(|| error("ScannerError"))?);
                         continue;
                     }
-                    _ => return Err(error("ScannerError")),
+                    _ => {
+                        return Err(self.failure(
+                            Some(("while scanning a double-quoted scalar", start)),
+                            &format!("found unknown escape character {}", self.found()),
+                        ));
+                    }
                 };
                 value.push(replacement);
                 self.advance();
@@ -643,6 +836,7 @@ impl Scanner {
         s
     }
     fn block_scalar(&mut self, style: char) -> Result<String> {
+        let start = self.mark;
         self.advance();
         let mut chomp = ' ';
         let mut increment = None;
@@ -653,7 +847,10 @@ impl Scanner {
                 self.advance();
             } else if c.is_ascii_digit() && increment.is_none() {
                 if c == '0' {
-                    return Err(error("ScannerError"));
+                    return Err(self.failure(
+                        Some(("while scanning a block scalar", start)),
+                        "expected indentation indicator in the range 1-9, but found 0",
+                    ));
                 }
                 increment = c.to_digit(10).map(|n| n as usize);
                 self.advance();
@@ -662,7 +859,13 @@ impl Scanner {
             }
         }
         if !blank(self.peek(0)) {
-            return Err(error("ScannerError"));
+            return Err(self.failure(
+                Some(("while scanning a block scalar", start)),
+                &format!(
+                    "expected chomping or indentation indicators, but found {}",
+                    self.found()
+                ),
+            ));
         }
         while self.peek(0) == ' ' {
             self.advance();
@@ -673,7 +876,13 @@ impl Scanner {
             }
         }
         if self.peek(0) != '\0' && !br(self.peek(0)) {
-            return Err(error("ScannerError"));
+            return Err(self.failure(
+                Some(("while scanning a block scalar", start)),
+                &format!(
+                    "expected a comment or a line break, but found {}",
+                    self.found()
+                ),
+            ));
         }
         self.line_break();
         let minimum = (self.indent + 1).max(1) as usize;
@@ -725,14 +934,19 @@ impl Scanner {
         Ok(value)
     }
     fn tag(&mut self) -> Result<(String, String)> {
+        let start = self.mark;
         self.advance();
         let mut raw = String::new();
         if self.peek(0) == '<' {
             self.advance();
             while self.peek(0) != '>' {
                 if blank(self.peek(0)) {
-                    return Err(error("ScannerError"));
+                    return Err(self.failure(
+                        Some(("while parsing a tag", start)),
+                        &format!("expected '>', but found {}", self.found()),
+                    ));
                 }
+                self.uri_escape(start)?;
                 raw.push(self.peek(0));
                 self.advance();
             }
@@ -740,6 +954,7 @@ impl Scanner {
             return Ok((String::new(), uri(&raw)?));
         }
         while !blank(self.peek(0)) {
+            self.uri_escape(start)?;
             raw.push(self.peek(0));
             self.advance();
         }
@@ -751,6 +966,30 @@ impl Scanner {
         } else {
             Ok(("!".into(), uri(&raw)?))
         }
+    }
+    fn uri_escape(&self, start: Mark) -> Result<()> {
+        if self.peek(0) == '%' {
+            for k in 1..=2 {
+                if !self.peek(k).is_ascii_hexdigit() {
+                    let mark = Mark {
+                        index: self.pos + 1,
+                        column: self.mark.column + 1,
+                        ..self.mark
+                    };
+                    return Err(marked(
+                        "ScannerError",
+                        &self.chars,
+                        Some(("while scanning a tag", start)),
+                        &format!(
+                            "expected URI escape sequence of 2 hexadecimal numbers, but found {}",
+                            crate::executor_text::repr(&self.peek(k).to_string())
+                        ),
+                        mark,
+                    ));
+                }
+            }
+        }
+        Ok(())
     }
 }
 fn uri(s: &str) -> Result<String> {
@@ -833,13 +1072,23 @@ fn resolve(value: &str) -> Result<String> {
     Ok(format!("{PREFIX}{tag}"))
 }
 struct Composer {
+    chars: Vec<char>,
     tokens: Vec<Token>,
     pos: usize,
     arena: Vec<NodeData>,
-    anchors: BTreeMap<String, usize>,
+    anchors: BTreeMap<String, (usize, Mark)>,
     tags: BTreeMap<String, String>,
 }
 impl Composer {
+    fn failure(&self, context: Option<(&str, Mark)>, problem: &str) -> YamlError {
+        marked(
+            "ParserError",
+            &self.chars,
+            context,
+            problem,
+            self.token().start,
+        )
+    }
     fn token(&self) -> &Token {
         &self.tokens[self.pos.min(self.tokens.len() - 1)]
     }
@@ -868,6 +1117,7 @@ impl Composer {
             end_line: mark.line,
             line: mark.line,
             column: mark.column,
+            index: mark.index,
         });
         id
     }
@@ -889,18 +1139,22 @@ impl Composer {
                 TokenKind::Comma | TokenKind::CloseMap | TokenKind::CloseSeq
             ))
     }
-    fn node(&mut self, depth: usize, indentless: bool) -> Result<usize> {
+    fn node(&mut self, depth: usize, indentless: bool, block: bool) -> Result<usize> {
         if depth > DEPTH_LIMIT {
             return Err(error("RecursionError"));
         }
         let start = self.token().start;
         if let TokenKind::Alias(name) = self.token().kind.clone() {
             self.take();
-            return self
-                .anchors
-                .get(&name)
-                .copied()
-                .ok_or_else(|| error("ComposerError"));
+            return self.anchors.get(&name).map(|(id, _)| *id).ok_or_else(|| {
+                marked(
+                    "ComposerError",
+                    &self.chars,
+                    None,
+                    &format!("found undefined alias '{name}'"),
+                    start,
+                )
+            });
         }
         let mut anchor = None;
         let mut tag = None;
@@ -911,13 +1165,19 @@ impl Composer {
                     anchor = Some(name);
                 }
                 TokenKind::Tag(handle, suffix) if tag.is_none() => {
-                    self.take();
+                    let tag_mark = self.take().start;
                     tag = Some(if handle.is_empty() {
                         suffix
                     } else {
                         format!(
                             "{}{}",
-                            self.tags.get(&handle).ok_or_else(|| error("ParserError"))?,
+                            self.tags.get(&handle).ok_or_else(|| marked(
+                                "ParserError",
+                                &self.chars,
+                                Some(("while parsing a node", start)),
+                                &format!("found undefined tag handle '{handle}'"),
+                                tag_mark
+                            ))?,
                             suffix
                         )
                     });
@@ -925,11 +1185,19 @@ impl Composer {
                 _ => break,
             }
         }
-        if anchor
-            .as_ref()
-            .is_some_and(|name| self.anchors.contains_key(name))
+        if let Some(name) = &anchor
+            && let Some((_, first)) = self.anchors.get(name)
         {
-            return Err(error("ComposerError"));
+            return Err(marked(
+                "ComposerError",
+                &self.chars,
+                Some((
+                    &format!("found duplicate anchor '{name}'; first occurrence"),
+                    *first,
+                )),
+                "second occurrence",
+                start,
+            ));
         }
         let token = self.token().clone();
         let (kind, style, default_tag) = match &token.kind {
@@ -952,7 +1220,22 @@ impl Composer {
             _ if anchor.is_some() || tag.is_some() => {
                 (Kind::Scalar(String::new()), None, resolve("")?)
             }
-            _ => return Err(error("ParserError")),
+            _ => {
+                return Err(self.failure(
+                    Some((
+                        if block {
+                            "while parsing a block node"
+                        } else {
+                            "while parsing a flow node"
+                        },
+                        start,
+                    )),
+                    &format!(
+                        "expected the node content, but found '{}'",
+                        token.kind.name()
+                    ),
+                ));
+            }
         };
         let tag = match tag {
             Some(s) if s != "!" => s,
@@ -964,7 +1247,7 @@ impl Composer {
         };
         let id = self.alloc(kind, tag, style, start);
         if let Some(name) = anchor {
-            self.anchors.insert(name, id);
+            self.anchors.insert(name, (id, start));
         }
         match token.kind {
             TokenKind::OpenSeq => {
@@ -972,7 +1255,13 @@ impl Composer {
                 let mut items = Vec::new();
                 while !self.at(&TokenKind::CloseSeq) {
                     if !items.is_empty() && !self.eat(&TokenKind::Comma) {
-                        return Err(error("ParserError"));
+                        return Err(self.failure(
+                            Some(("while parsing a flow sequence", token.start)),
+                            &format!(
+                                "expected ',' or ']', but got '{}'",
+                                self.token().kind.name()
+                            ),
+                        ));
                     }
                     if self.at(&TokenKind::CloseSeq) {
                         break;
@@ -985,7 +1274,7 @@ impl Composer {
                         self.arena[map].kind = Kind::Mapping(vec![pair]);
                         items.push(map);
                     } else {
-                        items.push(self.node(depth + 1, false)?);
+                        items.push(self.node(depth + 1, false, false)?);
                     }
                 }
                 self.take();
@@ -996,7 +1285,13 @@ impl Composer {
                 let mut pairs = Vec::new();
                 while !self.at(&TokenKind::CloseMap) {
                     if !pairs.is_empty() && !self.eat(&TokenKind::Comma) {
-                        return Err(error("ParserError"));
+                        return Err(self.failure(
+                            Some(("while parsing a flow mapping", token.start)),
+                            &format!(
+                                "expected ',' or '}}', but got '{}'",
+                                self.token().kind.name()
+                            ),
+                        ));
                     }
                     if self.at(&TokenKind::CloseMap) {
                         break;
@@ -1005,7 +1300,7 @@ impl Composer {
                         let mark = self.take().end;
                         pairs.push(self.pair(depth + 1, true, mark)?);
                     } else {
-                        let key = self.node(depth + 1, false)?;
+                        let key = self.node(depth + 1, false, false)?;
                         let value = self.empty(self.token().start)?;
                         pairs.push((key, value));
                     }
@@ -1024,11 +1319,17 @@ impl Composer {
                     items.push(if self.absent(false) || self.at(&TokenKind::Dash) {
                         self.empty(mark)?
                     } else {
-                        self.node(depth + 1, false)?
+                        self.node(depth + 1, false, true)?
                     });
                 }
                 if !indentless && !self.eat(&TokenKind::BlockEnd) {
-                    return Err(error("ParserError"));
+                    return Err(self.failure(
+                        Some(("while parsing a block collection", token.start)),
+                        &format!(
+                            "expected <block end>, but found '{}'",
+                            self.token().kind.name()
+                        ),
+                    ));
                 }
                 self.arena[id].kind = Kind::Sequence(items);
             }
@@ -1040,7 +1341,13 @@ impl Composer {
                     pairs.push(self.pair(depth + 1, false, mark)?);
                 }
                 if !self.eat(&TokenKind::BlockEnd) {
-                    return Err(error("ParserError"));
+                    return Err(self.failure(
+                        Some(("while parsing a block mapping", token.start)),
+                        &format!(
+                            "expected <block end>, but found '{}'",
+                            self.token().kind.name()
+                        ),
+                    ));
                 }
                 self.arena[id].kind = Kind::Mapping(pairs);
             }
@@ -1053,14 +1360,14 @@ impl Composer {
         let key = if self.absent(flow) {
             self.empty(mark)?
         } else {
-            self.node(depth, !flow)?
+            self.node(depth, !flow, !flow)?
         };
         let value = if self.at(&TokenKind::Value) {
             let mark = self.take().end;
             if self.absent(flow) {
                 self.empty(mark)?
             } else {
-                self.node(depth, !flow)?
+                self.node(depth, !flow, !flow)?
             }
         } else {
             self.empty(self.token().start)?
@@ -1087,8 +1394,9 @@ pub fn compose(input: Input<'_>) -> Result<Option<Node>> {
     })
 }
 fn compose_on_stack(input: Input<'_>) -> Result<Option<Node>> {
+    let chars = reader(input)?;
     let tokens = Scanner {
-        chars: reader(input)?,
+        chars: chars.clone(),
         pos: 0,
         mark: Mark::default(),
         flow: 0,
@@ -1100,6 +1408,7 @@ fn compose_on_stack(input: Input<'_>) -> Result<Option<Node>> {
     }
     .scan()?;
     let mut c = Composer {
+        chars,
         tokens,
         pos: 0,
         arena: vec![],
@@ -1113,7 +1422,7 @@ fn compose_on_stack(input: Input<'_>) -> Result<Option<Node>> {
     let mut version = false;
     let mut handles = BTreeMap::new();
     while let TokenKind::Directive(text) = c.token().kind.clone() {
-        c.take();
+        let directive = c.take().start;
         directives = true;
         let parts: Vec<_> = text
             .split('#')
@@ -1124,15 +1433,46 @@ fn compose_on_stack(input: Input<'_>) -> Result<Option<Node>> {
         match parts.first().copied() {
             Some("%YAML") => {
                 if version {
-                    return Err(error("ParserError"));
+                    return Err(marked(
+                        "ParserError",
+                        &c.chars,
+                        None,
+                        "found duplicate YAML directive",
+                        directive,
+                    ));
                 }
                 let v = parts.get(1).ok_or_else(|| error("ScannerError"))?;
+                if !v.starts_with(|c: char| c.is_ascii_digit()) {
+                    let offset = 5 + text[5..].find(*v).unwrap_or(text.len() - 5);
+                    return Err(marked(
+                        "ScannerError",
+                        &c.chars,
+                        Some(("while scanning a directive", directive)),
+                        &format!(
+                            "expected a digit, but found {}",
+                            crate::executor_text::repr(
+                                &v.chars().next().unwrap_or('\0').to_string()
+                            )
+                        ),
+                        Mark {
+                            index: directive.index + offset,
+                            column: directive.column + offset,
+                            ..directive
+                        },
+                    ));
+                }
                 let (major, minor) = v.split_once('.').ok_or_else(|| error("ScannerError"))?;
                 if minor.parse::<u32>().is_err() {
                     return Err(error("ScannerError"));
                 }
                 if major != "1" {
-                    return Err(error("ParserError"));
+                    return Err(marked(
+                        "ParserError",
+                        &c.chars,
+                        None,
+                        "found incompatible YAML document (version 1.* is required)",
+                        directive,
+                    ));
                 }
                 version = true;
             }
@@ -1141,7 +1481,13 @@ fn compose_on_stack(input: Input<'_>) -> Result<Option<Node>> {
                     return Err(error("ScannerError"));
                 }
                 if handles.insert(parts[1].to_string(), ()).is_some() {
-                    return Err(error("ParserError"));
+                    return Err(marked(
+                        "ParserError",
+                        &c.chars,
+                        None,
+                        &format!("duplicate tag handle '{}'", parts[1]),
+                        directive,
+                    ));
                 }
                 c.tags.insert(parts[1].into(), uri(parts[2])?);
             }
@@ -1150,24 +1496,44 @@ fn compose_on_stack(input: Input<'_>) -> Result<Option<Node>> {
     }
     let explicit = c.eat(&TokenKind::Doc);
     if directives && !explicit {
-        return Err(error("ParserError"));
+        return Err(c.failure(
+            None,
+            &format!(
+                "expected '<document start>', but found '{}'",
+                c.token().kind.name()
+            ),
+        ));
     }
+    let root_start = c.token().start;
     let root = if explicit && c.absent(false) {
         c.empty(c.token().start)?
     } else {
-        c.node(0, false)?
+        c.node(0, false, true)?
     };
     c.eat(&TokenKind::DocEnd);
     if !c.at(&TokenKind::End) {
-        return Err(error(if c.at(&TokenKind::Doc) {
-            "ComposerError"
+        return Err(if c.at(&TokenKind::Doc) {
+            marked(
+                "ComposerError",
+                &c.chars,
+                Some(("expected a single document in the stream", root_start)),
+                "but found another document",
+                c.token().start,
+            )
         } else {
-            "ParserError"
-        }));
+            c.failure(
+                None,
+                &format!(
+                    "expected '<document start>', but found '{}'",
+                    c.token().kind.name()
+                ),
+            )
+        });
     }
     Ok(Some(Node {
         arena: c.arena,
         root,
+        chars: c.chars,
     }))
 }
 

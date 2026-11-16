@@ -33,7 +33,7 @@ fn nonnegative(value: &Value) -> Option<i128> {
     integer(value).filter(|value| *value >= 0)
 }
 fn invalid_document(path: &Path) -> Result<Value, Error> {
-    load_yaml(&read_text(path)?).map_err(|e| Error::new("YAMLError", e))
+    load_yaml(&read_text(path)?).map_err(|e| Error::new(e.class(), e.to_string()))
 }
 pub fn validate_architecture_evidence(root: &Path) -> Validation {
     let evidence_path = root.join("spec/bootstrap-evidence.json");
@@ -183,6 +183,14 @@ pub fn validate_architecture_evidence(root: &Path) -> Validation {
     }
     let mut open_gaps = -1i128;
     match invalid_document(&root.join("spec/gaps.yaml")) {
+        Err(e)
+            if matches!(
+                e.class.as_str(),
+                "ValueError" | "IndexError" | "OverflowError"
+            ) =>
+        {
+            return Err(e);
+        }
         Err(e) => errors.push(format!("spec/gaps.yaml is invalid: {e}")),
         Ok(doc) => match doc
             .get("gaps")
@@ -214,6 +222,14 @@ pub fn validate_architecture_evidence(root: &Path) -> Validation {
     for name in ["index.yaml", "graph.yaml"] {
         let doc = match invalid_document(&root.join("spec").join(name)) {
             Ok(doc) => doc,
+            Err(e)
+                if matches!(
+                    e.class.as_str(),
+                    "ValueError" | "IndexError" | "OverflowError"
+                ) =>
+            {
+                return Err(e);
+            }
             Err(e) => {
                 errors.push(format!("spec/{name} is invalid: {e}"));
                 continue;

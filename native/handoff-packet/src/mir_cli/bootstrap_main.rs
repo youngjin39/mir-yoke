@@ -63,7 +63,7 @@ fn invalid(errors: &mut Vec<String>, invalid_config: &mut bool, error: Error) {
     *invalid_config = true;
 }
 fn snapshot(root: &Path) -> Result<BTreeMap<String, String>, Error> {
-    crate::mir_cli::changes::snapshot_project(root).map_err(|error| authored::io_error(root, error))
+    crate::mir_cli::changes::snapshot_project_with_error(root, authored::io_error)
 }
 fn unlink(path: &Path, missing_ok: bool) -> Result<(), Error> {
     match fs::remove_file(path) {
@@ -324,7 +324,8 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
             authored::value_error("--archive is supported only with --profile content_workspace"),
         );
     }
-    if !host.in_virtualenv() {
+    let (python_version, in_virtualenv) = host.python_runtime()?;
+    if !in_virtualenv {
         errors.push("mir bootstrap must run from the copied uv tool environment".into());
     }
     let (surface_errors, hook_runtime) = host.validate_surfaces(&root)?;
@@ -695,7 +696,7 @@ pub fn main(host: &mut impl Host, argv: &[String]) -> Result<MainOutput, Error> 
     memory["shared_database_or_vector_service"] = json!("unsupported");
     let mut receipt = json!({"schema_version":1,"status":status,"project_slug":slug,
         "profile":profile,"platform":{"os":host.platform_system().to_lowercase(),
-            "release":host.platform_release()?,"python":host.python_version(),
+            "release":host.platform_release()?,"python":python_version,
             "hook_runtime":hook_runtime},"storage":storage_report,"source_control":ownership_report,
         "cli":cli,"slim":slim_report,"memory":memory,"content_onboarding":content_acceptance,
         "vector":memory_report.get("vector").cloned().unwrap_or_else(|| json!({})),

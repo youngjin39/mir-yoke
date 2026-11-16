@@ -23,7 +23,8 @@ fn setup(source: &str) -> (tempfile::TempDir, PathBuf) {
     fs::write(
         root.join("python"),
         format!(
-            "#!/bin/sh\nexec '{}' -I '{}' \"$@\"\n",
+            "#!/bin/sh\nif [ \"$1\" = -I ]; then exec '{}' \"$@\"; fi\nexec '{}' -I '{}' \"$@\"\n",
+            python.display(),
             python.display(),
             root.join("launch.py").display()
         ),
