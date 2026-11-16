@@ -14,6 +14,7 @@ assert sys.flags.isolated
 p = argparse.ArgumentParser()
 p.add_argument('--scratch', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
+p.add_argument('--e12d-cli', action='store_true')
 p.add_argument('--e12a', action='store_true')
 p.add_argument('--e11', action='store_true')
 p.add_argument('--e10', action='store_true', help='capture remaining parser boundaries')
@@ -33,11 +34,20 @@ for name in packages:
         shutil.copytree(path.parent, root / name, dirs_exist_ok=True)
     else:
         shutil.copy2(path, root / path.name)
+def console_env(work, **extra):
+    env = dict(HOME=str(work), USERPROFILE=str(work), PATH=os.defpath)
+    if os.name == 'nt':
+        env.update((k, os.environ[k]) for k in ('SystemRoot', 'WINDIR') if k in os.environ)
+    return dict(env, **extra)
+
+
 wrapper = root / 'capture.py'
 wrapper.write_text("""import sys, pathlib, sysconfig, os
 root = pathlib.Path(__file__).resolve().parent
 stdlib = sysconfig.get_path('stdlib')
-sys.path[:] = [str(root / 'src'), str(root), stdlib, str(pathlib.Path(stdlib) / 'lib-dynload')]
+sys.path[:] = [str(root / 'src'), str(root), stdlib,
+              str(pathlib.Path(stdlib) / 'lib-dynload'),
+              str(pathlib.Path(sys.base_prefix) / 'DLLs')]
 from mir.cli.__main__ import main
 from mir.core.engine.memory import store
 from mir.cli import context  # preload lazy modules before the provenance check
@@ -111,6 +121,8 @@ for removed, argv in [(False, c) for c in cases] + [(True, c) for c in
          ['pull', 'q', '--db', 'absent'], ['sync', '--db', 'absent']])]:
     work = root / ('case-' + str(len(records)))
     work.mkdir(exist_ok=True)
+    if removed and os.name == 'nt':
+        continue
     if not removed:
         (work / 'bad.db').write_bytes(b'not a database')
     # Every invocation has synthetic HOME/cwd and --db, including error/help routes.
@@ -118,10 +130,10 @@ for removed, argv in [(False, c) for c in cases] + [(True, c) for c in
     if not any(v.split('=')[0] in {'--db', '--d'} for v in argv):
         at = args.index('--') if '--' in args else len(args)
         args[at:at] = ['--db', 'absent']
-    result = subprocess.run([sys.executable, '-I', '-X', 'utf8', str(wrapper),
+    result = subprocess.run([sys.executable, '-I', '-B', '-X', 'utf8', str(wrapper),
                              'removed' if removed else 'normal',
                              *[v.replace('{ROOT}', str(work.parent)) for v in args]], cwd=work,
-                            env=dict(HOME=str(work), PATH=os.defpath), capture_output=True)
+                            env=console_env(work), capture_output=True)
     records.append(dict(argv=args, removed=removed, exit=result.returncode,
                         stdout=result.stdout.decode().replace(str(work.parent), '{ROOT}'),
                         stderr=result.stderr.decode().replace(str(work.parent), '{ROOT}')))

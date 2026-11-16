@@ -17,6 +17,23 @@ fn frozen_context_parser_and_removed_cwd() {
     records.extend(
         serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e12d-cli.json")).unwrap(),
     );
+    if cfg!(windows) {
+        // This file is produced only by the pinned Python on the PC. A missing
+        // capture must fail, rather than silently projecting Unix console bytes.
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/y-e9-console-windows.json");
+        let capture: Value = serde_json::from_slice(
+            &fs::read(path).expect("PC capture required: generate_y_e9_console.py"),
+        )
+        .unwrap();
+        assert_eq!(capture["platform"], "win32");
+        assert_eq!(
+            capture["reference_pin"],
+            "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+        );
+        records = capture["records"].as_array().unwrap().clone();
+        assert_eq!(records.len(), 213);
+    }
     let mut failures = Vec::new();
     for r in records {
         let temp = tempfile::tempdir().unwrap();
@@ -71,6 +88,14 @@ fn frozen_context_parser_and_removed_cwd() {
             .env_clear()
             .env("HOME", &root)
             .current_dir(&root);
+        if cfg!(windows) {
+            command.env("USERPROFILE", &root);
+            for key in ["SystemRoot", "WINDIR"] {
+                if let Some(value) = std::env::var_os(key) {
+                    command.env(key, value);
+                }
+            }
+        }
         if let Some(key) = r["key"].as_str() {
             command.env("FAKE_KEY", key);
         }
