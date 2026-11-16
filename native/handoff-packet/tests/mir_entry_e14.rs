@@ -41,10 +41,12 @@ fn observe_root(text: &str, root: &str, windows: bool) -> String {
     // report spelling only. Error suffixes, other paths and CRLF stay literal.
     let observed = text.replace(root, "{ROOT}");
     if windows {
-        observed.replace(
-            &root.trim_start_matches(r"\\?\").replace('\\', "/"),
-            "{ROOT}",
-        )
+        let native = root.trim_start_matches(r"\\?\");
+        observed
+            .replace(&root.replace('\\', r"\\"), "{ROOT}")
+            .replace(&native.replace('\\', r"\\"), "{ROOT}")
+            .replace(native, "{ROOT}")
+            .replace(&native.replace('\\', "/"), "{ROOT}")
     } else {
         observed
     }
@@ -106,6 +108,14 @@ fn root_observation_preserves_other_path_bytes() {
     }
     assert_eq!(
         observe_root(
+            "C:\\scratch\\case\\receipt | C:\\\\scratch\\\\case\\\\receipt | C:/scratch/case/report\r\nC:\\other\\file",
+            r"\\?\C:\scratch\case",
+            true
+        ),
+        "{ROOT}\\receipt | {ROOT}\\\\receipt | {ROOT}/report\r\nC:\\other\\file"
+    );
+    assert_eq!(
+        observe_root(
             r"/tmp/case\literal /tmp/case/literal",
             r"/tmp/case\literal",
             false
@@ -117,7 +127,19 @@ fn root_observation_preserves_other_path_bytes() {
 #[test]
 fn frozen_bootstrap_adoption_public() {
     let git = test_git();
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e14.json")).unwrap();
+    // Load only at runtime: a pending PC capture must not break Mac compilation.
+    let records: Vec<Value> = if cfg!(windows) {
+        serde_json::from_slice(
+            &fs::read(
+                Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/y-e14-windows.json"),
+            )
+            .expect("missing Windows E14 oracle: run generate_y_e14.py on Windows Python 3.12"),
+        )
+        .unwrap()
+    } else {
+        serde_json::from_str(include_str!("fixtures/y-e14.json")).unwrap()
+    };
+    assert_eq!(records.len(), 42);
     let mut failures = Vec::new();
     let temporary_name = regex::Regex::new(r"\.bootstrap-receipt\.json\.[^']+").unwrap();
     for r in records {
@@ -126,7 +148,15 @@ fn frozen_bootstrap_adoption_public() {
         for (name, body) in r["files"].as_object().unwrap() {
             let path = root.join(name);
             fs::create_dir_all(path.parent().unwrap()).unwrap();
-            fs::write(path, body.as_str().unwrap()).unwrap();
+            let body = body.as_str().unwrap();
+            // Recreate the reference's Path.write_text inputs, including the
+            // untouched old receipt whose physical bytes are also asserted.
+            let body = if cfg!(windows) {
+                body.replace('\n', "\r\n")
+            } else {
+                body.to_owned()
+            };
+            fs::write(path, body).unwrap();
         }
         let receipt = root.join(".mir/bootstrap-receipt.json");
         if let Some(sql) = r["sql"].as_str().filter(|s| !s.is_empty()) {
@@ -175,6 +205,21 @@ fn frozen_bootstrap_adoption_public() {
             "stderr":temporary_name.replace_all(&observe_root(&String::from_utf8(out.stderr).unwrap(), root.to_str().unwrap(), cfg!(windows)), ".bootstrap-receipt.json.<TEMP>"),
             // Python Path.read_text observes universal newlines; raw bytes are checked separately.
             "receipt":fs::read_to_string(&receipt).ok().map(|s| s.replace("\r\n", "\n").replace('\r', "\n"))});
+        if cfg!(windows) {
+            assert!(
+                r.get("receipt_physical_hex").is_some(),
+                "recapture Windows E14 physical bytes"
+            );
+            let physical: Option<String> = fs::read(&receipt)
+                .ok()
+                .map(|bytes| bytes.iter().map(|b| format!("{b:02x}")).collect());
+            if serde_json::json!(physical) != r["receipt_physical_hex"] {
+                failures.push(format!(
+                    "{} {} receipt physical bytes differ",
+                    r["mode"], r["argv"]
+                ));
+            }
+        }
         for field in ["exit", "stdout", "stderr", "receipt"] {
             if actual[field] != r[field] {
                 failures.push(format!(
