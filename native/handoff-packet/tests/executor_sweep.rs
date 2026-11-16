@@ -725,6 +725,134 @@ fn registered_spelling_retarget_before_remove_is_refused() {
 
 #[cfg(unix)]
 #[test]
+fn registered_parent_retarget_after_identity_check_is_refused() {
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    // Run the sweep in a child so its shim PATH cannot affect parallel tests.
+    const CHILD: &str = "MIR_SWEEP_RETARGET_CHILD";
+    if let Some(root) = std::env::var_os(CHILD) {
+        let root = PathBuf::from(root);
+        let result = executor_sweep::sweep_run_state(
+            &root.join("repo"),
+            &root.join("jobs.db"),
+            NOW,
+            120,
+            true,
+        )
+        .unwrap();
+        fs::write(root.join("result.json"), result.to_string()).unwrap();
+        return;
+    }
+    let fixture = Fixture::new("registered-retarget");
+    reference("setup", &fixture.0, "run-mixed", &[]);
+    let alias = fixture.0.join("registered");
+    symlink(&fixture.0, &alias).unwrap();
+    let stable = fixture.0.join("registered-stable");
+    symlink(&fixture.0, &stable).unwrap();
+    for (registered, name) in [(&alias, "wt-clean"), (&stable, "wt-finished")] {
+        fs::write(
+            fixture
+                .0
+                .join("repo/.git/worktrees")
+                .join(name)
+                .join("gitdir"),
+            format!("{}\n", registered.join(name).join(".git").display()),
+        )
+        .unwrap();
+    }
+    let outside = fixture.0.join("outside/wt-clean");
+    fs::create_dir_all(outside.join("empty-directory")).unwrap();
+    for name in ["tracked.txt", ".gitignore", ".git"] {
+        fs::copy(fixture.0.join("wt-clean").join(name), outside.join(name)).unwrap();
+    }
+    let real_git = Command::new("which").arg("git").output().unwrap();
+    assert!(real_git.status.success());
+    let real_git = String::from_utf8(real_git.stdout).unwrap();
+    let shim = fixture.0.join("bin");
+    fs::create_dir(&shim).unwrap();
+    let script = fixture.0.join("git-shim.py");
+    fs::write(
+        &script,
+        format!(
+            r#"import json, os, pathlib, sys
+root = pathlib.Path({root})
+args = sys.argv[1:]
+assert args[0] == '-C' and pathlib.Path(args[1]).is_relative_to(root)
+if args[2:4] == ['worktree', 'remove'] and args[4].endswith('/wt-clean'):
+    alias = root / 'registered'
+    alias.unlink()
+    alias.symlink_to(root / 'outside', target_is_directory=True)
+    (root / 'remove-argv.json').write_text(json.dumps(args))
+os.execv({git}, [{git}, *args])
+"#,
+            root = json!(fixture.0),
+            git = json!(real_git.trim()),
+        ),
+    )
+    .unwrap();
+    let quote = |path: &Path| format!("'{}'", path.to_str().unwrap().replace('\'', "'\\''"));
+    fs::write(
+        shim.join("git"),
+        format!(
+            "#!/bin/sh\nexec {} -I {} \"$@\"\n",
+            quote(&python()),
+            quote(&script)
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(shim.join("git"), fs::Permissions::from_mode(0o755)).unwrap();
+    let mut paths = vec![shim];
+    paths.extend(std::env::split_paths(&std::env::var_os("PATH").unwrap()));
+    let child = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "registered_parent_retarget_after_identity_check_is_refused",
+        ])
+        .env(CHILD, &fixture.0)
+        .env("PATH", std::env::join_paths(paths).unwrap())
+        .current_dir(fixture.0.join("repo"))
+        .output()
+        .unwrap();
+    assert!(child.status.success(), "{child:?}");
+    let result: Value =
+        serde_json::from_slice(&fs::read(fixture.0.join("result.json")).unwrap()).unwrap();
+    assert!(
+        fixture.0.join("remove-argv.json").is_file(),
+        "shim must trigger after validation"
+    );
+    // Git matches a stable registered symlink via its physical spelling too.
+    assert!(!fixture.0.join("wt-finished").exists());
+    for name in ["tracked.txt", ".gitignore", ".git", "empty-directory"] {
+        assert!(
+            outside.join(name).exists(),
+            "outside {name} removed: {result}"
+        );
+    }
+    assert!(fixture.0.join("wt-clean/tracked.txt").is_file());
+    assert_eq!(
+        result["removed_worktrees"],
+        json!([fixture.0.join("wt-finished")])
+    );
+    assert!(
+        result["preserved_worktrees"]
+            .as_array()
+            .unwrap()
+            .contains(&json!({
+                "path": fixture.0.join("wt-clean"), "reasons": ["apply-time-drift:remove-refused"]
+            }))
+    );
+    assert!(
+        Command::new(real_git.trim())
+            .arg("-C")
+            .arg(fixture.0.join("repo"))
+            .args(["show-ref", "--verify", "refs/heads/mir-dispatch/clean"])
+            .status()
+            .unwrap()
+            .success()
+    );
+}
+
+#[cfg(unix)]
+#[test]
 fn replacement_at_same_canonical_path_before_remove_is_refused() {
     let fixture = Fixture::new("directory-replacement");
     reference("setup", &fixture.0, "run-mixed", &[]);

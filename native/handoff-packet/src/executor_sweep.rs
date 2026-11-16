@@ -449,19 +449,22 @@ pub fn sweep_run_state_with_observer(
                 continue;
             }
             observer("before-remove", &wt.path)?;
-            // Inspection stays physical; Git requires its registered spelling.
+            // Git matches resolved symlinks but requires the Data firmlink spelling.
             // Revalidate after the observer so retargeted aliases and replaced directories
             // cannot turn a previously inspected tree into authority to remove another.
             if resolved(&wt.registered).ok().as_ref() != Some(&wt.path)
+                || resolved(&wt.display).ok().as_ref() != Some(&wt.path)
                 || wt.identity.is_none()
                 || directory_identity(&wt.path).ok() != wt.identity
                 || directory_identity(&wt.registered).ok() != wt.identity
+                || directory_identity(&wt.display).ok() != wt.identity
             {
                 drifted.push(json!({"path":path,"reasons":["apply-time-drift:remove-refused"]}));
                 continue;
             }
-            let registered = wire(&wt.registered)?;
-            let reason = match git(&repo, &["worktree", "remove", &registered]) {
+            // Use the captured component-resolved path, never the mutable registered alias.
+            let target = wire(&wt.display)?;
+            let reason = match git(&repo, &["worktree", "remove", &target]) {
                 Err(_) => Some("apply-time-drift:remove-inspection-failed"),
                 Ok(o) if !o.status.success() => Some("apply-time-drift:remove-refused"),
                 Ok(_) => None,
