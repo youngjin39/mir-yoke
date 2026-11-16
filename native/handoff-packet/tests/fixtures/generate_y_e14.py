@@ -202,7 +202,7 @@ for mode, tail in cases:
     if mode != "untracked":
         subprocess.run([git, "-C", str(work), "add", "."], env=env, check=True)
     argv = ["bootstrap-adoption", *tail]
-    result = subprocess.run( [sys.executable, "-I", "-B", str(wrapper), *argv],
+    result = subprocess.run( [sys.executable, "-I", "-B", "-X", "utf8", str(wrapper), *argv],
         cwd=work, env=env, capture_output=True, timeout=20, )
     receipt = work / ".mir/bootstrap-receipt.json"
     records.append( dict( mode=mode, files=files, sql=sql, argv=argv,

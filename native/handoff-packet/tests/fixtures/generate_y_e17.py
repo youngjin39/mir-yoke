@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 scope = {"__file__": __file__}
-exec(Path(__file__).with_name("generate_y_e13.py").read_text().split("resources =")[0], scope)
+exec(Path(__file__).with_name("generate_y_e13.py").read_text(encoding="utf-8").split("resources =")[0], scope)
 a, root, packages = (scope[k] for k in ("a", "root", "packages"))
 if os.name == 'nt':
     assert scope['sys'].version_info[:2] == (3, 12), 'PC oracle requires Python 3.12'
@@ -168,7 +168,7 @@ for i, r in enumerate(cases):
         path = work / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding='utf-8')
-    out = subprocess.run([scope['sys'].executable, '-I', '-B', str(wrapper), json.dumps(r)],
+    out = subprocess.run([scope['sys'].executable, '-I', '-B', '-X', 'utf8', str(wrapper), json.dumps(r)],
                          cwd=work, env=env | {'HOME': str(work), 'USERPROFILE': str(work)},
                          capture_output=True, check=True)
     assert not out.stderr, out.stderr
