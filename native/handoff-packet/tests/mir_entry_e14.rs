@@ -1,8 +1,122 @@
 use serde_json::Value;
-use std::{fs, process::Command};
+use std::{fs, path::Path, process::Command};
+
+fn test_git() -> std::path::PathBuf {
+    std::env::split_paths(&std::env::var_os("PATH").expect("test PATH"))
+        .map(|dir| dir.join(format!("git{}", std::env::consts::EXE_SUFFIX)))
+        .find(|path| path.is_file())
+        .expect("Git must be installed for E14")
+        .canonicalize()
+        .unwrap()
+}
+
+fn isolated_command(executable: &Path, root: &Path, git: &Path) -> Command {
+    let mut command = Command::new(executable);
+    command
+        .env_clear()
+        .env("HOME", root)
+        .env("USERPROFILE", root)
+        .env(
+            "PATH",
+            std::env::join_paths([git.parent().unwrap()]).unwrap(),
+        )
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env(
+            "GIT_CONFIG_GLOBAL",
+            if cfg!(windows) { "NUL" } else { "/dev/null" },
+        )
+        .current_dir(root);
+    // As in E2, retain only the Windows loader's OS locations.
+    #[cfg(windows)]
+    for name in ["SystemRoot", "WINDIR"] {
+        if let Some(value) = std::env::var_os(name) {
+            command.env(name, value);
+        }
+    }
+    command
+}
+
+fn observe_root(text: &str, root: &str, windows: bool) -> String {
+    // Replace the canonical native spelling and bootstrap_adoption::wire's
+    // report spelling only. Error suffixes, other paths and CRLF stay literal.
+    let observed = text.replace(root, "{ROOT}");
+    if windows {
+        observed.replace(
+            &root.trim_start_matches(r"\\?\").replace('\\', "/"),
+            "{ROOT}",
+        )
+    } else {
+        observed
+    }
+}
+
+#[test]
+fn isolated_git_environment() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let git = test_git();
+    let mut command = isolated_command(&git, &root, &git);
+    let env: std::collections::HashMap<_, _> = command.get_envs().collect();
+    assert_eq!(
+        env[std::ffi::OsStr::new("PATH")],
+        Some(git.parent().unwrap().as_os_str())
+    );
+    assert_eq!(
+        env[std::ffi::OsStr::new("USERPROFILE")],
+        Some(root.as_os_str())
+    );
+    assert_eq!(
+        env[std::ffi::OsStr::new("GIT_CONFIG_GLOBAL")],
+        Some(std::ffi::OsStr::new(if cfg!(windows) {
+            "NUL"
+        } else {
+            "/dev/null"
+        }))
+    );
+    #[cfg(windows)]
+    for name in ["SystemRoot", "WINDIR"] {
+        assert_eq!(
+            env.get(std::ffi::OsStr::new(name)).copied().flatten(),
+            std::env::var_os(name).as_deref()
+        );
+    }
+    assert!(command.args(["init", "-q"]).status().unwrap().success());
+    assert!(
+        isolated_command(Path::new("git"), &root, &git)
+            .args(["status", "--porcelain"])
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
+}
+
+#[test]
+fn root_observation_preserves_other_path_bytes() {
+    for (root, wire) in [
+        (r"\\?\C:\scratch\case", "C:/scratch/case"),
+        (r"C:\scratch\case", "C:/scratch/case"),
+        (r"\\?\UNC\server\share\case", "UNC/server/share/case"),
+    ] {
+        let text = format!(r"{root}\evidence.txt | {wire}/manifest.json | C:\other\error.txt");
+        assert_eq!(
+            observe_root(&text, root, true),
+            r"{ROOT}\evidence.txt | {ROOT}/manifest.json | C:\other\error.txt"
+        );
+    }
+    assert_eq!(
+        observe_root(
+            r"/tmp/case\literal /tmp/case/literal",
+            r"/tmp/case\literal",
+            false
+        ),
+        "{ROOT} /tmp/case/literal"
+    );
+}
 
 #[test]
 fn frozen_bootstrap_adoption_public() {
+    let git = test_git();
     let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e14.json")).unwrap();
     let mut failures = Vec::new();
     let temporary_name = regex::Regex::new(r"\.bootstrap-receipt\.json\.[^']+").unwrap();
@@ -28,37 +142,25 @@ fn frozen_bootstrap_adoption_public() {
             fs::remove_file(&receipt).unwrap();
             fs::create_dir(&receipt).unwrap();
         }
-        let command = |name: &str| {
-            let mut c = Command::new(name);
-            c.env_clear()
-                .env("HOME", &root)
-                .env("PATH", "/usr/bin:/bin")
-                .env(
-                    "MIR_CAPABILITY_NATIVE_ARTIFACTS",
-                    if r["mode"] == "local" { "1" } else { "0" },
-                )
-                .env("GIT_CONFIG_NOSYSTEM", "1")
-                .env("GIT_CONFIG_GLOBAL", "/dev/null")
-                .current_dir(&root);
+        let command = |executable: &Path| {
+            let mut c = isolated_command(executable, &root, &git);
+            c.env(
+                "MIR_CAPABILITY_NATIVE_ARTIFACTS",
+                if r["mode"] == "local" { "1" } else { "0" },
+            );
             c
         };
         assert!(
-            command("git")
+            command(&git)
                 .args(["init", "-q"])
                 .status()
                 .unwrap()
                 .success()
         );
         if r["mode"] != "untracked" {
-            assert!(
-                command("git")
-                    .args(["add", "."])
-                    .status()
-                    .unwrap()
-                    .success()
-            );
+            assert!(command(&git).args(["add", "."]).status().unwrap().success());
         }
-        let out = command(env!("CARGO_BIN_EXE_mir"))
+        let out = command(Path::new(env!("CARGO_BIN_EXE_mir")))
             .args(
                 r["argv"]
                     .as_array()
@@ -69,8 +171,8 @@ fn frozen_bootstrap_adoption_public() {
             .output()
             .unwrap();
         let actual = serde_json::json!({"exit":out.status.code(),
-            "stdout":String::from_utf8(out.stdout).unwrap().replace(root.to_str().unwrap(), "{ROOT}"),
-            "stderr":temporary_name.replace_all(&String::from_utf8(out.stderr).unwrap().replace(root.to_str().unwrap(), "{ROOT}"), ".bootstrap-receipt.json.<TEMP>"),
+            "stdout":observe_root(&String::from_utf8(out.stdout).unwrap(), root.to_str().unwrap(), cfg!(windows)),
+            "stderr":temporary_name.replace_all(&observe_root(&String::from_utf8(out.stderr).unwrap(), root.to_str().unwrap(), cfg!(windows)), ".bootstrap-receipt.json.<TEMP>"),
             "receipt":fs::read_to_string(&receipt).ok()});
         for field in ["exit", "stdout", "stderr", "receipt"] {
             if actual[field] != r[field] {
