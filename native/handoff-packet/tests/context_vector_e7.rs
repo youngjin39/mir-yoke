@@ -5,9 +5,17 @@ use std::fs;
 #[test]
 fn frozen_vector_retrieval() {
     let mut records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e7.json")).unwrap();
-    records.extend(
-        serde_json::from_str::<Vec<Value>>(include_str!("fixtures/y-e12a-metadata.json")).unwrap(),
-    );
+    // Windows records must be captured on the PC, never inferred from Mac ordering.
+    let metadata = if cfg!(windows) {
+        fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/y-e12a-metadata-windows.json"
+        ))
+        .expect("capture the pinned E7 --e12a oracle on Windows first")
+    } else {
+        include_str!("fixtures/y-e12a-metadata.json").into()
+    };
+    records.extend(serde_json::from_str::<Vec<Value>>(&metadata).unwrap());
     for r in records {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
