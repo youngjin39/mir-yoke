@@ -51,13 +51,29 @@ if "--receipt-bytes" in sys.argv:
     output.write_text(json.dumps(record, ensure_ascii=True) + "\n", encoding="utf-8")
     raise SystemExit(0)
 
+def path_spellings(path):
+    native = path.removeprefix("\\\\?\\")
+    forms = {path, native, path.replace("\\", "/"), native.replace("\\", "/")}
+    if "\\" in native:
+        forms.add("\\\\?\\" + native)
+    for form in tuple(forms):
+        for _ in range(2):
+            form = form.replace("\\", "\\\\")
+            forms.add(form)
+    return sorted(forms, key=len, reverse=True)
+
+
 def observe_root(text, root):
-    # Only native filenames, repr filenames and as_posix report roots.
-    # Suffix separators and console CRLF remain literal.
-    for spelling in sorted({root, root.replace("\\", "\\\\"),
-                            root.replace("\\", "/")}, key=len, reverse=True):
+    # Longest first prevents raw suffix matches inside escaped/verbatim roots.
+    for spelling in path_spellings(root):
         text = text.replace(spelling, "{ROOT}")
     return text
+
+
+def assert_scrubbed(text, paths):
+    for path in paths:
+        assert all(spelling not in text for spelling in path_spellings(path)), (
+            "absolute scratch path remains in captured record")
 
 
 assert sys.flags.isolated
@@ -209,11 +225,14 @@ for mode, tail in cases:
             exit=result.returncode, stdout=observe_root(result.stdout.decode("utf-8"), str(work)),
             stderr=re.sub( r"\.bootstrap-receipt\.json\.[^\']+", ".bootstrap-receipt.json.<TEMP>",
                 observe_root(result.stderr.decode("utf-8"), str(work)),
-            ), receipt=receipt.read_text(encoding="utf-8") if receipt.is_file() else None, ) )
+            ), receipt=observe_root(receipt.read_text(encoding="utf-8"), str(work))
+                if receipt.is_file() else None, ) )
     if sys.platform == "win32":
         records[-1]["receipt_physical_hex"] = (
             receipt.read_bytes().hex() if receipt.is_file() else None)
 assert len(records) == 42
 assert records[2]["exit"] == 0 and records[2]["receipt"] != "old receipt\n"
 assert records[9]["exit"] == 2 and records[9]["receipt"] == "old receipt\n"
-a.output.write_text(json.dumps(records, separators=(",", ":")) + "\n", encoding="utf-8")
+captured = json.dumps(records, separators=(",", ":")) + "\n"
+assert_scrubbed(captured, [str(a.scratch.resolve()), str(root)])
+a.output.write_text(captured, encoding="utf-8")

@@ -23,6 +23,16 @@ def observe_project_roots(result, work):
         argv[index] = '{ROOT}'
     return result
 
+def run_oracle(argv, **kwargs):
+    result = subprocess.run(argv, capture_output=True, **kwargs)
+    if result.returncode:
+        raise RuntimeError(
+            f"oracle child argv={argv!r} exit={result.returncode}\n"
+            f"stdout={result.stdout.decode('utf-8', errors='backslashreplace')}\n"
+            f"stderr={result.stderr.decode('utf-8', errors='backslashreplace')}")
+    return result
+
+
 wrapper = root / "capture.py"
 wrapper.write_text('''import sys, pathlib, sysconfig, socket, json, io, contextlib, types, os
 root = pathlib.Path(__file__).resolve().parent
@@ -169,10 +179,9 @@ for i, r in enumerate(cases):
         path = work / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding='utf-8')
-    out = subprocess.run([scope['sys'].executable, '-I', '-B', '-X', 'utf8', str(wrapper),
+    out = run_oracle([scope['sys'].executable, '-I', '-B', '-X', 'utf8', str(wrapper),
                           json.dumps(r)],
-                         cwd=work, env=env | {'HOME': str(work), 'USERPROFILE': str(work)},
-                         capture_output=True, check=True)
+                         cwd=work, env=env | {'HOME': str(work), 'USERPROFILE': str(work)})
     assert not out.stderr, out.stderr
     result = json.loads(out.stdout)
     if os.name == 'nt':
