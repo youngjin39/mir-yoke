@@ -348,6 +348,7 @@ fn execute(request: &CommandRequest, clean: bool) -> Result<CommandOutput, Error
         }
     }
     let output = command.output().map_err(|e| {
+        #[cfg_attr(not(unix), allow(unused_mut))]
         let mut cwd_accessible = request.cwd.is_dir();
         #[cfg(unix)]
         {
