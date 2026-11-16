@@ -346,7 +346,11 @@ pub fn read(p: &Path) -> Result<Vec<u8>> {
         {
             error(
                 crate::adoption_fs::windows_crt_error(&e).0,
-                crate::executor_brief_profile::python_read_error_message(&e, p),
+                crate::executor_brief_profile::python_read_error_message(
+                    &e,
+                    p,
+                    crate::executor_text::FilenameArgument::Path,
+                ),
             )
         }
         #[cfg(not(windows))]

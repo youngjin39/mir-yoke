@@ -496,7 +496,7 @@ fn read_failure(error: std::io::Error, path: &Path) -> PolicyFailure {
         }
         failure(
             crate::adoption_fs::windows_crt_error(&error).0,
-            python_read_error_message(&error, path),
+            python_read_error_message(&error, path, crate::executor_text::FilenameArgument::Path),
         )
     }
     #[cfg(not(windows))]
@@ -534,11 +534,21 @@ pub(crate) fn python_os_error_message(error: &std::io::Error, path: &Path) -> St
 
 /// Path.read_bytes/open failures use CRT errno on Windows, unlike stat/rename.
 #[cfg(any(windows, test))]
-pub(crate) fn python_read_error_message(error: &std::io::Error, path: &Path) -> String {
+pub(crate) fn python_read_error_message(
+    error: &std::io::Error,
+    path: &Path,
+    argument: crate::executor_text::FilenameArgument,
+) -> String {
     #[cfg(windows)]
     if error.raw_os_error().is_some() {
-        return python_file_error_message(error, path, crate::executor_text::IoOperation::Read);
+        return python_file_error_message(
+            error,
+            path,
+            crate::executor_text::IoOperation::Read,
+            argument,
+        );
     }
+    let _ = argument;
     python_os_error_message(error, path)
 }
 
@@ -548,11 +558,12 @@ pub fn python_file_error_message(
     error: &std::io::Error,
     path: &Path,
     operation: crate::executor_text::IoOperation,
+    argument: crate::executor_text::FilenameArgument,
 ) -> String {
     if error.raw_os_error().is_none() {
         return python_os_error_message(error, path);
     }
-    let rendered = crate::adoption_fs::windows_error(error, Some(path), None, operation);
+    let rendered = crate::adoption_fs::windows_error(error, Some(path), None, operation, argument);
     rendered
         .split_once(": ")
         .map_or(rendered.clone(), |(_, message)| message.to_owned())

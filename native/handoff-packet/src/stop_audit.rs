@@ -356,7 +356,8 @@ fn write_warning(failure: bool, path: &Path, error: &io::Error) {
         handoff_packet::executor_brief_profile::python_file_error_message(
             error,
             path,
-            handoff_packet::executor_text::IoOperation::Write
+            handoff_packet::executor_text::IoOperation::Write,
+            handoff_packet::executor_text::FilenameArgument::Path
         )
     );
     #[cfg(not(windows))]

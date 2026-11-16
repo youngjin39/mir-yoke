@@ -553,6 +553,7 @@ pub(crate) fn runtime_entries(root: &Path, manifest: &Path) -> Result<Vec<PyValu
                                 &e,
                                 &path,
                                 handoff_packet::executor_text::IoOperation::Read,
+                                handoff_packet::executor_text::FilenameArgument::Path,
                             ),
                         )
                     }

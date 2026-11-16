@@ -41,8 +41,8 @@ pub(crate) fn windows_crt_error(error: &std::io::Error) -> (&'static str, i32, S
 
 #[cfg(windows)]
 #[rustfmt::skip]
-pub(crate) fn windows_error(error: &std::io::Error, path: Option<&std::path::Path>, destination: Option<&std::path::Path>, operation: crate::executor_text::IoOperation) -> String {
-    use crate::executor_text::{os_points, repr_points};
+pub(crate) fn windows_error(error: &std::io::Error, path: Option<&std::path::Path>, destination: Option<&std::path::Path>, operation: crate::executor_text::IoOperation, argument: crate::executor_text::FilenameArgument) -> String {
+    use crate::executor_text::repr_points;
     use windows_sys::Win32::System::Diagnostics::Debug::{FormatMessageW, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS};
     let code = error.raw_os_error().unwrap_or(87);
     let (class, form, number) = crate::executor_text::windows_error_code(error, operation);
@@ -61,8 +61,8 @@ pub(crate) fn windows_error(error: &std::io::Error, path: Option<&std::path::Pat
         }
     };
     let mut rendered = format!("{class}: [{form} {number}] {message}");
-    if let Some(path) = path { rendered.push_str(&format!(": {}", repr_points(&os_points(path.as_os_str())))); }
-    if let Some(destination) = destination { rendered.push_str(&format!(" -> {}", repr_points(&os_points(destination.as_os_str())))); }
+    if let Some(path) = path { rendered.push_str(&format!(": {}", repr_points(&argument.windows_points(path)))); }
+    if let Some(destination) = destination { rendered.push_str(&format!(" -> {}", repr_points(&argument.windows_points(destination)))); }
     rendered
 }
 

@@ -213,6 +213,25 @@ pub enum IoOperation {
     Readlink,
     Symlink,
 }
+/// Object supplied to Python's filesystem call; str arguments retain their spelling.
+#[derive(Clone, Copy)]
+pub enum FilenameArgument {
+    Path,
+    Str,
+}
+impl FilenameArgument {
+    #[cfg(any(windows, test))]
+    pub(crate) fn windows_points(self, path: &Path) -> Vec<u32> {
+        os_points(path.as_os_str())
+            .into_iter()
+            .map(|point| match (self, point) {
+                (Self::Path, 47) => 92,
+                _ => point,
+            })
+            .collect()
+    }
+}
+
 #[cfg(any(windows, test))]
 pub(crate) fn windows_error_code(
     error: &std::io::Error,
@@ -236,7 +255,13 @@ pub(crate) fn io_operation(
 ) -> String {
     #[cfg(windows)]
     {
-        crate::adoption_fs::windows_error(&error, path, destination, operation)
+        crate::adoption_fs::windows_error(
+            &error,
+            path,
+            destination,
+            operation,
+            FilenameArgument::Str,
+        )
     }
     #[cfg(not(windows))]
     {

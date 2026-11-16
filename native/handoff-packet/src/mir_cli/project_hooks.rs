@@ -392,6 +392,7 @@ fn check(
         let message = crate::executor_brief_profile::python_read_error_message(
             &error,
             Path::new(&super::bootstrap_adoption::wire(&receipt)),
+            crate::executor_text::FilenameArgument::Path,
         );
         #[cfg(not(windows))]
         let message = super::bootstrap_adoption::io_error(&receipt, error).to_string();

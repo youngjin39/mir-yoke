@@ -186,7 +186,11 @@ pub(crate) fn read_error(path: &Path, e: io::Error) -> Error {
         }
         Error::Io {
             class: crate::adoption_fs::windows_crt_error(&e).0,
-            message: crate::executor_brief_profile::python_read_error_message(&e, path),
+            message: crate::executor_brief_profile::python_read_error_message(
+                &e,
+                path,
+                crate::executor_text::FilenameArgument::Path,
+            ),
         }
     }
     #[cfg(not(windows))]
