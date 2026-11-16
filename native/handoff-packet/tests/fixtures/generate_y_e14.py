@@ -1,12 +1,52 @@
 """Freeze bootstrap-adoption from 5f8f69f, isolated and without network."""
 
+import argparse
+import ast
 import json
 import os
 import re
 import shutil
 import sqlite3
 import subprocess
+import sys
+import tempfile
 from pathlib import Path
+
+# Byte-only capture is stdlib-only: execute the exact pinned function, importing
+# no repository package (including no live __init__.py).
+if "--receipt-bytes" in sys.argv:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--receipt-bytes", action="store_true")
+    parser.add_argument("--scratch", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    assert sys.flags.isolated
+    scratch = args.scratch.resolve()
+    scratch.mkdir(parents=True, exist_ok=True)
+    os.environ.update(HOME=str(scratch), USERPROFILE=str(scratch))
+    pin = "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+    repo = Path(__file__).resolve().parents[4]
+    output = args.output.resolve()
+    os.chdir(scratch)
+    source = subprocess.check_output(
+        ["git", "-C", str(repo), "show", f"{pin}:src/mir/cli/bootstrap_adoption.py"],
+        env=dict(os.environ, GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull),
+    ).decode("utf-8")
+    tree = ast.parse(source)
+    function = next(n for n in tree.body if isinstance(n, ast.FunctionDef)
+                    and n.name == "_atomic_write_json")
+    namespace = dict(Path=Path, os=os, json=json, tempfile=tempfile)
+    exec(compile(ast.Module(body=[function], type_ignores=[]),
+                 f"{pin}:bootstrap_adoption.py", "exec"), namespace)
+    payload = {"ready": True, "text": "é\nline"}
+    path = scratch / "receipt.json"
+    namespace["_atomic_write_json"](path, payload)
+    logical = path.read_text(encoding="utf-8")
+    assert json.loads(logical) == payload and "\r" not in logical
+    record = dict(reference_pin=pin, platform=sys.platform, payload=payload,
+                  logical=logical, physical_hex=path.read_bytes().hex())
+    output.write_text(json.dumps(record, ensure_ascii=True) + "\n", encoding="utf-8")
+    raise SystemExit(0)
 
 # Reuse only the pinned archive/dependency acquisition, before its wrapper/cases.
 scope = {"__file__": __file__}

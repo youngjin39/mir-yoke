@@ -173,7 +173,8 @@ fn frozen_bootstrap_adoption_public() {
         let actual = serde_json::json!({"exit":out.status.code(),
             "stdout":observe_root(&String::from_utf8(out.stdout).unwrap(), root.to_str().unwrap(), cfg!(windows)),
             "stderr":temporary_name.replace_all(&observe_root(&String::from_utf8(out.stderr).unwrap(), root.to_str().unwrap(), cfg!(windows)), ".bootstrap-receipt.json.<TEMP>"),
-            "receipt":fs::read_to_string(&receipt).ok()});
+            // Python Path.read_text observes universal newlines; raw bytes are checked separately.
+            "receipt":fs::read_to_string(&receipt).ok().map(|s| s.replace("\r\n", "\n").replace('\r', "\n"))});
         for field in ["exit", "stdout", "stderr", "receipt"] {
             if actual[field] != r[field] {
                 failures.push(format!(
@@ -207,4 +208,58 @@ fn receipt_parent_substitution_fails_closed() {
     assert!(result.is_err());
     assert_eq!(fs::read_to_string(sentinel).unwrap(), "preserve");
     assert_eq!(fs::read_dir(outside).unwrap().count(), 2);
+}
+
+#[test]
+fn public_receipt_physical_bytes_match_pinned_python() {
+    use handoff_packet::mir_cli::bootstrap_adoption::write_receipt_with;
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join(if cfg!(windows) {
+        "tests/fixtures/y-e14-receipt-bytes-windows.json"
+    } else {
+        "tests/fixtures/y-e14-receipt-bytes.json"
+    });
+    let record: Value = serde_json::from_slice(
+        &fs::read(fixture)
+            .expect("capture byte oracle on this platform with generate_y_e14.py --receipt-bytes"),
+    )
+    .unwrap();
+    assert_eq!(
+        record["platform"],
+        std::env::consts::OS
+            .replace("macos", "darwin")
+            .replace("windows", "win32")
+    );
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("receipt.json");
+    write_receipt_with(&path, &record["payload"], |_, _| Ok(())).unwrap();
+    let bytes = fs::read(path).unwrap();
+    let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+    assert_eq!(hex, record["physical_hex"].as_str().unwrap());
+    assert_eq!(
+        String::from_utf8(bytes).unwrap().replace("\r\n", "\n"),
+        record["logical"]
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn receipt_leaf_substitution_preserves_outside_target() {
+    use handoff_packet::mir_cli::bootstrap_adoption::write_receipt_with;
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let parent = root.join("project");
+    fs::create_dir(&parent).unwrap();
+    let outside = root.join("outside.json");
+    fs::write(&outside, b"preserve").unwrap();
+    let path = parent.join("receipt.json");
+    // A leaf link is atomically replaced; its target must never be written.
+    write_receipt_with(
+        &path,
+        &serde_json::json!({"ready":true}),
+        |_, destination| std::os::unix::fs::symlink(&outside, destination),
+    )
+    .unwrap();
+    assert_eq!(fs::read(outside).unwrap(), b"preserve");
+    assert!(!path.is_symlink());
+    assert_eq!(fs::read_dir(parent).unwrap().count(), 1);
 }

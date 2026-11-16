@@ -1,0 +1,1 @@
+{"reference_pin": "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb", "platform": "darwin", "payload": {"ready": true, "text": "\u00e9\nline"}, "logical": "{\n  \"ready\": true,\n  \"text\": \"\\u00e9\\nline\"\n}\n", "physical_hex": "7b0a2020227265616479223a20747275652c0a20202274657874223a20225c75303065395c6e6c696e65220a7d0a"}
