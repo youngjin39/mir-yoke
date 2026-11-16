@@ -1,0 +1,1557 @@
+{
+  "cases": [
+    {
+      "name": "empty",
+      "input": "",
+      "lines": [],
+      "indented_len": 2
+    },
+    {
+      "name": "lf",
+      "input": "alpha\nbeta\n",
+      "lines": [
+        "alpha",
+        "beta"
+      ],
+      "indented_len": 14
+    },
+    {
+      "name": "crlf",
+      "input": "alpha\r\nbeta\r\n",
+      "lines": [
+        "alpha",
+        "beta"
+      ],
+      "indented_len": 14
+    },
+    {
+      "name": "cr",
+      "input": "alpha\rbeta\r",
+      "lines": [
+        "alpha",
+        "beta"
+      ],
+      "indented_len": 14
+    },
+    {
+      "name": "mixed",
+      "input": "a\r\nb\rc\nd\u000bE\fF\u001cG\u001dH\u001eI\u0085J\u2028K\u2029",
+      "lines": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K"
+      ],
+      "indented_len": 43
+    },
+    {
+      "name": "blank-lines",
+      "input": "\r\nalpha\r\n\r\nbeta\n\n",
+      "lines": [
+        "",
+        "alpha",
+        "",
+        "beta",
+        ""
+      ],
+      "indented_len": 23
+    },
+    {
+      "name": "trailing-break",
+      "input": "alpha\r\n",
+      "lines": [
+        "alpha"
+      ],
+      "indented_len": 7
+    },
+    {
+      "name": "no-trailing-break",
+      "input": "alpha\r\nbeta",
+      "lines": [
+        "alpha",
+        "beta"
+      ],
+      "indented_len": 14
+    },
+    {
+      "name": "nel",
+      "input": "alpha\u0085beta\u0085",
+      "lines": [
+        "alpha",
+        "beta"
+      ],
+      "indented_len": 14
+    },
+    {
+      "name": "line-separator",
+      "input": "alpha\u2028beta\u2028",
+      "lines": [
+        "alpha",
+        "beta"
+      ],
+      "indented_len": 14
+    },
+    {
+      "name": "sequence-10",
+      "input": "x",
+      "lines": [
+        "x"
+      ],
+      "indented_len": 3
+    },
+    {
+      "name": "sequence-11",
+      "input": "\r",
+      "lines": [
+        ""
+      ],
+      "indented_len": 2
+    },
+    {
+      "name": "sequence-12",
+      "input": "\n",
+      "lines": [
+        ""
+      ],
+      "indented_len": 2
+    },
+    {
+      "name": "sequence-13",
+      "input": "\u0085",
+      "lines": [
+        ""
+      ],
+      "indented_len": 2
+    },
+    {
+      "name": "sequence-14",
+      "input": "\u2028",
+      "lines": [
+        ""
+      ],
+      "indented_len": 2
+    },
+    {
+      "name": "sequence-15",
+      "input": "xx",
+      "lines": [
+        "xx"
+      ],
+      "indented_len": 4
+    },
+    {
+      "name": "sequence-16",
+      "input": "x\r",
+      "lines": [
+        "x"
+      ],
+      "indented_len": 3
+    },
+    {
+      "name": "sequence-17",
+      "input": "x\n",
+      "lines": [
+        "x"
+      ],
+      "indented_len": 3
+    },
+    {
+      "name": "sequence-18",
+      "input": "x\u0085",
+      "lines": [
+        "x"
+      ],
+      "indented_len": 3
+    },
+    {
+      "name": "sequence-19",
+      "input": "x\u2028",
+      "lines": [
+        "x"
+      ],
+      "indented_len": 3
+    },
+    {
+      "name": "sequence-20",
+      "input": "\rx",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-21",
+      "input": "\r\r",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-22",
+      "input": "\r\n",
+      "lines": [
+        ""
+      ],
+      "indented_len": 2
+    },
+    {
+      "name": "sequence-23",
+      "input": "\r\u0085",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-24",
+      "input": "\r\u2028",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-25",
+      "input": "\nx",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-26",
+      "input": "\n\r",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-27",
+      "input": "\n\n",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-28",
+      "input": "\n\u0085",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-29",
+      "input": "\n\u2028",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-30",
+      "input": "\u0085x",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-31",
+      "input": "\u0085\r",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-32",
+      "input": "\u0085\n",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-33",
+      "input": "\u0085\u0085",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-34",
+      "input": "\u0085\u2028",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-35",
+      "input": "\u2028x",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-36",
+      "input": "\u2028\r",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-37",
+      "input": "\u2028\n",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-38",
+      "input": "\u2028\u0085",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-39",
+      "input": "\u2028\u2028",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-40",
+      "input": "xxx",
+      "lines": [
+        "xxx"
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-41",
+      "input": "xx\r",
+      "lines": [
+        "xx"
+      ],
+      "indented_len": 4
+    },
+    {
+      "name": "sequence-42",
+      "input": "xx\n",
+      "lines": [
+        "xx"
+      ],
+      "indented_len": 4
+    },
+    {
+      "name": "sequence-43",
+      "input": "xx\u0085",
+      "lines": [
+        "xx"
+      ],
+      "indented_len": 4
+    },
+    {
+      "name": "sequence-44",
+      "input": "xx\u2028",
+      "lines": [
+        "xx"
+      ],
+      "indented_len": 4
+    },
+    {
+      "name": "sequence-45",
+      "input": "x\rx",
+      "lines": [
+        "x",
+        "x"
+      ],
+      "indented_len": 7
+    },
+    {
+      "name": "sequence-46",
+      "input": "x\r\r",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-47",
+      "input": "x\r\n",
+      "lines": [
+        "x"
+      ],
+      "indented_len": 3
+    },
+    {
+      "name": "sequence-48",
+      "input": "x\r\u0085",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-49",
+      "input": "x\r\u2028",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-50",
+      "input": "x\nx",
+      "lines": [
+        "x",
+        "x"
+      ],
+      "indented_len": 7
+    },
+    {
+      "name": "sequence-51",
+      "input": "x\n\r",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-52",
+      "input": "x\n\n",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-53",
+      "input": "x\n\u0085",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-54",
+      "input": "x\n\u2028",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-55",
+      "input": "x\u0085x",
+      "lines": [
+        "x",
+        "x"
+      ],
+      "indented_len": 7
+    },
+    {
+      "name": "sequence-56",
+      "input": "x\u0085\r",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-57",
+      "input": "x\u0085\n",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-58",
+      "input": "x\u0085\u0085",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-59",
+      "input": "x\u0085\u2028",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-60",
+      "input": "x\u2028x",
+      "lines": [
+        "x",
+        "x"
+      ],
+      "indented_len": 7
+    },
+    {
+      "name": "sequence-61",
+      "input": "x\u2028\r",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-62",
+      "input": "x\u2028\n",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-63",
+      "input": "x\u2028\u0085",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-64",
+      "input": "x\u2028\u2028",
+      "lines": [
+        "x",
+        ""
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-65",
+      "input": "\rxx",
+      "lines": [
+        "",
+        "xx"
+      ],
+      "indented_len": 7
+    },
+    {
+      "name": "sequence-66",
+      "input": "\rx\r",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-67",
+      "input": "\rx\n",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-68",
+      "input": "\rx\u0085",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-69",
+      "input": "\rx\u2028",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-70",
+      "input": "\r\rx",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-71",
+      "input": "\r\r\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-72",
+      "input": "\r\r\n",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-73",
+      "input": "\r\r\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-74",
+      "input": "\r\r\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-75",
+      "input": "\r\nx",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-76",
+      "input": "\r\n\r",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-77",
+      "input": "\r\n\n",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-78",
+      "input": "\r\n\u0085",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-79",
+      "input": "\r\n\u2028",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-80",
+      "input": "\r\u0085x",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-81",
+      "input": "\r\u0085\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-82",
+      "input": "\r\u0085\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-83",
+      "input": "\r\u0085\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-84",
+      "input": "\r\u0085\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-85",
+      "input": "\r\u2028x",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-86",
+      "input": "\r\u2028\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-87",
+      "input": "\r\u2028\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-88",
+      "input": "\r\u2028\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-89",
+      "input": "\r\u2028\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-90",
+      "input": "\nxx",
+      "lines": [
+        "",
+        "xx"
+      ],
+      "indented_len": 7
+    },
+    {
+      "name": "sequence-91",
+      "input": "\nx\r",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-92",
+      "input": "\nx\n",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-93",
+      "input": "\nx\u0085",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-94",
+      "input": "\nx\u2028",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-95",
+      "input": "\n\rx",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-96",
+      "input": "\n\r\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-97",
+      "input": "\n\r\n",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-98",
+      "input": "\n\r\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-99",
+      "input": "\n\r\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-100",
+      "input": "\n\nx",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-101",
+      "input": "\n\n\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-102",
+      "input": "\n\n\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-103",
+      "input": "\n\n\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-104",
+      "input": "\n\n\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-105",
+      "input": "\n\u0085x",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-106",
+      "input": "\n\u0085\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-107",
+      "input": "\n\u0085\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-108",
+      "input": "\n\u0085\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-109",
+      "input": "\n\u0085\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-110",
+      "input": "\n\u2028x",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-111",
+      "input": "\n\u2028\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-112",
+      "input": "\n\u2028\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-113",
+      "input": "\n\u2028\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-114",
+      "input": "\n\u2028\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-115",
+      "input": "\u0085xx",
+      "lines": [
+        "",
+        "xx"
+      ],
+      "indented_len": 7
+    },
+    {
+      "name": "sequence-116",
+      "input": "\u0085x\r",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-117",
+      "input": "\u0085x\n",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-118",
+      "input": "\u0085x\u0085",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-119",
+      "input": "\u0085x\u2028",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-120",
+      "input": "\u0085\rx",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-121",
+      "input": "\u0085\r\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-122",
+      "input": "\u0085\r\n",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-123",
+      "input": "\u0085\r\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-124",
+      "input": "\u0085\r\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-125",
+      "input": "\u0085\nx",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-126",
+      "input": "\u0085\n\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-127",
+      "input": "\u0085\n\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-128",
+      "input": "\u0085\n\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-129",
+      "input": "\u0085\n\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-130",
+      "input": "\u0085\u0085x",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-131",
+      "input": "\u0085\u0085\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-132",
+      "input": "\u0085\u0085\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-133",
+      "input": "\u0085\u0085\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-134",
+      "input": "\u0085\u0085\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-135",
+      "input": "\u0085\u2028x",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-136",
+      "input": "\u0085\u2028\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-137",
+      "input": "\u0085\u2028\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-138",
+      "input": "\u0085\u2028\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-139",
+      "input": "\u0085\u2028\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-140",
+      "input": "\u2028xx",
+      "lines": [
+        "",
+        "xx"
+      ],
+      "indented_len": 7
+    },
+    {
+      "name": "sequence-141",
+      "input": "\u2028x\r",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-142",
+      "input": "\u2028x\n",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-143",
+      "input": "\u2028x\u0085",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-144",
+      "input": "\u2028x\u2028",
+      "lines": [
+        "",
+        "x"
+      ],
+      "indented_len": 6
+    },
+    {
+      "name": "sequence-145",
+      "input": "\u2028\rx",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-146",
+      "input": "\u2028\r\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-147",
+      "input": "\u2028\r\n",
+      "lines": [
+        "",
+        ""
+      ],
+      "indented_len": 5
+    },
+    {
+      "name": "sequence-148",
+      "input": "\u2028\r\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-149",
+      "input": "\u2028\r\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-150",
+      "input": "\u2028\nx",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-151",
+      "input": "\u2028\n\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-152",
+      "input": "\u2028\n\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-153",
+      "input": "\u2028\n\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-154",
+      "input": "\u2028\n\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-155",
+      "input": "\u2028\u0085x",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-156",
+      "input": "\u2028\u0085\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-157",
+      "input": "\u2028\u0085\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-158",
+      "input": "\u2028\u0085\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-159",
+      "input": "\u2028\u0085\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-160",
+      "input": "\u2028\u2028x",
+      "lines": [
+        "",
+        "",
+        "x"
+      ],
+      "indented_len": 9
+    },
+    {
+      "name": "sequence-161",
+      "input": "\u2028\u2028\r",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-162",
+      "input": "\u2028\u2028\n",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-163",
+      "input": "\u2028\u2028\u0085",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    },
+    {
+      "name": "sequence-164",
+      "input": "\u2028\u2028\u2028",
+      "lines": [
+        "",
+        "",
+        ""
+      ],
+      "indented_len": 8
+    }
+  ],
+  "pull": {
+    "body": "alpha apple orchard.\r\n\r\nbeta apple harbor.\r\n",
+    "config": "[memory]\nvector_mode='optional'\n[memory.embedding]\nenabled=false\n",
+    "stdout": "[chunk] [active] notes:0.md@0-44 score=0.016667\n  alpha apple orchard.\n  \n  beta apple harbor.\n",
+    "stdout_windows": "[chunk] [active] notes:0.md@0-44 score=0.016667\r\n  alpha apple orchard.\r\n  \r\n  beta apple harbor.\r\n"
+  }
+}

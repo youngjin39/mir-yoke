@@ -1142,14 +1142,32 @@ fn main_inner(
     Ok((0, out.into_bytes(), stderr.into_bytes()))
 }
 fn splitlines(s: &str) -> Vec<&str> {
-    let mut lines = s
-        .split([
-            '\n', '\r', '\u{b}', '\u{c}', '\u{1c}', '\u{1d}', '\u{1e}', '\u{85}', '\u{2028}',
-            '\u{2029}',
-        ])
-        .collect::<Vec<_>>();
-    if lines.last() == Some(&"") {
-        lines.pop();
+    let mut lines = Vec::new();
+    let mut start = 0;
+    let mut chars = s.char_indices().peekable();
+    while let Some((index, c)) = chars.next() {
+        if matches!(
+            c,
+            '\n' | '\r'
+                | '\u{b}'
+                | '\u{c}'
+                | '\u{1c}'
+                | '\u{1d}'
+                | '\u{1e}'
+                | '\u{85}'
+                | '\u{2028}'
+                | '\u{2029}'
+        ) {
+            lines.push(&s[start..index]);
+            start = index + c.len_utf8();
+            // Python str.splitlines treats CRLF as one boundary.
+            if c == '\r' && chars.next_if(|(_, next)| *next == '\n').is_some() {
+                start += 1;
+            }
+        }
+    }
+    if start < s.len() {
+        lines.push(&s[start..]);
     }
     lines
 }
@@ -1211,4 +1229,26 @@ pub(super) fn python_k(value: &str) -> Option<Option<i64>> {
         text.insert(0, '-');
     }
     Some(text.parse::<i64>().ok())
+}
+
+#[cfg(test)]
+mod splitlines_tests {
+    use super::{indented_len, splitlines};
+
+    #[test]
+    fn python_splitlines_fixture() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/y-e8-crlf.json")).unwrap();
+        for row in fixture["cases"].as_array().unwrap() {
+            let input = row["input"].as_str().unwrap();
+            let expected: Vec<String> = serde_json::from_value(row["lines"].clone()).unwrap();
+            assert_eq!(splitlines(input), expected, "{}", row["name"]);
+            assert_eq!(
+                indented_len(input),
+                row["indented_len"].as_u64().unwrap() as usize,
+                "budget: {}",
+                row["name"]
+            );
+        }
+    }
 }
