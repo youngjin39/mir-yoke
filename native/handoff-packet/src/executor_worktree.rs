@@ -558,12 +558,34 @@ fn private(file: &fs::File, _path: &Path) -> Result<()> {
     }
     Ok(())
 }
+fn read_artifact_text(path: &DispatchPath) -> Result<String> {
+    read_text_inner(path, true)
+}
 fn read_text(path: &DispatchPath) -> Result<String> {
+    read_text_inner(path, false)
+}
+fn read_text_inner(path: &DispatchPath, artifact: bool) -> Result<String> {
     reject_links(path)?;
     let mut options = fs::OpenOptions::new();
     options.read(true);
     nofollow(&mut options)?;
     let mut file = options.open(&path.io).map_err(|e| read_error(e, path))?;
+    // Python artifact persistence wraps the opened descriptor with os.fdopen;
+    // its directory error names the integer descriptor, not the source path.
+    #[cfg(unix)]
+    if artifact && file.metadata()?.is_dir() {
+        use std::os::fd::AsRawFd;
+        return Err(Error::Invalid(format!(
+            "[Errno {}] {}: {}",
+            libc::EISDIR,
+            crate::executor_brief_profile::python_os_error_text(&io::Error::from_raw_os_error(
+                libc::EISDIR
+            )),
+            file.as_raw_fd()
+        )));
+    }
+    #[cfg(not(unix))]
+    let _ = artifact;
     finish_read(path, &mut file)
 }
 fn read_error(error: io::Error, _path: &DispatchPath) -> Error {
@@ -1357,7 +1379,7 @@ pub fn persist_dispatch_artifacts(
         "events.jsonl",
         "dispatch-events.jsonl",
     ] {
-        let text = match read_text(&source.join(filename)) {
+        let text = match read_artifact_text(&source.join(filename)) {
             Ok(text) => text,
             Err(Error::Io(e)) if e.kind() == io::ErrorKind::NotFound => continue,
             Err(e) => return Err(e),
@@ -1593,5 +1615,29 @@ mod windows_error_tests {
                 "{mode}: {error:?}"
             );
         }
+    }
+}
+
+#[cfg(all(test, unix))]
+mod artifact_diagnostic_tests {
+    use super::*;
+
+    #[test]
+    fn artifact_directory_diagnostic_matches_python_fdopen() {
+        let scratch = tempfile::tempdir().unwrap();
+        let path = DispatchPath::root(scratch.path())
+            .unwrap()
+            .join("reviewer.json");
+        fs::create_dir(&path.io).unwrap();
+        // Only artifact persistence uses Python's fdopen diagnostic.
+        assert_eq!(
+            read_text(&path).unwrap_err().to_string(),
+            "expected regular evidence file"
+        );
+        let error = read_artifact_text(&path).unwrap_err().to_string();
+        let fd = error.strip_prefix("[Errno 21] Is a directory: ").unwrap();
+        let fd = fd.parse::<i32>().unwrap();
+        assert!(fd >= 0);
+        assert_eq!(error, format!("[Errno 21] Is a directory: {fd}"));
     }
 }

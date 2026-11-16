@@ -137,7 +137,16 @@ impl FinalizeLock {
             .write(true)
             .create(true)
             .truncate(false)
-            .open(path)?;
+            .open(&path)
+            .map_err(|e| {
+                if e.kind() == io::ErrorKind::IsADirectory {
+                    Error::Invalid(crate::executor_brief_profile::python_os_error_message(
+                        &e, &path,
+                    ))
+                } else {
+                    Error::Io(e)
+                }
+            })?;
         let started = Instant::now();
         loop {
             match file.try_lock() {
@@ -639,4 +648,30 @@ fn project_registry(
         )
         .map_err(|e| Error::Registry(e.into()))?;
     registry.update_status(job_id, if success { "completed" } else { "failed" }, &json!({"exit_code":code,"stdout":format!("artifacts={artifacts}"),"stderr":reason,"completed_at":completed_at})).map_err(Error::Registry)
+}
+
+#[cfg(all(test, unix))]
+mod diagnostic_tests {
+    use super::*;
+
+    #[test]
+    fn lock_directory_diagnostic_matches_python() {
+        let scratch = tempfile::tempdir().unwrap();
+        for name in ["plain", "single'quote", "both'\"quotes\\line\n"] {
+            let root = scratch.path().join(name);
+            let lock = root.join(".mir/dispatch-finalize.lock");
+            fs::create_dir_all(&lock).unwrap();
+            let error = match FinalizeLock::acquire(&root, Duration::ZERO) {
+                Err(error) => error,
+                Ok(_) => panic!("directory lock accepted"),
+            };
+            assert_eq!(
+                error.to_string(),
+                format!(
+                    "[Errno 21] Is a directory: {}",
+                    crate::executor_text::repr(lock.to_str().unwrap())
+                )
+            );
+        }
+    }
 }
