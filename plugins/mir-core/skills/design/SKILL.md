@@ -22,7 +22,7 @@ Architecture precedence: existing, as-built architecture analysis → bluebricks
 - analyze-design — Analyze and iterate design across sub-agents.
 - audit-design-fit — Audit design fit against original purpose.
 - develop-from-design — Design-driven harness development loop.
-- role-split-pipeline — role-separated stages: design → independent review → delegated execution → independent evaluation, using whatever agents the host provides.
+- role-split-pipeline — role-separated stages: design → independent review → delegated execution → independent evaluation, using whatever agents the host provides. An explicit invocation requests this role isolation; select owners under the repository Profile and size dispatch to measured capacity.
 - deep-interview — Requirements clarification. Ambiguity gating.
 
 ## Workflow

@@ -1,5 +1,8 @@
 # Migration Guide
 
+For each release candidate, smoke-test an authorized real consumer install path alongside template verification.
+Regenerate the adopter payload after the last record change and verify it in a clean clone at the submitted HEAD.
+
 ## 0.13.61 native executor queries with local executor files
 
 Native `executor-query` now admits same-home `status`, `result` and `list-jobs`

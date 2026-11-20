@@ -31,7 +31,7 @@ and not a universal installer, and has no standing authority over consumers.
 
 ## Execution and evidence
 
-- Work directly on bounded changes; scale design, delegation and review with uncertainty.
+- Work directly on bounded changes; delegation and review follow `runtime-continuity`.
 - Finish when affected supported-surface contracts, generated parity and smallest relevant checks pass; broaden only for affected maintainer code or release coupling.
 - Checks: `uv run pytest`, `uv run ruff check`, `scripts/verify_codex_sync.py`; surface/ontology: `docs/operations/ontology-verification.md`.
 - Cross-project: `python3 scripts/mir_ontology.py mk query "<q>" --soft`; cited evidence, not authority; else continue locally; children get parent-supplied excerpts only.

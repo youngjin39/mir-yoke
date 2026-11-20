@@ -35,9 +35,11 @@ A direct single-pass review is sufficient only when the diff is at most ten line
 ## Finding format
 
 A defect states the concrete input, the wrong outcome and the violated
-requirement. Put preferences in a separate suggestion list with status
-`user-confirm`; they are not defects. A fix to a finding gets rows for the flow
-it changes and is reviewed again when it changes state or asynchronous behaviour.
+requirement, with the exact location and fix where possible. Put preferences in a
+separate suggestion list with status `user-confirm`; they are not defects. A fix to a
+finding gets rows for the flow it changes and is reviewed again when it changes state
+or asynchronous behaviour; repair ownership and the round limit follow the
+`mir-lifecycle-hooks:runtime-continuity` default work method.
 
 | File:Line | Severity | Finding | Evidence | Scope status | Alternative | Recommendation |
 |---|---|---|---|---|---|---|

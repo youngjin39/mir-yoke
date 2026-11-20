@@ -14,5 +14,5 @@ The generated snapshot below is historical and preserved byte-for-byte.
 - No open plan items.
 
 ### Working Tree
-- Working tree clean.
+- Working tree dirty (17 paths; inspect git status --short).
 <!-- mir:runtime-snapshot:end -->

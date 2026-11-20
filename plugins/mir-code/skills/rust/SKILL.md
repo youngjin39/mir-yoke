@@ -31,9 +31,8 @@ artifact digests (see structure); plan that before the first release.
    crate or workspace and honor host storage and signing policy before invoking tools.
 3. Apply [coding rules](references/coding.md) to types, errors, schemas, text and paths.
    Prefer minimal dependencies and explicit contracts.
-4. For a port, follow [parity and measurement](references/porting.md): capture the
-   reference first, write golden fixtures and run both implementations. Keep callers
-   on the reference until byte parity and measured latency justify switching.
+4. For a port, follow [parity and measurement](references/porting.md) for reference
+   capture, golden fixtures, differential checks and cutover.
 5. Use [analysis and gates](references/analysis.md). Show each new behavioral test
    failing before implementation, then passing. Read full diagnostics and fix causes.
 6. Report changed behavior, exact checks and results, intentional differences,

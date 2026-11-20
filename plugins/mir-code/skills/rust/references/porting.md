@@ -1,11 +1,12 @@
 # Porting with parity
 
-Port only a measured hot path or a demonstrated distribution need. The existing
-implementation remains the reference until parity passes; retain a runnable copy.
+Use the owning repository's port criteria. Pin the existing implementation for parity and retain a runnable reference until acceptance.
 
 1. Capture golden fixtures covering stdin bytes, args and relevant environment.
    Include successful, empty, malformed, boundary and failure inputs and Unicode
    text. Capture stdout bytes, stderr bytes and exit code from the reference.
+   Reject duplicate frozen case names and invalid witness inputs. If many comparisons match unexpectedly, verify that the generator changed the inputs.
+   Include Python/Rust boundary cases for Unicode, line splitting, exceptions, serialization, and paths.
 2. Build a differential test that runs both implementations on every fixture and
    compares stdout, stderr and exit code byte for byte against the goldens and
    each other. Do not normalize whitespace, encoding, line endings or diagnostics
@@ -27,5 +28,5 @@ implementation remains the reference until parity passes; retain a runnable copy
    result is already determined; keep boundary fixtures for special case folds,
    Unicode words, markup, line breaks and near misses. Demonstrate that deliberately
    wrong prefilters fail those fixtures before accepting the optimization.
-6. Switch callers only after parity passes and latency is measured. Keep rollback
-   to the reference available until the supported platform checks pass.
+6. Switch callers after parity and the owning repository's required platform and performance
+   checks pass. Apply the repository's cutover and recovery policy.

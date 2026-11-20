@@ -1,4 +1,6 @@
-# Example — multi-round adversarial review
+# Historical example — multi-round adversarial review
+
+For current work, follow the two-round cap on routine reviews per slice in the [default work method](../../plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/default-work-method.md#cross-cutting-practices).
 
 A workflow for landing a non-trivial change with high confidence: spawn several independent reviewers in parallel, prioritize their findings, fix in small chunks, re-review.
 
