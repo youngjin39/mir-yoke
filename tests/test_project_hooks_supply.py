@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from textwrap import dedent
 
 import pytest
 
@@ -195,12 +196,14 @@ def test_disabled_install_writes_nothing(provider, monkeypatch):
     assert list(root.iterdir()) == []
 
 
-def test_real_wheel_resource_without_checkout(tmp_path):
+@pytest.fixture(scope="module")
+def installed_wheel(tmp_path_factory):
     """Build and install the production wheel into a separate, non-editable runtime."""
     uv = shutil.which("uv")
     if uv is None:
         pytest.skip("uv is required for isolated wheel installation")
     source = Path(__file__).resolve().parents[1]
+    scratch = tmp_path_factory.mktemp("installed-wheel")
     environment = dict(os.environ)
     environment.pop("PYTHONPATH", None)
 
@@ -212,13 +215,19 @@ def test_real_wheel_resource_without_checkout(tmp_path):
         assert result.returncode == 0, result.stdout + result.stderr
         return result
 
-    wheels = tmp_path / "wheels"
+    wheels = scratch / "wheels"
     run([uv, "build", "--wheel", "--offline", "--out-dir", wheels], cwd=source)
-    runtime = tmp_path / "runtime"
-    run([uv, "venv", "--python", sys.executable, runtime])
+    runtime = scratch / "runtime"
+    run([uv, "venv", "--offline", "--python", sys.executable, runtime])
     python = runtime / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     wheel = next(wheels.glob("*.whl"))
     run([uv, "pip", "install", "--offline", "--python", python, wheel])
+    return python, run
+
+
+def test_real_wheel_resource_without_checkout(installed_wheel, tmp_path):
+    python, run = installed_wheel
+    source = Path(__file__).resolve().parents[1]
     target = tmp_path / "target"
     target.mkdir()
     code = """
@@ -245,3 +254,33 @@ assert list(target.iterdir()) == []
         (source / "config/project-hooks-provider.json").read_text(), target,
     ], cwd=tmp_path)
     assert "no published host pin" in result.stdout
+
+
+def test_wheel_embedding_backend_contract(installed_wheel, tmp_path):
+    python, run = installed_wheel
+    code = dedent("""\
+        import sys
+        from importlib.metadata import distribution
+        from pathlib import Path
+
+        dist = distribution("mir-harness")
+        group = "mir.embedding_backends"
+        entries = dist.entry_points.select(group=group)
+        assert [(ep.group, ep.name, ep.value) for ep in entries] == [
+            (group, "omlx_http", "mir.core.engine.memory.backends.omlx_http:OmlxHttpBackend"),
+        ], entries
+
+        (entry_point,) = entries
+        loaded = entry_point.load()
+        from mir.core.engine.memory.backends.omlx_http import OmlxHttpBackend
+
+        assert loaded is OmlxHttpBackend
+        module_file = Path(sys.modules[loaded.__module__].__file__).resolve()
+        install_dir = dist.locate_file("").resolve()
+        assert install_dir.is_relative_to(Path(sys.prefix).resolve()), install_dir
+        assert module_file.is_relative_to(install_dir), module_file
+        module_path = entry_point.module.replace(".", "/") + ".py"
+        assert module_path in {path.as_posix() for path in dist.files}, module_path
+        assert module_file == dist.locate_file(module_path).resolve(), module_file
+    """)
+    run([python, "-I", "-c", code], cwd=tmp_path)
