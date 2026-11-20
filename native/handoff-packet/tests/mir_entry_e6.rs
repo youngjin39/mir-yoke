@@ -9,20 +9,15 @@ use std::{
 
 #[test]
 fn context_embedding_provider_binding() {
-    provider_binding(None, false);
+    provider_binding(None);
 }
 #[test]
 fn no_body_204_keep_alive() {
-    provider_binding(Some("required-204"), false);
+    provider_binding(Some("required-204"));
 }
 #[test]
 fn no_body_304_keep_alive() {
-    provider_binding(Some("required-304"), false);
-}
-#[test]
-fn diagnostics_preserve_console() {
-    provider_binding(Some("required-timeout"), true);
-    provider_binding(Some("shape"), true);
+    provider_binding(Some("required-304"));
 }
 #[test]
 #[should_panic(expected = "missing E6 reference")]
@@ -41,7 +36,7 @@ fn records(name: &str) -> Vec<Value> {
     });
     serde_json::from_str(&text).unwrap()
 }
-fn provider_binding(only: Option<&str>, diagnostic: bool) {
+fn provider_binding(only: Option<&str>) {
     let mut records = records("y-e6");
     for (mode, error) in [
         ("tls", "HTTPS embedding transport is not supported"),
@@ -106,15 +101,14 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
                 .env("PYTHONIOENCODING", "utf-8")
                 .env("HTTP_PROXY", "http://127.0.0.1:1")
                 .env("NO_PROXY", if r["mode"] == "proxy" { "" } else { "*" })
+                // Exercise the retired switch when the parent runner sets it.
+                .envs(std::env::var_os("MIR_E6_DIAG").map(|value| ("MIR_E6_DIAG", value)))
                 .current_dir(&root);
             if r["mode"] == "proxy" {
                 cmd.env("HTTP_PROXY", "http://127.0.0.1:1");
             }
             if r["mode"] != "no-key" {
                 cmd.env("SYNTHETIC_KEY", "fake-only");
-            }
-            if diagnostic || std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
-                cmd.env("MIR_E6_DIAG", "1");
             }
             bounded_output(&mut cmd)
         };
@@ -136,15 +130,12 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
         let body = r["body"].as_str().unwrap().to_owned();
         let status = r["status"].as_u64().unwrap();
         let mode = r["mode"].as_str().unwrap().to_owned();
-        let diagnostic_enabled = diagnostic || std::env::var("MIR_E6_DIAG").as_deref() == Ok("1");
         let (cancel, cancelled) = std::sync::mpsc::channel();
-        let server_started = std::time::Instant::now();
         let server = thread::spawn(move || {
             let listener = listener?;
             loop {
                 match accept_request(&listener, &cancelled) {
                     Ok((mut stream, _)) => {
-                        eprintln!("[MIR_E6_DIAG] request_after={:?}", server_started.elapsed());
                         stream.set_nonblocking(false).unwrap();
                         stream.set_nodelay(true).unwrap();
                         stream
@@ -167,11 +158,6 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
                         let mut input = vec![0; size];
                         reader.read_exact(&mut input).unwrap();
                         drop(reader);
-                        let started = std::time::Instant::now();
-                        eprintln!(
-                            "[MIR_E6_DIAG] event=request-read mode={mode} unix_ms={}",
-                            unix_ms()
-                        );
                         if mode == "required-timeout" {
                             hold_socket(stream, &cancelled, std::time::Duration::ZERO);
                             return Some((header, String::from_utf8(input).unwrap()));
@@ -189,16 +175,6 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
                                 "HTTP/1.1 {status} {reason}\r\nConnection: keep-alive\r\n\r\n"
                             ).as_bytes())
                             .unwrap();
-                            if diagnostic_enabled {
-                                eprintln!(
-                                    "[MIR_E6_DIAG] {}",
-                                    serde_json::json!({
-                                        "event":"server-head", "mode":mode, "status":status,
-                                        "body_bytes":0, "elapsed_sec":started.elapsed().as_secs_f64(),
-                                        "unix_ms":unix_ms()
-                                    })
-                                );
-                            }
                             hold_socket(stream, &cancelled, std::time::Duration::from_secs(3));
                             return Some((header, String::from_utf8(input).unwrap()));
                         } else if mode == "required-garbage" {
@@ -224,11 +200,6 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
                         } else {
                             stream.write_all(format!("HTTP/1.1 {status} {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", if status == 200 { "OK" } else { "Service Unavailable" }, body.len()).as_bytes()).unwrap();
                         }
-                        eprintln!(
-                            "[MIR_E6_DIAG] event=server-write mode={mode} unix_ms={} elapsed_sec={}",
-                            unix_ms(),
-                            started.elapsed().as_secs_f64()
-                        );
                         return Some((header, String::from_utf8(input).unwrap()));
                     }
                     Err(e) if e.kind() == std::io::ErrorKind::Interrupted => return None,
@@ -237,69 +208,14 @@ fn provider_binding(only: Option<&str>, diagnostic: bool) {
                 }
             }
         });
-        let started = std::time::Instant::now();
-        let mut out = run(r["argv"]
+        let out = run(r["argv"]
             .as_array()
             .unwrap()
             .iter()
             .map(|v| v.as_str().unwrap())
             .collect());
-        let elapsed = started.elapsed().as_secs_f64();
         let _ = cancel.send(());
         let request = server.join().unwrap();
-        if diagnostic_enabled {
-            eprintln!(
-                "[MIR_E6_DIAG] {}",
-                serde_json::json!({
-                    "event":"native-console", "mode":r["mode"], "exit":out.status.code(),
-                    "elapsed_sec":elapsed, "request":request, "server_status":r["status"],
-                    "stdout":String::from_utf8_lossy(&out.stdout),
-                    "stderr":String::from_utf8_lossy(&out.stderr)
-                })
-            );
-        }
-        let mut diagnostics = Vec::new();
-        out.stderr = out
-            .stderr
-            .split_inclusive(|b| *b == b'\n')
-            .filter(|line| {
-                if let Some(data) = line.strip_prefix(b"[MIR_E6_DIAG] ")
-                    && diagnostic_enabled
-                {
-                    diagnostics.push(serde_json::from_slice::<Value>(data).unwrap());
-                    eprint!("{}", String::from_utf8_lossy(line));
-                    false
-                } else {
-                    true
-                }
-            })
-            .flatten()
-            .copied()
-            .collect();
-        if diagnostic {
-            let event = if r["mode"] == "required-timeout" {
-                "io"
-            } else {
-                "sync"
-            };
-            let data = diagnostics
-                .iter()
-                .find(|d| d["event"] == event)
-                .unwrap_or_else(|| panic!("missing {event}: {out:?}"));
-            if event == "io" {
-                assert_eq!(data["phase"], "Read");
-                assert!(matches!(
-                    data["kind"].as_str(),
-                    Some("WouldBlock" | "TimedOut")
-                ));
-                assert!(data["os_error"].is_number());
-                assert!(data["error"].as_str().is_some_and(|s| !s.is_empty()));
-            } else {
-                assert_eq!(data["vec_available"], true);
-                assert_eq!(data["vec_reason"], Value::Null);
-                assert_eq!(data["failed"][0][1], "insert: row 0: dim=1023 != 1024");
-            }
-        }
         if r["native_error"].is_string() || r["mode"] == "required-gzip" {
             assert_eq!(out.status.code(), Some(1));
             assert!(
@@ -466,19 +382,12 @@ fn accept_request(
     {
         return match cancelled.recv_timeout(std::time::Duration::from_millis(5)) {
             Err(std::sync::mpsc::RecvTimeoutError::Timeout) => result,
-            _ => {
-                eprintln!("[MIR_E6_DIAG] accept_exit=child-completed");
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::Interrupted,
-                    "child completed",
-                ))
-            }
+            _ => Err(std::io::Error::new(
+                std::io::ErrorKind::Interrupted,
+                "child completed",
+            )),
         };
     }
-    eprintln!(
-        "[MIR_E6_DIAG] accept_exit={:?}",
-        result.as_ref().map(|_| "request-received")
-    );
     result
 }
 
@@ -492,13 +401,6 @@ fn hold_socket(
     let _ = completed.recv();
     thread::sleep(minimum.saturating_sub(started.elapsed()));
     drop(stream);
-}
-
-fn unix_ms() -> u128 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
 }
 
 #[test]
@@ -533,23 +435,10 @@ fn bounded_output(command: &mut Command) -> std::process::Output {
         .stderr(std::process::Stdio::piped())
         .spawn()
         .unwrap();
-    let stderr = child.stderr.take().unwrap();
+    let mut stderr = child.stderr.take().unwrap();
     let reader = thread::spawn(move || {
-        let mut reader = std::io::BufReader::new(stderr);
         let mut bytes = Vec::new();
-        let mut line = Vec::new();
-        while reader.read_until(b'\n', &mut line).unwrap() != 0 {
-            if line.starts_with(b"[MIR_E6_DIAG] ") {
-                // Receipt time brackets the provider's read together with its
-                // own elapsed_sec field; this is observation, not an OS trace.
-                eprintln!(
-                    "[MIR_E6_DIAG] event=client-read-observed unix_ms={} diagnostic={}",
-                    unix_ms(),
-                    String::from_utf8_lossy(&line).trim_end()
-                );
-            }
-            bytes.append(&mut line);
-        }
+        stderr.read_to_end(&mut bytes).unwrap();
         bytes
     });
     let started = std::time::Instant::now();
@@ -565,10 +454,6 @@ fn bounded_output(command: &mut Command) -> std::process::Output {
         }
         thread::sleep(std::time::Duration::from_millis(10));
     };
-    eprintln!(
-        "[MIR_E6_DIAG] child_elapsed_sec={}",
-        started.elapsed().as_secs_f64()
-    );
     std::process::Output {
         status,
         stdout: fs::read(stdout.path()).unwrap(),

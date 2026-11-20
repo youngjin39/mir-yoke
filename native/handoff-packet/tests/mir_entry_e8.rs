@@ -11,12 +11,7 @@ use std::{
 
 #[test]
 fn frozen_pull_console_provider() {
-    pull(None, false);
-}
-#[test]
-fn diagnostics_preserve_console() {
-    pull(Some("bad-json"), true);
-    pull(Some("status"), true);
+    pull();
 }
 #[test]
 #[should_panic(expected = "missing E8 reference")]
@@ -35,14 +30,10 @@ fn records(name: &str) -> Vec<Value> {
     });
     serde_json::from_str(&text).unwrap()
 }
-fn pull(only: Option<&str>, diagnostic: bool) {
+fn pull() {
     let records = records("y-e8");
     for r in records {
         let mode = r["mode"].as_str().unwrap();
-        if only.is_some_and(|selected| selected != mode) {
-            continue;
-        }
-        let diagnostic_enabled = diagnostic || std::env::var("MIR_E6_DIAG").as_deref() == Ok("1");
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         fs::create_dir(root.join("notes")).unwrap();
@@ -148,52 +139,12 @@ fn pull(only: Option<&str>, diagnostic: bool) {
             .env("USERPROFILE", &root)
             .env("PYTHONIOENCODING", "utf-8")
             .env("SYNTHETIC_KEY", "fake-only")
-            .env("MIR_E6_DIAG", if diagnostic_enabled { "1" } else { "" })
+            // Exercise the retired switch when the parent runner sets it.
+            .envs(std::env::var_os("MIR_E6_DIAG").map(|value| ("MIR_E6_DIAG", value)))
             .current_dir(&root);
-        let mut out = bounded_output(&mut command);
+        let out = bounded_output(&mut command);
         let _ = cancel.send(());
         let requests = server.join().unwrap();
-        let mut diagnostics = Vec::new();
-        if diagnostic_enabled {
-            eprintln!(
-                "[MIR_E6_DIAG] {}",
-                serde_json::json!({
-                    "event":"native-console", "mode":mode, "exit":out.status.code(),
-                    "stdout":String::from_utf8_lossy(&out.stdout),
-                    "stderr":String::from_utf8_lossy(&out.stderr), "requests":requests
-                })
-            );
-            out.stderr = out
-                .stderr
-                .split_inclusive(|b| *b == b'\n')
-                .filter(|line| {
-                    if let Some(data) = line.strip_prefix(b"[MIR_E6_DIAG] ") {
-                        diagnostics.push(serde_json::from_slice::<Value>(data).unwrap());
-                        eprint!("{}", String::from_utf8_lossy(line));
-                        false
-                    } else {
-                        true
-                    }
-                })
-                .flatten()
-                .copied()
-                .collect();
-        }
-        if diagnostic {
-            let data = diagnostics
-                .iter()
-                .find(|d| d["event"] == "pull-search")
-                .unwrap_or_else(|| panic!("missing pull-search: {out:?}"));
-            let reason = data["error"].as_str().unwrap();
-            assert!(
-                reason.contains(if mode == "status" {
-                    "503"
-                } else {
-                    "Expecting property name enclosed in double quotes"
-                }),
-                "{data}"
-            );
-        }
         assert_eq!(
             out.status.code(),
             Some(r["exit"].as_i64().unwrap() as i32),
@@ -219,17 +170,11 @@ fn synthetic_server(
 ) -> (std::sync::mpsc::Sender<()>, thread::JoinHandle<Vec<Value>>) {
     let mode_owned = mode.to_owned();
     let (cancel, cancelled) = std::sync::mpsc::channel();
-    let server_started = std::time::Instant::now();
     let server = thread::spawn(move || {
         let mut requests = Vec::new();
         loop {
             match accept_request(&listener, &cancelled) {
                 Ok((mut stream, _)) => {
-                    eprintln!(
-                        "[MIR_E6_DIAG] connection={} request_after={:?}",
-                        requests.len() + 1,
-                        server_started.elapsed()
-                    );
                     // macOS accepted sockets inherit the listener's O_NONBLOCK.
                     stream.set_nonblocking(false).unwrap();
                     stream
@@ -268,15 +213,10 @@ fn synthetic_server(
                     } else {
                         "200 OK"
                     };
-                    let written = write!(
+                    let _ = write!(
                         stream,
                         "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",
                         response.len()
-                    );
-                    eprintln!(
-                        "[MIR_E6_DIAG] connection={} response_after={:?} write={written:?}",
-                        requests.len() + 1,
-                        server_started.elapsed()
                     );
                     requests.push(serde_json::from_slice::<Value>(&body).unwrap());
                 }
@@ -300,19 +240,12 @@ fn accept_request(
     {
         return match cancelled.recv_timeout(std::time::Duration::from_millis(5)) {
             Err(std::sync::mpsc::RecvTimeoutError::Timeout) => result,
-            _ => {
-                eprintln!("[MIR_E6_DIAG] accept_exit=child-completed");
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::Interrupted,
-                    "child completed",
-                ))
-            }
+            _ => Err(std::io::Error::new(
+                std::io::ErrorKind::Interrupted,
+                "child completed",
+            )),
         };
     }
-    eprintln!(
-        "[MIR_E6_DIAG] accept_exit={:?}",
-        result.as_ref().map(|_| "request-received")
-    );
     result
 }
 
@@ -337,10 +270,6 @@ fn bounded_output(command: &mut Command) -> std::process::Output {
         }
         thread::sleep(std::time::Duration::from_millis(10));
     };
-    eprintln!(
-        "[MIR_E6_DIAG] child_elapsed_sec={}",
-        started.elapsed().as_secs_f64()
-    );
     std::process::Output {
         status,
         stdout: fs::read(stdout.path()).unwrap(),

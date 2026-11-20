@@ -291,16 +291,6 @@ pub fn do_sync_with_embedding<'e>(
             }
             other => other?,
         };
-        if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
-            eprintln!(
-                "[MIR_E6_DIAG] {}",
-                serde_json::json!({
-                    "event":"sync", "slug":slug, "failed":result.failed,
-                    "vec_available":db.connection.vec_available,
-                    "vec_reason":db.connection.vec_reason()
-                })
-            );
-        }
         if !result.failed.is_empty()
             && embed_fn.is_some()
             && cfg["memory"]["vector_mode"] == "optional"
@@ -931,16 +921,7 @@ fn main_inner(
     let mut backend = if embedding.is_none() && cfg["memory"]["embedding"]["enabled"] == true {
         match super::context_sync::backend(&cfg["memory"]["embedding"]) {
             Ok(provider) => Some(provider),
-            Err(e) => {
-                // TEMPORARY S10: preserve pull failure evidence for the PC A/B.
-                if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
-                    eprintln!(
-                        "[MIR_E6_DIAG] {}",
-                        serde_json::json!({
-                            "event":"pull-backend", "error":format!("{e:?}")
-                        })
-                    );
-                }
+            Err(_) => {
                 degraded = true;
                 notices.push("[degraded] embedding unavailable \u{2014} FTS-only results".into());
                 None
@@ -1011,18 +992,7 @@ fn main_inner(
             },
         ) {
             Ok(hits) => hits,
-            Err(e) if enabled => {
-                // TEMPORARY S10: the sync diagnostic does not reach pull.
-                if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
-                    eprintln!(
-                        "[MIR_E6_DIAG] {}",
-                        serde_json::json!({
-                            "event":"pull-search", "error":format!("{e:?}"),
-                            "vec_available":connection.vec_available,
-                            "vec_reason":connection.vec_reason()
-                        })
-                    );
-                }
+            Err(_) if enabled => {
                 degraded = true;
                 notices.push("[degraded] embedding unavailable — FTS-only results".into());
                 es.search(query, k, &scopes, history, None, None)

@@ -112,15 +112,6 @@ fn protocol(s: impl Into<String>) -> HttpError {
     HttpError::new("RemoteProtocolError", s)
 }
 fn io_error(e: io::Error, phase: &str) -> HttpError {
-    if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
-        eprintln!(
-            "[MIR_E6_DIAG] {}",
-            serde_json::json!({
-                "event":"io", "phase":phase, "kind":format!("{:?}", e.kind()),
-                "os_error":e.raw_os_error(), "error":format!("{e:?}")
-            })
-        );
-    }
     if matches!(
         e.kind(),
         io::ErrorKind::TimedOut | io::ErrorKind::WouldBlock
@@ -379,7 +370,6 @@ fn outgoing_value(value: &str) -> Result<(), HttpError> {
 }
 impl Transport for HttpTransport {
     fn send(&mut self, request: HttpRequest) -> Result<HttpResponse, HttpError> {
-        let started = Instant::now();
         if self.unbounded_timeout {
             return Err(HttpError::new(
                 "OverflowError",
@@ -533,15 +523,6 @@ impl Transport for HttpTransport {
                 .map(|s| String::from_utf8_lossy(s).into_owned())
                 .unwrap_or_default();
             let response_headers = headers(block)?;
-            if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
-                eprintln!(
-                    "[MIR_E6_DIAG] {}",
-                    serde_json::json!({
-                        "event":"http-head", "status":status, "headers":response_headers,
-                        "elapsed_sec":started.elapsed().as_secs_f64()
-                    })
-                );
-            }
             if self.artifact_limit.is_some() && response_headers.contains_key("set-cookie") {
                 return Err(unsupported("Artifact response cookies are not supported"));
             }
@@ -663,16 +644,6 @@ impl Transport for HttpTransport {
                     || response_headers.contains_key("transfer-encoding"))
             {
                 self.idle = Some((authority.into(), reader, Instant::now()));
-            }
-            if std::env::var("MIR_E6_DIAG").as_deref() == Ok("1") {
-                eprintln!(
-                    "[MIR_E6_DIAG] {}",
-                    serde_json::json!({
-                        "event":"http-body", "status":status, "body_bytes":body.len(),
-                        "body":String::from_utf8_lossy(&body),
-                        "elapsed_sec":started.elapsed().as_secs_f64()
-                    })
-                );
             }
             return Ok(HttpResponse {
                 status,
