@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Thin macOS/Linux/WSL wrapper. The Python coordinator owns bootstrap logic.
+# Thin macOS/Linux/WSL wrapper. The installed coordinator owns bootstrap logic.
 
 set -euo pipefail
 
@@ -128,13 +128,35 @@ if [[ -n "$SOURCE_URL_HINT" ]]; then
   done < <(git -C "$ROOT" remote 2>/dev/null || true)
 fi
 
+NATIVE_SHA256=""
+if [[ "$PLATFORM_NAME" == Darwin ]]; then
+  NATIVE_ARCH="$(uname -m)"
+  case "$NATIVE_ARCH" in
+    arm64) NATIVE_TARGET=aarch64-apple-darwin ;;
+    x86_64) NATIVE_TARGET=x86_64-apple-darwin ;;
+    *) die "no native Mir CLI target for macOS $NATIVE_ARCH" ;;
+  esac
+  LOCKED_COMMIT="$(jq -r '.source.commit // empty' "$ROOT/.mir/capability-lock.json" 2>/dev/null || true)"
+  [[ "$LOCKED_COMMIT" =~ ^[0-9a-fA-F]{40,64}$ ]] || die "Mir CLI source commit is invalid"
+  NATIVE_PIN="$(jq -er --arg target "$NATIVE_TARGET" --arg commit "$LOCKED_COMMIT" '
+    select(.source_commit == $commit) | .targets[$target]
+    | select(.url | type == "string" and startswith("https://") and (contains("@") | not))
+    | select(.sha256 | type == "string" and test("^[0-9a-f]{64}$"))
+    | select(.size | type == "number" and . == floor and . > 0 and . <= 2147483647)
+    | [.url, .sha256, .size] | @tsv
+  ' "$ROOT/config/cli-native-artifacts.json" 2>/dev/null)" \
+    || die "no valid native Mir CLI pin for $NATIVE_TARGET at $LOCKED_COMMIT in config/cli-native-artifacts.json"
+  IFS=$'\t' read -r NATIVE_URL NATIVE_SHA256 NATIVE_SIZE <<< "$NATIVE_PIN"
+fi
+
 MIR_CLI=""
 if [[ -f "$ROOT/.mir/bootstrap-receipt.json" ]]; then
   RECEIPT_CLI="$(jq -r '.cli.executable // empty' "$ROOT/.mir/bootstrap-receipt.json" 2>/dev/null || true)"
   RECEIPT_CLI_HASH="$(jq -r '.cli.sha256 // empty' "$ROOT/.mir/bootstrap-receipt.json" 2>/dev/null || true)"
   if [[ -n "$RECEIPT_CLI" && -x "$RECEIPT_CLI" && "$RECEIPT_CLI" != "$ROOT"/* ]]; then
     ACTUAL_CLI_HASH="$(sha256_file "$RECEIPT_CLI" || true)"
-    if [[ -n "$RECEIPT_CLI_HASH" && "$ACTUAL_CLI_HASH" == "$RECEIPT_CLI_HASH" ]]; then
+    if [[ -n "$RECEIPT_CLI_HASH" && "$ACTUAL_CLI_HASH" == "$RECEIPT_CLI_HASH" \
+      && ( -z "$NATIVE_SHA256" || "$RECEIPT_CLI_HASH" == "$NATIVE_SHA256" ) ]]; then
       RECEIPT_RUNTIME_ID="$(jq -r '.cli.runtime_id // empty' "$ROOT/.mir/bootstrap-receipt.json")"
       export MIR_BOOTSTRAP_SOURCE_URL="$(jq -r '.cli.source_url // empty' "$ROOT/.mir/bootstrap-receipt.json")"
       export MIR_BOOTSTRAP_SOURCE_COMMIT="$(jq -r '.cli.source_commit // empty' "$ROOT/.mir/bootstrap-receipt.json")"
@@ -154,6 +176,7 @@ if [[ -f "$ROOT/.mir/bootstrap-receipt.json" ]]; then
         && "$(normalize_git_url "$CURRENT_SOURCE_URL")" == "$(normalize_git_url "$CONFIG_SOURCE_URL")" \
         && "$(normalize_git_url "$CURRENT_SOURCE_URL")" == "$(normalize_git_url "$MIR_BOOTSTRAP_SOURCE_URL")" \
         && "$CURRENT_SOURCE_COMMIT" == "$MIR_BOOTSTRAP_SOURCE_COMMIT" \
+        && ( -z "$NATIVE_SHA256" || "$CURRENT_SOURCE_COMMIT" == "$LOCKED_COMMIT" ) \
         && "$CURRENT_CONSTRAINTS_SHA256" == "$MIR_BOOTSTRAP_CONSTRAINTS_SHA256" ]]; then
         if [[ -n "$STORAGE_ROOT" ]]; then
           EXPECTED_RUNTIME_ROOT="$STORAGE_ROOT/mir/cli/$EXPECTED_RUNTIME_ID"
@@ -188,6 +211,12 @@ if [[ -f "$ROOT/.mir/bootstrap-receipt.json" ]]; then
 fi
 
 if [[ -z "$MIR_CLI" ]]; then
+  if [[ -n "$NATIVE_SHA256" ]]; then
+    NATIVE_TEMP=""
+    trap 'status=$?; if [[ -n "$NATIVE_TEMP" ]]; then rm -f -- "$NATIVE_TEMP" || true; fi
+          if (( status != 0 )); then printf "[ERROR] rerun setup.sh\n" >&2; fi' EXIT
+    trap 'exit 1' HUP INT TERM
+  fi
   command -v uv >/dev/null 2>&1 || die "uv is required: https://docs.astral.sh/uv/"
   SOURCE_URL="$(jq -er '.source.url' "$ROOT/.mir/capability-lock.json")" \
     || die "cannot read the tracked Mir CLI source URL from .mir/capability-lock.json"
@@ -201,6 +230,8 @@ if [[ -z "$MIR_CLI" ]]; then
     || die "tracked Mir CLI source conflicts with config/capability-sources.json"
   [[ "$SOURCE_COMMIT" =~ ^[0-9a-fA-F]{40,64}$ ]] \
     || die "Mir CLI source commit is invalid"
+  [[ -z "$NATIVE_SHA256" || "$SOURCE_COMMIT" == "$LOCKED_COMMIT" ]] \
+    || die "Mir CLI source changed while resolving the native pin; rerun setup.sh"
   [[ -f "$ROOT/config/cli-runtime-constraints.txt" ]] \
     || die "tracked Mir CLI dependency constraints are missing"
   TOOL_SOURCE="git+$SOURCE_URL@$SOURCE_COMMIT"
@@ -219,12 +250,50 @@ if [[ -z "$MIR_CLI" ]]; then
   export UV_TOOL_BIN_DIR="$RUNTIME_ROOT/bin"
   export UV_PROJECT_ENVIRONMENT="$ROOT/.venv"
   say "installing copied Mir CLI outside the project"
-  uv tool install --force --link-mode copy \
-    --constraints "$ROOT/config/cli-runtime-constraints.txt" "$TOOL_SOURCE"
+  if [[ -n "$NATIVE_SHA256" ]]; then
+    # Keep in-flight downloads out of every runtime manifest.
+    NATIVE_TEMP="$(mktemp "${RUNTIME_ROOT%/*}/.mir-native.XXXXXXXX")"
+    curl -q --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+      --max-time 120 --max-filesize "$NATIVE_SIZE" -- "$NATIVE_URL" \
+      | head -c "$((NATIVE_SIZE + 1))" > "$NATIVE_TEMP" \
+      || die "could not download the pinned native Mir CLI within its size limit"
+    [[ "$(stat -f %z "$NATIVE_TEMP")" == "$NATIVE_SIZE" ]] || die "native Mir CLI size mismatch"
+    [[ "$(sha256_file "$NATIVE_TEMP")" == "$NATIVE_SHA256" ]] || die "native Mir CLI SHA-256 mismatch"
+    [[ "$(LC_ALL=C /usr/bin/file -b "$NATIVE_TEMP")" == "Mach-O 64-bit executable $NATIVE_ARCH" ]] \
+      || die "native Mir CLI is not a Mach-O executable for $NATIVE_ARCH"
+    # uv splits absolute constraint arguments containing spaces.
+    (cd -- "$ROOT" && uv tool install --force --link-mode copy \
+      --constraints config/cli-runtime-constraints.txt "$TOOL_SOURCE")
+  else
+    uv tool install --force --link-mode copy \
+      --constraints "$ROOT/config/cli-runtime-constraints.txt" "$TOOL_SOURCE"
+  fi
   MIR_TOOL_BIN="$(uv tool dir --bin)"
   MIR_CLI="$MIR_TOOL_BIN/mir"
   [[ "$MIR_CLI" == "$RUNTIME_ROOT/bin/mir" ]] \
     || die "uv installed the Mir CLI outside the project-specific runtime: $MIR_CLI"
+  if [[ -n "$NATIVE_SHA256" ]]; then
+    TOOL_EXEC_DIR="$RUNTIME_ROOT/tools/mir-harness/bin"
+    LINK_TARGET="$(readlink "$MIR_CLI" || true)"
+    [[ "$LINK_TARGET" == "$TOOL_EXEC_DIR/mir" || "$LINK_TARGET" == ../tools/mir-harness/bin/mir ]] \
+      || die "uv public Mir CLI link does not point to the installed tool"
+    # Resolve relative links from the physical public bin directory.
+    if [[ "$LINK_TARGET" != /* ]]; then
+      LINK_TARGET="${MIR_CLI%/*}/$LINK_TARGET"
+    fi
+    [[ "$(cd -P -- "${LINK_TARGET%/*}" 2>/dev/null && pwd -P)/mir" == "$TOOL_EXEC_DIR/mir" ]] \
+      || die "uv public Mir CLI link does not point to the installed tool"
+    [[ "$(cd -- "$TOOL_EXEC_DIR" && pwd -P)" == "$TOOL_EXEC_DIR" \
+      && -f "$TOOL_EXEC_DIR/mir" && ! -L "$TOOL_EXEC_DIR/mir" && -x "$TOOL_EXEC_DIR/mir" \
+      && -f "$TOOL_EXEC_DIR/python" && -x "$TOOL_EXEC_DIR/python" ]] \
+      || die "uv Mir CLI or its sibling Python is unavailable in $TOOL_EXEC_DIR"
+    [[ "$(stat -f %d "$NATIVE_TEMP")" == "$(stat -f %d "$TOOL_EXEC_DIR")" ]] \
+      || die "native Mir CLI cannot be published across filesystems"
+    chmod 755 "$NATIVE_TEMP"
+    mv -f -- "$NATIVE_TEMP" "$TOOL_EXEC_DIR/mir"
+    NATIVE_TEMP=""
+    [[ "$(sha256_file "$MIR_CLI")" == "$NATIVE_SHA256" ]] || die "installed native Mir CLI SHA-256 mismatch"
+  fi
   export MIR_BOOTSTRAP_RUNTIME_ID="$RUNTIME_ID"
   export MIR_BOOTSTRAP_SOURCE_URL="$SOURCE_URL"
   export MIR_BOOTSTRAP_SOURCE_COMMIT="$SOURCE_COMMIT"
@@ -238,6 +307,12 @@ if [[ -z "$MIR_CLI" ]]; then
     --source-commit "$SOURCE_COMMIT" \
     --constraints-sha256 "$MIR_BOOTSTRAP_CONSTRAINTS_SHA256" >/dev/null
   [[ -f "$RUNTIME_MANIFEST" ]] || die "installed Mir CLI did not create its runtime manifest"
+  if [[ -n "$NATIVE_SHA256" ]]; then
+    "$MIR_CLI" runtime-manifest verify \
+      --runtime-root "$RUNTIME_ROOT" --manifest "$RUNTIME_MANIFEST" \
+      --source-url "$SOURCE_URL" --source-commit "$SOURCE_COMMIT" \
+      --constraints-sha256 "$MIR_BOOTSTRAP_CONSTRAINTS_SHA256" >/dev/null
+  fi
   export MIR_BOOTSTRAP_RUNTIME_MANIFEST="$RUNTIME_MANIFEST"
   export MIR_BOOTSTRAP_RUNTIME_MANIFEST_SHA256="$(sha256_file "$RUNTIME_MANIFEST")"
 fi

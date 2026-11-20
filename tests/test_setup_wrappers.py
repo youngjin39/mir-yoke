@@ -14,6 +14,16 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@pytest.fixture
+def linux_setup(tmp_path, monkeypatch):
+    platform_bin = tmp_path / "linux-bin"
+    platform_bin.mkdir()
+    uname = platform_bin / "uname"
+    uname.write_text("#!/bin/sh\necho Linux\n")
+    uname.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{platform_bin}{os.pathsep}{os.environ['PATH']}")
+
+
 def _runtime_id(project: Path, source_url: str, source_commit: str) -> str:
     return sha256(
         f"{project.resolve()}\n{source_url}\n{source_commit}\n".encode()
@@ -258,6 +268,7 @@ def test_setup_rejects_nonexistent_storage_path_with_parent_traversal(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
+@pytest.mark.usefixtures("linux_setup")
 def test_shell_wrapper_exports_external_storage_before_tool_install(tmp_path):
     project = tmp_path / "project"
     project.mkdir()
@@ -345,6 +356,7 @@ def test_shell_wrapper_exports_external_storage_before_tool_install(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
+@pytest.mark.usefixtures("linux_setup")
 def test_two_projects_sharing_storage_get_distinct_tool_namespaces(tmp_path):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
@@ -497,6 +509,7 @@ def test_shell_cli_launcher_uses_receipt_executable(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
+@pytest.mark.usefixtures("linux_setup")
 def test_shell_wrapper_reuses_hash_bound_external_cli_after_slim(tmp_path):
     project = tmp_path / "product"
     project.mkdir()
@@ -592,6 +605,7 @@ def test_shell_wrapper_reuses_hash_bound_external_cli_after_slim(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
+@pytest.mark.usefixtures("linux_setup")
 def test_receipt_cli_reuse_restores_external_storage_environment(tmp_path):
     project = tmp_path / "product"
     project.mkdir()
@@ -688,6 +702,7 @@ def test_receipt_cli_reuse_restores_external_storage_environment(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
+@pytest.mark.usefixtures("linux_setup")
 def test_copied_receipt_cannot_reuse_another_projects_runtime(tmp_path):
     source_url = "https://github.com/example/mir-yoke.git"
     source_commit = "a" * 40
@@ -748,6 +763,7 @@ def test_copied_receipt_cannot_reuse_another_projects_runtime(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
+@pytest.mark.usefixtures("linux_setup")
 def test_receipt_cli_is_not_reused_after_locked_source_changes(tmp_path):
     project = tmp_path / "product"
     project.mkdir()

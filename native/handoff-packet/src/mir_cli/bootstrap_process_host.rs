@@ -280,6 +280,8 @@ impl Host for ProductionHost {
         // Match run-python's installed-console binding, never a PATH interpreter.
         // Only stdlib observations run here; no provider code is imported.
         let cli = std::env::current_exe().map_err(|e| os_error(Path::new("."), e))?;
+        #[cfg(target_os = "macos")]
+        let cli = cli.canonicalize().map_err(|e| os_error(&cli, e))?;
         let directory = cli.parent().unwrap_or(Path::new("."));
         let python = directory.join(if cfg!(windows) {
             "python.exe"

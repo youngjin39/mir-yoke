@@ -369,6 +369,8 @@ pub fn console(args: Vec<OsString>) -> ! {
 fn bound_console_python() -> Option<PathBuf> {
     // Installed console commands bind to their own environment.
     let console = std::env::current_exe().ok()?;
+    #[cfg(target_os = "macos")]
+    let console = console.canonicalize().ok()?;
     let directory = console.parent()?;
     [directory.join("python"), directory.join("python.exe")]
         .into_iter()

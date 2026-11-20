@@ -74,6 +74,7 @@
         "config/adopter-payload.json",
         "config/adopter-payload.schema.json",
         "config/capability-sources.json",
+        "config/cli-native-artifacts.json",
         "config/cli-runtime-constraints.txt",
         "config/doc-size-guard.json",
         "config/repo-agent-management.json",
