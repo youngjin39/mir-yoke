@@ -99,32 +99,38 @@ Plugins installed without the capability manager keep the Python fallback.
 
 The manual `native-artifacts` workflow defaults to upload-only. A later authorized
 dispatch with `publish=true` creates or updates prerelease `native-<12-char source
-SHA>` and its tag, uploading three binary names for five targets plus five SHA256
-files. Publication uses the exact built artifacts, including Windows bytes; a
-local Windows rebuild must never supply a published digest. Reruns may replace
-assets, so regenerate and review pins after an authorized publication.
+SHA>` and its tag. Full publication requires 47 assets from five targets. A Mac
+cohort uses 20 assets from the two Darwin targets, including both `mir` binaries.
+Publication uses the exact built artifacts, including the Windows bytes. Use
+the published artifacts to regenerate and review pins after an authorized release.
 
 After the source commit is reviewed and published with owner authorization, an
 operator may dispatch the exact ref (do not dispatch from an uncommitted tree):
 
 ```sh
 gh workflow run native-artifacts.yml --repo OWNER/REPO --ref SOURCE_REF -f publish=true
+gh workflow run native-artifacts.yml --repo OWNER/REPO --ref SOURCE_REF -f publish=true -f mac_only=true
 ```
 
-Wait for all five build jobs and publication, then inspect the prerelease's
-`target_commitish` and all 20 assets. The source SHA must be the full commit that
-workflow built. The source-pinned native tag is separate from the public SemVer
-release. CONTRIBUTING.md governs SemVer; when a public release is prepared,
-`VERSION`, `pyproject.toml`, the package entry in `uv.lock`, and the matching
+Wait for the build and smoke jobs for the selected cohort and for publication,
+then inspect the prerelease's `target_commitish` and asset list. The source SHA
+must be the full commit that the workflow built. The source-pinned native tag is
+separate from the public SemVer release. CONTRIBUTING.md governs SemVer. For a
+public release, `VERSION`, `pyproject.toml`, the package entry in `uv.lock`, and the matching
 `CHANGELOG.md` heading must agree (`tests/test_release_metadata.py`). The helper
 accepts the evaluator only by its receipt SHA-256, so any rebuilt binary needs a
 new receipt pin; its verdict protocol is `ready`/0 or `invalid`/1 on stdout.
 
-To prepare an explicit lock from a published prerelease, run the maintainer tool:
+Use the first binding command for a full release and the second for a Mac cohort.
+The `SOURCE_SHA` variable must hold the full commit.
 
 ```sh
 uv run python -m tools.native_release --repo OWNER/REPO --tag native-0123456789ab \
-  --source <40-char source commit> --lock path/to/capability-lock.json
+  --source "$SOURCE_SHA" --lock path/to/capability-lock.json \
+  --cli-pin config/cli-native-artifacts.json
+uv run python -m tools.native_release --repo OWNER/REPO --tag native-0123456789ab \
+  --source "$SOURCE_SHA" --lock path/to/capability-lock.json \
+  --cli-pin config/cli-native-artifacts.json --mac-only
 ```
 
 `--source` is the commit the bind pins. The prerelease tag and its target commit must
@@ -132,11 +138,11 @@ both match it; the lock's own `source.commit` still names the previously recorde
 provider at bind time and is not used.
 
 Its GitHub operations only read release metadata and download assets. For offline
-review, put the GitHub release API JSON in `assets/release.json` alongside all 20
-assets and use `--directory assets --source <commit> --lock path/to/capability-lock.json` instead.
-The tool requires a prerelease tag matching the supplied `--source` commit prefix,
-validates the complete five-target inventory, declared sizes and all three binaries'
-SHA256 checksums, then writes only `native_artifacts` in that explicit lock.
+review, put the GitHub release API JSON in `assets/release.json` alongside all assets
+and substitute `--directory assets` for `--repo OWNER/REPO --tag native-0123456789ab`.
+The tool validates the tag, complete inventory, declared sizes and binary SHA-256
+checksums before updating `native_artifacts` in the explicit lock and writing the
+separate console pin. A Mac cohort preserves existing non-Mac pins.
 Every pin has an HTTPS release URL and portable validation runs before writing.
 The declarations install to `bin/handoff-packet`, `bin/runtime-continuity` and
 `bin/bootstrap-gate`;

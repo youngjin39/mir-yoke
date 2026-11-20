@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -51,10 +52,160 @@ def assets(tmp_path):
     return directory, lock
 
 
-def run_tool(directory, lock, source=None):
+def run_tool(directory, lock, source=None, *, options=()):
     return subprocess.run([sys.executable, '-m', 'tools.native_release', '--directory',
-                           str(directory), '--lock', str(lock), '--source', source or SOURCE],
+                           str(directory), '--lock', str(lock), '--source', source or SOURCE,
+                           *options],
                           cwd=ROOT, capture_output=True)
+
+
+def add_console(directory):
+    manifest = directory / 'release.json'
+    release = json.loads(manifest.read_text())
+    pins = {}
+    for target in TARGETS[:2]:
+        name = f'mir-{target}'
+        data = name.encode()
+        (directory / name).write_bytes(data)
+        pin = {'url': f'{BASE}/{name}', 'sha256': hashlib.sha256(data).hexdigest(),
+               'size': len(data)}
+        pins[target] = pin
+        release['assets'].append(
+            {'name': name, 'size': pin['size'], 'browser_download_url': pin['url']})
+        checksum = next(a for a in release['assets'] if a['name'] == f'SHA256-{target}.txt')
+        digest = directory / checksum['name']
+        digest.write_text(digest.read_text() + f"{pin['sha256']}  {name}\n")
+        checksum['size'] = digest.stat().st_size
+    manifest.write_text(json.dumps(release))
+    return {'source_commit': SOURCE, 'targets': pins}
+
+
+@pytest.mark.parametrize(('failure', 'message'), [
+    (None, None), ('size', b'asset size mismatch: mir-'), ('hash', b'SHA256 mismatch: mir-'),
+    ('commit', b'given source commit'), ('tag', b'given source commit'),
+    ('url', b'expected HTTPS'), ('missing', b'incomplete release'),
+])
+def test_mac_cohort_pins_console_separately(assets, failure, message):
+    directory, lock = assets
+    assert run_tool(directory, lock).returncode == 0
+    old = json.loads(lock.read_text())['native_artifacts']
+    cli = lock.with_name('cli-native-artifacts.json')
+    cli.write_text('{}')
+    expected = add_console(directory)
+    manifest = directory / 'release.json'
+    release = json.loads(manifest.read_text())
+    release['assets'] = [a for a in release['assets']
+                         if a['name'].endswith(('-apple-darwin', '-apple-darwin.txt'))]
+    console = release['assets'][-1]
+    if failure == 'size':
+        console['size'] += 1
+    elif failure == 'hash':
+        (directory / console['name']).write_bytes(b'x' * console['size'])
+    elif failure == 'commit':
+        release['target_commitish'] = SOURCE[:12] + 'b' * 28
+    elif failure == 'tag':
+        release['tag_name'] = 'native-' + 'b' * 12
+        for asset in release['assets']:
+            asset['browser_download_url'] = asset['browser_download_url'].replace(
+                f'/{TAG}/', f"/{release['tag_name']}/")
+    elif failure == 'url':
+        console['browser_download_url'] += '?extra'
+    elif failure == 'missing':
+        release['assets'].pop()
+    manifest.write_text(json.dumps(release))
+    before = lock.read_bytes()
+    result = run_tool(directory, lock, options=('--mac-only', '--cli-pin', str(cli)))
+    if failure:
+        assert result.returncode == 1 and message in result.stderr, result.stderr
+        assert lock.read_bytes() == before and cli.read_text() == '{}'
+        return
+    assert result.returncode == 0, result.stderr
+    assert json.loads(cli.read_text()) == expected
+    records = json.loads(lock.read_text())['native_artifacts']
+    assert set(records) == set(NAMES)
+    for name in NAMES:
+        for target in TARGETS[2:]:
+            assert records[name]['targets'][target] == old[name]['targets'][target]
+
+
+@pytest.mark.parametrize('alias', ['same-path', 'symlink', 'hardlink'])
+def test_refuses_aliased_outputs(assets, alias):
+    directory, lock = assets
+    add_console(directory)
+    cli = lock if alias == 'same-path' else lock.with_name('cli.json')
+    if alias == 'symlink':
+        cli.symlink_to(lock)
+    elif alias == 'hardlink':
+        cli.hardlink_to(lock)
+    before = lock.read_bytes()
+    result = run_tool(directory, lock, options=('--cli-pin', str(cli)))
+    assert result.returncode == 1 and b'must be separate' in result.stderr, result.stderr
+    assert lock.read_bytes() == cli.read_bytes() == before
+
+
+@pytest.mark.parametrize('inside', ['release-json', 'release-dir'])
+def test_refuses_outputs_inside_release_input(assets, inside):
+    directory, lock = assets
+    add_console(directory)
+    cli = directory / ('release.json' if inside == 'release-json' else 'cli.json')
+    release = (directory / 'release.json').read_bytes()
+    before = lock.read_bytes()
+    result = run_tool(directory, lock, options=('--cli-pin', str(cli)))
+    assert result.returncode == 1, result.stderr
+    assert b'outside the release directory' in result.stderr, result.stderr
+    assert (directory / 'release.json').read_bytes() == release and lock.read_bytes() == before
+    assert inside == 'release-json' or not cli.exists()
+
+
+def test_read_only_lock_is_refused_before_updating_console(assets):
+    directory, lock = assets
+    add_console(directory)
+    cli = lock.with_name('cli.json')
+    cli.write_bytes(b'{}')
+    before = lock.read_bytes()
+    lock.chmod(0o444)
+    result = run_tool(directory, lock, options=('--cli-pin', str(cli)))
+    assert result.returncode == 1 and b'not writable' in result.stderr, result.stderr
+    assert str(lock).encode() in result.stderr
+    assert lock.read_bytes() == before and cli.read_bytes() == b'{}'
+
+
+def test_second_replace_failure_names_updated_output_and_rerun_converges(
+    assets, capsys, monkeypatch,
+):
+    import os
+
+    from tools import native_release
+
+    directory, lock = assets
+    expected = add_console(directory)
+    cli = lock.with_name('cli.json')
+    before = lock.read_bytes()
+    command = ['--directory', str(directory), '--lock', str(lock), '--source', SOURCE,
+               '--cli-pin', str(cli)]
+    real_replace = os.replace
+
+    def fail_lock_replace(src, dst):
+        if dst == lock:
+            raise OSError('injected replace failure')
+        real_replace(src, dst)
+
+    with monkeypatch.context() as scoped:
+        scoped.setattr(os, 'replace', fail_lock_replace)
+        with pytest.raises(SystemExit) as error:
+            native_release.main(command)
+    assert error.value.code == 1
+    message = capsys.readouterr().err
+    assert f'updated {cli}' in message and f'could not replace {lock}' in message
+    assert 'rerun the same command to converge' in message
+    assert 'injected replace failure' in message
+    assert lock.read_bytes() == before
+    console = cli.read_bytes()
+    assert json.loads(console) == expected
+    assert set(lock.parent.iterdir()) == {directory, lock, cli}
+    assert native_release.main(command) == 0
+    assert cli.read_bytes() == console
+    assert set(json.loads(lock.read_bytes())['native_artifacts']) == set(NAMES)
 
 
 def test_pins_published_bytes_and_preserves_lock(assets):
@@ -139,11 +290,89 @@ def test_workflow_publication_is_opt_in_and_collects_all_binaries():
     build = '\n'.join(step.get('run', '') for step in workflow['jobs']['build']['steps'])
     for name in NAMES:
         assert name in build
-    assert 'for name in ' + ' '.join(NAMES) + '; do' in build
-    assert f'-eq {len(TARGETS) * (len(NAMES) + 1)}' in steps
+    assert 'for name in ' + ' '.join(NAMES) + ' $console; do' in build
+    assert '*-apple-darwin' in job['steps'][0]['with']['pattern']
+    assert '"$mir" --help' in build and '"$mir" runtime-manifest create' in build
     matrix = workflow['jobs']['build']['strategy']['matrix']['include']
-    assert {row['target'] for row in matrix} == set(TARGETS)
-    assert len(matrix) == len(TARGETS)
+    assert isinstance(matrix, str)
+    assert '(!inputs.publish || !inputs.mac_only) &&' in matrix
+    assert "|| ''" in matrix
+    _, darwin, other, _ = re.findall(r"'([^']*)'", matrix)
+    assert [row['target'] for row in json.loads(f'[{darwin}]')] == list(TARGETS[:2])
+    other_rows = json.loads(f'[{other.removeprefix(",")}]')
+    assert [row['target'] for row in other_rows] == list(TARGETS[2:])
+
+
+@pytest.fixture
+def staged_publish(assets, mac_only):
+    directory, lock = assets
+    add_console(directory)
+    workflow = yaml.safe_load((ROOT / '.github/workflows/native-artifacts.yml').read_text())
+    publish = next(step['run'] for step in workflow['jobs']['publish']['steps'] if 'run' in step)
+    output = directory.with_name('dist-native')
+    output.mkdir()
+    release = json.loads((directory / 'release.json').read_text())
+    for asset in release['assets']:
+        name = asset['name']
+        if not mac_only or name.endswith(('-apple-darwin', '-apple-darwin.txt')):
+            (output / name).write_bytes((directory / name).read_bytes())
+    calls = lock.with_name('gh-calls')
+
+    def run(*, existing=None):
+        fake_gh = '''
+gh() {
+  printf '%s\\n' "$2" >> "$CALLS"
+  if [[ "$2" == view ]]; then
+    [[ "$EXISTS" == true ]] || return 1
+    if [[ "$#" -gt 3 ]]; then printf '%s\\n' "$EXISTING"; fi
+  fi
+}
+'''
+        return subprocess.run(
+            ['bash', '-c', fake_gh + publish], cwd=output.parent,
+            env={'PATH': '/usr/bin:/bin:/sbin', 'SOURCE_SHA': SOURCE,
+                 'MAC_ONLY': str(mac_only).lower(),
+                 'CALLS': str(calls), 'EXISTS': str(existing is not None).lower(),
+                 'EXISTING': '\n'.join(existing or [])},
+            capture_output=True,
+        )
+
+    return output, calls, run
+
+
+@pytest.mark.parametrize(('mac_only', 'count'), [(False, 47), (True, 20)])
+@pytest.mark.parametrize('delta', [-1, 0, 1])
+def test_publish_requires_exact_asset_count(staged_publish, count, delta):
+    output, calls, run = staged_publish
+    if delta < 0:
+        (output / 'SHA256-aarch64-apple-darwin.txt').unlink()
+    elif delta > 0:
+        (output / 'extra-apple-darwin').touch()
+    assert len(list(output.iterdir())) == count + delta
+    result = run()
+    if delta == 0:
+        assert result.returncode == 0, result.stderr
+        assert calls.read_text().splitlines() == ['view', 'create', 'upload']
+    else:
+        assert result.returncode != 0
+        assert not calls.exists()
+
+
+@pytest.mark.parametrize('mac_only', [False, True])
+@pytest.mark.parametrize('unexpected', [False, True])
+def test_republish_requires_existing_assets_in_publish_list(staged_publish, unexpected):
+    _, calls, run = staged_publish
+    existing = ['mir-x86_64-apple-darwin']
+    if unexpected:
+        existing.append('old-tool-x86_64-apple-darwin')
+    result = run(existing=existing)
+    if unexpected:
+        assert result.returncode != 0
+        assert b'old-tool-x86_64-apple-darwin' in result.stderr
+        assert calls.read_text().splitlines() == ['view', 'view']
+    else:
+        assert result.returncode == 0, result.stderr
+        assert calls.read_text().splitlines() == ['view', 'view', 'edit', 'upload']
 
 
 @pytest.mark.parametrize('index', range(len(TARGETS) * (len(NAMES) + 1)))
@@ -174,6 +403,7 @@ def test_checks_every_binary_digest(assets, name, target):
 
 def test_workflow_digest_step_agrees_with_release_tool(assets, tmp_path):
     directory, lock = assets
+    expected = add_console(directory)
     workflow = yaml.safe_load((ROOT / '.github/workflows/native-artifacts.yml').read_text())
     steps = workflow['jobs']['build']['steps']
     digest = next(step['run'] for step in steps if step.get('name') == 'digest')
@@ -181,7 +411,8 @@ def test_workflow_digest_step_agrees_with_release_tool(assets, tmp_path):
     crate.mkdir(parents=True)
     output = tmp_path / 'build/dist-native'
     for target in TARGETS:
-        for name in NAMES:
+        names = (*NAMES, 'mir') if target in TARGETS[:2] else NAMES
+        for name in names:
             source_crate = crate.parent / ('mir-mcp' if name == 'mir-mcp' else 'handoff-packet')
             release = source_crate / 'target' / target / 'release'
             release.mkdir(parents=True, exist_ok=True)
@@ -192,10 +423,12 @@ def test_workflow_digest_step_agrees_with_release_tool(assets, tmp_path):
             '${{ matrix.exe }}', '.exe' if 'windows' in target else '')
         subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', command], cwd=crate,
                        check=True, capture_output=True)
-        for name in [f'SHA256-{target}.txt', *(f'{n}-{target}{suffix}' for n in NAMES)]:
+        for name in [f'SHA256-{target}.txt', *(f'{n}-{target}{suffix}' for n in names)]:
             assert (output / name).read_bytes() == (directory / name).read_bytes()
     (output / 'release.json').write_bytes((directory / 'release.json').read_bytes())
-    assert run_tool(output, lock).returncode == 0
+    cli = tmp_path / 'cli-native-artifacts.json'
+    assert run_tool(output, lock, options=('--cli-pin', str(cli))).returncode == 0
+    assert json.loads(cli.read_text()) == expected
 
 
 def test_source_argument_must_match_the_tag(assets):
