@@ -203,6 +203,54 @@ fn main() {
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn verify_through_forty_symlinks() -> std::result::Result<(), Box<dyn std::error::Error>> {
+        use std::os::unix::fs::symlink;
+
+        let base = tempfile::tempdir()?;
+        let root = base.path().join("runtime");
+        fs::create_dir(&root)?;
+        let manifest = root.join("manifest.json");
+        fs::write(
+            &manifest,
+            r#"{"schema_version":1,"entries":[],"source_url":"fixture","source_commit":"fixture","constraints_sha256":"fixture"}"#,
+        )?;
+        symlink("runtime/manifest.json", base.path().join("link39"))?;
+        for i in (0..39).rev() {
+            symlink(
+                format!("link{}", i + 1),
+                base.path().join(format!("link{i}")),
+            )?;
+        }
+        let verify = || {
+            console(vec![
+                "verify".into(),
+                "--runtime-root".into(),
+                root.as_os_str().into(),
+                "--manifest".into(),
+                base.path().join("link0").into_os_string(),
+                "--source-url".into(),
+                "fixture".into(),
+                "--source-commit".into(),
+                "fixture".into(),
+                "--constraints-sha256".into(),
+                "fixture".into(),
+            ])
+        };
+        assert_eq!(verify(), (0, String::new(), String::new()));
+        fs::remove_file(manifest)?;
+        assert_eq!(
+            verify(),
+            (
+                2,
+                String::new(),
+                "runtime manifest error: runtime manifest is unreadable\n".into()
+            )
+        );
+        Ok(())
+    }
+
     #[test]
     fn manifest_layout_change_before_replace() -> std::result::Result<(), Box<dyn std::error::Error>>
     {
