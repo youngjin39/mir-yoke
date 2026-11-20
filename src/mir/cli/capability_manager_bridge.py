@@ -100,7 +100,10 @@ def main():
                          "mro": [c.__module__ + "." + c.__qualname__
                                  for c in type(exc).__mro__]}
                 response = {"value": None, "error": error}
-        if mode and (response["error"] is not None or request["op"] == "call"):
+        # Console text belongs to the process lifetime, after native diagnostics.
+        if mode and (
+                (mode != "console" and response["error"] is not None)
+                or (request["op"] == "call" and response["error"] is None)):
             sys.stdout.flush()
             sys.stderr.flush()
         replies.write(json.dumps(dict(response, events=events)) + "\n")

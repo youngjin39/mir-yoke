@@ -45,6 +45,67 @@ fn reaped(root: &std::path::Path) {
     );
     assert!(!root.join(".mir/memory.db").exists());
 }
+// Assert merged descriptors independently of the existing per-stream checks.
+#[test]
+fn pinned_console_merged_fd_bytes() {
+    use std::io::{Read, Seek, SeekFrom};
+    use std::process::Stdio;
+    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e17b2a.json")).unwrap();
+    for r in records.iter().filter(|r| r["mode"] == "console") {
+        for pipe in [false, true] {
+            let (_tmp, root) = setup(r["source"].as_str().unwrap());
+            let mut file = tempfile::tempfile().unwrap();
+            let (mut reader, writer) = std::io::pipe().unwrap();
+            let mut command = Command::new(root.join("mir"));
+            command
+                .args([
+                    "capability",
+                    "sync",
+                    "--profile",
+                    "code_app",
+                    "--project-root",
+                    ".",
+                    "--apply",
+                    "--json",
+                ])
+                .env_clear()
+                .env("HOME", &root)
+                .env("PATH", &root)
+                .current_dir(&root);
+            if pipe {
+                command
+                    .stdout(Stdio::from(writer.try_clone().unwrap()))
+                    .stderr(Stdio::from(writer));
+            } else {
+                command
+                    .stdout(file.try_clone().unwrap())
+                    .stderr(file.try_clone().unwrap());
+                drop(writer);
+            }
+            let child = command.spawn().unwrap();
+            drop(command);
+            let capture = std::thread::spawn(move || {
+                let mut bytes = Vec::new();
+                reader.read_to_end(&mut bytes).unwrap();
+                bytes
+            });
+            let status = child.wait_with_output().unwrap().status;
+            assert_eq!(status.code(), r["value"].as_i64().map(|n| n as i32));
+            let bytes = if pipe {
+                capture.join().unwrap()
+            } else {
+                file.seek(SeekFrom::Start(0)).unwrap();
+                let mut bytes = Vec::new();
+                file.read_to_end(&mut bytes).unwrap();
+                capture.join().unwrap();
+                bytes
+            };
+            let expected: Vec<u8> = serde_json::from_value(r["merged"].clone()).unwrap();
+            assert_eq!(bytes, expected, "case={} pipe={pipe}", r["case"]);
+            reaped(&root);
+        }
+    }
+}
 #[test]
 fn public_console_records() {
     let records: Vec<Value> =

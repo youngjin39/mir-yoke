@@ -130,6 +130,7 @@ pub struct ProductionManager {
     duplex: Option<std::os::unix::net::UnixStream>,
     pub last_reply: Option<Reply>,
     pub captured: Vec<u8>,
+    defer_finish: bool,
 }
 impl ProductionManager {
     fn command(cli: &Path, root: &Path) -> Command {
@@ -163,6 +164,7 @@ impl ProductionManager {
             duplex: Some(duplex),
             last_reply: None,
             captured: Vec::new(),
+            defer_finish: false,
         })
     }
     pub fn start(cli: &Path, root: &Path) -> std::io::Result<Self> {
@@ -185,6 +187,7 @@ impl ProductionManager {
             duplex: None,
             last_reply: None,
             captured: Vec::new(),
+            defer_finish: false,
         })
     }
     pub fn request(&mut self, request: Value) -> Result<Reply, Error> {
@@ -258,6 +261,10 @@ impl ProductionManager {
         let clean = !matches!(error.stderr, Some(Err(_) | Ok(Err(_))));
         if success && clean { Ok(()) } else { Err(error) }
     }
+    /// The public console renders diagnostics before the bridge flushes text.
+    pub fn retain_until_rendered(&mut self) {
+        self.defer_finish = true;
+    }
     fn transport(error: Error) -> super::capability::Error {
         super::capability::Error::new("RuntimeError", error.message)
     }
@@ -289,7 +296,7 @@ impl ProductionManager {
             }
         }
         self.last_reply = Some(reply);
-        if terminal || result.is_err() {
+        if (terminal || result.is_err()) && (result.is_ok() || !self.defer_finish) {
             let finished = self.finish().map_err(Self::transport);
             if result.is_ok() {
                 finished?;
@@ -336,6 +343,9 @@ impl Manager for ProductionManager {
 }
 impl Drop for ProductionManager {
     fn drop(&mut self) {
+        if self.defer_finish {
+            let _ = self.finish();
+        }
         self.input.take();
         let _ = self.child.kill();
         let _ = self.child.wait();

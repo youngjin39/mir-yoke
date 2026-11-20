@@ -51,10 +51,11 @@ for mode, case, body in [
     work = root / f'{mode}-{case}'
     work.mkdir(exist_ok=True)
     r = dict(mode=mode, case=case, source=source)
-    out = subprocess.run([scope['sys'].executable, '-I', str(wrapper), json.dumps(r)],
+    out = subprocess.run([scope['sys'].executable, '-I', '-X', 'utf8', str(wrapper), json.dumps(r)],
                          cwd=work, env={'HOME': str(work), 'PATH': '/usr/bin:/bin'},
                          capture_output=True, check=True)
-    merged = subprocess.run([scope['sys'].executable, '-I', str(wrapper), json.dumps(r)],
+    merged = subprocess.run([scope['sys'].executable, '-I', '-X', 'utf8',
+                             str(wrapper), json.dumps(r)],
                             cwd=work, env={'HOME': str(work), 'PATH': '/usr/bin:/bin'},
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True)
     records.append(r | dict(stdout=list(out.stdout), stderr=list(out.stderr),

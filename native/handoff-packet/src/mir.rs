@@ -46,13 +46,14 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
     if argv[0] == "capability" {
         use mir_cli::capability_manager::Output;
         let (args, replacements) = scalar_args(&argv[1..], "");
+        let mut host = mir_cli::bootstrap::ProductionHost::default();
         let result = (|| {
             let root = std::env::current_dir()
                 .map_err(|e| mir_cli::bootstrap::Error::new("OSError", e.to_string()))?;
             let cli = std::env::current_exe()
                 .map_err(|e| mir_cli::bootstrap::Error::new("OSError", e.to_string()))?;
-            let mut host = mir_cli::bootstrap::ProductionHost::default();
             let manager = host.import_capabilities(&cli, &root, Output::Console)?;
+            manager.retain_until_rendered();
             let refs = args.iter().map(String::as_str).collect::<Vec<_>>();
             let (code, out, err) = mir_cli::capability::main_with_paths(&refs, manager, |p| {
                 scalar_path(p, &replacements)
@@ -67,7 +68,9 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
                 restore_text(text(&err)?, &replacements),
             ))
         })();
-        finish(result.unwrap_or_else(|e| bootstrap_failure(&e)));
+        finish_with_cleanup(result.unwrap_or_else(|e| bootstrap_failure(&e)), || {
+            drop(host)
+        });
     }
     if argv[0] == "bootstrap" {
         let (args, replacements) = scalar_args(&argv[1..], "");
@@ -497,7 +500,14 @@ fn main() {
     finish((code, vec![out.into()], err.into()));
 }
 
-fn finish((mut code, out, mut err): (i32, Vec<Text>, Text)) -> ! {
+fn finish(output: (i32, Vec<Text>, Text)) -> ! {
+    finish_with_cleanup(output, || {})
+}
+
+fn finish_with_cleanup(
+    (mut code, out, mut err): (i32, Vec<Text>, Text),
+    cleanup: impl FnOnce(),
+) -> ! {
     let mut first = true;
     let mut prints = out.into_iter();
     match prints.next().map_or(Ok(vec![]), |p| {
@@ -582,5 +592,6 @@ fn finish((mut code, out, mut err): (i32, Vec<Text>, Text)) -> ! {
             code = 1;
         }
     }
+    cleanup();
     std::process::exit(code);
 }
