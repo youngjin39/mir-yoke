@@ -922,10 +922,11 @@ The native release train declares eight binaries: `handoff-packet`,
 `runtime-continuity`, `bootstrap-gate`, `runtime-verify`, `executor-query`,
 `delegation-gate`, `project-hooks` (all from `native/handoff-packet`) and
 `mir-mcp` (from `native/mir-mcp`). The native-artifacts workflow builds each
-for macOS arm64/x86_64, Linux arm64/x86_64 and Windows x86_64 MSVC. Publication
-requires 40 binaries plus five target checksum files, or 45 assets.
+for macOS arm64/x86_64, Linux arm64/x86_64 and Windows x86_64 MSVC. Both Mac targets
+also include `mir`. Full publication requires 47 assets and the Mac cohort requires 20.
 `tools/native_release.py` rejects missing assets, wrong sizes and wrong SHA-256
-digests before writing any pins.
+digests before writing any pins. Pass `--cli-pin config/cli-native-artifacts.json` for
+a release containing `mir` and add `--mac-only` for a Mac cohort.
 
 `project-hooks` is a source-only release declaration until its first native
 prerelease is published and verified. The tracked capability lock keeps existing
