@@ -6,6 +6,9 @@ import sqlite3
 from pathlib import Path
 from unittest.mock import patch
 
+from installed_mir import installed_mir as installed_mir
+from installed_mir import run_installed_mir
+
 from mir.cli import context as context_cli
 from mir.cli import memory as memory_cli
 from mir.core.engine.memory import distill, store
@@ -220,21 +223,22 @@ vector_mode = "off"
     assert not outside.exists()
 
 
-def test_archive_symlink_escape_is_rejected(tmp_path, capsys):
+def test_archive_symlink_escape_is_rejected(tmp_path, installed_mir):
     _write_memory_config(tmp_path)
     outside = tmp_path.parent / f"{tmp_path.name}-outside.md"
     outside.write_text("secret symlink content", encoding="utf-8")
     os.symlink(outside, tmp_path / "docs" / "escape.md")
-    db_path = tmp_path / ".mir" / "memory.db"
+    db_path = tmp_path / "memory.db"
     connection = store.connect(db_path)
     try:
         store.apply_migrations(connection.conn)
     finally:
         connection.conn.close()
 
-    assert context_cli.main(["sync", "--db", str(db_path)]) == 1
-    sync_output = capsys.readouterr().out
-    assert "symbolic links are not indexed" in sync_output
+    result = run_installed_mir(installed_mir, tmp_path, "context", "sync", "--db", str(db_path))
+    assert result.returncode == 1, (result.stdout, result.stderr)
+    assert result.stderr == b""
+    assert b"symbolic links are not indexed" in result.stdout
 
 
 def test_required_vector_mode_blocks_fts_only_index(tmp_path, capsys):
@@ -318,12 +322,25 @@ def test_optional_embedding_failure_retries_fts_only_sync(tmp_path, capsys):
         assert raw.execute("SELECT COUNT(*) FROM external_chunks").fetchone()[0] >= 1
 
 
-def test_context_sync_missing_vector_backfill_requires_embedding_and_vec(tmp_path, capsys):
-    db_path = _ready_project(tmp_path)
-    capsys.readouterr()
+def test_context_sync_missing_vector_backfill_requires_embedding_and_vec(tmp_path, installed_mir):
+    _write_memory_config(tmp_path)
+    db_path = tmp_path / "memory.db"
+    connection = store.connect(db_path)
+    try:
+        store.apply_migrations(connection.conn)
+    finally:
+        connection.conn.close()
+    seeded = run_installed_mir(installed_mir, tmp_path, "context", "sync", "--db", str(db_path))
+    assert seeded.returncode == 0, (seeded.stdout, seeded.stderr)
+    assert seeded.stderr == b""
 
-    assert context_cli.main(["sync", "--reindex-missing-vectors", "--db", str(db_path)]) == 2
-    assert "embedding" in capsys.readouterr().out.lower()
+    result = run_installed_mir(
+        installed_mir, tmp_path, "context", "sync", "--reindex-missing-vectors",
+        "--db", str(db_path),
+    )
+    assert result.returncode == 2, (result.stdout, result.stderr)
+    assert result.stderr == b""
+    assert b"embedding" in result.stdout.lower()
 
 
 def test_doctor_probes_past_a_first_chunk_without_a_stable_token(tmp_path, capsys):

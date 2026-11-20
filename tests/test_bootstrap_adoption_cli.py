@@ -8,6 +8,8 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from installed_mir import installed_mir as installed_mir
+from installed_mir import run_installed_mir
 
 from mir.cli import SUBCOMMANDS
 from mir.cli import bootstrap_adoption as adoption_cli
@@ -91,13 +93,15 @@ def _write_gate_and_launcher(root: Path) -> None:
     _write(root / ".codex/hooks.json", json.dumps(hooks))
 
 
-def _write_memory(root: Path) -> None:
+def _write_memory(root: Path, *, seed_db: bool) -> None:
     _write(root / "docs/memory.md", "MatureProjectEvidence is searchable here.\n")
     _write(
         root / "harness_a.toml",
         '[memory]\nenabled = true\nrequired = true\nbackend = "sqlite_fts5"\n'
         'db_path = ".mir/memory.db"\n',
     )
+    if not seed_db:
+        return
     db_path = root / ".mir/memory.db"
     db_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(db_path)
@@ -208,7 +212,7 @@ def _manifest() -> dict[str, object]:
     }
 
 
-def _ready_project(root: Path) -> dict[str, object]:
+def _ready_project(root: Path, *, seed_memory: bool = True) -> dict[str, object]:
     _write(root / "CLAUDE.md", "# Repository contract\n\nPreserve authored behavior.\n")
     _write(
         root / "spec/meta.yaml",
@@ -248,7 +252,7 @@ ai_ready: {ready: 1, incomplete: 0, blocked: 0}
     )
     _write_profile(root)
     _write_gate_and_launcher(root)
-    _write_memory(root)
+    _write_memory(root, seed_db=seed_memory)
     manifest = _manifest()
     _write(root / "config/bootstrap-adoption.json", json.dumps(manifest, indent=2))
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
@@ -258,6 +262,17 @@ ai_ready: {ready: 1, incomplete: 0, blocked: 0}
 
 def _run(root: Path, *args: str) -> int:
     return adoption_cli.main(["--project-root", str(root), "--json", *args])
+
+
+def _run_native_adoption(
+    binary: Path, root: Path, expected_exit: int, *args: str
+) -> dict:
+    result = run_installed_mir(
+        binary, root, "bootstrap-adoption", "--project-root", str(root), "--json", *args,
+    )
+    assert result.returncode == expected_exit, (result.stdout, result.stderr)
+    assert result.stderr == b""
+    return json.loads(result.stdout)
 
 
 def _git_add(root: Path, *paths: str) -> None:
@@ -381,9 +396,9 @@ def test_bootstrap_adoption_native_phase2_should_not_equate_ai_ready_to_l1(
 
 
 def test_bootstrap_adoption_documented_exceptions_should_remain_visible_in_ready_receipt(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
-    manifest = _ready_project(tmp_path)
+    manifest = _ready_project(tmp_path, seed_memory=False)
     manifest["surfaces"]["memory_acceptance"] = {
         "disposition": "exception",
         "evidence_paths": ["docs/memory.md"],
@@ -403,8 +418,7 @@ def test_bootstrap_adoption_documented_exceptions_should_remain_visible_in_ready
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
     _git_add(tmp_path, "spec/native-evidence.md")
 
-    assert _run(tmp_path, "--apply") == 0
-    stdout = json.loads(capsys.readouterr().out)
+    stdout = _run_native_adoption(installed_mir, tmp_path, 0, "--apply")
     receipt = json.loads(
         (tmp_path / ".mir/bootstrap-receipt.json").read_text(encoding="utf-8")
     )
@@ -452,8 +466,8 @@ def test_bootstrap_adoption_should_accept_resolved_tbd_count_in_phase2_evidence(
     assert json.loads(capsys.readouterr().out)["status"] == "ready"
 
 
-def test_bootstrap_adoption_should_reject_incomplete_exception_contract(tmp_path, capsys):
-    manifest = _ready_project(tmp_path)
+def test_bootstrap_adoption_should_reject_incomplete_exception_contract(tmp_path, installed_mir):
+    manifest = _ready_project(tmp_path, seed_memory=False)
     manifest["surfaces"]["memory_acceptance"] = {
         "disposition": "exception",
         "evidence_paths": ["docs/memory.md"],
@@ -462,8 +476,7 @@ def test_bootstrap_adoption_should_reject_incomplete_exception_contract(tmp_path
     }
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("requires non-empty blockers" in error for error in report["errors"])
 
 

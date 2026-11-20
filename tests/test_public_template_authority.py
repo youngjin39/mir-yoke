@@ -4,20 +4,24 @@ import importlib.util
 import json
 from pathlib import Path
 
-from mir.cli import bootstrap_adoption as adoption_cli
+from installed_mir import installed_mir as installed_mir
+from installed_mir import run_installed_mir
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 # @spec CR-003 FR-006 IR-002 QR-002
 def test_should_make_zero_writes_when_existing_repository_contract_is_missing(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ) -> None:
     before = sorted(tmp_path.rglob("*"))
-    code = adoption_cli.main(["--project-root", str(tmp_path), "--json", "--apply"])
-    report = json.loads(capsys.readouterr().out)
-
-    assert code == 2
+    result = run_installed_mir(
+        installed_mir, tmp_path, "bootstrap-adoption", "--project-root", str(tmp_path),
+        "--json", "--apply",
+    )
+    assert result.returncode == 2, (result.stdout, result.stderr)
+    assert result.stderr == b""
+    report = json.loads(result.stdout)
     assert report["changed_paths"] == []
     assert sorted(tmp_path.rglob("*")) == before
 
