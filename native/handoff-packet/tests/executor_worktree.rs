@@ -307,6 +307,114 @@ fn automatic_root_is_removed_and_branch_can_be_kept() {
         );
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn failed_worktree_add_preserves_replacement_auto_base() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixture = Fixture::new();
+    let repo = fixture.repo("repo", &json!({"code":"keep"}));
+    let hooks = fixture.0.join("hooks");
+    fs::create_dir(&hooks).unwrap();
+    // Git resolves a relative hooksPath against each worktree.
+    let hooks = fs::canonicalize(&hooks).unwrap();
+    git(
+        &repo,
+        &["config", "core.hooksPath", hooks.to_str().unwrap()],
+    );
+    let hook = hooks.join("post-checkout");
+    // Git waits for this hook after checkout and returns its failure status.
+    fs::write(
+        &hook,
+        r#"#!/bin/sh
+set -eu
+common=$(git rev-parse --path-format=absolute --git-common-dir)
+base=$(dirname "$(pwd -P)")
+mv "$base" "$base.original"
+mkdir "$base"
+printf '%s' replacement > "$base/canary"
+printf '%s' "$base" > "$common/swapped-base"
+exit 1
+"#,
+    )
+    .unwrap();
+    fs::set_permissions(&hook, fs::Permissions::from_mode(0o700)).unwrap();
+
+    let result = create_dispatch_worktree(&repo, "failed-add", "HEAD", "", None);
+
+    let base = PathBuf::from(fs::read_to_string(repo.join(".git/swapped-base")).unwrap());
+    let original = base.with_extension("original");
+    let replacement_exists = base.is_dir();
+    let canary = fs::read_to_string(base.join("canary"));
+    fs::remove_dir_all(original).unwrap();
+    if replacement_exists {
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    assert!(
+        replacement_exists,
+        "replacement root was removed: {result:?}"
+    );
+    assert_eq!(canary.unwrap(), "replacement");
+    assert_eq!(result.unwrap_err().kind(), "ValueError");
+}
+
+#[test]
+fn cleanup_refuses_replacement_at_dispatch_path() {
+    let fixture = Fixture::new();
+    let repo = fixture.repo("repo", &json!({"code":"keep"}));
+    let wt = create_dispatch_worktree(&repo, "swapped", "HEAD", "", Some(&fixture.0.join("trees")))
+        .unwrap();
+    let moved = wt.path.with_file_name("original");
+    fs::rename(&wt.path, &moved).unwrap();
+    fs::create_dir(&wt.path).unwrap();
+    // Preserve Git registration evidence while substituting the directory itself.
+    fs::copy(moved.join(".git"), wt.path.join(".git")).unwrap();
+    fs::write(wt.path.join("canary"), "replacement").unwrap();
+
+    let result = cleanup_worktree(&wt, true);
+
+    assert_eq!(
+        fs::read_to_string(wt.path.join("canary")).as_deref().ok(),
+        Some("replacement"),
+        "replacement was touched: {result:?}"
+    );
+    assert_eq!(fs::read_to_string(moved.join("code")).unwrap(), "keep");
+    assert_eq!(fs::read_to_string(repo.join("code")).unwrap(), "keep");
+    assert_eq!(result.unwrap_err().kind(), "ValueError");
+    assert!(!git(&repo, &["branch", "--list", &wt.branch]).is_empty());
+    assert_eq!(
+        git(&repo, &["worktree", "list", "--porcelain"])
+            .matches("worktree ")
+            .count(),
+        2
+    );
+
+    let auto = create_dispatch_worktree(&repo, "auto-replaced", "HEAD", "", None).unwrap();
+    let base = auto.path.parent().unwrap();
+    let holding = tempfile::tempdir_in(base.parent().unwrap()).unwrap();
+    let moved_base = holding.path().join("original-auto");
+    fs::rename(base, &moved_base).unwrap();
+    fs::create_dir(base).unwrap();
+
+    let result = cleanup_worktree(&auto, true);
+    assert!(base.is_dir(), "replacement root was removed: {result:?}");
+    fs::remove_dir(base).unwrap();
+    assert_eq!(result.unwrap_err().kind(), "ValueError");
+    assert_eq!(
+        fs::read_to_string(moved_base.join("auto-replaced/code")).unwrap(),
+        "keep"
+    );
+    assert!(!git(&repo, &["branch", "--list", &auto.branch]).is_empty());
+    assert_eq!(
+        git(&repo, &["worktree", "list", "--porcelain"])
+            .matches("worktree ")
+            .count(),
+        3
+    );
+}
+
 #[test]
 fn malformed_local_config_fails_and_missing_config_preserves_environment() {
     let fixture = Fixture::new();

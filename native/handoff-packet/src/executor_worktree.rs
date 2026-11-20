@@ -10,7 +10,10 @@
 //! ancestor directories under their control for Git operations. Unix artifact
 //! writes reuse descriptor-relative mkdir and private opens so a replaced
 //! parent cannot redirect writes outside the selected artifact container.
-use crate::executor_local::LocalConfig;
+use crate::{
+    adoption_fs::{Identity, directory_identity},
+    executor_local::LocalConfig,
+};
 use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
@@ -126,10 +129,11 @@ pub struct DispatchWorktree {
     pub status_path: PathBuf,
     pub result_path: PathBuf,
     // Ownership is held by the returned handle, never inferred from a pathname.
-    auto_temp_base: Option<PathBuf>,
+    auto_temp_base: Option<(PathBuf, Identity)>,
     artifact_selection: Option<DispatchPath>,
     repo: DispatchPath,
     tree: DispatchPath,
+    tree_identity: Identity,
 }
 
 /// Caller spelling is the source of every displayed descendant. The selected
@@ -936,13 +940,15 @@ pub fn create_dispatch_worktree(
     .trim()
     .to_owned();
     let auto_temp_base = if worktrees_root.is_none() {
-        Some(temp_base()?)
+        let path = temp_base()?;
+        let identity = directory_identity(&path)?;
+        Some((path, identity))
     } else {
         None
     };
     let parent = match (worktrees_root, auto_temp_base.as_ref()) {
         (Some(path), _) => DispatchPath::root(path)?,
-        (None, Some(path)) => DispatchPath {
+        (None, Some((path, _))) => DispatchPath {
             caller: path.clone(),
             io: path.clone(),
         },
@@ -969,11 +975,14 @@ pub fn create_dispatch_worktree(
         OsStr::new(&base_sha),
     ];
     if let Err(e) = git_with_paths(&root, &args, &caller_args, true) {
-        if let Some(temp) = auto_temp_base {
+        if let Some((temp, identity)) = auto_temp_base
+            && check_cleanup_identity(&temp, &temp, identity)?
+        {
             let _ = fs::remove_dir_all(temp);
         }
         return Err(e);
     }
+    let tree_identity = directory_identity(&path.io)?;
     let dispatch_dir = path.join(".mir-dispatch");
     let wt = DispatchWorktree {
         dispatch_id: dispatch_id.to_owned(),
@@ -988,6 +997,7 @@ pub fn create_dispatch_worktree(
         artifact_selection: None,
         repo: root,
         tree: path,
+        tree_identity,
     };
     let setup = (|| {
         let profile = wt.repo.join(".mir/repo-profile.toml");
@@ -1097,8 +1107,30 @@ pub fn inspect_worktree(worktree: &DispatchWorktree) -> Result<Value> {
     }))
 }
 
+fn check_cleanup_identity(path: &Path, caller: &Path, expected: Identity) -> Result<bool> {
+    match directory_identity(path) {
+        Ok(actual) if actual == expected => Ok(true),
+        // A previous cleanup or explicit removal may already have removed it.
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(e.into()),
+        Ok(_) => Err(Error::Invalid(format!(
+            "cleanup directory was replaced: {}",
+            caller.display()
+        ))),
+    }
+}
+
 pub fn cleanup_worktree(worktree: &DispatchWorktree, delete_branch: bool) -> Result<()> {
     reject_links(&worktree.tree)?;
+    // Git validates the .git file, which can survive a directory substitution.
+    check_cleanup_identity(
+        &worktree.tree.io,
+        &worktree.tree.caller,
+        worktree.tree_identity,
+    )?;
+    if let Some((temp, identity)) = &worktree.auto_temp_base {
+        check_cleanup_identity(temp, temp, *identity)?;
+    }
     let removal = git(
         &worktree.repo,
         &[
@@ -1154,7 +1186,8 @@ pub fn cleanup_worktree(worktree: &DispatchWorktree, delete_branch: bool) -> Res
             });
         }
     }
-    if let Some(temp) = &worktree.auto_temp_base {
+    if let Some((temp, identity)) = &worktree.auto_temp_base {
+        check_cleanup_identity(temp, temp, *identity)?;
         match fs::remove_dir(temp) {
             Ok(()) => {}
             Err(e)
@@ -1425,6 +1458,7 @@ mod containment_tests {
         fs::write(outside.join("canary"), "unchanged").unwrap();
         let alias = root.join("artifacts");
         symlink(&inside, &alias).unwrap();
+        fs::create_dir(root.join("tree")).unwrap();
         let mut worktree = DispatchWorktree {
             dispatch_id: "job".into(),
             main_repo_root: root.clone(),
@@ -1438,6 +1472,7 @@ mod containment_tests {
             artifact_selection: None,
             repo: DispatchPath::root(&root).unwrap(),
             tree: DispatchPath::root(&root.join("tree")).unwrap(),
+            tree_identity: directory_identity(&root.join("tree")).unwrap(),
         };
         worktree.select_artifact_root(&alias).unwrap();
         fs::remove_file(&alias).unwrap();
