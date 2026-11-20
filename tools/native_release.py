@@ -195,7 +195,8 @@ def publish_outputs(outputs: dict[Path, str], lock_path: Path, cli_pin: Path | N
             try:
                 temporary.unlink(missing_ok=True)
             except OSError:
-                leftovers.append(str(temporary))
+                if temporary.exists():
+                    leftovers.append(str(temporary))
         if leftovers:
             print("could not remove temporary file(s): " + ", ".join(leftovers), file=sys.stderr)
 

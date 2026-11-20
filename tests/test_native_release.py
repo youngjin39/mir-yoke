@@ -208,6 +208,43 @@ def test_second_replace_failure_names_updated_output_and_rerun_converges(
     assert set(json.loads(lock.read_bytes())['native_artifacts']) == set(NAMES)
 
 
+def test_undeletable_temporary_file_is_named_after_the_publish_error(
+    assets, capsys, monkeypatch,
+):
+    import os
+    from pathlib import Path
+
+    from tools import native_release
+
+    directory, lock = assets
+    add_console(directory)
+    cli = lock.with_name('cli.json')
+    before = lock.read_bytes()
+    real_replace, real_unlink = os.replace, Path.unlink
+
+    def fail_lock_replace(src, dst):
+        if dst == lock:
+            raise OSError('injected replace failure')
+        real_replace(src, dst)
+
+    def fail_unlink(self, missing_ok=False):
+        raise OSError('injected unlink failure')
+
+    with monkeypatch.context() as scoped:
+        scoped.setattr(os, 'replace', fail_lock_replace)
+        scoped.setattr(Path, 'unlink', fail_unlink)
+        with pytest.raises(SystemExit) as error:
+            native_release.main(['--directory', str(directory), '--lock', str(lock),
+                                 '--source', SOURCE, '--cli-pin', str(cli)])
+    assert error.value.code == 1
+    message = capsys.readouterr().err
+    assert 'injected replace failure' in message
+    leftover = [p for p in lock.parent.iterdir() if p not in {directory, lock, cli}]
+    assert len(leftover) == 1 and f'could not remove temporary file(s): {leftover[0]}' in message
+    assert lock.read_bytes() == before
+    real_unlink(leftover[0])
+
+
 def test_pins_published_bytes_and_preserves_lock(assets):
     from mir.core.capabilities.native import validate_artifacts
 
