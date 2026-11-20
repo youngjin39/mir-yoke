@@ -1,5 +1,5 @@
-//! Native managed-interpreter selection. Python only executes consumer extensions.
-#![forbid(unsafe_code)]
+//! Native managed-interpreter selection for Python extensions and compatibility routes.
+#![deny(unsafe_code)]
 #![cfg_attr(
     not(test),
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
@@ -365,18 +365,80 @@ fn main() {
 pub fn console(args: Vec<OsString>) -> ! {
     dispatch(args, true, true)
 }
+
+fn bound_console_python() -> Option<PathBuf> {
+    // Installed console commands bind to their own environment.
+    let console = std::env::current_exe().ok()?;
+    let directory = console.parent()?;
+    [directory.join("python"), directory.join("python.exe")]
+        .into_iter()
+        .find(|path| executable(path))
+}
+
+pub fn compatibility_console(args: &[OsString]) -> ! {
+    let result = bound_console_python()
+        .ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::NotFound, "missing or non-executable")
+        })
+        .and_then(|python| {
+            let mut command = Command::new(python);
+            command.args(["-m", "mir.cli"]).args(args);
+            launch_compatibility(command)
+        });
+    match result {
+        Ok(code) => std::process::exit(code),
+        Err(error) => {
+            use std::io::Write;
+            // A closed stderr must not turn this refusal into a panic status.
+            let _ = writeln!(
+                std::io::stderr().lock(),
+                "mir: cannot execute bound Python interpreter: {error}"
+            );
+            std::process::exit(1);
+        }
+    }
+}
+
+#[cfg(unix)]
+#[allow(unsafe_code)]
+fn launch_compatibility(command: Command) -> std::io::Result<i32> {
+    use std::{ffi::CString, os::unix::ffi::OsStrExt, ptr};
+
+    let args = std::iter::once(command.get_program())
+        .chain(command.get_args())
+        .map(|arg| CString::new(arg.as_bytes()))
+        .collect::<Result<Vec<_>, _>>()?;
+    let argv = args
+        .iter()
+        .map(|arg| arg.as_ptr())
+        .chain([ptr::null()])
+        .collect::<Vec<_>>();
+    // Restore the default SIGPIPE disposition that Rust startup overrides.
+    // execvp can run an invalid executable as a shell script on ENOEXEC.
+    // SAFETY: SIG_DFL installs the OS default without a callback. argv ends
+    // in NULL and each argument points into the live CStrings.
+    unsafe {
+        let previous = libc::signal(libc::SIGPIPE, libc::SIG_DFL);
+        if previous == libc::SIG_ERR {
+            return Err(std::io::Error::last_os_error());
+        }
+        libc::execv(argv[0], argv.as_ptr());
+        // execv returned: keep its error, then put back the start-up disposition
+        // so the caller's diagnostic cannot end the process by SIGPIPE.
+        let error = std::io::Error::last_os_error();
+        libc::signal(libc::SIGPIPE, previous);
+        Err(error)
+    }
+}
+
+#[cfg(not(unix))]
+fn launch_compatibility(mut command: Command) -> std::io::Result<i32> {
+    Ok(command.status()?.code().unwrap_or(1))
+}
+
 fn dispatch(args: Vec<OsString>, installed_console: bool, root_console: bool) -> ! {
     if installed_console {
-        // Installed Python console scripts bind to their own environment. Do
-        // not silently switch dependencies to a project or host interpreter.
-        let python = std::env::current_exe().ok().and_then(|path| {
-            path.parent().and_then(|directory| {
-                [directory.join("python"), directory.join("python.exe")]
-                    .into_iter()
-                    .find(|path| executable(path))
-            })
-        });
-        let Some(python) = python else {
+        let Some(python) = bound_console_python() else {
             refusal(Path::new("."), "unavailable");
         };
         let console_directory = python.parent().and_then(|path| path.canonicalize().ok());

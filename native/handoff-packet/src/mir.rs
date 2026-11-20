@@ -234,7 +234,7 @@ fn run(argv: &[OsString]) -> (i32, String, String) {
             ),
         };
     }
-    // shortcut: remaining families bind in later entry slices; never forward to Python.
+    // A platform may lack a native handler (for example capability outside Unix).
     (
         64,
         String::new(),
@@ -483,6 +483,13 @@ mod tests {
 }
 
 fn main() {
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args
+        .first()
+        .is_some_and(|family| family == "executor" || family == "memory")
+    {
+        python::compatibility_console(&args);
+    }
     if let Err(message) = executor_text::console_encoding() {
         let stage = if message.starts_with("LookupError: unknown encoding:") {
             "init_stdio_encoding: failed to get the Python codec name of the stdio encoding"
@@ -495,7 +502,6 @@ fn main() {
         );
         std::process::exit(1);
     }
-    let args: Vec<_> = std::env::args_os().skip(1).collect();
     let (code, out, err) = run(&args);
     finish((code, vec![out.into()], err.into()));
 }
