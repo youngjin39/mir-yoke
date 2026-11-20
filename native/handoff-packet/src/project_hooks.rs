@@ -17,16 +17,15 @@ use std::{
     process::ExitCode,
 };
 
+// The release smoke reads this literal to check the full capabilities output.
+const CAPABILITIES: &str = "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\nmir-project-hooks-pre-tool-use-v1\n";
+
 fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
     if args.iter().any(|arg| arg == "--mir-warmup") {
         return (0, "", "");
     }
     if args.len() == 1 && args[0] == "capabilities" {
-        return (
-            0,
-            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\nmir-project-hooks-pre-tool-use-v1\n",
-            "",
-        );
+        return (0, CAPABILITIES, "");
     }
     (64, "", "project-hooks: unknown subcommand\n")
 }

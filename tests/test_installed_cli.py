@@ -133,6 +133,77 @@ def test_macos_setup_installs_native_mir_at_public_path(mac_setup):
     assert not list(cli.parents[2].glob(".mir-native.*"))
 
 
+@pytest.mark.parametrize("family", ["memory", "executor"])
+def test_public_launcher_imports_installed_compatibility_package(mac_setup, family):
+    project, _, cli, _, _ = mac_setup
+    result = _setup(project, "--help")
+    assert result.returncode == 0, result.stderr
+    installed = cli.resolve()
+    python = installed.with_name("python")
+    runtime = cli.parents[1]
+    origin = Path(subprocess.check_output(
+        [python, "-I", "-c", "import mir; print(mir.__file__)"],
+        text=True, timeout=20,
+    ).strip())
+    assert origin.resolve().is_relative_to(installed.parents[1])
+
+    env = os.environ | {"PYTHONIOENCODING": "utf-8-sig"}
+    for name in ("PYTHONPATH", "PYTHONHOME"):
+        env.pop(name, None)
+    expected = subprocess.run(
+        [python, "-m", "mir.cli", family, "--help"], cwd=project.parent,
+        env=env, capture_output=True, check=True, timeout=20,
+    )
+    assert expected.stdout.startswith(b"\xef\xbb\xbfusage:")
+
+    outside = project.parent / "outside"
+    foreign = outside / "mir"
+    foreign.mkdir(parents=True)
+    (foreign / "__init__.py").write_text("raise AssertionError('outside mir imported')\n")
+    probe = outside / "import.json"
+    # Record the package origin and environment seen by it and by a child.
+    keys = ("PYTHONPATH", "PYTHONHOME", "PYTHONIOENCODING")
+    child_code = f"import json, os; print(json.dumps([os.getenv(k) for k in {keys!r}]))"
+    with origin.open("a") as package:
+        package.write(
+            "\nimport json, os, subprocess, sys\nfrom pathlib import Path\n"
+            f"parent_env = [os.getenv(k) for k in {keys!r}]\n"
+            f"output = subprocess.check_output([sys.executable, '-I', '-c', {child_code!r}])\n"
+            "child_env = json.loads(output)\n"
+            f"Path({str(probe)!r}).write_text(json.dumps([__file__, parent_env, child_env]))\n"
+        )
+
+    # Bind the instrumented runtime through the same manifest the launcher verifies.
+    manifest = runtime / "runtime-manifest.json"
+    metadata = json.loads(manifest.read_text())
+    subprocess.run(
+        [installed, "runtime-manifest", "create", "--runtime-root", runtime,
+         "--manifest", manifest, "--source-url", metadata["source_url"],
+         "--source-commit", metadata["source_commit"],
+         "--constraints-sha256", metadata["constraints_sha256"]],
+        check=True, capture_output=True, timeout=20,
+    )
+    (project / ".mir/bootstrap-receipt.json").write_text(json.dumps({"cli": {
+        "executable": str(cli), "sha256": sha256(cli.read_bytes()).hexdigest(),
+        "runtime_manifest": str(manifest),
+        "runtime_manifest_sha256": sha256(manifest.read_bytes()).hexdigest(),
+        **{key: metadata[key] for key in ("source_url", "source_commit", "constraints_sha256")},
+    }}))
+    launcher = project / "scripts/mir.sh"
+    launcher.parent.mkdir()
+    shutil.copy2(ROOT / "scripts/mir.sh", launcher)
+    result = subprocess.run(
+        ["bash", launcher, family, "--help"], cwd=outside,
+        env=env | {"PYTHONPATH": str(outside), "PYTHONHOME": str(outside)},
+        capture_output=True, timeout=20,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == expected.stdout
+    assert result.stderr == expected.stderr
+    child_environment = [None, None, "utf-8-sig"]
+    assert json.loads(probe.read_text()) == [str(origin), child_environment, child_environment]
+
+
 def test_macos_setup_selects_external_storage_for_install_and_reuse(mac_setup, monkeypatch):
     project, pin, default_cli, asset, shim = mac_setup
     storage = project.parent / "external storage"

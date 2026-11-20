@@ -74,7 +74,9 @@ jobs:
           test "$("$delegation" --version)" = "delegation-gate 0.1.0"
           hooks="target/${{ matrix.target }}/release/project-hooks${{ matrix.exe }}"
           "$hooks" --mir-warmup
-          test "$("$hooks" capabilities)" = "mir-project-hooks-v1"
+          hooks_capabilities=$(sed -n 's/^const CAPABILITIES: &str = "\(.*\)";$/\1/p' src/project_hooks.rs)
+          test -n "$hooks_capabilities"
+          "$hooks" capabilities | cmp - <(printf '%b' "$hooks_capabilities")
           query="target/${{ matrix.target }}/release/executor-query${{ matrix.exe }}"
           set +e
           "$query" --help > query.out 2> query.err

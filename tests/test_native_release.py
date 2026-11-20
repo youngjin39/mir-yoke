@@ -3,12 +3,14 @@
 import hashlib
 import json
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 import yaml
+from e02a_binary import binary
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = (
@@ -558,10 +560,28 @@ def test_rejects_missing_project_hooks_windows_asset_without_lock_writes(assets)
     assert lock.read_bytes() == before
 
 
-def test_native_workflow_smokes_project_hooks():
+@pytest.mark.parametrize('truncated', [False, True], ids=['complete', 'first-line-only'])
+def test_native_workflow_smokes_project_hooks(tmp_path, truncated):
     workflow = yaml.safe_load((ROOT / '.github/workflows/native-artifacts.yml').read_text())
     smoke = next(step['run'] for step in workflow['jobs']['build']['steps']
                  if step.get('name') == 'smoke run')
     assert 'project-hooks${{ matrix.exe }}' in smoke
-    assert 'mir-project-hooks-v1' in smoke
     assert '--mir-warmup' in smoke
+    hooks_checks = smoke.split('hooks=', 1)[1].split('\nquery=', 1)[0]
+    _, checks = hooks_checks.split('\n', 1)
+    hooks = binary('project-hooks', 'MIR_PROJECT_HOOKS_BINARY').absolute()
+    if truncated:
+        first_line = subprocess.check_output([hooks, 'capabilities'], timeout=20).splitlines()[0]
+        hooks = tmp_path / 'project-hooks'
+        hooks.write_text(
+            '#!/bin/sh\n'
+            'if [ "$1" = capabilities ]; then\n'
+            f'    printf "%s\\n" {shlex.quote(first_line.decode())}\n'
+            'fi\n'
+        )
+        hooks.chmod(0o755)
+    result = subprocess.run(
+        ['bash', '-euo', 'pipefail', '-c', 'hooks=$1\n' + checks, '--', str(hooks)],
+        cwd=ROOT / 'native/handoff-packet', capture_output=True, timeout=20,
+    )
+    assert result.returncode == int(truncated), result

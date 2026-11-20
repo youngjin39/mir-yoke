@@ -68,12 +68,16 @@ jobs:
 
   supported_contracts:
     runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
       - run: uv sync --extra dev --frozen
+      - run: cargo build --release --locked --bin project-hooks
+        working-directory: native/handoff-packet
       - run: >-
           uv run pytest -q
           tests/test_project_agent_kit.py
@@ -84,6 +88,8 @@ jobs:
           tests/test_native_release.py
           tests/test_plugin_skill_packages.py
           tests/test_common_skill_contracts.py
+        env:
+          MIR_PROJECT_HOOKS_BINARY: ${{ github.workspace }}/native/handoff-packet/target/release/project-hooks
       - run: uv run python scripts/verify_codex_sync.py
       - run: uv run ruff check
 
