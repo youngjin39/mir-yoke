@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import subprocess
 from pathlib import Path
 
 import jsonschema
@@ -102,6 +103,28 @@ def test_should_return_nonstarter_classification_when_provider_sources_are_inspe
     assert adr_89 in historical["exclude"]
     assert adr_90 in current["include"]
     assert adr_90 in historical["exclude"]
+
+
+# @spec FR-001 FR-003
+def test_should_classify_native_cli_pin_with_setup_in_release_inventory(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "--quiet", str(tmp_path)], check=True)
+    config = tmp_path / "config"
+    config.mkdir()
+    (config / "cli-native-artifacts.json").write_text('{"targets": {}}')
+    (tmp_path / "setup.sh").touch()
+
+    manifest = load_manifest(ROOT / "config/template-assets.json")
+    boundary = json.loads((ROOT / "config/adopter-boundary.json").read_text())
+    assert classify_tracked_files(tmp_path, manifest)["by_classification"] == {"reference": 2}
+    inventory = build_adopter_payload(tmp_path, manifest, boundary)
+    entries = {
+        item["path"]: (item["classification"], item["disposition"])
+        for item in inventory["files"]
+    }
+    assert entries == {
+        "config/cli-native-artifacts.json": ("reference", "remove"),
+        "setup.sh": ("reference", "remove"),
+    }
 
 
 # @spec FR-001 FR-003
