@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
 import sys
+import tempfile
 import tomllib
+import venv
 from hashlib import sha256
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from installed_mir import installed_mir as installed_mir
 
 from mir.cli import SUBCOMMANDS
 from mir.cli import bootstrap as bootstrap_cli
@@ -29,6 +33,14 @@ _SOURCE_CONFIG = {
         }
     },
 }
+
+
+@pytest.fixture(autouse=True)
+def _no_inherited_bootstrap_paths(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The retained Python bootstrap reads these; tests that need one set a tmp path.
+    for name in ("MIR_BOOTSTRAP_CLI_PATH", "MIR_BOOTSTRAP_RUNTIME_MANIFEST",
+                 "MIR_BOOTSTRAP_RUNTIME_ID", "MIR_CAPABILITY_HOME"):
+        monkeypatch.delenv(name, raising=False)
 
 
 def _write(path: Path, body: str = "placeholder\n") -> None:
@@ -121,25 +133,58 @@ def test_should_accept_codex_config_without_project_approval_policy(tmp_path):
     assert ".codex/config.toml is missing approval_policy" not in errors
 
 
+def _bootstrap_args(*extra: str) -> list[str]:
+    return [
+        "--slug", "sample-project",
+        "--profile", "code_app",
+        "--purpose", "Build and verify a portable sample project harness.",
+        "--stack", "python,markdown",
+        "--skip-capability-activation",
+        "--allow-incomplete",
+        "--json",
+        *extra,
+    ]
+
+
 def _bootstrap(root: Path, *extra: str) -> int:
-    return bootstrap_cli.main(
-        [
-            "--project-root",
-            str(root),
-            "--slug",
-            "sample-project",
-            "--profile",
-            "code_app",
-            "--purpose",
-            "Build and verify a portable sample project harness.",
-            "--stack",
-            "python,markdown",
-            "--skip-capability-activation",
-            "--allow-incomplete",
-            "--json",
-            *extra,
-        ]
+    return bootstrap_cli.main(["--project-root", str(root), *_bootstrap_args(*extra)])
+
+
+@pytest.fixture(scope="session")
+def bootstrap_mir(installed_mir, tmp_path_factory) -> Path:
+    runtime = tmp_path_factory.mktemp("bootstrap tool environment")
+    venv.EnvBuilder(with_pip=False, symlinks=True).create(runtime)
+    return Path(shutil.copy2(installed_mir, runtime / "bin/mir"))
+
+
+def _run_native_bootstrap(
+    binary: Path, root: Path, expected_exit: int, *args: str,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[bytes]:
+    environment = dict(os.environ, HOME=str(root))
+    # The runtime ID is also used as a path component by --storage-root.
+    for name in (
+        "MIR_BOOTSTRAP_CLI_PATH",
+        "MIR_BOOTSTRAP_RUNTIME_MANIFEST",
+        "MIR_BOOTSTRAP_RUNTIME_ID",
+        "MIR_CAPABILITY_HOME",
+    ):
+        environment.pop(name, None)
+    environment.update(env or {})
+    result = subprocess.run(
+        [binary, "bootstrap", "--project-root", str(root), *args],
+        cwd=root, env=environment, capture_output=True, timeout=15,
     )
+    assert result.returncode == expected_exit, (result.stdout, result.stderr)
+    return result
+
+
+def _bootstrap_native(
+    binary: Path, root: Path, expected_exit: int, *extra: str,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[bytes]:
+    return _run_native_bootstrap(binary, root, expected_exit, *_bootstrap_args(*extra), env=env)
+
 
 
 # @spec FR-001 FR-004 QR-001
@@ -215,7 +260,7 @@ def test_should_return_success_when_bootstrap_runs_inside_wsl_linux(
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_should_reject_provider_push_remote_before_bootstrap_mutation(tmp_path, capsys):
+def test_should_reject_provider_push_remote_before_bootstrap_mutation(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     subprocess.run(
         ["git", "remote", "add", "origin", "git@github.com:example/mir-yoke.git"],
@@ -228,12 +273,12 @@ def test_should_reject_provider_push_remote_before_bootstrap_mutation(tmp_path, 
         if path.is_file() and ".git" not in path.parts
     }
 
-    assert _bootstrap(tmp_path) == 2
+    result = _bootstrap_native(bootstrap_mir, tmp_path, 2)
 
-    captured = capsys.readouterr()
-    assert "Git push remote still targets the Mir Yoke provider" in captured.err
-    assert "git remote rename origin mir-yoke-upstream" in captured.err
-    assert "git remote set-url --push mir-yoke-upstream DISABLED" in captured.err
+    stderr = result.stderr.decode("utf-8")
+    assert "Git push remote still targets the Mir Yoke provider" in stderr
+    assert "git remote rename origin mir-yoke-upstream" in stderr
+    assert "git remote set-url --push mir-yoke-upstream DISABLED" in stderr
     assert not (tmp_path / ".mir/bootstrap-receipt.json").exists()
     assert {
         path.relative_to(tmp_path).as_posix(): path.read_bytes()
@@ -245,7 +290,7 @@ def test_should_reject_provider_push_remote_before_bootstrap_mutation(tmp_path, 
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_should_treat_default_git_ports_as_the_same_provider(tmp_path, capsys):
+def test_should_treat_default_git_ports_as_the_same_provider(tmp_path, bootstrap_mir):
     for push_url in (
         "ssh://git@github.com:22/example/mir-yoke.git",
         "https://github.com:443/example/mir-yoke.git",
@@ -254,14 +299,14 @@ def test_should_treat_default_git_ports_as_the_same_provider(tmp_path, capsys):
         _make_harness_surfaces(project)
         subprocess.run(["git", "remote", "add", "origin", push_url], cwd=project, check=True)
 
-        assert _bootstrap(project) == 2
-        assert "still targets the Mir Yoke provider" in capsys.readouterr().err
+        result = _bootstrap_native(bootstrap_mir, project, 2)
+        assert "still targets the Mir Yoke provider" in result.stderr.decode("utf-8")
 
 
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_source_control_receipt_never_persists_remote_credentials(tmp_path, capsys):
+def test_source_control_receipt_never_persists_remote_credentials(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     subprocess.run(
         [
@@ -275,9 +320,9 @@ def test_source_control_receipt_never_persists_remote_credentials(tmp_path, caps
         check=True,
     )
 
-    assert _bootstrap(tmp_path) == 0
+    result = _bootstrap_native(bootstrap_mir, tmp_path, 0)
 
-    output = capsys.readouterr().out
+    output = result.stdout.decode("utf-8")
     assert "secret-token" not in output
     receipt = json.loads(output)
     assert receipt["source_control"]["remotes"] == [
@@ -292,7 +337,7 @@ def test_source_control_receipt_never_persists_remote_credentials(tmp_path, caps
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
 def test_should_fail_before_mutation_when_provider_source_is_unavailable(
-    tmp_path, capsys
+    tmp_path, bootstrap_mir
 ):
     for body in (None, "{invalid"):
         project = tmp_path / ("missing" if body is None else "invalid")
@@ -308,8 +353,8 @@ def test_should_fail_before_mutation_when_provider_source_is_unavailable(
             if path.is_file() and ".git" not in path.parts
         }
 
-        assert _bootstrap(project) == 2
-        assert "Git ownership cannot be verified" in capsys.readouterr().err
+        result = _bootstrap_native(bootstrap_mir, project, 2)
+        assert "Git ownership cannot be verified" in result.stderr.decode("utf-8")
         assert not (project / ".mir/bootstrap-receipt.json").exists()
         assert {
             path.relative_to(project).as_posix(): path.read_bytes()
@@ -393,11 +438,11 @@ def test_authored_baseline_rejects_a_symlinked_contract_directory(tmp_path):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_bootstrap_builds_required_memory_and_is_idempotent(tmp_path, capsys):
+def test_bootstrap_builds_required_memory_and_is_idempotent(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
 
-    assert _bootstrap(tmp_path) == 0
-    first_stdout = json.loads(capsys.readouterr().out)
+    result = _bootstrap_native(bootstrap_mir, tmp_path, 0)
+    first_stdout = json.loads(result.stdout)
     receipt_path = tmp_path / ".mir" / "bootstrap-receipt.json"
     first_receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     first_projection = (tmp_path / "docs" / "memory-map.md").read_text(encoding="utf-8")
@@ -410,8 +455,7 @@ def test_bootstrap_builds_required_memory_and_is_idempotent(tmp_path, capsys):
     assert (tmp_path / "harness_a.toml").is_file()
     assert (tmp_path / ".mir" / "memory.db").is_file()
 
-    assert _bootstrap(tmp_path) == 0
-    capsys.readouterr()
+    _bootstrap_native(bootstrap_mir, tmp_path, 0)
     second_projection = (tmp_path / "docs" / "memory-map.md").read_text(encoding="utf-8")
     assert second_projection == first_projection
     with sqlite3.connect(tmp_path / ".mir" / "memory.db") as connection:
@@ -421,7 +465,7 @@ def test_bootstrap_builds_required_memory_and_is_idempotent(tmp_path, capsys):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_bootstrap_receipt_binds_isolated_cli_source_evidence(tmp_path, capsys):
+def test_bootstrap_receipt_binds_isolated_cli_source_evidence(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     evidence = {
         "MIR_BOOTSTRAP_RUNTIME_ID": "runtime-123",
@@ -429,14 +473,13 @@ def test_bootstrap_receipt_binds_isolated_cli_source_evidence(tmp_path, capsys):
         "MIR_BOOTSTRAP_SOURCE_COMMIT": "a" * 40,
         "MIR_BOOTSTRAP_SOURCE_LOCK_SHA256": "b" * 64,
         "MIR_BOOTSTRAP_CONSTRAINTS_SHA256": "c" * 64,
-        "MIR_BOOTSTRAP_RUNTIME_MANIFEST": "/external/runtime-manifest.json",
+        "MIR_BOOTSTRAP_RUNTIME_MANIFEST": str(tmp_path / "runtime-manifest.json"),
         "MIR_BOOTSTRAP_RUNTIME_MANIFEST_SHA256": "d" * 64,
     }
 
-    with patch.dict(os.environ, evidence, clear=False):
-        assert _bootstrap(tmp_path) == 0
+    result = _bootstrap_native(bootstrap_mir, tmp_path, 0, env=evidence)
 
-    receipt = json.loads(capsys.readouterr().out)
+    receipt = json.loads(result.stdout)
     assert receipt["cli"] == {
         "executable": None,
         "sha256": None,
@@ -446,7 +489,7 @@ def test_bootstrap_receipt_binds_isolated_cli_source_evidence(tmp_path, capsys):
         "source_commit": "a" * 40,
         "source_lock_sha256": "b" * 64,
         "constraints_sha256": "c" * 64,
-        "runtime_manifest": "/external/runtime-manifest.json",
+        "runtime_manifest": str(tmp_path / "runtime-manifest.json"),
         "runtime_manifest_sha256": "d" * 64,
     }
     assert receipt["source_control"]["status"] == "local_only"
@@ -455,7 +498,27 @@ def test_bootstrap_receipt_binds_isolated_cli_source_evidence(tmp_path, capsys):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_bootstrap_receipt_preserves_the_namespaced_launcher_symlink(tmp_path, capsys):
+def test_bootstrap_receipt_ignores_inherited_paths(tmp_path, bootstrap_mir, monkeypatch):
+    _make_harness_surfaces(tmp_path)
+    with tempfile.TemporaryDirectory(prefix="inherited-bootstrap-cli-") as directory:
+        outside = Path(directory) / "mir"
+        outside.write_bytes(b"must not be hashed\n")
+        monkeypatch.setenv("MIR_BOOTSTRAP_CLI_PATH", str(outside))
+        monkeypatch.setenv("MIR_BOOTSTRAP_RUNTIME_MANIFEST", str(outside))
+        monkeypatch.setenv("MIR_BOOTSTRAP_RUNTIME_ID", str(outside))
+
+        result = _bootstrap_native(bootstrap_mir, tmp_path, 0)
+
+    cli = json.loads(result.stdout)["cli"]
+    assert cli["executable"] is None
+    assert cli["runtime_manifest"] is None
+    assert cli["runtime_id"] is None
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
+def test_bootstrap_receipt_preserves_the_namespaced_launcher_symlink(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     runtime_root = tmp_path.parent / f"{tmp_path.name}-runtime"
     inner_cli = runtime_root / "tools/mir-harness/bin/mir"
@@ -476,10 +539,9 @@ def test_bootstrap_receipt_preserves_the_namespaced_launcher_symlink(tmp_path, c
         "MIR_BOOTSTRAP_RUNTIME_MANIFEST_SHA256": "d" * 64,
     }
 
-    with patch.dict(os.environ, evidence, clear=False):
-        assert _bootstrap(tmp_path) == 0
+    result = _bootstrap_native(bootstrap_mir, tmp_path, 0, env=evidence)
 
-    receipt = json.loads(capsys.readouterr().out)
+    receipt = json.loads(result.stdout)
     assert receipt["cli"]["executable"] == str(outer_cli)
     assert receipt["cli"]["sha256"] == sha256(inner_cli.read_bytes()).hexdigest()
 
@@ -488,7 +550,7 @@ def test_bootstrap_receipt_preserves_the_namespaced_launcher_symlink(tmp_path, c
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
 def test_should_convert_exact_provider_profile_when_phase1_is_explicit(
-    tmp_path, capsys
+    tmp_path, bootstrap_mir
 ):
     _make_harness_surfaces(tmp_path)
     provider_plan = "# Mir Yoke maintainer plan\n"
@@ -517,8 +579,8 @@ def test_should_convert_exact_provider_profile_when_phase1_is_explicit(
         '[repo]\nslug = "mir-yoke"\nrepository_type = "public_harness_template"\n',
     )
 
-    assert _bootstrap(tmp_path) == 0
-    receipt = json.loads(capsys.readouterr().out)
+    result = _bootstrap_native(bootstrap_mir, tmp_path, 0)
+    receipt = json.loads(result.stdout)
     profile = tomllib.loads(
         (tmp_path / ".mir/repo-profile.toml").read_text(encoding="utf-8")
     )
@@ -542,37 +604,26 @@ def test_should_convert_exact_provider_profile_when_phase1_is_explicit(
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_content_workspace_classifies_existing_records_and_proves_search(tmp_path, capsys):
+def test_content_workspace_classifies_existing_records_and_proves_search(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     _write(
         tmp_path / "career-records" / "applications.md",
         "# Applications\n\nAcmePlatform interview preparation and outcome notes.\n",
     )
 
-    assert (
-        bootstrap_cli.main(
-            [
-                "--project-root",
-                str(tmp_path),
-                "--slug",
-                "career-harness",
-                "--profile",
-                "content_workspace",
-                "--purpose",
-                "Organize career transitions and application evidence.",
-                "--stack",
-                "markdown,sqlite",
-                "--archive",
-                "applications=career-records",
-                "--skip-capability-activation",
-                "--allow-incomplete",
-                "--json",
-            ]
-        )
-        == 0
+    result = _run_native_bootstrap(
+        bootstrap_mir, tmp_path, 0,
+        "--slug", "career-harness",
+        "--profile", "content_workspace",
+        "--purpose", "Organize career transitions and application evidence.",
+        "--stack", "markdown,sqlite",
+        "--archive", "applications=career-records",
+        "--skip-capability-activation",
+        "--allow-incomplete",
+        "--json",
     )
 
-    receipt = json.loads(capsys.readouterr().out)
+    receipt = json.loads(result.stdout)
     manifest = json.loads(
         (tmp_path / "config" / "content-onboarding.json").read_text(encoding="utf-8")
     )
@@ -593,29 +644,20 @@ def test_content_workspace_classifies_existing_records_and_proves_search(tmp_pat
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_content_workspace_blocks_unclassified_existing_records(tmp_path, capsys):
+def test_content_workspace_blocks_unclassified_existing_records(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     _write(tmp_path / "legacy-notes" / "history.md", "UniqueHistory evidence.\n")
 
-    assert (
-        bootstrap_cli.main(
-            [
-                "--project-root",
-                str(tmp_path),
-                "--profile",
-                "content_workspace",
-                "--purpose",
-                "Organize historical records for reliable retrieval.",
-                "--stack",
-                "markdown",
-                "--skip-capability-activation",
-                "--allow-incomplete",
-                "--json",
-            ]
-        )
-        == 2
+    result = _run_native_bootstrap(
+        bootstrap_mir, tmp_path, 2,
+        "--profile", "content_workspace",
+        "--purpose", "Organize historical records for reliable retrieval.",
+        "--stack", "markdown",
+        "--skip-capability-activation",
+        "--allow-incomplete",
+        "--json",
     )
-    report = json.loads(capsys.readouterr().out)
+    report = json.loads(result.stdout)
     assert any("unclassified existing content" in error for error in report["errors"])
     assert not (tmp_path / "config" / "content-onboarding.json").exists()
 
@@ -623,12 +665,10 @@ def test_content_workspace_blocks_unclassified_existing_records(tmp_path, capsys
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_content_workspace_reports_non_indexable_record_formats(tmp_path, capsys):
+def test_content_workspace_reports_non_indexable_record_formats(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     _write(tmp_path / "legacy-documents" / "resume.pdf", "%PDF sample\n")
     base = [
-        "--project-root",
-        str(tmp_path),
         "--profile",
         "content_workspace",
         "--purpose",
@@ -640,12 +680,14 @@ def test_content_workspace_reports_non_indexable_record_formats(tmp_path, capsys
         "--json",
     ]
 
-    assert bootstrap_cli.main(base) == 2
-    discovery = json.loads(capsys.readouterr().out)
+    result = _run_native_bootstrap(bootstrap_mir, tmp_path, 2, *base)
+    discovery = json.loads(result.stdout)
     assert any("legacy-documents [pdf]" in error for error in discovery["errors"])
 
-    assert bootstrap_cli.main([*base, "--archive", "resumes=legacy-documents"]) == 2
-    conversion = json.loads(capsys.readouterr().out)
+    result = _run_native_bootstrap(
+        bootstrap_mir, tmp_path, 2, *base, "--archive", "resumes=legacy-documents",
+    )
+    conversion = json.loads(result.stdout)
     assert any("non-indexable formats ['pdf']" in error for error in conversion["errors"])
     assert any("UTF-8 text projection" in error for error in conversion["errors"])
 
@@ -653,15 +695,13 @@ def test_content_workspace_reports_non_indexable_record_formats(tmp_path, capsys
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_content_finalize_blocks_stale_onboarding_manifest(tmp_path, capsys):
+def test_content_finalize_blocks_stale_onboarding_manifest(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     _write(
         tmp_path / "career-records" / "timeline.md",
         "StableCareerTimeline for the initial memory acceptance.\n",
     )
     phase1 = [
-        "--project-root",
-        str(tmp_path),
         "--slug",
         "career-harness",
         "--profile",
@@ -676,38 +716,29 @@ def test_content_finalize_blocks_stale_onboarding_manifest(tmp_path, capsys):
         "--allow-incomplete",
         "--json",
     ]
-    assert bootstrap_cli.main(phase1) == 0
-    capsys.readouterr()
+    _run_native_bootstrap(bootstrap_mir, tmp_path, 0, *phase1)
     _write(
         tmp_path / "career-records" / "new-interview.md",
         "NewInterviewEvidence added after the onboarding receipt.\n",
     )
 
-    assert (
-        bootstrap_cli.main(
-            [
-                "--project-root",
-                str(tmp_path),
-                "--slug",
-                "career-harness",
-                "--profile",
-                "content_workspace",
-                "--finalize",
-                "--skip-capability-activation",
-                "--allow-incomplete",
-                "--json",
-            ]
-        )
-        == 2
+    result = _run_native_bootstrap(
+        bootstrap_mir, tmp_path, 2,
+        "--slug", "career-harness",
+        "--profile", "content_workspace",
+        "--finalize",
+        "--skip-capability-activation",
+        "--allow-incomplete",
+        "--json",
     )
-    report = json.loads(capsys.readouterr().out)
+    report = json.loads(result.stdout)
     assert any("content onboarding manifest is stale" in error for error in report["errors"])
 
 
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_external_storage_root_is_verified_and_recorded(tmp_path, capsys):
+def test_external_storage_root_is_verified_and_recorded(tmp_path, bootstrap_mir):
     project = tmp_path / "project"
     storage = tmp_path / "machine-storage"
     project.mkdir()
@@ -726,10 +757,11 @@ def test_external_storage_root_is_verified_and_recorded(tmp_path, capsys):
     storage_env = {name: str(path) for name, path in expected.items()}
     storage_env["MIR_BOOTSTRAP_RUNTIME_ID"] = runtime_id
     storage_env["UV_PROJECT_ENVIRONMENT"] = str(project / ".venv")
-    with patch.dict(os.environ, storage_env):
-        assert _bootstrap(project, "--storage-root", str(storage)) == 0
+    result = _bootstrap_native(
+        bootstrap_mir, project, 0, "--storage-root", str(storage), env=storage_env,
+    )
 
-    receipt = json.loads(capsys.readouterr().out)
+    receipt = json.loads(result.stdout)
     assert receipt["storage"]["mode"] == "external-first"
     assert receipt["storage"]["root"] == str(storage.resolve())
     assert receipt["storage"]["same_filesystem_as_project"] is True
@@ -741,7 +773,7 @@ def test_external_storage_root_is_verified_and_recorded(tmp_path, capsys):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_external_storage_root_requires_wrapper_environment(tmp_path, capsys):
+def test_external_storage_root_requires_wrapper_environment(tmp_path, bootstrap_mir):
     project = tmp_path / "project"
     storage = tmp_path / "machine-storage"
     project.mkdir()
@@ -755,31 +787,32 @@ def test_external_storage_root_requires_wrapper_environment(tmp_path, capsys):
             "UV_PYTHON_INSTALL_DIR": "",
             "UV_TOOL_DIR": "",
             "UV_TOOL_BIN_DIR": "",
-            "MIR_CAPABILITY_HOME": "",
+            "MIR_CAPABILITY_HOME": str(tmp_path / "inherited-capabilities"),
             "UV_PROJECT_ENVIRONMENT": "",
         },
     ):
-        assert _bootstrap(project, "--storage-root", str(storage)) == 2
+        result = _bootstrap_native(bootstrap_mir, project, 2, "--storage-root", str(storage))
 
-    report = json.loads(capsys.readouterr().out)
+    report = json.loads(result.stdout)
     assert report["status"] == "incomplete"
     assert report["storage"]["mode"] == "external-first"
     assert any("UV_CACHE_DIR" in error for error in report["errors"])
+    assert "MIR_CAPABILITY_HOME" not in report["storage"]["large_payloads"]
     assert not (project / ".mir" / "memory.db").exists()
 
 
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_preflight_failure_does_not_create_authored_config_or_db(tmp_path, capsys):
+def test_preflight_failure_does_not_create_authored_config_or_db(tmp_path, bootstrap_mir):
     _write(tmp_path / "CLAUDE.md")
     _write(
         tmp_path / "config/capability-sources.json",
         json.dumps(_SOURCE_CONFIG) + "\n",
     )
 
-    assert _bootstrap(tmp_path) == 1
-    report = json.loads(capsys.readouterr().out)
+    result = _bootstrap_native(bootstrap_mir, tmp_path, 1)
+    report = json.loads(result.stdout)
 
     assert report["status"] == "incomplete"
     assert not (tmp_path / "harness_a.toml").exists()
@@ -790,17 +823,18 @@ def test_preflight_failure_does_not_create_authored_config_or_db(tmp_path, capsy
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_bootstrap_requires_jq_for_active_hook_payloads(tmp_path, capsys):
+def test_bootstrap_requires_jq_for_active_hook_payloads(tmp_path, bootstrap_mir, monkeypatch):
     _make_harness_surfaces(tmp_path)
-    real_which = bootstrap_cli.shutil.which
-    with patch.object(
-        bootstrap_cli.shutil,
-        "which",
-        side_effect=lambda name: None if name == "jq" else real_which(name),
-    ):
-        assert _bootstrap(tmp_path) == 1
+    tool_dir = tmp_path.parent / f"{tmp_path.name}-tools"
+    tool_dir.mkdir()
+    for name in ("git", "bash"):
+        executable = shutil.which(name)
+        assert executable is not None
+        (tool_dir / name).symlink_to(executable)
+    monkeypatch.setenv("PATH", str(tool_dir))
 
-    report = json.loads(capsys.readouterr().out)
+    result = _bootstrap_native(bootstrap_mir, tmp_path, 1)
+    report = json.loads(result.stdout)
     assert report["platform"]["hook_runtime"]["jq"] == "missing"
     assert any("requires jq" in error for error in report["errors"])
     assert not (tmp_path / ".mir" / "memory.db").exists()
@@ -809,13 +843,12 @@ def test_bootstrap_requires_jq_for_active_hook_payloads(tmp_path, capsys):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_invalid_existing_config_is_preserved_and_blocks_bootstrap(tmp_path, capsys):
+def test_invalid_existing_config_is_preserved_and_blocks_bootstrap(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     invalid = "[memory\nenabled = true\n"
     _write(tmp_path / "harness_a.toml", invalid)
 
-    assert _bootstrap(tmp_path) == 2
-    capsys.readouterr()
+    _bootstrap_native(bootstrap_mir, tmp_path, 2)
 
     assert (tmp_path / "harness_a.toml").read_text(encoding="utf-8") == invalid
     assert not (tmp_path / ".mir" / "memory.db").exists()
@@ -824,12 +857,11 @@ def test_invalid_existing_config_is_preserved_and_blocks_bootstrap(tmp_path, cap
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_existing_projection_text_outside_markers_is_preserved(tmp_path, capsys):
+def test_existing_projection_text_outside_markers_is_preserved(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
     _write(tmp_path / "docs" / "memory-map.md", "Authored introduction.\n")
 
-    assert _bootstrap(tmp_path) == 0
-    capsys.readouterr()
+    _bootstrap_native(bootstrap_mir, tmp_path, 0)
 
     rendered = (tmp_path / "docs" / "memory-map.md").read_text(encoding="utf-8")
     assert rendered.startswith("Authored introduction.\n")
@@ -1077,51 +1109,53 @@ def test_content_workspace_completes_phase2_after_restart(tmp_path, capsys):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_finalize_refuses_boolean_attestation_without_architecture_outputs(tmp_path, capsys):
+def test_finalize_refuses_boolean_attestation_without_architecture_outputs(
+    tmp_path, bootstrap_mir,
+):
     _make_harness_surfaces(tmp_path)
-    with patch.object(
-        bootstrap_cli,
-        "_activate_capabilities",
-        return_value=("ready", {"source_commit": "a" * 40}),
-    ):
-        assert (
-            bootstrap_cli.main(
-                [
-                    "--project-root",
-                    str(tmp_path),
-                    "--profile",
-                    "code_app",
-                    "--purpose",
-                    "Build a portable application harness.",
-                    "--stack",
-                    "python",
-                    "--json",
-                ]
-            )
-            == 0
-        )
-    capsys.readouterr()
+    provider = tmp_path.parent / f"{tmp_path.name}-provider"
+    bridge = Path(__file__).resolve().parents[1] / "src/mir/cli/capability_manager_bridge.py"
+    _write(provider / "mir/cli/_real_bridge.py", bridge.read_text(encoding="utf-8"))
+    _write(
+        provider / "mir/cli" / bridge.name,
+        "import sys\n"
+        "from pathlib import Path\n"
+        "if sys.argv[1:] == ['finalize']:\n"
+        "    Path('.mir/finalize-entered').touch()\n"
+        "from mir.cli._real_bridge import main\n"
+        "main()\n",
+    )
+    lock = {"source": {"commit": "a" * 40}, "plugins": {"mir-core": {}}}
+    _write(
+        provider / "mir/core/capabilities/manager.py",
+        "from pathlib import Path\n"
+        "class CapabilityManager:\n"
+        "    def __init__(self, root, **kwargs): pass\n"
+        "    def sync(self, profile, **kwargs):\n"
+        "        Path('.mir/stub-sync-called').touch()\n"
+        f"        Path('.mir/capability-lock.json').write_text({json.dumps(lock)!r})\n"
+        "        return {}\n"
+        "    def finalize(self, **kwargs):\n"
+        "        return {}\n",
+    )
+    env = {"PYTHONPATH": str(provider)}
 
-    with patch.object(bootstrap_cli, "_finalize_capabilities") as finalize:
-        assert (
-            bootstrap_cli.main(
-                [
-                    "--project-root",
-                    str(tmp_path),
-                    "--profile",
-                    "code_app",
-                    "--finalize",
-                    "--architecture-initialized",
-                    "--json",
-                ]
-            )
-            == 1
-        )
-    report = json.loads(capsys.readouterr().out)
+    phase1 = _run_native_bootstrap(
+        bootstrap_mir, tmp_path, 0, "--profile", "code_app",
+        "--purpose", "Build a portable application harness.", "--stack", "python", "--json",
+        env=env,
+    )
+    assert (tmp_path / ".mir/stub-sync-called").is_file()
+    assert json.loads(phase1.stdout)["status"] == "restart_required"
+    result = _run_native_bootstrap(
+        bootstrap_mir, tmp_path, 1, "--profile", "code_app", "--finalize",
+        "--architecture-initialized", "--json", env=env,
+    )
+    assert not (tmp_path / ".mir/finalize-entered").exists()
+    report = json.loads(result.stdout)
     assert report["status"] == "incomplete"
     assert report["architecture_initialization"]["attested"] is False
     assert "architecture evidence is missing" in report["capabilities"]["reason"]
-    finalize.assert_not_called()
 
 
 def test_phase2_rejects_incomplete_spec_coverage_and_open_gaps(tmp_path):
@@ -1152,18 +1186,16 @@ def test_phase2_rejects_incomplete_spec_coverage_and_open_gaps(tmp_path):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
 )
-def test_failed_rerun_preserves_existing_db_and_projection(tmp_path, capsys):
+def test_failed_rerun_preserves_existing_db_and_projection(tmp_path, bootstrap_mir):
     _make_harness_surfaces(tmp_path)
-    assert _bootstrap(tmp_path) == 0
-    capsys.readouterr()
+    _bootstrap_native(bootstrap_mir, tmp_path, 0)
     db_path = tmp_path / ".mir" / "memory.db"
     projection_path = tmp_path / "docs" / "memory-map.md"
     db_hash = sha256(db_path.read_bytes()).hexdigest()
     projection = projection_path.read_text(encoding="utf-8")
 
     (tmp_path / ".claude" / "settings.json").write_text("not json", encoding="utf-8")
-    assert _bootstrap(tmp_path) == 1
-    capsys.readouterr()
+    _bootstrap_native(bootstrap_mir, tmp_path, 1)
 
     assert sha256(db_path.read_bytes()).hexdigest() == db_hash
     assert projection_path.read_text(encoding="utf-8") == projection
