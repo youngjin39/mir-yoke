@@ -65,7 +65,10 @@ fn reference_display_preserves_data_spelling() {
     let base = fs::canonicalize(reference_path(&std::env::temp_dir())).unwrap();
     let directory = tempfile::TempDir::new_in(base).unwrap();
     let physical = fs::canonicalize(directory.path()).unwrap();
-    let data = Path::new("/System/Volumes/Data").join(physical.strip_prefix("/").unwrap());
+    let data = Path::new("/System")
+        .join("Volumes")
+        .join("Data")
+        .join(physical.strip_prefix("/").unwrap());
     assert_eq!(reference_path(&data), data);
 }
 fn reference(mode: &str, root: &Path, case: &str, args: &[&str]) -> Value {

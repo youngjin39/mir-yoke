@@ -53,6 +53,12 @@ skips POSIX replay and retains the platform-specific suite.
 
 ## Source re-pins
 
+- The Mac RC tree at `c764fbd5` re-pins 20 tracked crate inputs, including
+  `executor_transport.rs` after the Windows test cfg change (`b74e1ec8`)
+  and provider teardown fixes (`90a76ed0`, `6793a508`). The original capture
+  revision, shell replay inputs and frozen observations retain their original
+  values. The source pins identify the crate built for the bootstrap replay.
+
 - Stage D exec-resume B4a/B4b (0754c36, a550659) re-pins five crate sources
   (executor_dispatch_cli, executor_resume_cli, executor_resume, executor_admission,
   executor_query); only source hashes moved and every frozen W1 observation is

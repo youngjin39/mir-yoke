@@ -210,7 +210,7 @@ fn rename_counted_utf16_tails_preserve_identity_for_moves_and_stages() {
     for units in [
         vec![b'x' as u16],
         vec![b'x' as u16, b'y' as u16],
-        "한글-🦀".encode_utf16().collect(),
+        "\u{d55c}\u{ae00}-🦀".encode_utf16().collect(),
         vec![b'x' as u16, 0xd800, b'y' as u16],
     ] {
         let dest = r.join("to").join(OsString::from_wide(&units));

@@ -13,7 +13,7 @@ for case, classification in [
     ('long-string', 'word ' * 30),
     ('long-list', ['word ' * 20] * 8),
     ('nested-dict', {'outer': {'inner': ['word ' * 20, {'label': 'value ' * 20}]}}),
-    ('unicode-long-string', '한글 café 🙂 ' * 30),
+    ('unicode-long-string', '\ud55c\uae00 café 🙂 ' * 30),
 ]:
     work = root / case
     (work / 'config').mkdir(parents=True, exist_ok=True)

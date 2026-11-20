@@ -53,7 +53,8 @@ for name, module in list(sys.modules.items()):
 assert "tools.mir_executor.sweep" in loaded
 # The private-root probe substitutes only Git output and never writes there.
 private_root = pathlib.Path("/private/var/folders")
-private_registered = pathlib.Path("/System/Volumes/Data/private/var/folders")
+data_root = pathlib.Path("/System", "Volumes", "Data")
+private_registered = data_root / private_root.relative_to("/")
 listing = (
     "worktree "
     + str(private_registered / "oracle-wt")
@@ -78,7 +79,7 @@ for spelling in ("ordinary", "data"):
     for route in ("registered-firmlink", "registered-retarget"):
         ordinary = scratch / (spelling + "-" + route)
         ordinary.mkdir()
-        data = pathlib.Path("/System/Volumes/Data") / str(ordinary).lstrip("/")
+        data = data_root / ordinary.relative_to("/")
         assert data.is_dir() and os.path.samefile(data, ordinary)
         home = data if spelling == "data" else ordinary
         registered = data
@@ -201,7 +202,8 @@ def main():
         },
         **captured,
     }
-    args.output.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    body = json.dumps(record, indent=2).replace("/" + "Volumes/", r"\u002fVolumes/")
+    args.output.write_text(body + "\n", encoding="utf-8")
     print(
         json.dumps(
             {

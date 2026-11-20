@@ -34,7 +34,7 @@ for name, text, route in [
     ('scanner-block-comment', '|  bad\n a', 'compose'),
     ('scanner-hex-second', '"\\x0G"', 'compose'),
     ('scanner-uri-second', '!<tag:%0G> x', 'compose'),
-    ('constructor-bom', '\ufeff!unknown 한글', 'value'),
+    ('constructor-bom', '\ufeff!unknown \ud55c\uae00', 'value'),
     ('constructor-standard', '!!unknown x', 'value'),
     ('constructor-sequence', '!unknown []', 'value'),
     ('constructor-key-map', '{{a: b}: c}', 'value'),

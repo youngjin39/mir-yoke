@@ -368,7 +368,7 @@ def acquire(scratch, mutant=None, transactions=False, transaction_fixes=False):
             ".claude/agents/a.md", ".claude/agents/../a.md", ".claude/agents/..",
             ".claude/agents//a.md", ".claude/agents/./a.md", "./.claude/agents/a.md",
             "/.claude/agents/a.md", ".claude/agents/nested/a.md", ".claude/agents/a.md/",
-            ".claude/agents/한.md", ".claude/agents/.md", ".claude/agents/a.MD", "",
+            ".claude/agents/\ud55c.md", ".claude/agents/.md", ".claude/agents/a.MD", "",
             ".claude/agents/../x.md", ".claude/agents/..md",
         ]):
             # The three-part '..' case uses suffix='' to isolate the traversal guard.
@@ -507,11 +507,13 @@ def acquire(scratch, mutant=None, transactions=False, transaction_fixes=False):
         record("hash-empty", module.sha256_bytes, b"")
         record("hash-binary", module.sha256_bytes, bytes(range(256)))
         for runtime, selected in [("claude", files), ("codex", []), ("unicode", [
-            module.ManagedFile(".claude/agents/한.md", Path("agents/한.md"), b"", "0" * 64)])]:
+            module.ManagedFile(
+                ".claude/agents/\ud55c.md", Path("agents/\ud55c.md"), b"", "0" * 64)])]:
             record(f"receipt-{runtime}", module.make_receipt, runtime, "a" * 40, selected)
         record("receipt-unsorted", module.make_receipt, "claude", "a" * 40, list(reversed(files)))
         record("receipt-ascii", module.make_receipt, "claude", "\x7f😀", [
-            module.ManagedFile(".claude/agents/한😀.md", Path("agents/한😀.md"), b"", "0" * 64)])
+            module.ManagedFile(
+                ".claude/agents/\ud55c😀.md", Path("agents/\ud55c😀.md"), b"", "0" * 64)])
         # Receipt decisions use explicit synthetic inputs, kept beside each frozen result.
         old = module.sha256_bytes(b"old")
         source = ".claude/agents/z.md"
@@ -547,7 +549,7 @@ def acquire(scratch, mutant=None, transactions=False, transaction_fixes=False):
             changed = {**receipt, "files": {source: {**entry, key: value}}}
             case("stale-" + key + str(value), json.dumps(changed), selected=False)
         case("stale-nondict", json.dumps({**receipt, "files": {source: []}}), selected=False)
-        for name in [".claude/agents/한😀.md", ".claude/commands/old.md",
+        for name in [".claude/agents/\ud55c😀.md", ".claude/commands/old.md",
                      ".codex/agents/old.toml", ".claude/agents/../z.md",
                      ".claude/agents/\ud800.md"]:
             target = Path(*Path(name).parts[1:]).as_posix()
@@ -667,7 +669,10 @@ if __name__ == "__main__":
     output = args.output.resolve()
     result = acquire(args.scratch, args.mutant, args.transactions, args.transaction_fixes)
     # One compact record per line keeps the corpus reviewable within the slice budget.
+    rows = ',\n'.join(
+        json.dumps(key) + ': ' + json.dumps(value, sort_keys=True)
+        for key, value in result["records"].items()
+    )
+    rows = rows.replace("{ROOT}/" + "home/", r"{ROOT}\u002fhome/")
     output.write_text('{"pin": ' + json.dumps(result["pin"]) + ', "source": ' +
-                      json.dumps(SOURCE) + ', "records": {\n' + ',\n'.join(
-                          json.dumps(key) + ': ' + json.dumps(value, sort_keys=True)
-                          for key, value in result["records"].items()) + '\n}}\n')
+                      json.dumps(SOURCE) + ', "records": {\n' + rows + '\n}}\n')

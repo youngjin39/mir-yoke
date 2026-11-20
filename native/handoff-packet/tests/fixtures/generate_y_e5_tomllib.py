@@ -12,7 +12,7 @@ p = argparse.ArgumentParser()
 p.add_argument('--output', type=Path, required=True)
 a = p.parse_args()
 cases = []
-for prefix in ('a=', 'bad = ', '[table]\na=', 'unicode="한글"\na=', 'a=[['):
+for prefix in ('a=', 'bad = ', '[table]\na=', 'unicode="\ud55c\uae00"\na=', 'a=[['):
     for content in ('[', '[1', '[1,', '[1,2', '[true', '[true,', '[[]', '[[],',
                     '["x"', '["x",', '[{a=1}', '[{a=1},', '[#comment', '[1 #comment',
                     '[,', '[1,,', '[1 ', '[\n', '[\r\n', '[\v', '[\u001c',

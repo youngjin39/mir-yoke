@@ -678,12 +678,12 @@ mod shared_receipt_tests {
         let points = |s: &str| s.chars().map(u32::from).collect::<Vec<_>>();
         // Exercise Windows spelling even on Unix; Unix backslashes remain literal.
         assert_eq!(
-            posix_path_points(OsStr::new(r"agents\한.md"), '\\'),
-            points("agents/한.md")
+            posix_path_points(OsStr::new("agents\\\u{d55c}.md"), '\\'),
+            points("agents/\u{d55c}.md")
         );
         assert_eq!(
-            posix_path_points(OsStr::new(r"agents\한.md"), '/'),
-            points(r"agents\한.md")
+            posix_path_points(OsStr::new("agents\\\u{d55c}.md"), '/'),
+            points("agents\\\u{d55c}.md")
         );
         let target = Path::new("agents").join("z.md");
         let item = ManagedFile {

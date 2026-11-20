@@ -74,8 +74,11 @@ fn w_errno_observe_localized_filename() {
     let root = r"C:\synthetic\case";
     let filename = format!(r"{root}\project\.mir\bin\project-hooks.json");
     let filename = handoff_packet::executor_text::repr(&filename);
-    let text =
-        format!("project-hooks: degraded: [Errno 3] 지정된 경로를 찾을 수 없습니다.: {filename}\n");
+    let text = format!(
+        "project-hooks: degraded: [Errno 3] \u{c9c0}\u{c815}\u{b41c} \
+         \u{acbd}\u{b85c}\u{b97c} \u{cc3e}\u{c744} \
+         \u{c218} \u{c5c6}\u{c2b5}\u{b2c8}\u{b2e4}.: {filename}\n"
+    );
     let expected = text.replace(&root.replace('\\', r"\\"), "<tmp>");
     let input = json!({"value":[1,text,"",{},[]]});
     assert_eq!(

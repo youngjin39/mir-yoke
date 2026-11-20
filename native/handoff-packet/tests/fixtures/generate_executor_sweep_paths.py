@@ -72,7 +72,7 @@ def main():
     fake.chmod(0o755)
     aliases = {"real": real}
     if sys.platform == "darwin":
-        aliases["data"] = Path("/System/Volumes/Data") / str(real).lstrip("/")
+        aliases["data"] = Path("/System", "Volumes", "Data") / real.relative_to("/")
         assert os.path.samefile(aliases["data"], real)
     for count in (1, 8, 40):
         for index in reversed(range(count)):
@@ -144,6 +144,7 @@ def main():
         record = json.dumps(dict(reference_pin=PIN, source_sha256=digests), indent=2)
         body = ",\n".join("    " + json.dumps(k) + ": " + json.dumps(v)
                           for k, v in rows.items())
+        body = body.replace("/" + "Volumes/", r"\u002fVolumes/")
         args.output.write_text(record[:-2] + ',\n  "cases": {\n' + body + "\n  }\n}\n")
     assert not failures, failures
     print(f"{len(rows)} path cases passed")
