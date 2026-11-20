@@ -250,7 +250,7 @@ enabled=true
 required={'true' if mode.startswith('required-') else 'false'}
 fingerprint="synthetic-v1"
 base_url="{url}"
-model="{'synthetic-모델' if mode == 'unicode' else 'synthetic-model'}"
+model="{'synthetic-\ubaa8\ub378' if mode == 'unicode' else 'synthetic-model'}"
 api_key_env="SYNTHETIC_KEY"
 auth_scheme="Token"
 timeout_sec=2

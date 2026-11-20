@@ -105,7 +105,7 @@ for mode in ['boundary', 'payload']:
                    'type-fail': {'type': 'array'}, 'bad-schema': {'type': 12},
                    'unsupported': {'properties': {'schema_version': {'const': 1}}},
                    'wide-error': {'required': ['x' * 80]},
-                   'unicode-error': {'required': ['한']},
+                   'unicode-error': {'required': ['\ud55c']},
                    'invalid-required': {'required': [1]},
                    'empty-required': {'required': []}}
         if case in schemas:
