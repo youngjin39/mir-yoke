@@ -526,9 +526,9 @@ pub(crate) fn python_os_error_message(error: &std::io::Error, path: &Path) -> St
     match errno {
         Some((number, text)) => format!(
             "[Errno {number}] {text}: {}",
-            crate::executor_execute::repr(&path.display().to_string())
+            crate::executor_text::repr_points(&crate::executor_text::os_points(path.as_os_str()))
         ),
-        None => message.clone(),
+        None => message,
     }
 }
 
@@ -1190,6 +1190,36 @@ fn ordered_keys(data: &Map<String, Value>, path: &[String], reprs: &InputReprs) 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn python_os_error_formats_native_paths() {
+        use std::{ffi::OsStr, io, os::unix::ffi::OsStrExt};
+
+        let directory = io::Error::from_raw_os_error(libc::EISDIR);
+        assert_eq!(
+            python_os_error_message(&directory, Path::new("evidence")),
+            format!("[Errno {}] Is a directory: 'evidence'", libc::EISDIR)
+        );
+
+        let missing = io::Error::from_raw_os_error(libc::ENOENT);
+        assert_eq!(
+            python_os_error_message(&missing, Path::new("verifier")),
+            format!(
+                "[Errno {}] No such file or directory: 'verifier'",
+                libc::ENOENT
+            )
+        );
+        let path = Path::new(OsStr::from_bytes(b"it's \"evidence\"\\\n\xff"));
+        assert_eq!(
+            python_os_error_message(&missing, path),
+            format!(
+                r#"[Errno {}] No such file or directory: 'it\'s "evidence"\\\n\udcff'"#,
+                libc::ENOENT
+            )
+        );
+    }
+
     #[test]
     fn python_profile_fixtures() {
         let fixtures: Value = serde_json::from_str(include_str!(

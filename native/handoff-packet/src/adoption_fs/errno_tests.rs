@@ -44,7 +44,7 @@ fn operation_classes() -> Vec<crate::executor_text::IoOperation> {
 fn w_errno2_operation_codes() {
     use crate::executor_text::IoOperation;
     for op in operation_classes() {
-        for (code, mapped) in [(2, 2), (3, 2), (5, 13), (32, 13), (183, 17)] {
+        for (code, mapped) in [(2, 2), (3, 2), (5, 13), (32, 13), (112, 28), (183, 17)] {
             let (_, form, number) =
                 crate::executor_text::windows_error_code(&io::Error::from_raw_os_error(code), op);
             let crt = matches!(op, IoOperation::Read | IoOperation::Write);
