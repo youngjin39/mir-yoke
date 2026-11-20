@@ -14,6 +14,8 @@ mod process_job;
 struct CaseProcess {
     child: Option<std::process::Child>,
     #[cfg(windows)]
+    owned: OwnedCaseProcess,
+    #[cfg(windows)]
     job: Option<process_job::ProcessJob>,
 }
 
@@ -25,8 +27,11 @@ impl CaseProcess {
             command.creation_flags(0x4); // CREATE_SUSPENDED
             process_job::ProcessJob::new().unwrap()
         };
+        let child = command.spawn().unwrap();
         let process = Self {
-            child: Some(command.spawn().unwrap()),
+            #[cfg(windows)]
+            owned: OwnedCaseProcess::new(&child),
+            child: Some(child),
             #[cfg(windows)]
             job: Some(job),
         };
@@ -40,7 +45,7 @@ impl CaseProcess {
         process
     }
 
-    fn output(mut self) -> std::process::Output {
+    fn output(&mut self) -> std::process::Output {
         self.child.take().unwrap().wait_with_output().unwrap()
     }
 }
@@ -255,48 +260,174 @@ fn directory_users(path: &Path, capacity: usize) -> std::io::Result<Vec<usize>> 
 }
 
 #[cfg(windows)]
-fn reap_directory_holders(path: &Path, gate_pid: u32) {
-    use std::{
-        ffi::c_void,
-        os::windows::io::{FromRawHandle, OwnedHandle},
+struct OwnedCaseProcess {
+    pid: u32,
+    handle: std::os::windows::io::OwnedHandle,
+}
+
+#[cfg(windows)]
+impl OwnedCaseProcess {
+    fn new(child: &std::process::Child) -> Self {
+        use std::os::windows::io::AsHandle;
+        Self {
+            pid: child.id(),
+            // Pin the exact process, even after wait_with_output consumes Child.
+            // A directory query or matching image/parent never grants ownership.
+            handle: child.as_handle().try_clone_to_owned().unwrap(),
+        }
+    }
+
+    fn wait_until(&self, deadline: Instant) -> std::io::Result<()> {
+        use std::{ffi::c_void, os::windows::io::AsRawHandle};
+        #[link(name = "kernel32")]
+        unsafe extern "system" {
+            fn WaitForSingleObject(handle: *mut c_void, milliseconds: u32) -> u32;
+        }
+        let milliseconds = deadline
+            .saturating_duration_since(Instant::now())
+            .as_millis()
+            .min((u32::MAX - 1) as u128) as u32;
+        // SAFETY: the retained handle belongs to this exact spawned child and
+        // remains live for this finite wait; never reopen a discovered PID.
+        match unsafe { WaitForSingleObject(self.handle.as_raw_handle(), milliseconds) } {
+            0 => Ok(()),
+            258 => Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                format!(
+                    "owned case process pid={} cleanup deadline expired",
+                    self.pid
+                ),
+            )),
+            result => Err(std::io::Error::other(format!(
+                "owned case process pid={} wait={result:#x}: {:?}",
+                self.pid,
+                std::io::Error::last_os_error()
+            ))),
+        }
+    }
+}
+
+// PC7 observed ~27s spawns (one ~52s); allow one 60s cleanup budget, not a
+// timeout per discovered PID. Process creation/output collection is separate.
+#[cfg(windows)]
+const CLEANUP_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+
+#[cfg(windows)]
+fn reap_directory_holders(
+    path: &Path,
+    process: &mut CaseProcess,
+    deadline: Instant,
+) -> std::io::Result<()> {
+    drop(process.job.take());
+    process.owned.wait_until(deadline)?;
+    loop {
+        let holders: Vec<_> = directory_users(path, 1024)?
+            .into_iter()
+            // The query's own temporary directory handle belongs to the runner.
+            .filter(|pid| *pid != std::process::id() as usize)
+            .collect();
+        let foreign: Vec<_> = holders
+            .iter()
+            .filter(|pid| **pid != process.owned.pid as usize)
+            .map(|pid| format!("pid={pid} {}", process_metadata(*pid)))
+            .collect();
+        if !foreign.is_empty() {
+            return Err(std::io::Error::other(format!(
+                "foreign case directory holders root={path:?} owned_pid={}: {}",
+                process.owned.pid,
+                foreign.join("; ")
+            )));
+        }
+        if holders.is_empty() {
+            return Ok(());
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                format!(
+                    "owned case directory holder pid={} root={path:?} cleanup deadline expired: {}",
+                    process.owned.pid,
+                    process_metadata(process.owned.pid as usize)
+                ),
+            ));
+        }
+        // Only the pinned owned process remains; wait for its directory handle
+        // teardown under the same deadline, then query again before real removal.
+        std::thread::sleep(remaining.min(std::time::Duration::from_millis(10)));
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_cleanup_rejects_foreign_gate() {
+    let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir);
+    let directory = tempfile::tempdir_in(base).unwrap();
+    let command = || {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_delegation-gate"));
+        command
+            .current_dir(directory.path())
+            .env("HOME", directory.path())
+            .env_remove("CLAUDE_PROJECT_DIR")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        command
     };
-    #[link(name = "kernel32")]
-    unsafe extern "system" {
-        fn OpenProcess(access: u32, inherit: i32, pid: u32) -> *mut c_void;
-        fn WaitForSingleObject(handle: *mut c_void, milliseconds: u32) -> u32;
+    // Both children have the same image and parent. The foreign child is alive
+    // with stdin held open, so accepting it would reproduce PC7's false wait.
+    let mut foreign = CaseProcess::spawn(&mut command());
+    let foreign_pid = foreign.owned.pid;
+    let timeout = foreign.owned.wait_until(Instant::now()).unwrap_err();
+    assert_eq!(timeout.kind(), std::io::ErrorKind::TimedOut);
+    assert!(timeout.to_string().contains(&format!("pid={foreign_pid}")));
+    let mut owned = CaseProcess::spawn(command().arg("--mir-warmup"));
+    assert!(owned.output().status.success());
+    let error = reap_directory_holders(
+        directory.path(),
+        &mut owned,
+        Instant::now() + CLEANUP_TIMEOUT,
+    )
+    .unwrap_err()
+    .to_string();
+    for expected in [
+        "foreign case directory holders".to_owned(),
+        format!("pid={foreign_pid}"),
+        format!("image=Ok({:?})", env!("CARGO_BIN_EXE_delegation-gate")),
+        format!("parent=Ok({})", std::process::id()),
+    ] {
+        assert!(error.contains(&expected), "{error}");
     }
-    for pid in directory_users(path, 1024).expect("query case directory holders") {
-        if pid == std::process::id() as usize {
-            continue;
-        }
-        let metadata = process_metadata(pid);
-        let owned = [std::process::id(), gate_pid].iter().any(|parent| {
-            metadata
-                == format!(
-                    "image=Ok({:?}) parent=Ok({parent})",
-                    env!("CARGO_BIN_EXE_delegation-gate")
-                )
-        });
-        assert!(owned, "unowned case directory holder pid={pid} {metadata}");
-        // SAFETY: request only synchronization on the identified test child.
-        let handle = unsafe { OpenProcess(0x00100000, 0, pid as u32) };
-        if handle.is_null() {
-            let error = std::io::Error::last_os_error();
-            if error.raw_os_error() == Some(87) {
-                continue;
-            } // exited before open
-            panic!("open case holder pid={pid} {metadata}: {error:?}");
-        }
-        // SAFETY: successful OpenProcess returns an owned handle; bounded wait.
-        let _owned = unsafe { OwnedHandle::from_raw_handle(handle) };
-        let result = unsafe { WaitForSingleObject(handle, 2_000) };
-        assert_eq!(
-            result,
-            0,
-            "case holder pid={pid} {metadata} wait={result:#x}: {:?}",
-            std::io::Error::last_os_error()
-        );
-    }
+    assert!(
+        foreign
+            .child
+            .as_mut()
+            .unwrap()
+            .try_wait()
+            .unwrap()
+            .is_none()
+    );
+    foreign
+        .child
+        .as_mut()
+        .unwrap()
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(br#"{"tool_name":"Read"}"#)
+        .unwrap();
+    assert!(foreign.output().status.success());
+    reap_directory_holders(
+        directory.path(),
+        &mut foreign,
+        Instant::now() + CLEANUP_TIMEOUT,
+    )
+    .unwrap();
+    drop(owned);
+    drop(foreign);
+    directory.close().unwrap();
 }
 
 #[cfg(windows)]
@@ -443,6 +574,7 @@ fn diagnostic_opt_in() {
 fn decision_fixtures() {
     let cases: Vec<Value> =
         serde_json::from_str(include_str!("fixtures/delegation-gate.json")).unwrap();
+    assert_eq!(cases.len(), 66);
     for case in &cases {
         let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
             .map(std::path::PathBuf::from)
@@ -577,7 +709,8 @@ fn decision_fixtures() {
             assert!(error.starts_with("[mir BLOCKED]"), "{error}");
         }
         #[cfg(windows)]
-        reap_directory_holders(root, gate_pid);
+        reap_directory_holders(root, &mut process, Instant::now() + CLEANUP_TIMEOUT).unwrap();
+        drop(process);
         // The owned process and its Windows job are closed before cleanup.
         // Preserve the exact OS error and remaining entries; do not retry away
         // a sharing violation or attribute it to an unobserved external holder.
