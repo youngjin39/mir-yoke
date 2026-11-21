@@ -198,6 +198,21 @@ def archive_reference(destination):
     return hashlib.sha256(data).hexdigest()
 
 
+# The frozen physical SQLite snapshots include bytes left on freed pages.
+SQLITE_KEEP_DELETED_BYTES = """\
+import sqlite3
+
+fixture_connect = sqlite3.connect
+
+def connect(*args, **kwargs):
+    connection = fixture_connect(*args, **kwargs)
+    connection.execute("PRAGMA secure_delete=OFF")
+    return connection
+
+sqlite3.connect = connect
+"""
+
+
 def template(reference, destination):
     script = r"""import sys
 from pathlib import Path
@@ -211,8 +226,17 @@ registry.insert(JobRecord(job_id='fixture', change_id="change 'quoted' \\",
     allow_harness_self_modify=True))
 registry.close()
 """
-    subprocess.run([sys.executable, "-c", script, str(destination)], cwd=reference,
-                   env=environment(reference, {}), check=True, capture_output=True)
+    subprocess.run(
+        [sys.executable, "-c", SQLITE_KEEP_DELETED_BYTES + script, str(destination)],
+        cwd=reference, env=environment(reference, {}), check=True, capture_output=True,
+    )
+
+
+def empty_template(reference, destination):
+    template(reference, destination)
+    with sqlite3.connect(destination) as db:
+        db.execute("PRAGMA secure_delete=OFF")
+        db.execute("DELETE FROM jobs")
 
 
 def seed(home, case, database):

@@ -6,7 +6,6 @@ import copy
 import json
 import os
 import runpy
-import sqlite3
 from pathlib import Path
 
 import pytest
@@ -31,9 +30,7 @@ def oracle(tmp_path_factory):
     digest = SUPPORT["DIRECT"]["STATUS"].archive_reference(reference)
     assert digest == GOLDEN["archive_sha256"]
     database = scratch / "template.db"
-    SUPPORT["DIRECT"]["STATUS"].template(reference, database)
-    with sqlite3.connect(database) as db:
-        db.execute("DELETE FROM jobs")
+    SUPPORT["DIRECT"]["STATUS"].empty_template(reference, database)
     return reference, database
 
 

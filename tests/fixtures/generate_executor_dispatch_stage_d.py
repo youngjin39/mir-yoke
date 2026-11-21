@@ -317,6 +317,7 @@ def after_provider_call(result, metadata):
             shutil.copyfile(database, db)
             with sqlite3.connect(db) as connection:
                 if kind == "wrong-schema":
+                    connection.execute("PRAGMA secure_delete=OFF")
                     connection.execute("DROP TABLE jobs")
                     connection.execute("CREATE TABLE jobs(unexpected TEXT)")
                 elif kind in ("insert-abort", "update-abort"):
@@ -516,7 +517,12 @@ def snapshot(home):
 @isolated_git_environment()
 def capture(home, case, setup, route="reference", binary=None, *, timeout=40):
     _, env, argv = setup
-    command = [sys.executable, "-c", "from tools.mir_executor.cli import main; main()"]
+    command = [
+        sys.executable,
+        "-c",
+        DIRECT["STATUS"].SQLITE_KEEP_DELETED_BYTES
+        + "from tools.mir_executor.cli import main; main()",
+    ]
     if route == "module":
         command = [sys.executable, "-m", "tools.mir_executor"]
         env = dict(env, MIR_EXECUTOR_ARGPARSE_PROG="__main__.py")
@@ -636,9 +642,7 @@ def main():
     reference = scratch / "reference"
     archive_sha256 = DIRECT["STATUS"].archive_reference(reference)
     database = scratch / "template.db"
-    DIRECT["STATUS"].template(reference, database)
-    with sqlite3.connect(database) as db:
-        db.execute("DELETE FROM jobs")
+    DIRECT["STATUS"].empty_template(reference, database)
     golden = json.loads(OUTPUT.read_text()) if args.compare else None
     records, results = [], []
     selected = [case for case in CASES if not args.only or case["name"] in args.only.split(",")]

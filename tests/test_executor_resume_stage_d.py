@@ -62,9 +62,7 @@ def oracle(tmp_path_factory):
     reference = scratch / "reference"
     assert D["DIRECT"]["STATUS"].archive_reference(reference) == GOLDEN["archive_sha256"]
     database = scratch / "template.db"
-    D["DIRECT"]["STATUS"].template(reference, database)
-    with sqlite3.connect(database) as db:
-        db.execute("DELETE FROM jobs")
+    D["DIRECT"]["STATUS"].empty_template(reference, database)
     return reference, database
 
 

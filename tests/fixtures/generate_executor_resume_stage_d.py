@@ -369,6 +369,7 @@ def seed(home, case, reference, database, binary=None):
                 list(row.values()),
             )
         if case.get("db") == "wrong-schema":
+            connection.execute("PRAGMA secure_delete=OFF")
             connection.execute("DROP TABLE jobs")
             connection.execute("CREATE TABLE jobs(unexpected TEXT)")
         if case.get("db") == "update-abort":
@@ -413,9 +414,7 @@ def main():
     reference = scratch / "reference"
     digest = D["DIRECT"]["STATUS"].archive_reference(reference)
     database = scratch / "template.db"
-    D["DIRECT"]["STATUS"].template(reference, database)
-    with sqlite3.connect(database) as db:
-        db.execute("DELETE FROM jobs")
+    D["DIRECT"]["STATUS"].empty_template(reference, database)
     golden = json.loads(OUTPUT.read_text()) if args.compare else None
     records, results = [], []
     for case in CASES:

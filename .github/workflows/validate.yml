@@ -26,6 +26,7 @@ jobs:
         with:
           python-version: |
             3.11
+            3.12
             3.14
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
       - run: uv sync --python 3.14 --extra dev --extra vector --frozen
@@ -41,9 +42,15 @@ jobs:
         working-directory: native/handoff-packet
       - run: >-
           uv run --python 3.14 pytest -q -p no:cacheprovider
-          tests/test_delegation_gate_native_parity.py tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py
+          tests/test_delegation_gate_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py
           tests/test_lifecycle_native_commands.py
           tests/test_line_endings.py
+      # These oracles use Python 3.12 argparse, Unicode and pathlib behavior.
+      - run: >-
+          uv run --python 3.12 --extra dev --extra vector --frozen pytest -q -p no:cacheprovider
+          tests/test_executor_query_native_parity.py tests/test_runtime_verify_native_parity.py
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv-312
       - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
 
       - run: cargo fmt --check

@@ -79,7 +79,8 @@ def test_enforcement_protocol_arguments(enforcement_native):
 def test_native_enforcement_replay(record, tmp_path, enforcement_native):
     if record["retired_branch"]:
         pytest.skip("retired missing-jq branch; native protocol has no jq dependency")
-    root = tmp_path / "replay"
+    # The unquoted provider command deliberately splits a space-bearing path.
+    root = tmp_path / "replay with spaces"
     env = prepare(root)
     install({**FROZEN["scenarios"][record["scenario"]]["setup"], **record["setup"]}, root)
     # Only private Git and the receipt-pinned fake CLI remain reachable.

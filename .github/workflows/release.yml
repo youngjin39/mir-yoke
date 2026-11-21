@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   validate_candidate:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:

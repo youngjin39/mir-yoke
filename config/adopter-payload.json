@@ -419,13 +419,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/release.yml",
-      "sha256": "43fab1213348f82bef3245b26767e606337f0954bfe9d3802df9c2a07e633170"
+      "sha256": "532c1239101813892aea77d1b8f8985342b9f0c9e4494e8e5aa7d50fc4fa3569"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "74b7929f372cbe29175ef04784ca07eecb6be1c849741538f6ea9e9ccfd2034d"
+      "sha256": "704b585d8cf1eaca6de3b4a64cdb2ae7b11465fb5d3fd4f96f7f14c6daaff019"
     },
     {
       "classification": "reference",
@@ -8639,7 +8639,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/generate_executor_direct.py",
-      "sha256": "aad8da3de76bd57cd853d7a4eb3950860083e41df688f9fe5808b4b5b7dcfcc7"
+      "sha256": "c1c553ddefb0c45098df22dcf795bd86ec52afa4c82dfb0c8f614fac51122aa1"
     },
     {
       "classification": "template-maintainer-tool",
@@ -8651,7 +8651,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/generate_executor_dispatch_stage_d.py",
-      "sha256": "69162af8c26a3dea966109ad143ffc463fdf719c2160d3ac38f2716dfa0ced46"
+      "sha256": "fecdf8ab5cb160b9ac5ca44ac4178e76ddd96a757230d5a28a31c4ed0edb29b7"
     },
     {
       "classification": "template-maintainer-tool",
@@ -8687,13 +8687,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/generate_executor_resume_stage_d.py",
-      "sha256": "bfe6d9fa895497df9156f07c13f09c55c558fb3b50f2bdbb1e625863b2eca2e6"
+      "sha256": "02d43231191afd8f223c5f7a5f14ec2ddb2b83bf327425e65309d06bd59df7c0"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/generate_executor_status.py",
-      "sha256": "939a232da8ebc085cce65eb29ce4446a740cc506a471b9bddfee141bf3c6397f"
+      "sha256": "096c8e11501fc5b5809bd03ddf74469b084cdc07f9758143224a17dbe4b8b305"
     },
     {
       "classification": "template-maintainer-tool",
@@ -8999,7 +8999,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_bootstrap_enforce.py",
-      "sha256": "f3f98b200cdb2e398dd660a677cff0a99e8c665c8295537f37db1887b27c3b35"
+      "sha256": "cf0d718e9b341dd4c1e2579d068196f30e0e578b22bcd526df54a564783355bc"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9233,7 +9233,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_dispatch_stage_d.py",
-      "sha256": "d08b0681801defdff3f337648e64e90da4acf118312a67bde3ab12c2e0000fdc"
+      "sha256": "bdd46758d8997de0ca4633568b02daf064263775d27986d0b4ff585dadc12582"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9323,7 +9323,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_resume_stage_d.py",
-      "sha256": "f79da87b2295cc5fe3f1f4e7c009c6c187f76b754775f4a80643d51f60a8c84f"
+      "sha256": "aef356d597df1cb0bfa91e39c1f5738b9dc3da3a97c944353d07a4a5566263b5"
     },
     {
       "classification": "template-maintainer-tool",
