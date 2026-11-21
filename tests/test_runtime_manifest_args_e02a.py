@@ -5,7 +5,6 @@ import ast
 import contextlib
 import io
 import json
-import os
 import subprocess
 import sys
 import tempfile
@@ -14,6 +13,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+SOURCE_REVISION = "4343aba88e811f14f6147a9a9b818b6fb346bec8"
 FIXTURE = ROOT / "tests/fixtures/runtime_manifest_args_e02a.json"
 OPTIONS = [
     "--runtime-root",
@@ -132,7 +132,9 @@ def cases():
 
 def capture():
     source = subprocess.check_output(
-        ["git", "show", "1324a3c:src/mir/cli/runtime_manifest.py"], cwd=ROOT, text=True
+        ["git", "show", f"{SOURCE_REVISION}:src/mir/cli/runtime_manifest.py"],
+        cwd=ROOT,
+        text=True,
     )
     function = next(
         n for n in ast.parse(source).body if isinstance(n, ast.FunctionDef) and n.name == "_parse"
@@ -169,7 +171,7 @@ if __name__ == "__main__" and sys.argv[1:] == ["--capture"]:
 
 @pytest.fixture(scope="module")
 def parser_binary():
-    with tempfile.TemporaryDirectory(prefix="manifest-parser-", dir=os.environ["TMPDIR"]) as tmp:
+    with tempfile.TemporaryDirectory(prefix="manifest-parser-") as tmp:
         yield build_parser(Path(tmp))
 
 

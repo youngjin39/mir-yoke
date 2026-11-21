@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = "1324a3c"
+SOURCE_REVISION = "4343aba88e811f14f6147a9a9b818b6fb346bec8"
 FIXTURE = ROOT / "tests/fixtures/run_python_startup_1324a3c.json"
 EXPORTS = (
     "PROJECT_DIR", "_MIR_RECEIPT", "_MIR_EXTERNAL_CLI", "_MIR_EXTERNAL_SHA",
@@ -154,7 +155,7 @@ def result(process, root):
 def reference(root):
     script = root / "launcher"
     script.write_bytes(subprocess.check_output(
-        ["git", "show", f"{PIN}:.claude/hooks/_lib/run-python.sh"], cwd=ROOT
+        ["git", "show", f"{SOURCE_REVISION}:.claude/hooks/_lib/run-python.sh"], cwd=ROOT
     ))
     return script
 

@@ -419,13 +419,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/release.yml",
-      "sha256": "98ce4ab8114858162f890cfee1fd9c0e7237e2fa4fafa750dd03b30f492df28e"
+      "sha256": "43fab1213348f82bef3245b26767e606337f0954bfe9d3802df9c2a07e633170"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "816cb48e7fd9c5d2f5ebf105851e0feacf9f4311a0036ed8f81da0173aed1dce"
+      "sha256": "74b7929f372cbe29175ef04784ca07eecb6be1c849741538f6ea9e9ccfd2034d"
     },
     {
       "classification": "reference",
@@ -2849,7 +2849,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/adoption_fs.rs",
-      "sha256": "20669ecc6ead95e7c43b87c9d28d3bde2387558ef87d3fc8f3c66fcc059c25a2"
+      "sha256": "f76812c600056875e1ef9a9536a51603cbfb819274668b7c436742d981ded91c"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6155,7 +6155,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_entry_e14.rs",
-      "sha256": "e75224a107247e451b844d40e92dcedb3d5b40f1edfdaa1585c647a6059e2f5c"
+      "sha256": "c4d6c4a436c4838238625ddeaee7393657ef149583f2303534c47d2b5a03f216"
     },
     {
       "classification": "template-maintainer-tool",
@@ -8777,7 +8777,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/runtime_manifest_e02a/capture.py",
-      "sha256": "e56ef692af24bedbce0d1e4637de56c61899171517a844c15146f201c1880fda"
+      "sha256": "7bbf57bdb35493c92684c582992993aacb27b237162ce72d77fe95607033e3c4"
     },
     {
       "classification": "template-maintainer-tool",
@@ -8915,13 +8915,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/run_python_startup_capture.py",
-      "sha256": "5148d7a9180130fefe2b5e7bb650ca50c50ebc39c5a851c0c00a45a6d54ef882"
+      "sha256": "c0d4627a6cedc64d5b1266f82749337cae8805524f657fa63b6a907bf3072893"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/runtime_manifest_verify_capture.py",
-      "sha256": "cd723a7dbd7e16805533763a684c8ecbc981d82ebcbc5e15cda104a25da74c7f"
+      "sha256": "ff2a6b8e99f144e63fe9494f73ac6939d622c484bd3fd3679b72ebf3b0c23a94"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9767,7 +9767,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_run_python_native_parity.py",
-      "sha256": "aeb157add1142aab10571ef4bdb4cdc9c3cceb1c94132302954a71853e3e336e"
+      "sha256": "c9da094180c97d029b3c65e4627de30262bb1a54573a087448b6c45b8e44eb74"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9785,13 +9785,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_runtime_manifest_args_e02a.py",
-      "sha256": "e5009eee8795180d65f1cdd9d9e34ad81b2217b01d21739f0105aaf479b1c3c0"
+      "sha256": "e125d7ba8d572f5dc99a52ffa9fbe20adffcf6e84798466839baa222d96ae6c8"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_runtime_manifest_native_e02a.py",
-      "sha256": "98173a489e7245383f9abe9cbfb0240249a7925577d43f417370e1b6e20b2fed"
+      "sha256": "c047e26356805c6bd66cd988122fc16d5033645ca3cc0244cb7530a143f6e43a"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9881,7 +9881,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_stage_e02b_native_install.py",
-      "sha256": "ca9a8d10c27065c271eeee62e16d5d300c09e481b38a4f1acfa492e437fd72fb"
+      "sha256": "dd03dc2760f6c08181250467416c7bd83265b07ccaa7099283b4513eda993d53"
     },
     {
       "classification": "template-maintainer-tool",

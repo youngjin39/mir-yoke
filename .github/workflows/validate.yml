@@ -20,6 +20,7 @@ jobs:
       CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
         # 3.11 is the mir-mcp compatibility floor the MCP oracles also run.
         with:
@@ -100,6 +101,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
@@ -107,6 +110,9 @@ jobs:
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
       - run: uv sync --extra dev --extra vector --frozen
+      - run: echo "UV_CACHE_DIR=$(uv cache dir)" >> "$GITHUB_ENV"
+      - run: cargo fetch --locked
+        working-directory: native/handoff-packet
       - run: >-
           uv run pytest -q
           tests/test_installed_cli.py

@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 PIN = "1324a3c"
+SOURCE_REVISION = "4343aba88e811f14f6147a9a9b818b6fb346bec8"
 META = [
     "--source-url",
     "https://example.invalid/provider.git",
@@ -98,9 +99,9 @@ def record(command, root, manifest, env):
 
 
 def capture():
-    with tempfile.TemporaryDirectory(prefix="e02a-capture-", dir=os.environ["TMPDIR"]) as tmp:
+    with tempfile.TemporaryDirectory(prefix="e02a-capture-") as tmp:
         base = Path(tmp)
-        archive = subprocess.check_output(["git", "archive", PIN, "src/mir"], cwd=ROOT)
+        archive = subprocess.check_output(["git", "archive", SOURCE_REVISION, "src/mir"], cwd=ROOT)
         import io
 
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:

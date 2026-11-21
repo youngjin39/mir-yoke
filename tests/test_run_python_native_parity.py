@@ -18,6 +18,7 @@ from e02a_binary import binary
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = "1324a3c"
+SOURCE_REVISION = "4343aba88e811f14f6147a9a9b818b6fb346bec8"
 
 
 @pytest.fixture
@@ -30,7 +31,7 @@ def sandbox():
         ("reference.py", "src/mir/cli/run_python.py"),
         ("reference.sh", ".claude/hooks/_lib/run-python.sh"),
     ):
-        contents = subprocess.check_output(["git", "show", f"{PIN}:{source}"], cwd=ROOT)
+        contents = subprocess.check_output(["git", "show", f"{SOURCE_REVISION}:{source}"], cwd=ROOT)
         (root / name).write_bytes(contents)
     yield root, project
     shutil.rmtree(root)

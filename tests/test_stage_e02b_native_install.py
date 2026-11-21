@@ -24,7 +24,7 @@ from unittest import mock
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-PIN = "ba6aa95673deefcb5f418b3fe9f3007f9b22e62a"
+SOURCE_REVISION = "4343aba88e811f14f6147a9a9b818b6fb346bec8"
 FIXTURE = ROOT / "native/handoff-packet/tests/fixtures/stage-e02b-install.json"
 TARGET = "x86_64-unknown-linux-gnu"
 BODY = b'#!/bin/sh\nprintf "mir-project-hooks-v1\\nmir-project-hooks-compact-v1\\n"\n'
@@ -343,7 +343,7 @@ def write_records(scratch):
     with tempfile.TemporaryDirectory(dir=scratch) as folder:
         workspace = Path(folder)
         archive = subprocess.run(
-            ["git", "archive", PIN, "src"], cwd=ROOT, capture_output=True, check=True
+            ["git", "archive", SOURCE_REVISION, "src"], cwd=ROOT, capture_output=True, check=True
         )
         with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tar:
             tar.extractall(workspace, filter="data")
