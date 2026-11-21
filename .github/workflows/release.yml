@@ -24,7 +24,7 @@ jobs:
             3.11
             3.12
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra vector --frozen
       - name: Validate repository release candidate
         run: uv run python scripts/verify_release_readiness.py --current-clean-tree
       - name: Publish GitHub Release

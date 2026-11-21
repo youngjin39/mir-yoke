@@ -419,13 +419,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/release.yml",
-      "sha256": "774298b99187f452d4c8e8f8008594553481a80175b8699acd2ce44ab7c44a82"
+      "sha256": "98ce4ab8114858162f890cfee1fd9c0e7237e2fa4fafa750dd03b30f492df28e"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "5c9cfbf7bf5351fa435194f1ed96bead2712d8a748ce1b42c398c733f078608d"
+      "sha256": "816cb48e7fd9c5d2f5ebf105851e0feacf9f4311a0036ed8f81da0173aed1dce"
     },
     {
       "classification": "reference",
