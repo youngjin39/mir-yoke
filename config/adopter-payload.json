@@ -4733,7 +4733,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e13.py",
-      "sha256": "d3a30efbd1e7dda5eb33cdbc5359dfbdeb8af462182caa68f577e8dd02d97467"
+      "sha256": "dd3feb22e46f908965c84a406c434f12faf8d0c755a22652b234e109864fb2bc"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9587,7 +9587,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_native_release.py",
-      "sha256": "1976a174503db7bcd21fd67178ae4a9ce84c6d64d6ac87d54c0007dfbb9bde2f"
+      "sha256": "321c08f431d94c43464b11353461ec9e3e8b3fbb373aa9384a5a577ee5a03f2d"
     },
     {
       "classification": "template-maintainer-tool",
@@ -10745,7 +10745,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tools/native_release.py",
-      "sha256": "ca4ddc00952434c23e5ee7cc2001ef36166bac8cd8099cddd91409a6bee940b3"
+      "sha256": "4d4b6d3b96c5a32cf766d9aeefe50468132d66170bd33270e3c02135a5b7be37"
     },
     {
       "classification": "optional-consumer-tool",

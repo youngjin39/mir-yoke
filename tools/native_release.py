@@ -42,6 +42,14 @@ def filename(name: str, target: str) -> str:
     return f"{name}-{target}" + (".exe" if target.endswith("windows-msvc") else "")
 
 
+def path_identity(path: Path) -> tuple[int, int] | None:
+    try:
+        info = path.stat()
+    except FileNotFoundError:
+        return None
+    return info.st_dev, info.st_ino
+
+
 def pin_release(
     directory: Path, lock_path: Path, source: str, cli_pin: Path | None = None,
     mac_only: bool = False,
@@ -59,13 +67,26 @@ def pin_release(
             raise ValueError("--cli-pin must be separate from the capability lock")
     # A rerun needs the same release input, so no output may land inside it.
     release_dir = directory.resolve()
+    release_identity = path_identity(release_dir)
+    output_identities = {}
     for output in (lock_path, cli_pin):
-        if output is not None and (
-            output.is_relative_to(release_dir)
-            or (output.exists() and output.samefile(directory / "release.json"))
+        if output is None:
+            continue
+        if output.is_relative_to(release_dir) or (
+            release_identity is not None
+            and any(path_identity(parent) == release_identity for parent in output.parents)
         ):
             raise ValueError(f"output must be outside the release directory: {output}")
-    release = json.loads((directory / "release.json").read_text(encoding="utf-8"))
+        if (identity := path_identity(output)) is not None:
+            output_identities[identity] = output
+
+    def refuse_input_alias(path: Path) -> None:
+        if (output := output_identities.get(path_identity(path))) is not None:
+            raise ValueError(f"output must be outside the release directory: {output}")
+
+    release_path = directory / "release.json"
+    refuse_input_alias(release_path)
+    release = json.loads(release_path.read_text(encoding="utf-8"))
     tag = release.get("tag_name", "")
     if re.fullmatch(r"native-[0-9a-f]{12}", tag) is None or release.get("prerelease") is not True:
         raise ValueError("expected a native-<12-char SHA> prerelease")
@@ -77,7 +98,6 @@ def pin_release(
         or release.get("target_commitish") != source
     ):
         raise ValueError("release was not built from the given source commit")
-    lock = json.loads(lock_path.read_text(encoding="utf-8"))
     targets = MAC_TARGETS if mac_only else TARGETS
     names_by_target = {
         target: (*BINARIES, "mir") if cli_pin and target in MAC_TARGETS else tuple(BINARIES)
@@ -106,6 +126,7 @@ def pin_release(
         path = directory / name
         if path.is_symlink() or not path.is_file():
             raise ValueError(f"missing or linked asset: {name}")
+        refuse_input_alias(path)
         data = path.read_bytes()
         if type(asset["size"]) is not int or asset["size"] <= 0 or len(data) != asset["size"]:
             raise ValueError(f"asset size mismatch: {name}")
@@ -135,6 +156,7 @@ def pin_release(
             pins[target] = {
                 "url": asset["browser_download_url"], "sha256": digest, "size": len(data),
             }
+    lock = json.loads(lock_path.read_text(encoding="utf-8"))
     existing = lock.get("native_artifacts", {})
     if mac_only:
         for name, record in records.items():
@@ -179,6 +201,7 @@ def publish_outputs(outputs: dict[Path, str], lock_path: Path, cli_pin: Path | N
                 os.fsync(handle.fileno())
         if cli_pin is not None:
             os.replace(staged[cli_pin], cli_pin)
+            del staged[cli_pin]
         try:
             os.replace(staged[lock_path], lock_path)
         except OSError as exc:
@@ -188,15 +211,17 @@ def publish_outputs(outputs: dict[Path, str], lock_path: Path, cli_pin: Path | N
                 f"updated {cli_pin} but could not replace {lock_path}: {exc}; "
                 "rerun the same command to converge"
             ) from exc
+        del staged[lock_path]
     finally:
         leftovers = []
         for temporary in staged.values():
             # Preserve the publish error; only name what cleanup could not remove.
             try:
-                temporary.unlink(missing_ok=True)
+                temporary.unlink()
+            except FileNotFoundError:
+                pass
             except OSError:
-                if temporary.exists():
-                    leftovers.append(str(temporary))
+                leftovers.append(str(temporary))
         if leftovers:
             print("could not remove temporary file(s): " + ", ".join(leftovers), file=sys.stderr)
 
