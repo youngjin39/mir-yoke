@@ -26,7 +26,12 @@ jobs:
             3.11
             3.12
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --extra vector --frozen
+      - name: Sync project with extension-capable Python
+        run: |
+          python="$(brew --prefix)/opt/python@3.12/bin/python3.12"
+          if [[ ! -x "$python" ]]; then brew install python@3.12; fi
+          "$python" -c 'import sqlite3; assert hasattr(sqlite3.Connection, "enable_load_extension")'
+          uv sync --python "$python" --extra dev --extra vector --frozen
       - run: echo "UV_CACHE_DIR=$(uv cache dir)" >> "$GITHUB_ENV"
       # Offline setup tests resolve the tool independently of the project lock.
       - run: uv tool install --python .venv/bin/python --force --link-mode copy --constraints config/cli-runtime-constraints.txt .

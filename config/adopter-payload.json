@@ -419,7 +419,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/release.yml",
-      "sha256": "37142ad6694fa3b23b406705c5cfe732aa2672a156b158f9e3d0dd7c5fec23f9"
+      "sha256": "94938bc6bbccfa90187a8cd7ead6ab6880882be279928df24511cd92ae1cc5c0"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4847,7 +4847,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e18_p2.py",
-      "sha256": "fa3faaf7794d745f4774f9d9f1c5a335e288f525f669aefb804245678de88794"
+      "sha256": "8fec084128948eca3a6ecac329a96c235b0941b29ba32e93d267e88f88af9243"
     },
     {
       "classification": "template-maintainer-tool",
@@ -8915,7 +8915,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/run_python_startup_capture.py",
-      "sha256": "c0d4627a6cedc64d5b1266f82749337cae8805524f657fa63b6a907bf3072893"
+      "sha256": "05ff349bb7b2574c35c5653c71af6c107ac360091c1bacd9e803f3211150042a"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9773,7 +9773,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_run_python_startup.py",
-      "sha256": "c237c0e1dbe85296f8d72e9dd89c28ef3b975263b1eee9e996894e9022706f6f"
+      "sha256": "63c60119c5399ee79e9352fa6d59e604b02b81e8148ddf1c0b025545aed7d0de"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9785,7 +9785,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_runtime_manifest_args_e02a.py",
-      "sha256": "e125d7ba8d572f5dc99a52ffa9fbe20adffcf6e84798466839baa222d96ae6c8"
+      "sha256": "c3d760a358312d71486372fa3f4020941c3ffa04f15df0fe8b42ea4109cc8a17"
     },
     {
       "classification": "template-maintainer-tool",

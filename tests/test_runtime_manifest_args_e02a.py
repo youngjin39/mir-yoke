@@ -215,6 +215,7 @@ fn main() {
             "-o",
             str(binary),
         ],
+        cwd=crate,
         check=True,
     )
     return binary

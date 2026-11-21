@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PIN = "1324a3c"
 SOURCE_REVISION = "4343aba88e811f14f6147a9a9b818b6fb346bec8"
 FIXTURE = ROOT / "tests/fixtures/run_python_startup_1324a3c.json"
+# Bash 3.2 quotes whitespace in xtrace before result() replaces the root.
+STARTUP_DIRECTORY = "startup fixture"
 EXPORTS = (
     "PROJECT_DIR", "_MIR_RECEIPT", "_MIR_EXTERNAL_CLI", "_MIR_EXTERNAL_SHA",
     "_MIR_RUNTIME_ROOT", "_MIR_RUNTIME_MANIFEST", "_MIR_RUNTIME_MANIFEST_SHA",
@@ -164,7 +166,7 @@ def capture():
     records = []
     for name, state in CASES:
         with tempfile.TemporaryDirectory(prefix="startup-") as directory:
-            root = Path(directory)
+            root = Path(directory) / STARTUP_DIRECTORY
             env, decline = setup(root, name, state)
             script = reference(root)
             process = subprocess.run(

@@ -1,6 +1,7 @@
 """Y-E18 p2: identical realtime input, pinned Python capture, literal public replay."""
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -171,9 +172,19 @@ for name in cases:
         outside.mkdir()
         (outside/'sentinel').write_bytes(b'outside must stay unchanged')
         git = tools/'git'
-        git.write_text('#!/bin/sh\nif [ \"$1 $2\" = \"rev-parse HEAD\" ]; then\n'
-                       '/bin/mv .mir/db-parent .mir/db-parent-saved\n'
-                       f'/bin/ln -s \"{outside}\" .mir/db-parent\nfi\nexit 1\n')
+        git.write_text(f'''#!/bin/sh
+if [ "$1 $2" = "rev-parse HEAD" ]; then
+    exec {shlex.quote(str(python))} -I - <<'PY'
+from pathlib import Path
+
+parent = Path('.mir/db-parent')
+parent.rename(parent.with_name('db-parent-saved'))
+parent.symlink_to(Path('../outside').resolve(), target_is_directory=True)
+raise SystemExit(1)
+PY
+fi
+exit 1
+''')
     elif name == 'doctor-refused':
         initial['archive/source.md'] = b''
     elif name == 'ready-receipt':
