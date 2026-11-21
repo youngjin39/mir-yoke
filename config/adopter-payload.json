@@ -419,13 +419,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/release.yml",
-      "sha256": "532c1239101813892aea77d1b8f8985342b9f0c9e4494e8e5aa7d50fc4fa3569"
+      "sha256": "37142ad6694fa3b23b406705c5cfe732aa2672a156b158f9e3d0dd7c5fec23f9"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "704b585d8cf1eaca6de3b4a64cdb2ae7b11465fb5d3fd4f96f7f14c6daaff019"
+      "sha256": "5bb317b89116a4eb099b927e7d408e1a79c638294d5fd7cadcc86565729a5671"
     },
     {
       "classification": "reference",
@@ -4841,7 +4841,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e18.py",
-      "sha256": "41b8360824e9c2400d2e90697c13659c3426926f66f224ae55f0bcac7af59cd3"
+      "sha256": "931790c11a77aa22d55748b6471be499aa4a2effbf06360be5cf0cf2cdf1ba34"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4877,7 +4877,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_y_e18_p4.py",
-      "sha256": "f9a4ad0b7099db632f89274d22e0c1c7a27c1b2c7d7942ab111099226319f81d"
+      "sha256": "a43190b6dd90de2c246ae871c691970798bf51be8d4f254277d1c00cc86772bd"
     },
     {
       "classification": "template-maintainer-tool",

@@ -132,7 +132,8 @@ for failure in ['missing', 'permission', 'format', 'nonzero', 'malformed']:
         python.write_text({'format': 'invalid executable', 'nonzero': '#!/bin/sh\nexit 7\n',
                            'malformed': '#!/bin/sh\nprintf broken\n'}.get(failure, '#!/bin/sh\n'))
         python.chmod(0o644 if failure == 'permission' else 0o755)
-    if failure in ['missing', 'permission']:
+    # Linux returns ENOEXEC directly for this absolute path.
+    if failure in ['missing', 'permission'] or (failure == 'format' and sys.platform == 'linux'):
         try:
             subprocess.run([str(python)], cwd=work, check=False)
         except OSError as exc:
@@ -140,7 +141,7 @@ for failure in ['missing', 'permission', 'format', 'nonzero', 'malformed']:
         else:
             raise AssertionError('OS seam must fail')
     else:
-        # Rust's exec fallback rejects this invalid shell body with status 127.
+        # On macOS, Rust's exec fallback rejects the invalid shell body with status 127.
         # This adapter has no reference route: all nonzero child exits fail closed.
         reason = ('invalid Python runtime attestation' if failure == 'malformed' else
                   'Python runtime attestation failed: exit status: ' +
