@@ -157,6 +157,8 @@ def main(argv: list[str] | None = None) -> int:
                 "run",
                 "--extra",
                 "dev",
+                "--extra",
+                "vector",
                 "python",
                 "scripts/verify_release_readiness.py",
                 "--current-clean-tree",

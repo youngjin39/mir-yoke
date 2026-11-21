@@ -7535,7 +7535,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "scripts/verify_release_readiness.py",
-      "sha256": "90663ed3e0c7884e7e642fbd02af7de13b9facc549f8a449683d07662db9ab69"
+      "sha256": "14a4d3558e1e3557b57cbc1fe6af421787d0f7c5726a8d33dab7a4fce0144e2a"
     },
     {
       "classification": "reference",
