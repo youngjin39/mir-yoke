@@ -27,7 +27,7 @@ jobs:
             3.11
             3.14
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --python 3.14 --extra dev --frozen
+      - run: uv sync --python 3.14 --extra dev --extra vector --frozen
       # Runner rustup honors the crate's pinned toolchain and components.
       # cargo fmt has no --locked option: it only checks source formatting.
       - run: cargo fmt --check
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra vector --frozen
       - run: cargo build --release --locked --bin project-hooks
         working-directory: native/handoff-packet
       - run: >-
@@ -106,7 +106,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra vector --frozen
       - run: >-
           uv run pytest -q
           tests/test_installed_cli.py
@@ -144,7 +144,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra vector --frozen
       - run: >-
           npm install --global
           @anthropic-ai/claude-code@2.1.223
@@ -177,7 +177,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra vector --frozen
       - run: >-
           uv run pytest -q
           tests/test_line_endings.py
@@ -209,7 +209,7 @@ jobs:
           tests/test_mir_mcp_relations.py
       - run: uv run pytest -q tests/test_setup_wrappers.py -k powershell_launcher
       # Native handoff byte parity on Windows (same steps as native_handoff).
-      - run: uv sync --python 3.14 --extra dev --frozen
+      - run: uv sync --python 3.14 --extra dev --extra vector --frozen
       - run: cargo fmt --check
         working-directory: native/handoff-packet
       - run: cargo clippy --all-targets --locked -- -D warnings
