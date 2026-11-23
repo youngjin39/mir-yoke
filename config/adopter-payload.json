@@ -419,7 +419,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/release.yml",
-      "sha256": "fd91a24e40ce929e7237f9f3a7070c66ce1a29272616535ca046efef86de80c9"
+      "sha256": "402542edfc1d396ceed87d791c8c7cbd62478358d2f915a1c7b74506cf84546c"
     },
     {
       "classification": "template-maintainer-tool",
@@ -521,7 +521,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "MIGRATION.md",
-      "sha256": "6f5568295bf1a9dab775d080ab175abe86ebcc48f4bb7156bcac592183ef02da"
+      "sha256": "d7b5600ed46f314eb2eb2ab6519a2a23e3a81a5ba214dc640ef1060e8214ca0d"
     },
     {
       "classification": "reference",
@@ -3389,7 +3389,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/capability.rs",
-      "sha256": "930413f90421ad850ab854ab890c388e5fb07e5d6a3a6cb63fc995bfe3ab780d"
+      "sha256": "ed039f74f653f688f2f702c6f64343375a9806f963d84124092125a207518da5"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4001,7 +4001,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/b30_capability_support/mod.rs",
-      "sha256": "641e63da8860acbe0f80080e6dfb056d1f0ce4589793cfd7f89d70b6af97b81f"
+      "sha256": "237bb08bb8ea5b46ee840d068cdb904548ccc211208b0508486bafe1c2aed8bb"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6011,7 +6011,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/mir_cli_b30_capability.rs",
-      "sha256": "933d2c3a62018781f8726255020a65738d447111bc2b504d86100997864a471b"
+      "sha256": "429473faf5835a90c78b4e5346042a80ed4f5ebd91a3638f0d81a794fdd8266c"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7547,7 +7547,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "scripts/verify_release_readiness.py",
-      "sha256": "14a4d3558e1e3557b57cbc1fe6af421787d0f7c5726a8d33dab7a4fce0144e2a"
+      "sha256": "b7eddb9ba72e4f819daf5c9920382c79cdb7c12c12226e8f31efb29a804b26d2"
     },
     {
       "classification": "reference",
@@ -7859,13 +7859,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/cli/capability.py",
-      "sha256": "22fbb116a3d63a47cc69df89d44581ba844e2a92f3729f559e6e9b7cb8bc0867"
+      "sha256": "e8aa670d070142670751c3a34790bdc2f66361349065fbb0e3bde33d402304fc"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/cli/capability_manager_bridge.py",
-      "sha256": "d162e3bc4c72ca1a2ca977ede722bb29cf2d3ecfbeec67604025cc70ecd09d5d"
+      "sha256": "916f3dc6a6a95c982339d566185ea47423f6fa6f305975a58147132acbcba046"
     },
     {
       "classification": "optional-consumer-tool",
@@ -7973,7 +7973,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "096cd74a7bb88606bbae1bf46f97902b2c24c5643edc192ea66da3d1a16f56ca"
+      "sha256": "57c80976d5adce4c2a3dbb84aa2348f2eb31c82e8b58bea591cbe390d6b9d820"
     },
     {
       "classification": "optional-consumer-tool",
@@ -9053,7 +9053,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_cli.py",
-      "sha256": "5ef50ddb0cb8339704879c471a168dce7eae7e9dee7316aa2940de4d5b9056f7"
+      "sha256": "68e8b38fb96f433e9d724d9cb292f40623b3ccbb09d9cde4af1d271cd8a6b21a"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9749,7 +9749,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_release_readiness.py",
-      "sha256": "74eead8f0cfff1243ef448ef6c39254d00eb940a0e596861e3a9788a61b39673"
+      "sha256": "cece9b816111e7681366ab200598b882d6fcfe0bcb8751490ebfdb933bd73e86"
     },
     {
       "classification": "template-maintainer-tool",
@@ -10157,7 +10157,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_w2_b30_capability_frozen.py",
-      "sha256": "ae06f59d72a6bf5c11df59236cc898de6a8f544daf46d912a638202c19c599cf"
+      "sha256": "b8e10069213754b24602244945127f7720e077489704b50eb7b1e144224006c1"
     },
     {
       "classification": "template-maintainer-tool",
