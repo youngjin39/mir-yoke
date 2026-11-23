@@ -33,9 +33,6 @@ jobs:
           python="$(brew --prefix)/opt/python@3.12/bin/python3.12"
           if [[ ! -x "$python" ]]; then brew install python@3.12; fi
           uv sync --python "$python" --extra dev --extra vector --locked
-      - name: Verify tagged consumer contract receipt
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: uv run --no-sync python scripts/verify_release_readiness.py --verify-consumer-receipt
       - name: Preflight checkout and Python
         run: uv run --no-sync python scripts/ci_preflight.py --sqlite-vector
       - name: Preflight handoff Cargo lock

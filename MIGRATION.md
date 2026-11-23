@@ -6,12 +6,11 @@ Regenerate the adopter payload after the last record change and verify it in a c
 ### Pre-tag consumer contract
 
 On the Mac maintainer host, set `NATIVE_ASSETS` to the offline asset directory outside the
-checkout and `CONSUMER_COMMIT` to the full consumer revision. Keep the pinned host artifacts'
-release filenames and executable modes intact.
+checkout. Keep the pinned host artifacts' release filenames and executable modes intact.
 
 ```sh
 UV_OFFLINE=1 uv run --no-sync python scripts/verify_release_readiness.py --current-clean-tree \
-  --native-artifacts-dir "$NATIVE_ASSETS" --consumer-commit "$CONSUMER_COMMIT"
+  --native-artifacts-dir "$NATIVE_ASSETS"
 ```
 
 The stage copies the candidate plugins and artifacts into a temporary consumer, checks the
@@ -19,12 +18,9 @@ installed modes and SHA-256 digests, and exercises each published Claude/Codex P
 command with a synthetic event. When set, `MIR_RELEASE_CONSUMER_CHECK` must point to an executable that
 accepts the temporary install path and exits 0. The runner must use offline fixtures.
 
-A green run writes `release/consumer-contract-receipt.json` with both commits, the lock and CLI
-manifest digests, and the SHA-256 of each checked asset. Regenerate the adopter payload with
-`uv run --no-sync python -m tools.template_assets --write-adopter-payload` and commit only the
-receipt and refreshed payload on top of the verified candidate. Tag that commit after the
-pre-tag checks pass. The hosted tag workflow verifies the receipt against the tagged tree and runs
-the repository checks before publishing the GitHub Release.
+A red consumer-contract stage blocks tagging. Record the Yoke candidate commit, the consumer
+commit, and each checked artifact's SHA-256 in the release record.
+The hosted tag job does not yet verify the pre-tag consumer-contract result.
 
 ## 0.13.61 native executor queries with local executor files
 

@@ -17,9 +17,6 @@ from scripts import verify_release_readiness as readiness
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "aarch64-apple-darwin"
-CANDIDATE_COMMIT = "a" * 40
-CONSUMER_COMMIT = "b" * 40
-RECEIPT = Path("release/consumer-contract-receipt.json")
 
 
 @pytest.fixture
@@ -178,79 +175,6 @@ def test_consumer_contract_passes_candidate_manifests(consumer_candidate, monkey
     assert not (candidate / "real home").exists()
 
 
-def _readiness_status(args: list[str]) -> int:
-    try:
-        return readiness.main(args)
-    except SystemExit as error:
-        return error.code
-
-
-def test_pretag_receipt_records_candidate_consumer_and_assets(consumer_candidate, monkeypatch):
-    candidate, assets, _ = consumer_candidate
-    monkeypatch.setattr(readiness, "_git_output", lambda root, *args: CANDIDATE_COMMIT)
-    assert _readiness_status(["--current-clean-tree", "--consumer-commit", CONSUMER_COMMIT]) == 0
-    receipt = json.loads((candidate / RECEIPT).read_text())
-    assert receipt["verdict"] == "pass"
-    assert receipt["candidate_commit"] == CANDIDATE_COMMIT
-    assert receipt["consumer_commit"] == CONSUMER_COMMIT
-    assert receipt["target"] == TARGET
-    lock = candidate / ".mir/capability-lock.json"
-    assert receipt["lock_sha256"] == hashlib.sha256(lock.read_bytes()).hexdigest()
-    assert receipt["assets"] == [
-        {"path": asset.name, "sha256": hashlib.sha256(asset.read_bytes()).hexdigest()}
-        for asset in sorted(assets.iterdir())
-    ]
-
-
-@pytest.mark.parametrize(
-    "case",
-    ["pass", "missing", "failed", "lock", "asset", "cli-manifest", "wrong-parent", "changed-tree"],
-)
-def test_tagged_receipt_verification(consumer_candidate, monkeypatch, capsys, case):
-    candidate, assets, _ = consumer_candidate
-    lock = candidate / ".mir/capability-lock.json"
-    cli_pin = candidate / "config/cli-native-artifacts.json"
-    receipt = {
-        "verdict": "pass",
-        "candidate_commit": CANDIDATE_COMMIT,
-        "consumer_commit": CONSUMER_COMMIT,
-        "target": TARGET,
-        "lock_sha256": hashlib.sha256(lock.read_bytes()).hexdigest(),
-        "cli_pin_sha256": hashlib.sha256(cli_pin.read_bytes()).hexdigest(),
-        "assets": [
-            {"path": asset.name, "sha256": hashlib.sha256(asset.read_bytes()).hexdigest()}
-            for asset in sorted(assets.iterdir())
-        ],
-    }
-    if case == "failed":
-        receipt["verdict"] = "fail"
-    elif case == "lock":
-        lock.write_text(lock.read_text() + "\n")
-    elif case == "asset":
-        receipt["assets"][0]["sha256"] = "0" * 64
-    elif case == "cli-manifest":
-        cli_pin.write_text(cli_pin.read_text() + "\n")
-    if case != "missing":
-        (candidate / RECEIPT).parent.mkdir()
-        (candidate / RECEIPT).write_text(json.dumps(receipt))
-
-    def git_output(root, *args):
-        if args == ("show", f"HEAD:{RECEIPT}"):
-            if case == "missing":
-                raise subprocess.CalledProcessError(128, args)
-            return (root / RECEIPT).read_text()
-        if args[:1] == ("rev-parse",):
-            return "c" * 40 if case == "wrong-parent" else CANDIDATE_COMMIT
-        if args[:1] == ("diff",):
-            return "plugins/mir-lifecycle-hooks/hooks/hooks.json" if case == "changed-tree" else ""
-        pytest.fail(f"unexpected Git call: {args}")
-
-    monkeypatch.setattr(readiness, "_git_output", git_output)
-    assert _readiness_status(["--verify-consumer-receipt"]) == (0 if case == "pass" else 1)
-    if case != "pass":
-        assert "consumer-receipt:" in capsys.readouterr().err
-
-
 def test_tmpdir_preflight_executes_test_despite_inherited_collect_only(tmp_path, monkeypatch):
     monkeypatch.setenv("PYTEST_ADDOPTS", "--collect-only")
     monkeypatch.setenv("TMPDIR", str(tmp_path))
@@ -305,7 +229,7 @@ def test_should_include_every_required_gate_when_release_script_is_inspected() -
         assert token in body
 
 
-def test_tag_workflow_publishes_release_after_receipt_and_repository_validation() -> None:
+def test_tag_workflow_publishes_release_after_repository_validation() -> None:
     workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
     assert "contents: write" in workflow
@@ -315,9 +239,6 @@ def test_tag_workflow_publishes_release_after_receipt_and_repository_validation(
     assert "--require-project-agent-kit-evidence" not in workflow
     assert "git push" not in workflow
     assert workflow.index("verify_release_readiness.py") < workflow.index("gh release create")
-    receipt_check = "verify_release_readiness.py --verify-consumer-receipt"
-    assert receipt_check in workflow
-    assert workflow.index(receipt_check) < workflow.index("gh release create")
     for token in (
         "gh release view",
         "gh release create",

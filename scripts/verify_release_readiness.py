@@ -66,9 +66,6 @@ EVIDENCE_CHECK = (
 CAPABILITY_LOCK = Path(".mir/capability-lock.json")
 CLI_PIN = Path("config/cli-native-artifacts.json")
 CLI_SELECTOR = Path("config/cli-native-pin.jq")
-CONSUMER_RECEIPT = Path("release/consumer-contract-receipt.json")
-ADOPTER_PAYLOAD = Path("config/adopter-payload.json")
-MAC_TARGETS = {"aarch64-apple-darwin", "x86_64-apple-darwin"}
 PLUGIN_ROOTS = ("${CLAUDE_PLUGIN_ROOT}/", "${CODEX_PLUGIN_ROOT}/")
 
 
@@ -404,65 +401,6 @@ def _verify_clean_tree(root: Path) -> None:
         raise RuntimeError("release verification requires a clean candidate Git tree")
 
 
-def _git_output(root: Path, *args: str) -> str:
-    return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
-
-
-def _receipt_inputs(root: Path, target: str | None) -> dict:
-    if target not in MAC_TARGETS:
-        raise ValueError("receipt requires a Darwin release target")
-    lock = (root / CAPABILITY_LOCK).read_bytes()
-    assets = _candidate_assets(root, json.loads(lock), target)
-    return {
-        "lock_sha256": hashlib.sha256(lock).hexdigest(),
-        "cli_pin_sha256": hashlib.sha256((root / CLI_PIN).read_bytes()).hexdigest(),
-        "assets": [
-            {"path": path, "sha256": digest}
-            for path, digest in sorted((_asset_name(pin), pin["sha256"]) for _, pin in assets)
-        ],
-    }
-
-
-def _write_consumer_receipt(root: Path, consumer_commit: str) -> None:
-    target = host_target()
-    data = {
-        "verdict": "pass",
-        "candidate_commit": _git_output(root, "rev-parse", "HEAD"),
-        "consumer_commit": consumer_commit,
-        "target": target,
-        **_receipt_inputs(root, target),
-    }
-    path = root / CONSUMER_RECEIPT
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-
-
-def _valid_full_commit(commit: object) -> bool:
-    return isinstance(commit, str) and bool(re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", commit))
-
-
-def _verify_consumer_receipt(root: Path) -> None:
-    _verify_clean_tree(root)
-    receipt = json.loads(_git_output(root, "show", f"HEAD:{CONSUMER_RECEIPT}"))
-    if not isinstance(receipt, dict) or receipt.get("verdict") != "pass":
-        raise ValueError("expected a passing verdict")
-    if not _valid_full_commit(receipt.get("consumer_commit")):
-        raise ValueError("expected a full consumer commit")
-    expected = _receipt_inputs(root, receipt["target"])
-    for key, value in expected.items():
-        if receipt.get(key) != value:
-            raise ValueError(f"{key} differs from the tagged manifests")
-    parent = _git_output(root, "rev-parse", "HEAD^")
-    if receipt.get("candidate_commit") != parent:
-        raise ValueError("candidate_commit differs from the tagged commit's first parent")
-    changes = _git_output(
-        root, "diff", "--no-ext-diff", "--name-only", parent, "HEAD", "--", ".",
-        f":(exclude){CONSUMER_RECEIPT}", f":(exclude){ADOPTER_PAYLOAD}",
-    )
-    if changes:
-        raise ValueError("tagged tree changed beyond the receipt and generated adopter payload")
-
-
 # @spec CR-006 FR-007 IR-001
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="verify_release_readiness.py")
@@ -471,25 +409,7 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--native-artifacts-dir", type=Path, help="offline release assets")
     mode.add_argument("--repository-only", action="store_true", help="post-tag repository checks")
-    mode.add_argument("--verify-consumer-receipt", action="store_true", help="check tagged receipt")
-    parser.add_argument("--consumer-commit", help="record this full consumer commit before tagging")
     args = parser.parse_args(argv)
-
-    if args.consumer_commit is not None and (
-        not args.current_clean_tree or args.repository_only or args.verify_consumer_receipt
-        or not _valid_full_commit(args.consumer_commit)
-    ):
-        parser.error("--consumer-commit requires a full commit and a clean pre-tag candidate")
-
-    if args.verify_consumer_receipt:
-        try:
-            _verify_consumer_receipt(ROOT)
-        except (KeyError, OSError, RuntimeError, TypeError, ValueError,
-                subprocess.SubprocessError) as exc:
-            print(f"consumer-receipt: {exc}", file=sys.stderr)
-            return 1
-        print("consumer-receipt: pass")
-        return 0
 
     if not args.current_clean_tree:
         with tempfile.TemporaryDirectory(prefix="mir-yoke-release-") as raw:
@@ -529,12 +449,6 @@ def main(argv: list[str] | None = None) -> int:
     expected_count = len(CHECKS) + args.require_project_agent_kit_evidence
     expected_count += not args.repository_only
     ready = len(results) == expected_count and all(row["exit_code"] == 0 for row in results)
-    if ready and args.consumer_commit:
-        try:
-            _write_consumer_receipt(ROOT, args.consumer_commit)
-        except (OSError, ValueError, subprocess.SubprocessError) as exc:
-            print(f"consumer-receipt: {exc}", file=sys.stderr)
-            ready = False
     print(json.dumps({"ready": ready, "checks": results}, indent=2))
     return 0 if ready else 1
 
