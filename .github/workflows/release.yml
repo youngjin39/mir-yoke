@@ -46,8 +46,8 @@ jobs:
         working-directory: native/mir-mcp
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
-      - name: Validate repository release candidate
-        run: uv run python scripts/verify_release_readiness.py --current-clean-tree
+      - name: Validate tagged repository
+        run: uv run python scripts/verify_release_readiness.py --current-clean-tree --repository-only
         env:
           MIR_MCP_NATIVE_BINARY: ${{ github.workspace }}/native/mir-mcp/target/release/mir-mcp
       - name: Publish GitHub Release

@@ -1,16 +1,22 @@
-"""Prove ADR-83 static readiness from a clean candidate Git tree."""
+"""Verify release readiness from a clean candidate Git tree."""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
+from urllib.parse import urlsplit
+
+from mir.core.capabilities.native import host_target, validate_artifacts
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKS = (
@@ -56,6 +62,9 @@ EVIDENCE_CHECK = (
     "project-agent-kit-clean-room-evidence",
     ("uv", "run", "python", "scripts/verify_project_agent_kit_evidence.py"),
 )
+CAPABILITY_LOCK = Path(".mir/capability-lock.json")
+CLI_PIN = Path("config/cli-native-artifacts.json")
+PLUGIN_ROOTS = ("${CLAUDE_PLUGIN_ROOT}/", "${CODEX_PLUGIN_ROOT}/")
 
 
 def _candidate_paths(root: Path) -> list[str]:
@@ -113,13 +122,193 @@ def _materialize_candidate(source: Path, target: Path) -> None:
         )
 
 
+def _install_artifact(assets: Path, destination: Path, pin: dict) -> str | None:
+    name = Path(urlsplit(pin["url"]).path).name
+    source = assets / name
+    if name in {"", ".."} or source.is_symlink() or not source.is_file():
+        return f"consumer-digest: missing regular pinned asset {source}"
+    if destination.exists():
+        return f"consumer-digest: pinned asset would overwrite {destination.name}"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    mode = stat.S_IMODE(destination.stat().st_mode)
+    if mode & ~0o755 or not mode & stat.S_IXUSR or not os.access(destination, os.X_OK):
+        return f"consumer-mode: {name} has mode {mode:04o}, expected 0755 or stricter executable"
+    with destination.open("rb") as binary:
+        digest = hashlib.file_digest(binary, "sha256").hexdigest()
+    if digest != pin["sha256"] or destination.stat().st_size != pin["size"]:
+        return f"consumer-digest: {name} expected SHA-256 {pin['sha256']}, got {digest}"
+    return None
+
+
+def _hook_probe(plugin: Path, command: str) -> list[str]:
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    tokens = list(lexer)
+    if not tokens:
+        raise ValueError("empty hook command")
+    executable, probe = tokens[0], "--help"
+    if executable == "if":
+        # The lifecycle launcher can exit 0 when its native hook is unavailable.
+        # Test the declared warmup directly and require the exec path to match it.
+        launchers = [tokens[i + 1] for i, token in enumerate(tokens[:-1]) if token == "exec"]
+        if len(launchers) != 1:
+            raise ValueError("expected one exec in guarded hook command")
+        executable = launchers[0]
+        references = {token for token in tokens if token.startswith(PLUGIN_ROOTS)}
+        if references != {executable} or not any(
+            tokens[index:index + 3] == ["&&", executable, "--mir-warmup"]
+            for index in range(len(tokens))
+        ):
+            raise ValueError("guarded hook paths or declared warmup do not match exec")
+        probe = "--mir-warmup"
+
+    if command.count(f'"{executable}"') != tokens.count(executable):
+        raise ValueError("hook executable must be double-quoted for paths containing spaces")
+    for prefix in PLUGIN_ROOTS:
+        if executable.startswith(prefix):
+            relative = executable.removeprefix(prefix)
+            break
+    else:
+        raise ValueError(f"hook executable is not relative to its plugin root: {executable}")
+    path = plugin / relative
+    if (
+        not path.resolve().is_relative_to(plugin)
+        or not path.is_file()
+        or not os.access(path, os.X_OK)
+    ):
+        raise ValueError(f"missing executable in install: {relative}")
+    return [str(path), probe]
+
+
+def _probe_hooks(plugin: Path, required: bool, install: Path, env: dict[str, str]) -> list[str]:
+    manifest = plugin / "hooks/hooks.json"
+    if not required and not manifest.exists():
+        return []
+    errors = []
+    try:
+        events = json.loads(manifest.read_text(encoding="utf-8"))["hooks"]
+        for event, groups in events.items():
+            for group_index, group in enumerate(groups, start=1):
+                for hook_index, hook in enumerate(group["hooks"], start=1):
+                    if hook["type"] != "command":
+                        continue
+                    label = f"{plugin.name} {event} group {group_index} hook {hook_index}"
+                    try:
+                        # Both runtimes use this manifest on POSIX.
+                        command = hook["command"]
+                        probe = _hook_probe(plugin, command)
+                        _run_probe(["/bin/sh", "-n", "-c", command], install, env, timeout=10)
+                        _run_probe(probe, install, env, timeout=hook.get("timeout", 10))
+                    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+                        errors.append(f"consumer-hook: {label}: {exc}")
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        errors.append(f"consumer-hook: {plugin.name}/hooks/hooks.json: {exc}")
+    return errors
+
+
+def _run_probe(command: list[str], install: Path, env: dict[str, str], *, timeout: int) -> None:
+    result = subprocess.run(
+        command, cwd=install, env=env, stdin=subprocess.DEVNULL, check=False,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=timeout,
+    )
+    if result.returncode:
+        raise ValueError(f"{Path(command[0]).name} exited {result.returncode}")
+
+
+def _consumer_errors(root: Path, assets: Path, install: Path) -> list[str]:
+    target = host_target()
+    try:
+        lock = json.loads((root / CAPABILITY_LOCK).read_text(encoding="utf-8"))
+        cli = json.loads((root / CLI_PIN).read_text(encoding="utf-8"))
+        entries = lock["plugins"]
+        binaries = validate_artifacts(lock["native_artifacts"], entries, portable=True)
+        if target not in cli["targets"]:
+            return [f"consumer-digest: no mir pin for host target {target}"]
+        artifacts = [(install / "bin/mir", cli["targets"][target])]
+        for relative in (CAPABILITY_LOCK, CLI_PIN):
+            (install / relative).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(root / relative, install / relative)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return [f"consumer-digest: cannot load candidate pins: {exc}"]
+
+    plugins = {}
+    try:
+        for name, entry in entries.items():
+            relative = Path(entry["path"])
+            if relative.parent != Path("plugins") or relative.name != name:
+                raise ValueError(f"invalid plugin path: {relative}")
+            source, destination = root / relative, install / relative
+            if source.resolve() != source or any(path.is_symlink() for path in source.rglob("*")):
+                raise ValueError(f"linked plugin path: {relative}")
+            shutil.copytree(source, destination)
+            plugins[name] = destination
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        return [f"consumer-hook: cannot copy candidate plugin: {exc}"]
+
+    for artifact in binaries.values():
+        if target in artifact["targets"]:
+            path = plugins[artifact["plugin"]] / artifact["install_path"]
+            artifacts.append((path, artifact["targets"][target]))
+    errors = []
+    for destination, pin in artifacts:
+        try:
+            error = _install_artifact(assets, destination, pin)
+            if error:
+                errors.append(error)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors.append(f"consumer-digest: cannot copy or verify {destination.name}: {exc}")
+    if errors:
+        return errors
+
+    home = install.parent / "home"
+    temp = install.parent / "tmp"
+    home.mkdir()
+    temp.mkdir()
+    env = {
+        "HOME": str(home),
+        "TMPDIR": str(temp),
+        "PATH": os.environ.get("PATH", os.defpath),
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "UV_OFFLINE": "1",
+    }
+    for name, plugin in plugins.items():
+        required = entries[name]["package_kind"] == "skills-hooks"
+        errors.extend(_probe_hooks(plugin, required, install, env))
+    if not errors and "MIR_RELEASE_CONSUMER_CHECK" in os.environ:
+        try:
+            runner = Path(os.environ["MIR_RELEASE_CONSUMER_CHECK"]).absolute()
+            if not runner.is_file() or not os.access(runner, os.X_OK):
+                raise ValueError(f"not an executable file: {runner}")
+            _run_probe([str(runner), str(install)], install, env, timeout=300)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"consumer-contract: {exc}")
+    return errors
+
+
+def check_consumer_contract(root: Path, assets: Path) -> int:
+    with tempfile.TemporaryDirectory(prefix="mir-release-consumer-") as raw:
+        errors = _consumer_errors(root.resolve(), assets.resolve(), Path(raw).resolve() / "install")
+    for error in errors:
+        print(error, file=sys.stderr)
+    return int(bool(errors))
+
+
 def run_checks(
     root: Path,
     runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
     *,
     require_evidence: bool = False,
+    native_artifacts_dir: Path | None = None,
+    repository_only: bool = False,
 ) -> list[dict[str, object]]:
     results: list[dict[str, object]] = []
+    if not repository_only:
+        assets = native_artifacts_dir or root / "assets"
+        status = check_consumer_contract(root, assets)
+        results.append({"name": "consumer-contract", "exit_code": status})
+        if status:
+            return results
     checks = CHECKS + ((EVIDENCE_CHECK,) if require_evidence else ())
     for name, command in checks:
         completed = runner(command, cwd=root, check=False, text=True)
@@ -146,6 +335,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="verify_release_readiness.py")
     parser.add_argument("--current-clean-tree", action="store_true")
     parser.add_argument("--require-project-agent-kit-evidence", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--native-artifacts-dir", type=Path, help="offline release assets")
+    mode.add_argument("--repository-only", action="store_true", help="post-tag repository checks")
     args = parser.parse_args(argv)
 
     if not args.current_clean_tree:
@@ -165,15 +357,26 @@ def main(argv: list[str] | None = None) -> int:
             ]
             if args.require_project_agent_kit_evidence:
                 command.append("--require-project-agent-kit-evidence")
+            if args.repository_only:
+                command.append("--repository-only")
+            else:
+                assets = args.native_artifacts_dir or ROOT / "assets"
+                command.extend(["--native-artifacts-dir", str(assets.resolve())])
             return subprocess.run(command, cwd=candidate, check=False).returncode
 
     try:
         _verify_clean_tree(ROOT)
-        results = run_checks(ROOT, require_evidence=args.require_project_agent_kit_evidence)
+        results = run_checks(
+            ROOT,
+            require_evidence=args.require_project_agent_kit_evidence,
+            native_artifacts_dir=args.native_artifacts_dir,
+            repository_only=args.repository_only,
+        )
     except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
         print(f"release readiness: ERROR: {exc}", file=sys.stderr)
         return 1
-    expected_count = len(CHECKS) + int(args.require_project_agent_kit_evidence)
+    expected_count = len(CHECKS) + args.require_project_agent_kit_evidence
+    expected_count += not args.repository_only
     ready = len(results) == expected_count and all(row["exit_code"] == 0 for row in results)
     print(json.dumps({"ready": ready, "checks": results}, indent=2))
     return 0 if ready else 1

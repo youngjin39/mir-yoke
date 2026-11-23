@@ -3,6 +3,25 @@
 For each release candidate, smoke-test an authorized real consumer install path alongside template verification.
 Regenerate the adopter payload after the last record change and verify it in a clean clone at the submitted HEAD.
 
+### Pre-tag consumer contract
+
+On the Mac maintainer host, set `NATIVE_ASSETS` to the offline asset directory outside the
+checkout. Keep the pinned host artifacts' release filenames and executable modes intact.
+
+```sh
+UV_OFFLINE=1 uv run --no-sync python scripts/verify_release_readiness.py --current-clean-tree \
+  --native-artifacts-dir "$NATIVE_ASSETS"
+```
+
+The stage copies the candidate plugins and artifacts into a temporary consumer, checks the
+installed modes and SHA-256 digests, and runs the declared no-op or help probe for each
+Claude/Codex POSIX hook. When set, `MIR_RELEASE_CONSUMER_CHECK` must point to an executable that
+accepts the temporary install path and exits 0. The runner must use offline fixtures.
+
+A red consumer-contract stage blocks tagging. Record the Yoke candidate commit, the consumer
+commit, and each checked artifact's SHA-256 in the release record. The hosted tag workflow runs
+the repository checks after tagging.
+
 ## 0.13.61 native executor queries with local executor files
 
 Native `executor-query` now admits same-home `status`, `result` and `list-jobs`
