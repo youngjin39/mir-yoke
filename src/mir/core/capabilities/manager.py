@@ -23,6 +23,7 @@ from pathlib import Path, PurePosixPath
 from mir.core.adoption.boundary import (
     BOUNDARY_PATH,
     PROFILE_PATH,
+    is_canonical_provider_profile,
     is_provider_owner,
     load_boundary,
     load_profile,
@@ -1016,12 +1017,13 @@ class CapabilityManager:
 
     def _is_provider_source_checkout(self) -> bool:
         root = self.project_root
-        if not (root / BOUNDARY_PATH).is_file():
-            return False
         try:
+            has_profile = (root / PROFILE_PATH).is_file()
+            if not (root / BOUNDARY_PATH).is_file():
+                return has_profile and is_canonical_provider_profile(load_profile(root))
             provider = (
                 is_provider_owner(load_profile(root), load_boundary(root))
-                if (root / PROFILE_PATH).is_file()
+                if has_profile
                 else (root / "src/mir/core/capabilities/manager.py").is_file()
             )
         except (ValueError, OSError) as exc:
@@ -1048,7 +1050,7 @@ class CapabilityManager:
         self._assert_project_root_identity()
         self._assert_capability_home_safe()
         removed = {}
-        updates = {}
+        records = {}
         registry_version = None
         for path, versions, sections in (
             (self.registry_path, (1, 2, 3), ("consumers",)),
@@ -1082,11 +1084,7 @@ class CapabilityManager:
                         raise ValueError(f"invalid registry section: {section}")
                     if key in entries:
                         entries_removed[section] = entries[key]
-                updated = (
-                    _remove_json_members(source, entries_removed, key)
-                    if entries_removed else original
-                )
-                updates[path] = (original, updated)
+                records[path] = (original, source, data)
             except FileNotFoundError as exc:
                 if path == self.registry_path:
                     raise CapabilityError(f"unknown capability consumer: {key}") from None
@@ -1097,18 +1095,84 @@ class CapabilityManager:
                 raise CapabilityError(f"malformed capability registry: {path.name}") from exc
         if not removed[self.registry_path.name]:
             raise CapabilityError(f"unknown capability consumer: {key}")
+
+        registry = records[self.registry_path][2]
+        ledger = records.get(self.consumer_bindings_path)
+        receipt = records[self.active_receipt_path][2]
+        bindings = ledger[2]["consumers"] if ledger is not None else {}
+        self._validate_deregistration_records(key, registry, bindings, receipt)
+
+        updates = {}
+        for path, (original, source, _) in records.items():
+            entries_removed = removed[path.name]
+            try:
+                updated = (
+                    _remove_json_members(source, entries_removed, key)
+                    if entries_removed else original
+                )
+            except (ValueError, RecursionError) as exc:
+                raise CapabilityError(f"malformed capability registry: {path.name}") from exc
+            updates[path] = (original, updated)
         return removed, updates
 
+    def _validate_deregistration_records(
+        self, key: str, registry: dict, bindings: dict[str, str], receipt: dict,
+    ) -> None:
+        consumers = registry["consumers"]
+        allow_unbound = registry["schema_version"] < 3
+        remaining = {root: entry for root, entry in consumers.items() if root != key}
+        check_union = bool(remaining) and registry["schema_version"] >= 2 and (
+            receipt["schema_version"] == 2
+        )
+        try:
+            self._registered_plugin_names(
+                {key: consumers[key]}, bindings, allow_unbound=allow_unbound,
+            )
+            if check_union:
+                names = self._registered_plugin_names(
+                    remaining, bindings, allow_unbound=allow_unbound,
+                )
+        except CapabilityError as exc:
+            raise CapabilityError(
+                f"malformed capability registry: {self.registry_path.name}"
+            ) from exc
+
+        discovery = receipt.get("discovery", {}).get(key, {})
+        sessions = receipt.get("installation_sessions", {}).get(key, {})
+        if any(not isinstance(record, dict) for record in discovery.values()) or any(
+            not isinstance(session, str) for session in sessions.values()
+        ):
+            raise CapabilityError(f"malformed capability registry: {self.active_receipt_path.name}")
+
+        if check_union:
+            active_plugins = registry.get("active_plugins")
+            receipt_plugins = receipt.get("plugins")
+            if not isinstance(active_plugins, dict):
+                raise CapabilityError(f"malformed capability registry: {self.registry_path.name}")
+            if not isinstance(receipt_plugins, dict):
+                raise CapabilityError(
+                    f"malformed capability registry: {self.active_receipt_path.name}"
+                )
+            if names != active_plugins.keys() or names != receipt_plugins.keys():
+                raise CapabilityError(
+                    f"cannot deregister capability consumer {key}: removal would change the "
+                    "active plugin union; run mir capability sync --apply with a profile that "
+                    "reconciles the registered plugin requirements before retrying"
+                )
+
     def _apply_deregistration(self, updates: dict[Path, tuple[bytes, bytes]]) -> None:
-        backups = {path.with_suffix(".json.bak"): old for path, (old, _) in updates.items()}
+        backups = {path: path.with_suffix(".json.bak") for path in updates}
         written = []
         try:
-            for backup in backups:
+            for backup in backups.values():
                 if backup.is_symlink() or (backup.exists() and not backup.is_file()):
                     raise CapabilityError(f"unsafe capability registry backup: {backup.name}")
-            for backup, original in backups.items():
-                _atomic_write_bytes(backup, original, private=True)
-            # Keep the registration key until last so an interrupted apply can be retried.
+            for path, (original, updated) in updates.items():
+                backup = backups[path]
+                # Keep the pre-removal backup for files already replaced by an interrupted apply.
+                if original != updated or not backup.exists():
+                    _atomic_write_bytes(backup, original, private=True)
+            # Keep the registration key until last so a stop after active.json can be retried.
             for path, (original, updated) in reversed(updates.items()):
                 if original != updated:
                     _atomic_write_bytes(path, updated, private=True)
@@ -3337,7 +3401,9 @@ class CapabilityManager:
         self._registered_plugin_names(consumers, bindings)
         return registry
 
-    def _registered_plugin_names(self, consumers: object, bindings: dict[str, str]) -> set[str]:
+    def _registered_plugin_names(
+        self, consumers: object, bindings: dict[str, str], *, allow_unbound: bool = False,
+    ) -> set[str]:
         if not isinstance(consumers, dict):
             raise CapabilityError("global consumer registry is invalid")
         names: set[str] = set()
@@ -3348,14 +3414,18 @@ class CapabilityManager:
             plugins = entry.get("plugins")
             profile = entry.get("profile")
             binding = bindings.get(root)
+            valid_binding = (
+                isinstance(binding, str)
+                and entry.get("binding") == binding
+                and _CONSUMER_BINDING.fullmatch(binding) is not None
+            )
+            legacy_unbound = allow_unbound and binding is None and "binding" not in entry
             if (
                 not isinstance(commit_value, str)
                 or _SHA.fullmatch(commit_value) is None
                 or not isinstance(plugins, dict)
                 or not isinstance(profile, str)
-                or not isinstance(binding, str)
-                or entry.get("binding") != binding
-                or _CONSUMER_BINDING.fullmatch(binding) is None
+                or not (valid_binding or legacy_unbound)
             ):
                 raise CapabilityError("global consumer registry is invalid")
             try:

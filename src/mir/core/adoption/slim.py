@@ -20,6 +20,7 @@ from . import _filesystem as confined
 from .boundary import (
     BOUNDARY_PATH,
     BoundaryError,
+    is_canonical_provider_profile,
     is_provider_owner,
     load_boundary,
     load_profile,
@@ -29,7 +30,6 @@ from .boundary import (
 Verify = Callable[[Path, Path], tuple[bool, str]]
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40,64}$")
 _RELEASE_CONTROL_PATHS = (BOUNDARY_PATH, Path("config/adopter-payload.json"))
-_CANONICAL_PROVIDER_TYPES = {"public_harness_template", "template_transitional"}
 _JOURNAL_PATH = Path(".mir/slim-transaction.json")
 _LOCK_PATH = Path(".mir/slim.lock")
 
@@ -130,16 +130,6 @@ def _validate_release_controls(project_root: Path, profile: dict[str, object]) -
             raise SlimError(
                 f"release control changed after Phase 1; slim made no changes: {relative}"
             )
-
-
-def _is_canonical_provider_profile(profile: dict[str, object]) -> bool:
-    """Provide a non-destructive fallback for older Mir Yoke maintainer Profiles."""
-    repo = profile.get("repo")
-    return bool(
-        isinstance(repo, dict)
-        and repo.get("slug") == "mir-yoke"
-        and repo.get("repository_type") in _CANONICAL_PROVIDER_TYPES
-    )
 
 
 def _is_within(path: Path, root: Path) -> bool:
@@ -524,7 +514,7 @@ def apply_adopter_slim(
     try:
         _validate_release_controls(root, profile)
     except SlimError:
-        if _is_canonical_provider_profile(profile):
+        if is_canonical_provider_profile(profile):
             return {"status": "not_applicable", "removed": [], "preserved_modified": []}
         raise
     if is_provider_owner(profile, boundary):

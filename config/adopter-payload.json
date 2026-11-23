@@ -3389,7 +3389,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/capability.rs",
-      "sha256": "ed039f74f653f688f2f702c6f64343375a9806f963d84124092125a207518da5"
+      "sha256": "c37dd6ab51a26bee11f0313f631b987f3aadcde50987de143792e1e10e9a5e68"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7943,7 +7943,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/adoption/boundary.py",
-      "sha256": "73b669935678ce8e4c0896d5d9fe36be325ed37bfa70d75f23a62216b7c89224"
+      "sha256": "b883baed7d517549d2e843db47be5b4206f27fd8a70c10bc86004100dfdc6213"
     },
     {
       "classification": "optional-consumer-tool",
@@ -7955,7 +7955,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/adoption/slim.py",
-      "sha256": "e9d8479dd3ac87cb6f02fb5391976cc031f87c3834231eb38ff955a8255eb8c3"
+      "sha256": "aeffaf679d6685140342863f9d6ae8f9471a751c33df9e428eb5e9326f49ae22"
     },
     {
       "classification": "optional-consumer-tool",
@@ -7973,7 +7973,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "57c80976d5adce4c2a3dbb84aa2348f2eb31c82e8b58bea591cbe390d6b9d820"
+      "sha256": "003cdbf05df49a097a50ba1e3f6a8c2fb7d99fc211040d0d445937da3880154d"
     },
     {
       "classification": "optional-consumer-tool",
@@ -9053,7 +9053,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_cli.py",
-      "sha256": "68e8b38fb96f433e9d724d9cb292f40623b3ccbb09d9cde4af1d271cd8a6b21a"
+      "sha256": "eeaec5c9e204437664ee573e7df7af3ea6e14c56fdb0039b5f0b6e4284e9d5b1"
     },
     {
       "classification": "template-maintainer-tool",

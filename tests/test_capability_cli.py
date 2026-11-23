@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -120,10 +121,13 @@ def deregistration_state(tmp_path: Path):
     other = _consumer_key(tmp_path / "provider")
     binding = "b" * 64
     other_binding = "c" * 64
-    plugins = {"mir-core": "d" * 64}
+    plugins = {
+        name: "d" * 64
+        for name in ("mir-code", "mir-content", "mir-core", "mir-lifecycle-hooks", "mir-mcp")
+    }
     consumer = {"binding": binding, "commit": SHA_A, "plugins": plugins,
-                "profile": "code_app"}
-    # The membership layout mirrors the November 23 registry cleanup.
+                "profile": "hybrid_pipeline"}
+    # Both November 23 consumers had the same profile and five-plugin inventory.
     docs = {
         "consumers.json": {
             "schema_version": 3,
@@ -223,6 +227,11 @@ def _write_provider_profile(project: Path) -> None:
     [
         ("unknown", "unknown capability consumer"),
         ("provider", "provider source checkout"),
+        ("provider-missing-boundary", "provider source checkout"),
+        ("consumer-plugins", "malformed capability registry: consumers.json"),
+        ("consumer-binding-mismatch", "malformed capability registry: consumers.json"),
+        ("consumer-discovery", "malformed capability registry: active.json"),
+        ("consumer-installation", "malformed capability registry: active.json"),
         ("syntax", "malformed capability registry: active.json"),
         ("shape", "malformed capability registry: active.json"),
         ("consumers", "malformed capability registry: consumers.json"),
@@ -232,12 +241,27 @@ def _write_provider_profile(project: Path) -> None:
     ],
 )
 def test_deregister_refuses_without_writing(deregistration_state, capsys, apply, refusal, message):
-    project, home, _, _, _ = deregistration_state
+    project, home, target, _, docs = deregistration_state
     if refusal == "unknown":
         project = project.with_name("unknown")
         project.mkdir()
-    elif refusal == "provider":
+    elif refusal in {"provider", "provider-missing-boundary"}:
         _write_provider_profile(project)
+        if refusal == "provider-missing-boundary":
+            subprocess.run(["git", "init", "-q", str(project)], check=True)
+            (project / "config/adopter-boundary.json").unlink()
+    elif refusal in {"consumer-plugins", "consumer-binding-mismatch"}:
+        registry = docs["consumers.json"]
+        field, value = (
+            ("plugins", "invalid") if refusal == "consumer-plugins" else ("binding", "f" * 64)
+        )
+        registry["consumers"][target][field] = value
+        (home / "consumers.json").write_text(json.dumps(registry), encoding="utf-8")
+    elif refusal in {"consumer-discovery", "consumer-installation"}:
+        active = docs["active.json"]
+        section = "discovery" if refusal == "consumer-discovery" else "installation_sessions"
+        active[section][target]["claude-code"] = []
+        (home / "active.json").write_text(json.dumps(active), encoding="utf-8")
     else:
         name, body = {
             "syntax": ("active.json", b"{"),
@@ -251,11 +275,13 @@ def test_deregister_refuses_without_writing(deregistration_state, capsys, apply,
         }[refusal]
         (home / name).write_bytes(body)
     before = _capability_files(home)
+    home_mtime = home.stat().st_mtime_ns
     assert _deregister_cli(project, home, *(["--apply"] if apply else [])) == 1
     captured = capsys.readouterr()
     assert not captured.out
     assert captured.err.startswith(f"ERROR: {message}")
     assert _capability_files(home) == before
+    assert home.stat().st_mtime_ns == home_mtime
     assert not (home / ".apply.lock").exists()
 
 
@@ -278,6 +304,93 @@ def test_deregister_requires_explicit_scope(tmp_path, monkeypatch, capsys):
         capsys.readouterr().err
     )
     assert list(tmp_path.iterdir()) == []
+
+
+def test_deregister_trailing_delimiter_matches_production_routes(deregistration_state, tmp_path):
+    native = os.environ.get("MIR_CAPABILITY_TEST_NATIVE")
+    if native is None:
+        pytest.skip("set MIR_CAPABILITY_TEST_NATIVE to a built mir beside its bound Python")
+    project, home, _, _, _ = deregistration_state
+    sandbox = tmp_path / "console"
+    sandbox.mkdir()
+    env = {
+        **os.environ, "HOME": str(sandbox), "CODEX_HOME": str(sandbox / ".codex"),
+        "MIR_CAPABILITY_HOME": str(home), "PYTHONPATH": str(ROOT / "src"),
+    }
+    argv = [
+        "capability", "deregister", "--project-root", str(project), "--capability-home",
+        str(home), "--config", str(ROOT / "config/capability-sources.json"),
+        "--json", "--apply", "--",
+    ]
+    before = _capability_files(home)
+    home_mtime = home.stat().st_mtime_ns
+    python = subprocess.run(
+        [sys.executable, "-m", "mir.cli", *argv], cwd=sandbox, env=env, capture_output=True,
+    )
+    assert python.returncode == 2
+    assert python.stdout == b""
+    assert python.stderr.endswith(b"mir capability: error: unrecognized arguments: --\n")
+    assert _capability_files(home) == before
+    assert home.stat().st_mtime_ns == home_mtime
+
+    rust = subprocess.run([native, *argv], cwd=sandbox, env=env, capture_output=True)
+    assert (rust.returncode, rust.stdout, rust.stderr) == (2, b"", python.stderr)
+    assert _capability_files(home) == before
+    assert home.stat().st_mtime_ns == home_mtime
+
+
+def test_deregister_resumes_after_active_replace(deregistration_state, capsys):
+    project, home, target, _, docs = deregistration_state
+    before = _capability_files(home)
+    interrupted = subprocess.run(
+        [sys.executable, "-c", """
+import os
+import sys
+from mir.cli.capability import main
+from mir.core.capabilities import manager
+
+atomic_write = manager._atomic_write_bytes
+
+def stop_after_active_replace(path, body, **kwargs):
+    atomic_write(path, body, **kwargs)
+    if path.name == "active.json":
+        os._exit(75)
+
+manager._atomic_write_bytes = stop_after_active_replace
+sys.exit(main(sys.argv[1:]))
+""", "deregister", "--project-root", str(project), "--capability-home", str(home),
+         "--config", str(ROOT / "config/capability-sources.json"), "--json", "--apply"],
+        env={**os.environ, "HOME": str(project), "CODEX_HOME": str(project / ".codex"),
+             "PYTHONPATH": str(ROOT / "src")},
+        capture_output=True,
+    )
+    assert interrupted.returncode == 75, interrupted.stderr.decode()
+    for section in ("discovery", "installation_sessions"):
+        docs["active.json"][section].pop(target)
+    assert json.loads((home / "active.json").read_bytes()) == docs["active.json"]
+    for name in ("consumers.json", "consumer-bindings.json"):
+        assert (home / name).read_bytes() == before[name]
+    (home / ".apply.lock").rmdir()
+    partial = _capability_files(home)
+
+    assert _deregister_cli(project, home) == 0
+    preview = json.loads(capsys.readouterr().out)
+    assert preview["removed"] == {
+        "active.json": {},
+        "consumer-bindings.json": {
+            "consumers": docs["consumer-bindings.json"]["consumers"][target],
+        },
+        "consumers.json": {"consumers": docs["consumers.json"]["consumers"][target]},
+    }
+    assert _capability_files(home) == partial
+    assert _deregister_cli(project, home, "--apply") == 0
+    assert json.loads(capsys.readouterr().out) == {**preview, "dry_run": False, "applied": True}
+    assert not (home / ".apply.lock").exists()
+    for name, doc in docs.items():
+        if "consumers" in doc:
+            doc["consumers"].pop(target)
+        assert json.loads((home / name).read_bytes()) == doc
+        assert (home / f"{name}.bak").read_bytes() == before[name]
 
 
 def test_deregister_restores_replaced_registries_after_write_failure(
@@ -1045,6 +1158,35 @@ def test_should_keep_global_plugin_union_for_two_consumers(tmp_path: Path) -> No
     assert {key.split("@", 1)[0] for key in codex["plugins"]} == expected
     assert first.status()["active_integrity"] is True
     assert second.status()["active_integrity"] is True
+
+
+def test_deregister_refuses_to_break_retained_consumer_integrity(tmp_path, capsys):
+    home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(home / "active", codex_home)
+    wider, retained = (
+        CapabilityManager(
+            make_project(tmp_path, name), capability_home=home, user_home=tmp_path / "user",
+            codex_home=codex_home, git=CopyGit(), command_runner=runner,
+            which=lambda executable: f"/fake/{executable}",
+        )
+        for name in ("wider", "retained")
+    )
+    wider.sync("hybrid_pipeline", apply=True)
+    retained.sync("code_app", apply=True)
+    assert retained.status()["active_integrity"] is True
+    before = _capability_files(home)
+    home_mtime = home.stat().st_mtime_ns
+    for options in ((), ("--apply",)):
+        assert _deregister_cli(wider.project_root, home, *options) == 1
+        assert "active plugin union" in capsys.readouterr().err
+        assert _capability_files(home) == before
+        assert home.stat().st_mtime_ns == home_mtime
+        assert retained.status()["active_integrity"] is True
+
+    wider.sync("code_app", apply=True)
+    assert _deregister_cli(wider.project_root, home, "--apply") == 0
+    assert retained.status()["active_integrity"] is True
 
 
 def test_should_report_healthy_provider_for_global_only_consumer_without_local_config(
