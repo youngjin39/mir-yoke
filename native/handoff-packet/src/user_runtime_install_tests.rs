@@ -16,7 +16,7 @@ fn frozen_admission() {
         };
         if actual != corpus["records"][name] { mismatches.push(format!("{name}: actual={actual}, expected={}",corpus["records"][name])); } seen.insert(name.to_owned());
     };
-    for (i,p) in [".claude/agents/a.md",".claude/agents/../a.md",".claude/agents/..",".claude/agents//a.md",".claude/agents/./a.md","./.claude/agents/a.md","/.claude/agents/a.md",".claude/agents/nested/a.md",".claude/agents/a.md/",".claude/agents/한.md",".claude/agents/.md",".claude/agents/a.MD","",".claude/agents/../x.md",".claude/agents/..md"].iter().enumerate() {
+    for (i,p) in [".claude/agents/a.md",".claude/agents/../a.md",".claude/agents/..",".claude/agents//a.md",".claude/agents/./a.md","./.claude/agents/a.md","/.claude/agents/a.md",".claude/agents/nested/a.md",".claude/agents/a.md/",".claude/agents/\u{d55c}.md",".claude/agents/.md",".claude/agents/a.MD","",".claude/agents/../x.md",".claude/agents/..md"].iter().enumerate() {
         check(&format!("relative-{i}"),Ok(json!(is_safe_relative(p,".claude/agents/",if p.ends_with("/..") {""} else {".md"}))));
     }
     fs::write(root.join("regular"),b"source\0\xff\r\n").unwrap(); fs::create_dir(root.join("directory")).unwrap(); symlink(root.join("regular"),root.join("link")).unwrap();
@@ -86,12 +86,12 @@ fn frozen_receipts() {
     let tmp=tempfile::tempdir().unwrap(); let canonical_root=tmp.path().canonicalize().unwrap(); let root=canonical_root.as_path();
     let home=root.join("receipt-home"); fs::create_dir_all(home.join("agents")).unwrap();
     let file=|source:&str,target:&str,bytes:&[u8],sha:String| ManagedFile { source_relative:python_json::Text::new(source.chars().map(u32::from).collect()),target_relative:target.into(),content:bytes.to_vec(),sha256:sha };
-    for (runtime,files) in [("claude",vec![file(".claude/agents/z.md","agents/z.md",b"agent\r\n",sha256_bytes(b"agent\r\n")),file(".claude/commands/a.md","commands/a.md",b"command\n",sha256_bytes(b"command\n"))]),("codex",vec![]),("unicode",vec![file(".claude/agents/한.md","agents/한.md",b"","0".repeat(64))])] {
+    for (runtime,files) in [("claude",vec![file(".claude/agents/z.md","agents/z.md",b"agent\r\n",sha256_bytes(b"agent\r\n")),file(".claude/commands/a.md","commands/a.md",b"command\n",sha256_bytes(b"command\n"))]),("codex",vec![]),("unicode",vec![file(".claude/agents/\u{d55c}.md","agents/\u{d55c}.md",b"","0".repeat(64))])] {
         assert_eq!(json!({"value":{"hex":hex(&make_receipt(runtime,&"a".repeat(40),&files))},"stdout":"","stderr":""}),corpus["records"][format!("receipt-{runtime}")]);
     }
     let mut reversed=vec![file(".claude/commands/a.md","commands/a.md",b"command\n",sha256_bytes(b"command\n")),file(".claude/agents/z.md","agents/z.md",b"agent\r\n",sha256_bytes(b"agent\r\n"))];
     assert_eq!(hex(&make_receipt("claude",&"a".repeat(40),&reversed)),corpus["records"]["receipt-unsorted"]["value"]["hex"]);
-    reversed=vec![file(".claude/agents/한😀.md","agents/한😀.md",b"","0".repeat(64))];
+    reversed=vec![file(".claude/agents/\u{d55c}😀.md","agents/\u{d55c}😀.md",b"","0".repeat(64))];
     assert_eq!(hex(&make_receipt("claude","\u{7f}😀",&reversed)),corpus["records"]["receipt-ascii"]["value"]["hex"]);
     let mut count=0;
     for (name,record) in corpus["records"].as_object().unwrap().iter().filter(|(k,_)|k.starts_with("receipt-case-")) {

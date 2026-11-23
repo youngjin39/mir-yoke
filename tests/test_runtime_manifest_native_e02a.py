@@ -24,7 +24,7 @@ def binary():
 def test_create_frozen(binary, case):
     import tempfile
 
-    with tempfile.TemporaryDirectory(prefix="e02a-test-", dir=os.environ["TMPDIR"]) as tmp:
+    with tempfile.TemporaryDirectory(prefix="e02a-test-") as tmp:
         base = Path(tmp)
         root = base / "runtime"
         manifest = capture.setup(root, case)

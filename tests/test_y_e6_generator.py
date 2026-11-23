@@ -18,7 +18,7 @@ def test_reference_children_use_isolated_utf8_without_bytecode(tmp_path, name, c
     wrapper.write_text(
         "import json, sys\n"
         "print(json.dumps([sys.flags.isolated, sys.flags.utf8_mode, "
-        "sys.dont_write_bytecode, '모델'], ensure_ascii=False))\n",
+        "sys.dont_write_bytecode, '\ubaa8\ub378'], ensure_ascii=False))\n",
         encoding="utf-8",
     )
     calls = [
@@ -42,4 +42,4 @@ def test_reference_children_use_isolated_utf8_without_bytecode(tmp_path, name, c
                  "HOME": str(tmp_path), "USERPROFILE": str(tmp_path),
                  "LC_ALL": "en_US.UTF-8"},
         )
-        assert json.loads(result.stdout.decode("utf-8")) == [1, 1, True, "모델"]
+        assert json.loads(result.stdout.decode("utf-8")) == [1, 1, True, "\ubaa8\ub378"]

@@ -331,6 +331,7 @@ def seed(home, case, reference=None, database=None):
                 )
             with sqlite3.connect(path) as db:
                 if kind == "wrong-schema":
+                    db.execute("PRAGMA secure_delete=OFF")
                     db.execute("DROP TABLE jobs")
                     db.execute("CREATE TABLE jobs(unexpected TEXT)")
                 elif kind.startswith("insert-"):
@@ -654,9 +655,7 @@ def main():
     digest = STATUS.archive_reference(reference)
     records = []
     database = scratch / "template.db"
-    STATUS.template(reference, database)
-    with sqlite3.connect(database) as db:
-        db.execute("DELETE FROM jobs")
+    STATUS.empty_template(reference, database)
     for case in CASES:
         home = scratch / "cases" / case["name"]
         launcher = seed(home, case, reference, database)

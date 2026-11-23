@@ -3,12 +3,14 @@
 import hashlib
 import json
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 import yaml
+from e02a_binary import binary
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = (
@@ -157,6 +159,43 @@ def test_refuses_outputs_inside_release_input(assets, inside):
     assert inside == 'release-json' or not cli.exists()
 
 
+@pytest.mark.parametrize('output', ['asset', 'new-file', 'missing-parent', 'hardlink'])
+def test_refuses_aliased_release_input(assets, monkeypatch, output):
+    from tools import native_release
+
+    directory, lock = assets
+    release = directory.with_name('Release')
+    directory.rename(release)
+    add_console(release)
+    asset = release / f'mir-{TARGETS[0]}'
+    alias = release.with_name('release')
+    if output == 'hardlink':
+        cli = lock.with_name('cli.json')
+        cli.hardlink_to(asset)
+    else:
+        if not alias.is_dir():
+            alias.symlink_to(release, target_is_directory=True)
+            # Keep the alias spelling through resolve(), as on case-insensitive APFS.
+            real_resolve = Path.resolve
+
+            def resolve(path, *args, **kwargs):
+                if path.is_relative_to(alias):
+                    return path
+                return real_resolve(path, *args, **kwargs)
+
+            monkeypatch.setattr(Path, 'resolve', resolve)
+        cli = alias / {
+            'asset': asset.name, 'new-file': 'cli.json', 'missing-parent': 'missing/cli.json',
+        }[output]
+    asset_before, lock_before = asset.read_bytes(), lock.read_bytes()
+    cli_before = cli.read_bytes() if cli.is_file() else None
+    with pytest.raises(ValueError, match='output must be outside the release directory'):
+        native_release.pin_release(release, lock, SOURCE, cli)
+    assert asset.read_bytes() == asset_before
+    assert lock.read_bytes() == lock_before
+    assert (cli.read_bytes() if cli.is_file() else None) == cli_before
+
+
 def test_read_only_lock_is_refused_before_updating_console(assets):
     directory, lock = assets
     add_console(directory)
@@ -208,8 +247,9 @@ def test_second_replace_failure_names_updated_output_and_rerun_converges(
     assert set(json.loads(lock.read_bytes())['native_artifacts']) == set(NAMES)
 
 
+@pytest.mark.parametrize('searchable', [True, False])
 def test_undeletable_temporary_file_is_named_after_the_publish_error(
-    assets, capsys, monkeypatch,
+    assets, capsys, monkeypatch, searchable,
 ):
     import os
     from pathlib import Path
@@ -220,25 +260,43 @@ def test_undeletable_temporary_file_is_named_after_the_publish_error(
     add_console(directory)
     cli = lock.with_name('cli.json')
     before = lock.read_bytes()
-    real_replace, real_unlink = os.replace, Path.unlink
+    real_replace, real_unlink, real_exists = os.replace, Path.unlink, Path.exists
+    lock_temporary = None
+    console_temporary = None
+    cleanup_attempts = []
 
     def fail_lock_replace(src, dst):
+        nonlocal lock_temporary, console_temporary
         if dst == lock:
+            lock_temporary = src
             raise OSError('injected replace failure')
+        console_temporary = src
         real_replace(src, dst)
 
     def fail_unlink(self, missing_ok=False):
-        raise OSError('injected unlink failure')
+        cleanup_attempts.append(self)
+        if self == lock_temporary:
+            raise PermissionError('injected unlink failure')
+        real_unlink(self, missing_ok=missing_ok)
+
+    def fail_exists(self):
+        if self == lock_temporary and not searchable:
+            raise PermissionError('injected existence check failure')
+        return real_exists(self)
 
     with monkeypatch.context() as scoped:
         scoped.setattr(os, 'replace', fail_lock_replace)
         scoped.setattr(Path, 'unlink', fail_unlink)
+        scoped.setattr(Path, 'exists', fail_exists)
         with pytest.raises(SystemExit) as error:
             native_release.main(['--directory', str(directory), '--lock', str(lock),
                                  '--source', SOURCE, '--cli-pin', str(cli)])
     assert error.value.code == 1
     message = capsys.readouterr().err
+    assert f'updated {cli}' in message and f'could not replace {lock}' in message
+    assert 'rerun the same command to converge' in message
     assert 'injected replace failure' in message
+    assert console_temporary is not None and cleanup_attempts == [lock_temporary]
     leftover = [p for p in lock.parent.iterdir() if p not in {directory, lock, cli}]
     assert len(leftover) == 1 and f'could not remove temporary file(s): {leftover[0]}' in message
     assert lock.read_bytes() == before
@@ -558,10 +616,28 @@ def test_rejects_missing_project_hooks_windows_asset_without_lock_writes(assets)
     assert lock.read_bytes() == before
 
 
-def test_native_workflow_smokes_project_hooks():
+@pytest.mark.parametrize('truncated', [False, True], ids=['complete', 'first-line-only'])
+def test_native_workflow_smokes_project_hooks(tmp_path, truncated):
     workflow = yaml.safe_load((ROOT / '.github/workflows/native-artifacts.yml').read_text())
     smoke = next(step['run'] for step in workflow['jobs']['build']['steps']
                  if step.get('name') == 'smoke run')
     assert 'project-hooks${{ matrix.exe }}' in smoke
-    assert 'mir-project-hooks-v1' in smoke
     assert '--mir-warmup' in smoke
+    hooks_checks = smoke.split('hooks=', 1)[1].split('\nquery=', 1)[0]
+    _, checks = hooks_checks.split('\n', 1)
+    hooks = binary('project-hooks', 'MIR_PROJECT_HOOKS_BINARY').absolute()
+    if truncated:
+        first_line = subprocess.check_output([hooks, 'capabilities'], timeout=20).splitlines()[0]
+        hooks = tmp_path / 'project-hooks'
+        hooks.write_text(
+            '#!/bin/sh\n'
+            'if [ "$1" = capabilities ]; then\n'
+            f'    printf "%s\\n" {shlex.quote(first_line.decode())}\n'
+            'fi\n'
+        )
+        hooks.chmod(0o755)
+    result = subprocess.run(
+        ['bash', '-euo', 'pipefail', '-c', 'hooks=$1\n' + checks, '--', str(hooks)],
+        cwd=ROOT / 'native/handoff-packet', capture_output=True, timeout=20,
+    )
+    assert result.returncode == int(truncated), result

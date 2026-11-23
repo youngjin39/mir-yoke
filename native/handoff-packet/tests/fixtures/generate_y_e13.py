@@ -36,7 +36,8 @@ packages = ('pydantic pydantic_core typing_extensions typing_inspection annotate
 for name in packages:
     path = Path(importlib.import_module(name).__file__)
     if path.name == '__init__.py':
-        shutil.copytree(path.parent, root / name, dirs_exist_ok=True)
+        shutil.copytree(path.parent, root / name, dirs_exist_ok=True,
+                        ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     else:
         shutil.copy2(path, root / path.name)
 resources = root / 'src/mir/resources'

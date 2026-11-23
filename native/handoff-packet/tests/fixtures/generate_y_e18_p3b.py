@@ -31,11 +31,11 @@ cases = {
     'duplicate-yaml': '%YAML 1.1\n%YAML 1.2\n---\na',
     'incompatible-yaml': '%YAML 2.0\n---\na',
     'duplicate-tag': '%TAG !e! tag:example:\n%TAG !e! tag:other:\n---\na',
-    'unicode-marks': '---\n[한글, {a: 1]\n',
+    'unicode-marks': '---\n[\ud55c\uae00, {a: 1]\n',
     'crlf-marks': '---\r\n[one, two\r\n',
     'break-marks': '---\x85[one, two\u2028',
     'long-snippet': '[' + 'x'*90 + ', ' + 'y'*90 + '}',
-    'bom-marks': '\ufeff[한글}',
+    'bom-marks': '\ufeff[\ud55c\uae00}',
 }
 # These routes are measured, frozen, and explicitly deferred in measure.md.
 deferred = {'scanner-character': '@', 'scanner-key': 'a: 1\nb\nc: 2',

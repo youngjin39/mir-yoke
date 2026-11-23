@@ -138,6 +138,14 @@ fn root_observation_preserves_other_path_bytes() {
 #[test]
 fn frozen_bootstrap_adoption_public() {
     let git = test_git();
+    #[cfg(unix)]
+    let tool_path = {
+        let jq = std::env::split_paths(&std::env::var_os("PATH").expect("test PATH"))
+            .map(|dir| dir.join("jq"))
+            .find(|path| path.is_file())
+            .expect("jq must be installed for E14");
+        std::env::join_paths([git.parent().unwrap(), jq.parent().unwrap()]).unwrap()
+    };
     // Load only at runtime: a pending PC capture must not break Mac compilation.
     let records: Vec<Value> = if cfg!(windows) {
         serde_json::from_slice(
@@ -185,6 +193,8 @@ fn frozen_bootstrap_adoption_public() {
         }
         let command = |executable: &Path| {
             let mut c = isolated_command(executable, &root, &git);
+            #[cfg(unix)]
+            c.env("PATH", &tool_path);
             c.env(
                 "MIR_CAPABILITY_NATIVE_ARTIFACTS",
                 if r["mode"] == "local" { "1" } else { "0" },

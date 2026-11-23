@@ -279,14 +279,13 @@ def _git_add(root: Path, *paths: str) -> None:
     subprocess.run(["git", "add", "--", *paths], cwd=root, check=True)
 
 
-def test_bootstrap_adoption_read_only_should_not_write_receipt_or_database(tmp_path, capsys):
+def test_bootstrap_adoption_read_only_should_not_write_receipt_or_database(tmp_path, installed_mir):
     _ready_project(tmp_path)
     db_path = tmp_path / ".mir/memory.db"
     before = hashlib.sha256(db_path.read_bytes()).hexdigest()
     mir_files_before = sorted(path.name for path in (tmp_path / ".mir").iterdir())
 
-    assert _run(tmp_path) == 0
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 0)
 
     assert report["status"] == "ready"
     assert report["apply"] is False
@@ -298,19 +297,18 @@ def test_bootstrap_adoption_read_only_should_not_write_receipt_or_database(tmp_p
 
 
 def test_bootstrap_adoption_profile_should_map_repo_identity_not_execution_field(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     _ready_project(tmp_path)
 
-    assert _run(tmp_path) == 0
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 0)
 
     assert report["profile"]["mapped_profile"] == "code_app"
     assert report["profile"]["repository_type"] == "code_app"
     assert report["profile"]["overlay_archetype"] == "app_product_flutter"
 
 
-def test_bootstrap_adoption_should_support_meta_harness_mapping(tmp_path, capsys):
+def test_bootstrap_adoption_should_support_meta_harness_mapping(tmp_path, installed_mir):
     manifest = _ready_project(tmp_path)
     _write_profile(
         tmp_path,
@@ -321,13 +319,12 @@ def test_bootstrap_adoption_should_support_meta_harness_mapping(tmp_path, capsys
     manifest["profile"] = "meta_harness"
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 0
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 0)
     assert report["profile"]["mapped_profile"] == "meta_harness"
 
 
 def test_content_workspace_should_use_repository_type_over_hybrid_overlay(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     manifest = _ready_project(tmp_path)
     _write_profile(
@@ -367,29 +364,26 @@ def test_content_workspace_should_use_repository_type_over_hybrid_overlay(
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
     _git_add(tmp_path, "config/content-onboarding.json", "records/history.md")
 
-    assert _run(tmp_path) == 0
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 0)
     assert report["profile"]["mapped_profile"] == "content_workspace"
     assert report["content_onboarding"]["status"] == "pass"
 
 
-def test_bootstrap_adoption_should_reject_profile_mapping_conflict(tmp_path, capsys):
+def test_bootstrap_adoption_should_reject_profile_mapping_conflict(tmp_path, installed_mir):
     manifest = _ready_project(tmp_path)
     manifest["profile"] = "hybrid_pipeline"
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("maps to profile 'code_app'" in error for error in report["errors"])
     assert not (tmp_path / ".mir/bootstrap-receipt.json").exists()
 
 
 def test_bootstrap_adoption_native_phase2_should_not_equate_ai_ready_to_l1(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     _ready_project(tmp_path)
-    assert _run(tmp_path) == 0
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 0)
     assert report["phase2"]["status"] == "pass"
     assert report["phase2"]["coverage"]["l1"]["total"] == 2
     assert report["phase2"]["ai_ready"]["ready"] == 1
@@ -432,24 +426,22 @@ def test_bootstrap_adoption_documented_exceptions_should_remain_visible_in_ready
 
 
 def test_bootstrap_adoption_should_reject_missing_or_placeholder_phase2_evidence(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     manifest = _ready_project(tmp_path)
     manifest["surfaces"]["phase2_spec"]["evidence_paths"].append("spec/missing.md")
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 2
-    missing = json.loads(capsys.readouterr().out)
+    missing = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("evidence path is missing" in error for error in missing["errors"])
 
     _write(tmp_path / "spec/missing.md", "TBD\n")
-    assert _run(tmp_path) == 2
-    placeholder = json.loads(capsys.readouterr().out)
+    placeholder = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("placeholder" in error for error in placeholder["errors"])
 
 
 def test_bootstrap_adoption_should_accept_resolved_tbd_count_in_phase2_evidence(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     manifest = _ready_project(tmp_path)
     _write(
@@ -462,8 +454,8 @@ def test_bootstrap_adoption_should_accept_resolved_tbd_count_in_phase2_evidence(
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
     _git_add(tmp_path, "spec/evidence.yaml")
 
-    assert _run(tmp_path) == 0
-    assert json.loads(capsys.readouterr().out)["status"] == "ready"
+    report = _run_native_adoption(installed_mir, tmp_path, 0)
+    assert report["status"] == "ready"
 
 
 def test_bootstrap_adoption_should_reject_incomplete_exception_contract(tmp_path, installed_mir):
@@ -480,14 +472,13 @@ def test_bootstrap_adoption_should_reject_incomplete_exception_contract(tmp_path
     assert any("requires non-empty blockers" in error for error in report["errors"])
 
 
-def test_bootstrap_adoption_should_reject_unknown_manifest_fields(tmp_path, capsys):
+def test_bootstrap_adoption_should_reject_unknown_manifest_fields(tmp_path, installed_mir):
     manifest = _ready_project(tmp_path)
     manifest["pending"] = True
     manifest["surfaces"]["identity_finalize"]["attestation_only"] = True
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("manifest has unknown fields" in error for error in report["errors"])
     assert any(
         "surface 'identity_finalize' has unknown fields" in error
@@ -495,7 +486,7 @@ def test_bootstrap_adoption_should_reject_unknown_manifest_fields(tmp_path, caps
     )
 
 
-def test_bootstrap_adoption_should_reject_unclassified_live_content(tmp_path, capsys):
+def test_bootstrap_adoption_should_reject_unclassified_live_content(tmp_path, installed_mir):
     manifest = _ready_project(tmp_path)
     _write_profile(
         tmp_path,
@@ -519,12 +510,11 @@ def test_bootstrap_adoption_should_reject_unclassified_live_content(tmp_path, ca
     }
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("unclassified candidates" in error for error in report["errors"])
 
 
-def test_bootstrap_adoption_should_reject_incomplete_native_coverage(tmp_path, capsys):
+def test_bootstrap_adoption_should_reject_incomplete_native_coverage(tmp_path, installed_mir):
     manifest = _ready_project(tmp_path)
     phase2 = manifest["surfaces"]["phase2_spec"]
     phase2["coverage"]["l3"] = {
@@ -536,13 +526,12 @@ def test_bootstrap_adoption_should_reject_incomplete_native_coverage(tmp_path, c
     }
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("unresolved TBD" in error for error in report["errors"])
 
 
 def test_bootstrap_adoption_should_reject_manifest_counts_that_drift_from_native_spec(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     manifest = _ready_project(tmp_path)
     manifest["surfaces"]["phase2_spec"]["coverage"]["l3"] = {
@@ -554,13 +543,12 @@ def test_bootstrap_adoption_should_reject_manifest_counts_that_drift_from_native
     }
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("does not match native evidence" in error for error in report["errors"])
 
 
 def test_bootstrap_adoption_should_reject_unsubstantiated_native_review(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     _ready_project(tmp_path)
     _write(
@@ -574,12 +562,11 @@ def test_bootstrap_adoption_should_reject_unsubstantiated_native_review(
 """,
     )
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("native review dimension" in error for error in report["errors"])
 
 
-def test_bootstrap_adoption_should_reject_untracked_surface_evidence(tmp_path, capsys):
+def test_bootstrap_adoption_should_reject_untracked_surface_evidence(tmp_path, installed_mir):
     manifest = _ready_project(tmp_path)
     _write(tmp_path / "spec/untracked.md", "Untracked evidence must not satisfy readiness.\n")
     manifest["surfaces"]["phase2_spec"]["evidence_paths"].append(
@@ -587,26 +574,24 @@ def test_bootstrap_adoption_should_reject_untracked_surface_evidence(tmp_path, c
     )
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("evidence path is not tracked" in error for error in report["errors"])
 
 
-def test_bootstrap_adoption_should_verify_gate_and_managed_launcher_wiring(tmp_path, capsys):
+def test_bootstrap_adoption_should_verify_gate_and_managed_launcher_wiring(tmp_path, installed_mir):
     _ready_project(tmp_path)
     _write(
         tmp_path / ".claude/hooks/session-start.sh",
         "#!/usr/bin/env bash\npython3 scripts/build_session_upfront_context.py\n",
     )
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any("bootstrap gate" in error for error in report["errors"])
     assert any("managed Python launcher" in error for error in report["errors"])
 
 
 def test_bootstrap_adoption_should_require_runtime_files_as_declared_evidence(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     manifest = _ready_project(tmp_path)
     manifest["surfaces"]["bootstrap_start_gate"]["evidence_paths"].remove(
@@ -617,8 +602,7 @@ def test_bootstrap_adoption_should_require_runtime_files_as_declared_evidence(
     )
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     errors = " ".join(report["errors"])
     assert (
         "bootstrap_start_gate must declare runtime evidence path: .codex/hooks.json"
@@ -631,7 +615,7 @@ def test_bootstrap_adoption_should_require_runtime_files_as_declared_evidence(
 
 
 def test_bootstrap_adoption_should_reject_stale_applied_canonical_helpers(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     _ready_project(tmp_path)
     for relative in (
@@ -644,8 +628,7 @@ def test_bootstrap_adoption_should_reject_stale_applied_canonical_helpers(
             encoding="utf-8",
         )
 
-    assert _run(tmp_path) == 2
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 2)
     assert any(
         "bootstrap gate helper does not match Mir Yoke canonical source" in error
         for error in report["errors"]
@@ -657,14 +640,13 @@ def test_bootstrap_adoption_should_reject_stale_applied_canonical_helpers(
 
 
 def test_bootstrap_adoption_apply_should_write_hash_bound_atomic_ready_receipt(
-    tmp_path, capsys
+    tmp_path, installed_mir
 ):
     _ready_project(tmp_path)
     manifest_path = tmp_path / "config/bootstrap-adoption.json"
     expected_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
 
-    assert _run(tmp_path, "--apply") == 0
-    report = json.loads(capsys.readouterr().out)
+    report = _run_native_adoption(installed_mir, tmp_path, 0, "--apply")
     receipt_path = tmp_path / ".mir/bootstrap-receipt.json"
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     assert report["receipt_written"] is True
@@ -699,7 +681,7 @@ def test_bootstrap_adoption_should_report_settings_digest_failure(
     assert report["receipt_written"] is False
 
 
-def test_bootstrap_adoption_failure_should_preserve_existing_receipt(tmp_path, capsys):
+def test_bootstrap_adoption_failure_should_preserve_existing_receipt(tmp_path, installed_mir):
     manifest = _ready_project(tmp_path)
     receipt_path = tmp_path / ".mir/bootstrap-receipt.json"
     original = b'{"schema_version":1,"status":"ready","marker":"preserve"}\n'
@@ -707,8 +689,7 @@ def test_bootstrap_adoption_failure_should_preserve_existing_receipt(tmp_path, c
     del manifest["surfaces"]["phase2_spec"]
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
-    assert _run(tmp_path, "--apply") == 2
-    capsys.readouterr()
+    _run_native_adoption(installed_mir, tmp_path, 2, "--apply")
     assert receipt_path.read_bytes() == original
 
 

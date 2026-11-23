@@ -8,9 +8,29 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.14.0] — 2026-11-21 — Rust runtime conversion (macOS cohort)
+
+Native binaries in this release are published for the two macOS targets only. Linux and Windows
+consumers keep the v0.13.72 native pins and should not update until the next full-cohort release.
+
+### Changed
+- The installed `mir` console is a native Rust binary on macOS (`config/cli-native-artifacts.json`),
+  installed by Mac setup at the public path. `mir executor` and `mir memory` run the pinned installed
+  Python package through an isolated interpreter (`-s -P`, no inherited `PYTHONPATH`).
+- The executor (`execute --dispatch`, execute-direct, `status`, `result`, `list-jobs`, `cancel`, resume
+  and `sweep`), bootstrap adoption, runtime-manifest, the private-artifact installer and the generic
+  `project-hooks` binary run natively with byte parity against the pinned Python reference.
+- Lifecycle hook handlers, the executor sweep and the delegation gate shell are native; their Python
+  implementations are retired.
 - Make public `mir policy resolve` native-only. Missing/invalid pins and unsupported
   inputs fail explicitly without routing output or Python fallback. The shared
   executor policy library remains available to its Python callers.
+- CI and the release-readiness candidate install the `vector` extra (sqlite-vec).
+
+### Fixed
+- Executor OS errors name the errno and path as the Python executor did; worktree cleanup refuses a
+  directory substituted at the dispatch path and removes worktrees by their Git-registered spelling.
+- Release input aliases are refused and the publish error is kept.
 
 ## [v0.13.72] — 2026-11-05 — Windows delegation usability fixes
 

@@ -573,5 +573,7 @@
       "test_tdd_archive.py"
     ]
   },
-  "allowlist": {}
+  "allowlist": {
+    "src/mir/cli/capability_manager_bridge.py": "The private RPC adapter runs inside the retained Python CapabilityManager interpreter and is still changing with its exception and console-stream parity (b7fdaa59, c4b273fd, 59de4b60)."
+  }
 }

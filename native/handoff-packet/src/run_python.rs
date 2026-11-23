@@ -369,11 +369,15 @@ pub fn console(args: Vec<OsString>) -> ! {
 fn bound_console_python() -> Option<PathBuf> {
     // Installed console commands bind to their own environment.
     let console = std::env::current_exe().ok()?;
+    #[cfg(target_os = "macos")]
+    let console = console.canonicalize().ok()?;
     let directory = console.parent()?;
     [directory.join("python"), directory.join("python.exe")]
         .into_iter()
         .find(|path| executable(path))
 }
+
+const COMPATIBILITY_PATH_ENV: [&str; 2] = ["PYTHONPATH", "PYTHONHOME"];
 
 pub fn compatibility_console(args: &[OsString]) -> ! {
     let result = bound_console_python()
@@ -382,7 +386,8 @@ pub fn compatibility_console(args: &[OsString]) -> ! {
         })
         .and_then(|python| {
             let mut command = Command::new(python);
-            command.args(["-m", "mir.cli"]).args(args);
+            // Skip the user site and cwd while honoring other Python settings, including codecs.
+            command.args(["-s", "-P", "-m", "mir.cli"]).args(args);
             launch_compatibility(command)
         });
     match result {
@@ -413,17 +418,30 @@ fn launch_compatibility(command: Command) -> std::io::Result<i32> {
         .map(|arg| arg.as_ptr())
         .chain([ptr::null()])
         .collect::<Vec<_>>();
+    let environment = std::env::vars_os()
+        .filter(|(key, _)| !COMPATIBILITY_PATH_ENV.iter().any(|name| key == *name))
+        .map(|(mut key, value)| {
+            key.push("=");
+            key.push(value);
+            CString::new(key.into_encoded_bytes())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let envp = environment
+        .iter()
+        .map(|entry| entry.as_ptr())
+        .chain([ptr::null()])
+        .collect::<Vec<_>>();
     // Restore the default SIGPIPE disposition that Rust startup overrides.
     // execvp can run an invalid executable as a shell script on ENOEXEC.
-    // SAFETY: SIG_DFL installs the OS default without a callback. argv ends
-    // in NULL and each argument points into the live CStrings.
+    // SAFETY: SIG_DFL installs the OS default without a callback. argv and
+    // envp end in NULL and their entries point into the live CStrings.
     unsafe {
         let previous = libc::signal(libc::SIGPIPE, libc::SIG_DFL);
         if previous == libc::SIG_ERR {
             return Err(std::io::Error::last_os_error());
         }
-        libc::execv(argv[0], argv.as_ptr());
-        // execv returned: keep its error, then put back the start-up disposition
+        libc::execve(argv[0], argv.as_ptr(), envp.as_ptr());
+        // execve returned: keep its error, then put back the start-up disposition
         // so the caller's diagnostic cannot end the process by SIGPIPE.
         let error = std::io::Error::last_os_error();
         libc::signal(libc::SIGPIPE, previous);
@@ -433,6 +451,9 @@ fn launch_compatibility(command: Command) -> std::io::Result<i32> {
 
 #[cfg(not(unix))]
 fn launch_compatibility(mut command: Command) -> std::io::Result<i32> {
+    for name in COMPATIBILITY_PATH_ENV {
+        command.env_remove(name);
+    }
     Ok(command.status()?.code().unwrap_or(1))
 }
 

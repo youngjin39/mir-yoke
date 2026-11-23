@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -74,13 +75,14 @@ for route, response, (code, stdout, stderr) in cases:
     initial['config/adopter-payload.json'] = json.dumps(dict(schema_version=1, files=[dict(
         path='provider-marker/retire.txt', sha256=hashlib.sha256(body).hexdigest(),
         disposition='remove')])).encode()
-    # Frozen release-control bytes, rather than echoing the current working tree.
-    for control in ['adopter-boundary.json', 'adopter-payload.json']:
-        (work/control).write_bytes(initial['config/' + control])
-    (tools/'git').write_text('#!/bin/sh\ncase "$1 $2" in\n"show ' + 'b'*40 +
-        ':config/adopter-boundary.json") /bin/cat "' + str(work/'adopter-boundary.json') +
-        '";;\n"show ' + 'b'*40 + ':config/adopter-payload.json") /bin/cat "' +
-        str(work/'adopter-payload.json') + '";;\n*) exit 1;;\nesac\n')
+    # Embed the frozen release controls in the Git shim as exact stdout bytes.
+    git_script = ['#!/bin/sh', 'case "$1 $2" in']
+    for control in ['config/adopter-boundary.json', 'config/adopter-payload.json']:
+        command = shlex.quote(f"show {'b'*40}:{control}")
+        frozen = shlex.quote(initial[control].decode('ascii'))
+        git_script.append(f'{command}) printf %s {frozen};;')
+    git_script.extend(['*) exit 1;;', 'esac', ''])
+    (tools/'git').write_text('\n'.join(git_script))
     cli = install/'external'
     observe = work/'observations.jsonl'
     external = work/'external.py'

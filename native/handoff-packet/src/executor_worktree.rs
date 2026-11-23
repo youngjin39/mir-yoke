@@ -33,7 +33,7 @@ pub enum Error {
     PathIo {
         kind: &'static str,
         message: String,
-        path: PathBuf,
+        error: io::Error,
     },
     Git {
         code: Option<i32>,
@@ -62,11 +62,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(e) => e.fmt(f),
-            Self::PathIo { message, path, .. } => write!(
-                f,
-                "{message}: {}",
-                crate::executor_text::repr(&path.to_string_lossy())
-            ),
+            Self::PathIo { message, .. } => f.write_str(message),
             Self::Json(e) => e.fmt(f),
             Self::Git {
                 code,
@@ -94,10 +90,10 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::Io(e) => Some(e),
+            Self::Io(e) | Self::PathIo { error: e, .. } => Some(e),
             Self::Json(e) => Some(e),
             Self::Local(e) => Some(e),
-            Self::Git { .. } | Self::Invalid(_) | Self::Redaction(_) | Self::PathIo { .. } => None,
+            Self::Git { .. } | Self::Invalid(_) | Self::Redaction(_) => None,
         }
     }
 }
@@ -258,7 +254,13 @@ fn windows_path_io(
         return Error::Io(error);
     }
     let path = &path.components().collect::<PathBuf>();
-    let rendered = crate::executor_text::io_error(error, path, operation);
+    let rendered = crate::adoption_fs::windows_error(
+        &error,
+        Some(path),
+        None,
+        operation,
+        crate::executor_text::FilenameArgument::Str,
+    );
     let (class, text) = rendered.split_once(": ").unwrap_or(("OSError", &rendered));
     let kind = match class {
         "FileNotFoundError" => "FileNotFoundError",
@@ -267,31 +269,25 @@ fn windows_path_io(
         "NotADirectoryError" => "NotADirectoryError",
         _ => "OSError",
     };
-    let suffix = format!(
-        ": {}",
-        crate::executor_text::repr_points(&crate::executor_text::os_points(path.as_os_str()))
-    );
     Error::PathIo {
         kind,
-        message: text.strip_suffix(&suffix).unwrap_or(text).into(),
-        path: path.to_owned(),
+        message: text.into(),
+        error,
     }
 }
 #[cfg(not(windows))]
 pub(crate) fn path_io(error: io::Error, path: &Path) -> Error {
-    let Some(errno) = error.raw_os_error() else {
+    if error.raw_os_error().is_none() {
         return Error::Io(error);
-    };
-    let kind = io_kind(error.kind());
-    let Some(path) = path.to_str() else {
-        return Error::Invalid("non UTF-8 evidence path".into());
-    };
-    let text = error.to_string();
-    let message = text.split(" (os error ").next().unwrap_or(&text);
+    }
     Error::PathIo {
-        kind,
-        message: format!("[Errno {errno}] {message}"),
-        path: PathBuf::from(path),
+        kind: if path.to_str().is_some() {
+            io_kind(error.kind())
+        } else {
+            "ValueError"
+        },
+        message: crate::executor_brief_profile::python_os_error_message(&error, path),
+        error,
     }
 }
 fn git_text(root: &DispatchPath, args: &[&str]) -> Result<String> {
@@ -1426,6 +1422,24 @@ pub fn persist_dispatch_artifacts(
 mod containment_tests {
     use super::*;
     use std::os::unix::fs::symlink;
+
+    #[test]
+    fn non_utf8_path_io_preserves_error_kind_and_source() {
+        use std::{error::Error as _, os::unix::ffi::OsStrExt};
+
+        let path = Path::new(OsStr::from_bytes(b"evidence-\xff"));
+        let error = path_io(io::Error::from_raw_os_error(libc::EISDIR), path);
+        assert_eq!(error.kind(), "ValueError");
+        assert_eq!(
+            error.to_string(),
+            format!(
+                r"[Errno {}] Is a directory: 'evidence-\udcff'",
+                libc::EISDIR
+            )
+        );
+        let source = error.source().unwrap().downcast_ref::<io::Error>().unwrap();
+        assert_eq!(source.raw_os_error(), Some(libc::EISDIR));
+    }
 
     #[test]
     fn artifact_parent_swap_refuses_before_external_effect() {

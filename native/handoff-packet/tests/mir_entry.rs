@@ -194,6 +194,7 @@ fn assert_compatibility_route(family: &str, status: i32) {
     write_script(
         &root.join("tool bin/python"),
         r#"#!/bin/sh
+test -z "${PYTHONPATH+x}${PYTHONHOME+x}" || exit 91
 printf '%s\0' "$@" > argv
 printf '%s\0' "$(/bin/pwd -P)" "$F04Y_MARKER" "$PYTHONIOENCODING" > context
 /bin/cat > input
@@ -212,6 +213,8 @@ exit "$F04Y_STATUS"
         .env("F04Y_MARKER", &raw)
         .env("F04Y_STATUS", status.to_string())
         .env("PYTHONIOENCODING", "unknown-codec")
+        .env("PYTHONPATH", &cwd)
+        .env("PYTHONHOME", &cwd)
         .current_dir(&cwd)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -227,7 +230,7 @@ exit "$F04Y_STATUS"
     assert_eq!(
         fs::read(cwd.join("argv")).unwrap(),
         [
-            b"-m\0mir.cli\0".as_slice(),
+            b"-s\0-P\0-m\0mir.cli\0".as_slice(),
             family.as_bytes(),
             b"\0arg with space\0--\0\0x\xff\0--\0"
         ]
@@ -286,18 +289,16 @@ fn compatibility_help_matches_real_pinned_python() {
         "#!/bin/sh\nexec \"$F04Y_PINNED_PYTHON\" \"$@\"\n",
         0o755,
     );
-    let pythonpath = repo.join("src");
     let expected = caller(root, &pinned)
-        .env("PYTHONPATH", &pythonpath)
-        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .env("PYTHONIOENCODING", "utf-8-sig")
         .args(["-m", "mir.cli", "memory", "--help"])
         .output()
         .unwrap();
     assert!(expected.status.success(), "{expected:?}");
+    assert!(expected.stdout.starts_with(b"\xef\xbb\xbfusage:"));
     let actual = caller(root, &mir)
         .env("F04Y_PINNED_PYTHON", &pinned)
-        .env("PYTHONPATH", &pythonpath)
-        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .env("PYTHONIOENCODING", "utf-8-sig")
         .args(["memory", "--help"])
         .output()
         .unwrap();

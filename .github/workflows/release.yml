@@ -13,7 +13,9 @@ concurrency:
 
 jobs:
   validate_candidate:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -24,9 +26,30 @@ jobs:
             3.11
             3.12
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - name: Sync project with extension-capable Python
+        run: |
+          python="$(brew --prefix)/opt/python@3.12/bin/python3.12"
+          if [[ ! -x "$python" ]]; then brew install python@3.12; fi
+          "$python" -c 'import sqlite3; assert hasattr(sqlite3.Connection, "enable_load_extension")'
+          uv sync --python "$python" --extra dev --extra vector --frozen
+      - run: echo "UV_CACHE_DIR=$(uv cache dir)" >> "$GITHUB_ENV"
+      # Offline setup tests resolve the tool independently of the project lock.
+      - run: uv tool install --python .venv/bin/python --force --link-mode copy --constraints config/cli-runtime-constraints.txt .
+        env:
+          UV_TOOL_DIR: ${{ runner.temp }}/mir-test-tools
+          UV_TOOL_BIN_DIR: ${{ runner.temp }}/mir-test-bin
+      - run: cargo build --locked
+        working-directory: native/handoff-packet
+      - run: cargo build --release --locked
+        working-directory: native/handoff-packet
+      - run: cargo build --release --locked
+        working-directory: native/mir-mcp
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
       - name: Validate repository release candidate
         run: uv run python scripts/verify_release_readiness.py --current-clean-tree
+        env:
+          MIR_MCP_NATIVE_BINARY: ${{ github.workspace }}/native/mir-mcp/target/release/mir-mcp
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         env:

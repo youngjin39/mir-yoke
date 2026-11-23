@@ -23,10 +23,10 @@ shutil.copytree(Path(yaml.__file__).parent, root/'yaml', dirs_exist_ok=True)
 rows = []
 for tag, values in {
     'int': ['nope', '+N_oPe', '-nope', '0b102', '-0bNOPE', '0xNOPE', '+0x', '09',
-            '0bad', '-', '', '___', '1:bad:wrong', '1::2', 'a\'b"c', '한글\t\n',
+            '0bad', '-', '', '___', '1:bad:wrong', '1::2', 'a\'b"c', '\ud55c\uae00\t\n',
             'x'*240, '  nope  ', '\u00a0nope', '123', '-0x10', '077', '1:02:03'],
     'float': ['nope', '-N_OPE', '+BAD', '1eNOPE', '-', '', '___', '1:BAD:WRONG',
-              '1::2', 'A\'B"C', '한글\t\n', 'X'*240, '  NoPe  ', '\u00a0NoPe',
+              '1::2', 'A\'B"C', '\ud55c\uae00\t\n', 'X'*240, '  NoPe  ', '\u00a0NoPe',
               '1.5', '-1_2.5', '1:02.5'],
 }.items():
     for index, value in enumerate(values):

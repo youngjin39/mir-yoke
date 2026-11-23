@@ -7,21 +7,22 @@ No network, existing databases, or frozen E8 fixtures are used.
 
 import contextlib
 import io
+import itertools
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
+from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO / "src"))
 
-from mir.cli.__main__ import main
-from mir.core.engine.memory import store
-from mir.core.engine.memory.external_store import ExternalStore
-
 
 def main_fixture():
+    from mir.cli.__main__ import main
+    from mir.core.engine.memory import store
+    from mir.core.engine.memory.external_store import ExternalStore
+
     cases = [
         ("empty", ""),
         ("lf", "alpha\nbeta\n"),
@@ -35,8 +36,6 @@ def main_fixture():
         ("line-separator", "alpha\u2028beta\u2028"),
     ]
     # Exhaustive short sequences exercise consecutive and terminal delimiters.
-    import itertools
-
     for n in range(1, 4):
         for chars in itertools.product(("x", "\r", "\n", "\x85", "\u2028"), repeat=n):
             text = "".join(chars)

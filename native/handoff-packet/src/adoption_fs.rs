@@ -734,13 +734,18 @@ impl Parent {
             }
             // SAFETY: successful fstatat initialized the complete stat record.
             let metadata = unsafe { metadata.assume_init() };
+            #[allow(
+                clippy::unnecessary_cast,
+                reason = "st_dev has a platform-specific type"
+            )]
+            let device = metadata.st_dev as u64;
             Ok((metadata.st_mode & libc::S_IFMT
                 == if directory {
                     libc::S_IFDIR
                 } else {
                     libc::S_IFREG
                 })
-            .then_some(unix_identity(metadata.st_dev as u64, metadata.st_ino)))
+            .then_some(unix_identity(device, metadata.st_ino)))
         }
         #[cfg(windows)]
         windows::object_identity(self, &self.name, directory)

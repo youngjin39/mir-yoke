@@ -22,89 +22,89 @@
     "fixture_reference": "native/handoff-packet/tests/fixtures/generate_executor_sweep.py"
   },
   "private_path_listing_probe": {
-    "listed_path": "/System/Volumes/Data/private/var/folders/oracle-wt",
+    "listed_path": "/System\u002fVolumes/Data/private/var/folders/oracle-wt",
     "ordinary_resolve": "/private/var/folders",
-    "registered_resolve": "/System/Volumes/Data/private/var/folders",
+    "registered_resolve": "/System\u002fVolumes/Data/private/var/folders",
     "evidence_type": "derived",
     "excluded": "No sweep or Git command ran under /private"
   },
   "cases": {
     "ordinary|registered-firmlink": {
       "fixture_root": "$ROOT",
-      "registered_root": "/System/Volumes/Data$ROOT",
-      "pathlib_resolve_registered": "/System/Volumes/Data$ROOT",
+      "registered_root": "/System\u002fVolumes/Data$ROOT",
+      "pathlib_resolve_registered": "/System\u002fVolumes/Data$ROOT",
       "listed_paths": [
-        "/System/Volumes/Data$ROOT/wt-clean",
-        "/System/Volumes/Data$ROOT/wt-finished",
-        "/System/Volumes/Data$ROOT/wt-ignored",
-        "/System/Volumes/Data$ROOT/wt-live",
-        "/System/Volumes/Data$ROOT/wt-locked",
-        "/System/Volumes/Data$ROOT/wt-runtime",
-        "/System/Volumes/Data$ROOT/wt-staged",
-        "/System/Volumes/Data$ROOT/wt-stale",
-        "/System/Volumes/Data$ROOT/wt-tracked",
-        "/System/Volumes/Data$ROOT/wt-unique",
-        "/System/Volumes/Data$ROOT/wt-untracked"
+        "/System\u002fVolumes/Data$ROOT/wt-clean",
+        "/System\u002fVolumes/Data$ROOT/wt-finished",
+        "/System\u002fVolumes/Data$ROOT/wt-ignored",
+        "/System\u002fVolumes/Data$ROOT/wt-live",
+        "/System\u002fVolumes/Data$ROOT/wt-locked",
+        "/System\u002fVolumes/Data$ROOT/wt-runtime",
+        "/System\u002fVolumes/Data$ROOT/wt-staged",
+        "/System\u002fVolumes/Data$ROOT/wt-stale",
+        "/System\u002fVolumes/Data$ROOT/wt-tracked",
+        "/System\u002fVolumes/Data$ROOT/wt-unique",
+        "/System\u002fVolumes/Data$ROOT/wt-untracked"
       ],
       "result": {
         "stale_jobs": [
           "stale"
         ],
         "orphan_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-clean",
-          "/System/Volumes/Data$ROOT/wt-finished",
-          "/System/Volumes/Data$ROOT/wt-ignored",
-          "/System/Volumes/Data$ROOT/wt-locked",
-          "/System/Volumes/Data$ROOT/wt-runtime",
-          "/System/Volumes/Data$ROOT/wt-staged",
-          "/System/Volumes/Data$ROOT/wt-tracked",
-          "/System/Volumes/Data$ROOT/wt-unique",
-          "/System/Volumes/Data$ROOT/wt-untracked"
+          "/System\u002fVolumes/Data$ROOT/wt-clean",
+          "/System\u002fVolumes/Data$ROOT/wt-finished",
+          "/System\u002fVolumes/Data$ROOT/wt-ignored",
+          "/System\u002fVolumes/Data$ROOT/wt-locked",
+          "/System\u002fVolumes/Data$ROOT/wt-runtime",
+          "/System\u002fVolumes/Data$ROOT/wt-staged",
+          "/System\u002fVolumes/Data$ROOT/wt-tracked",
+          "/System\u002fVolumes/Data$ROOT/wt-unique",
+          "/System\u002fVolumes/Data$ROOT/wt-untracked"
         ],
         "removable_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-clean",
-          "/System/Volumes/Data$ROOT/wt-finished"
+          "/System\u002fVolumes/Data$ROOT/wt-clean",
+          "/System\u002fVolumes/Data$ROOT/wt-finished"
         ],
         "preserved_worktrees": [
           {
-            "path": "/System/Volumes/Data$ROOT/wt-ignored",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-ignored",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-runtime",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-runtime",
             "reasons": [
               "runtime-evidence-present",
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-staged",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-staged",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-tracked",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-tracked",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-unique",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-unique",
             "reasons": [
               "unique-commit"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-untracked",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-untracked",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-locked",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-locked",
             "reasons": [
               "apply-time-drift:remove-refused"
             ]
@@ -112,8 +112,8 @@
         ],
         "reaped_jobs": [],
         "removed_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-clean",
-          "/System/Volumes/Data$ROOT/wt-finished"
+          "/System\u002fVolumes/Data$ROOT/wt-clean",
+          "/System\u002fVolumes/Data$ROOT/wt-finished"
         ],
         "errors": [],
         "apply": true
@@ -123,10 +123,10 @@
     },
     "ordinary|registered-retarget": {
       "fixture_root": "$ROOT",
-      "registered_root": "/System/Volumes/Data$ROOT",
-      "pathlib_resolve_registered": "/System/Volumes/Data$ROOT",
+      "registered_root": "/System\u002fVolumes/Data$ROOT",
+      "pathlib_resolve_registered": "/System\u002fVolumes/Data$ROOT",
       "listed_paths": [
-        "/System/Volumes/Data$ROOT/wt-finished",
+        "/System\u002fVolumes/Data$ROOT/wt-finished",
         "$ROOT/wt-clean",
         "$ROOT/wt-ignored",
         "$ROOT/wt-live",
@@ -143,7 +143,7 @@
           "stale"
         ],
         "orphan_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-finished",
+          "/System\u002fVolumes/Data$ROOT/wt-finished",
           "$ROOT/wt-clean",
           "$ROOT/wt-ignored",
           "$ROOT/wt-locked",
@@ -154,7 +154,7 @@
           "$ROOT/wt-untracked"
         ],
         "removable_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-finished"
+          "/System\u002fVolumes/Data$ROOT/wt-finished"
         ],
         "preserved_worktrees": [
           {
@@ -209,7 +209,7 @@
         ],
         "reaped_jobs": [],
         "removed_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-finished"
+          "/System\u002fVolumes/Data$ROOT/wt-finished"
         ],
         "errors": [],
         "apply": true
@@ -218,81 +218,81 @@
       "finished_exists": false
     },
     "data|registered-firmlink": {
-      "fixture_root": "/System/Volumes/Data$ROOT",
-      "registered_root": "/System/Volumes/Data$ROOT",
-      "pathlib_resolve_registered": "/System/Volumes/Data$ROOT",
+      "fixture_root": "/System\u002fVolumes/Data$ROOT",
+      "registered_root": "/System\u002fVolumes/Data$ROOT",
+      "pathlib_resolve_registered": "/System\u002fVolumes/Data$ROOT",
       "listed_paths": [
-        "/System/Volumes/Data$ROOT/wt-clean",
-        "/System/Volumes/Data$ROOT/wt-finished",
-        "/System/Volumes/Data$ROOT/wt-ignored",
-        "/System/Volumes/Data$ROOT/wt-live",
-        "/System/Volumes/Data$ROOT/wt-locked",
-        "/System/Volumes/Data$ROOT/wt-runtime",
-        "/System/Volumes/Data$ROOT/wt-staged",
-        "/System/Volumes/Data$ROOT/wt-stale",
-        "/System/Volumes/Data$ROOT/wt-tracked",
-        "/System/Volumes/Data$ROOT/wt-unique",
-        "/System/Volumes/Data$ROOT/wt-untracked"
+        "/System\u002fVolumes/Data$ROOT/wt-clean",
+        "/System\u002fVolumes/Data$ROOT/wt-finished",
+        "/System\u002fVolumes/Data$ROOT/wt-ignored",
+        "/System\u002fVolumes/Data$ROOT/wt-live",
+        "/System\u002fVolumes/Data$ROOT/wt-locked",
+        "/System\u002fVolumes/Data$ROOT/wt-runtime",
+        "/System\u002fVolumes/Data$ROOT/wt-staged",
+        "/System\u002fVolumes/Data$ROOT/wt-stale",
+        "/System\u002fVolumes/Data$ROOT/wt-tracked",
+        "/System\u002fVolumes/Data$ROOT/wt-unique",
+        "/System\u002fVolumes/Data$ROOT/wt-untracked"
       ],
       "result": {
         "stale_jobs": [
           "stale"
         ],
         "orphan_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-clean",
-          "/System/Volumes/Data$ROOT/wt-finished",
-          "/System/Volumes/Data$ROOT/wt-ignored",
-          "/System/Volumes/Data$ROOT/wt-locked",
-          "/System/Volumes/Data$ROOT/wt-runtime",
-          "/System/Volumes/Data$ROOT/wt-staged",
-          "/System/Volumes/Data$ROOT/wt-tracked",
-          "/System/Volumes/Data$ROOT/wt-unique",
-          "/System/Volumes/Data$ROOT/wt-untracked"
+          "/System\u002fVolumes/Data$ROOT/wt-clean",
+          "/System\u002fVolumes/Data$ROOT/wt-finished",
+          "/System\u002fVolumes/Data$ROOT/wt-ignored",
+          "/System\u002fVolumes/Data$ROOT/wt-locked",
+          "/System\u002fVolumes/Data$ROOT/wt-runtime",
+          "/System\u002fVolumes/Data$ROOT/wt-staged",
+          "/System\u002fVolumes/Data$ROOT/wt-tracked",
+          "/System\u002fVolumes/Data$ROOT/wt-unique",
+          "/System\u002fVolumes/Data$ROOT/wt-untracked"
         ],
         "removable_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-clean",
-          "/System/Volumes/Data$ROOT/wt-finished"
+          "/System\u002fVolumes/Data$ROOT/wt-clean",
+          "/System\u002fVolumes/Data$ROOT/wt-finished"
         ],
         "preserved_worktrees": [
           {
-            "path": "/System/Volumes/Data$ROOT/wt-ignored",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-ignored",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-runtime",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-runtime",
             "reasons": [
               "runtime-evidence-present",
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-staged",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-staged",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-tracked",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-tracked",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-unique",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-unique",
             "reasons": [
               "unique-commit"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-untracked",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-untracked",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-locked",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-locked",
             "reasons": [
               "apply-time-drift:remove-refused"
             ]
@@ -300,8 +300,8 @@
         ],
         "reaped_jobs": [],
         "removed_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-clean",
-          "/System/Volumes/Data$ROOT/wt-finished"
+          "/System\u002fVolumes/Data$ROOT/wt-clean",
+          "/System\u002fVolumes/Data$ROOT/wt-finished"
         ],
         "errors": [],
         "apply": true
@@ -310,86 +310,86 @@
       "finished_exists": false
     },
     "data|registered-retarget": {
-      "fixture_root": "/System/Volumes/Data$ROOT",
-      "registered_root": "/System/Volumes/Data$ROOT",
-      "pathlib_resolve_registered": "/System/Volumes/Data$ROOT",
+      "fixture_root": "/System\u002fVolumes/Data$ROOT",
+      "registered_root": "/System\u002fVolumes/Data$ROOT",
+      "pathlib_resolve_registered": "/System\u002fVolumes/Data$ROOT",
       "listed_paths": [
-        "/System/Volumes/Data$ROOT/wt-clean",
-        "/System/Volumes/Data$ROOT/wt-finished",
-        "/System/Volumes/Data$ROOT/wt-ignored",
-        "/System/Volumes/Data$ROOT/wt-live",
-        "/System/Volumes/Data$ROOT/wt-locked",
-        "/System/Volumes/Data$ROOT/wt-runtime",
-        "/System/Volumes/Data$ROOT/wt-staged",
-        "/System/Volumes/Data$ROOT/wt-stale",
-        "/System/Volumes/Data$ROOT/wt-tracked",
-        "/System/Volumes/Data$ROOT/wt-unique",
-        "/System/Volumes/Data$ROOT/wt-untracked"
+        "/System\u002fVolumes/Data$ROOT/wt-clean",
+        "/System\u002fVolumes/Data$ROOT/wt-finished",
+        "/System\u002fVolumes/Data$ROOT/wt-ignored",
+        "/System\u002fVolumes/Data$ROOT/wt-live",
+        "/System\u002fVolumes/Data$ROOT/wt-locked",
+        "/System\u002fVolumes/Data$ROOT/wt-runtime",
+        "/System\u002fVolumes/Data$ROOT/wt-staged",
+        "/System\u002fVolumes/Data$ROOT/wt-stale",
+        "/System\u002fVolumes/Data$ROOT/wt-tracked",
+        "/System\u002fVolumes/Data$ROOT/wt-unique",
+        "/System\u002fVolumes/Data$ROOT/wt-untracked"
       ],
       "result": {
         "stale_jobs": [
           "stale"
         ],
         "orphan_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-clean",
-          "/System/Volumes/Data$ROOT/wt-finished",
-          "/System/Volumes/Data$ROOT/wt-ignored",
-          "/System/Volumes/Data$ROOT/wt-locked",
-          "/System/Volumes/Data$ROOT/wt-runtime",
-          "/System/Volumes/Data$ROOT/wt-staged",
-          "/System/Volumes/Data$ROOT/wt-tracked",
-          "/System/Volumes/Data$ROOT/wt-unique",
-          "/System/Volumes/Data$ROOT/wt-untracked"
+          "/System\u002fVolumes/Data$ROOT/wt-clean",
+          "/System\u002fVolumes/Data$ROOT/wt-finished",
+          "/System\u002fVolumes/Data$ROOT/wt-ignored",
+          "/System\u002fVolumes/Data$ROOT/wt-locked",
+          "/System\u002fVolumes/Data$ROOT/wt-runtime",
+          "/System\u002fVolumes/Data$ROOT/wt-staged",
+          "/System\u002fVolumes/Data$ROOT/wt-tracked",
+          "/System\u002fVolumes/Data$ROOT/wt-unique",
+          "/System\u002fVolumes/Data$ROOT/wt-untracked"
         ],
         "removable_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-finished"
+          "/System\u002fVolumes/Data$ROOT/wt-finished"
         ],
         "preserved_worktrees": [
           {
-            "path": "/System/Volumes/Data$ROOT/wt-ignored",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-ignored",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-runtime",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-runtime",
             "reasons": [
               "runtime-evidence-present",
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-staged",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-staged",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-tracked",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-tracked",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-unique",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-unique",
             "reasons": [
               "unique-commit"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-untracked",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-untracked",
             "reasons": [
               "worktree-dirty"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-clean",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-clean",
             "reasons": [
               "apply-time-drift:remove-refused"
             ]
           },
           {
-            "path": "/System/Volumes/Data$ROOT/wt-locked",
+            "path": "/System\u002fVolumes/Data$ROOT/wt-locked",
             "reasons": [
               "apply-time-drift:remove-refused"
             ]
@@ -397,7 +397,7 @@
         ],
         "reaped_jobs": [],
         "removed_worktrees": [
-          "/System/Volumes/Data$ROOT/wt-finished"
+          "/System\u002fVolumes/Data$ROOT/wt-finished"
         ],
         "errors": [],
         "apply": true

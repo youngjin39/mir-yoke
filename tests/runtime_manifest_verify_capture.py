@@ -4,16 +4,17 @@ import contextlib
 import importlib.util
 import io
 import json
-import os
 import subprocess
 import sys
 import tempfile
 import types
 from pathlib import Path
 
+SOURCE_REVISION = "4343aba88e811f14f6147a9a9b818b6fb346bec8"
+
 
 def main():
-    with tempfile.TemporaryDirectory(dir=os.environ["TMPDIR"]) as temporary:
+    with tempfile.TemporaryDirectory() as temporary:
         capture(Path(temporary))
 
 
@@ -34,7 +35,7 @@ def capture(scratch):
         ("mir.cli.__main__", "src/mir/cli/__main__.py"),
     ]:
         output = scratch / (name.rsplit(".", 1)[-1] + ".py")
-        output.write_bytes(subprocess.check_output(["git", "show", "1324a3c:" + source]))
+        output.write_bytes(subprocess.check_output(["git", "show", f"{SOURCE_REVISION}:{source}"]))
         spec = importlib.util.spec_from_file_location(name, output)
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module

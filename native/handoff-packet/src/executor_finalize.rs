@@ -22,6 +22,7 @@ use std::{
 #[derive(Debug)]
 pub enum Error {
     Io(io::Error),
+    LockOpen { error: io::Error, path: PathBuf },
     Unicode(std::string::FromUtf8Error),
     Git { code: Option<i32>, stderr: String },
     Local(crate::executor_local::Error),
@@ -34,6 +35,18 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(e) => e.fmt(f),
+            Self::LockOpen { error, path } => {
+                #[cfg(windows)]
+                let message = crate::executor_brief_profile::python_file_error_message(
+                    error,
+                    path,
+                    crate::executor_text::IoOperation::Write,
+                    crate::executor_text::FilenameArgument::Path,
+                );
+                #[cfg(not(windows))]
+                let message = crate::executor_brief_profile::python_os_error_message(error, path);
+                f.write_str(&message)
+            }
             Self::Unicode(e) => e.fmt(f),
             Self::Git { code, stderr } => write!(f, "git failed ({code:?}): {stderr}"),
             Self::Local(e) => e.fmt(f),
@@ -47,7 +60,7 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::Io(e) => Some(e),
+            Self::Io(e) | Self::LockOpen { error: e, .. } => Some(e),
             Self::Unicode(e) => Some(e),
             Self::Local(e) => Some(e),
             Self::Worktree(e) => Some(e),
@@ -138,15 +151,7 @@ impl FinalizeLock {
             .create(true)
             .truncate(false)
             .open(&path)
-            .map_err(|e| {
-                if e.kind() == io::ErrorKind::IsADirectory {
-                    Error::Invalid(crate::executor_brief_profile::python_os_error_message(
-                        &e, &path,
-                    ))
-                } else {
-                    Error::Io(e)
-                }
-            })?;
+            .map_err(|error| Error::LockOpen { error, path })?;
         let started = Instant::now();
         loop {
             match file.try_lock() {
@@ -650,10 +655,11 @@ fn project_registry(
     registry.update_status(job_id, if success { "completed" } else { "failed" }, &json!({"exit_code":code,"stdout":format!("artifacts={artifacts}"),"stderr":reason,"completed_at":completed_at})).map_err(Error::Registry)
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
 mod diagnostic_tests {
     use super::*;
 
+    #[cfg(unix)]
     #[test]
     fn lock_directory_diagnostic_matches_python() {
         let scratch = tempfile::tempdir().unwrap();
@@ -673,5 +679,18 @@ mod diagnostic_tests {
                 )
             );
         }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn lock_open_disk_full_uses_crt_errno() {
+        let error = Error::LockOpen {
+            error: io::Error::from_raw_os_error(112),
+            path: PathBuf::from("dispatch-finalize.lock"),
+        };
+        assert_eq!(
+            error.to_string(),
+            "[Errno 28] No space left on device: 'dispatch-finalize.lock'"
+        );
     }
 }

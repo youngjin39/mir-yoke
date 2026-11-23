@@ -20,14 +20,25 @@ jobs:
       CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
         # 3.11 is the mir-mcp compatibility floor the MCP oracles also run.
         with:
           python-version: |
             3.11
+            3.12
             3.14
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --python 3.14 --extra dev --frozen
+      - name: Sync native handoff fixtures
+        run: |
+          python=3.14
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            # The E18 Python oracle loads sqlite-vec. The hosted Python lacks loadable extensions.
+            python="$(brew --prefix)/opt/python@3.14/bin/python3.14"
+            if [[ ! -x "$python" ]]; then brew install python@3.14; fi
+            "$python" -c 'import sqlite3; assert hasattr(sqlite3.Connection, "enable_load_extension")'
+          fi
+          uv sync --python "$python" --extra dev --extra vector --frozen
       # Runner rustup honors the crate's pinned toolchain and components.
       # cargo fmt has no --locked option: it only checks source formatting.
       - run: cargo fmt --check
@@ -40,9 +51,15 @@ jobs:
         working-directory: native/handoff-packet
       - run: >-
           uv run --python 3.14 pytest -q -p no:cacheprovider
-          tests/test_delegation_gate_native_parity.py tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py
+          tests/test_delegation_gate_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py
           tests/test_lifecycle_native_commands.py
           tests/test_line_endings.py
+      # These oracles use Python 3.12 argparse, Unicode and pathlib behavior.
+      - run: >-
+          uv run --python 3.12 --extra dev --extra vector --frozen pytest -q -p no:cacheprovider
+          tests/test_executor_query_native_parity.py tests/test_runtime_verify_native_parity.py
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv-312
       - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
 
       - run: cargo fmt --check
@@ -68,12 +85,16 @@ jobs:
 
   supported_contracts:
     runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra vector --frozen
+      - run: cargo build --release --locked --bin project-hooks
+        working-directory: native/handoff-packet
       - run: >-
           uv run pytest -q
           tests/test_project_agent_kit.py
@@ -84,6 +105,8 @@ jobs:
           tests/test_native_release.py
           tests/test_plugin_skill_packages.py
           tests/test_common_skill_contracts.py
+        env:
+          MIR_PROJECT_HOOKS_BINARY: ${{ github.workspace }}/native/handoff-packet/target/release/project-hooks
       - run: uv run python scripts/verify_codex_sync.py
       - run: uv run ruff check
 
@@ -94,13 +117,24 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra vector --frozen
+      - run: echo "UV_CACHE_DIR=$(uv cache dir)" >> "$GITHUB_ENV"
+      # Offline setup tests resolve the tool independently of the project lock.
+      - if: runner.os == 'macOS'
+        run: uv tool install --python .venv/bin/python --force --link-mode copy --constraints config/cli-runtime-constraints.txt .
+        env:
+          UV_TOOL_DIR: ${{ runner.temp }}/mir-test-tools
+          UV_TOOL_BIN_DIR: ${{ runner.temp }}/mir-test-bin
+      - run: cargo fetch --locked
+        working-directory: native/handoff-packet
       - run: >-
           uv run pytest -q
           tests/test_installed_cli.py
@@ -138,7 +172,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra vector --frozen
       - run: >-
           npm install --global
           @anthropic-ai/claude-code@2.1.223
@@ -171,7 +205,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --frozen
+      - run: uv sync --extra dev --extra vector --frozen
       - run: >-
           uv run pytest -q
           tests/test_line_endings.py
@@ -203,7 +237,7 @@ jobs:
           tests/test_mir_mcp_relations.py
       - run: uv run pytest -q tests/test_setup_wrappers.py -k powershell_launcher
       # Native handoff byte parity on Windows (same steps as native_handoff).
-      - run: uv sync --python 3.14 --extra dev --frozen
+      - run: uv sync --python 3.14 --extra dev --extra vector --frozen
       - run: cargo fmt --check
         working-directory: native/handoff-packet
       - run: cargo clippy --all-targets --locked -- -D warnings
