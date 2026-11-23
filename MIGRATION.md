@@ -155,9 +155,19 @@ uv run python -m tools.native_release --repo OWNER/REPO --tag native-0123456789a
   --cli-pin config/cli-native-artifacts.json --mac-only
 ```
 
-`--source` is the commit the bind pins. The prerelease tag and its target commit must
-both match it; the lock's own `source.commit` still names the previously recorded
-provider at bind time and is not used.
+The prerelease tag and its target commit must match `--source`. Set
+`.mir/capability-lock.json`'s `.source.commit` to the full native build commit B
+(the same `--source` as the CLI manifest). Before committing the bind, verify
+both Darwin selections with `config/cli-native-pin.jq`:
+
+```sh
+lock_source=$(jq -er '.source.commit' .mir/capability-lock.json) || exit 1
+test "$lock_source" = "$SOURCE_SHA" || exit 1
+for target in aarch64-apple-darwin x86_64-apple-darwin; do
+  jq -e --arg target "$target" --arg commit "$lock_source" \
+    -f config/cli-native-pin.jq config/cli-native-artifacts.json || exit 1
+done
+```
 
 Its GitHub operations only read release metadata and download assets. For offline
 review, put the GitHub release API JSON in `assets/release.json` alongside all assets

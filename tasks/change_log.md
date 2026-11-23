@@ -1,3 +1,270 @@
+## v0.14.1 source preparation (2026-11-23)
+
+Verified baseline: release/v0.14.1 at e46761a7874992f5bf5470dd0e9765e2d48afc95.
+This baseline includes the shared Darwin CLI pin selector, the pre-tag consumer
+stage and published-hook smoke as finalized by e46761a7, named preflight and
+cohort CI lanes (aa8d9462), the review rubric and witness-level porting rules
+(c5f36c97), and METHOD-FLEET (bc097c91). Clean-tree readiness for source
+commit B, native publication and bind C, the pre-tag Mac consumer check,
+hosted Mac CI, promotion, and tagging remain pending. The previous cursor
+and its open Windows verification are archived below.
+
+## Superseded plan (archived 2026-11-23)
+
+The following cursor text and release records are preserved verbatim.
+
+## Active task: Round 2 Rust decision parity fixes
+
+Intent authority: owner's 2026-11-11 Round 2 brief (Y1–Y5), reference
+`8c58654`, worktree `dev/rust-completion` at `63efe8c`.
+Outcome: decision equals the reference for handoff JSON admission and TDD
+ledger whitespace, malformed merge entries, target matching and JSON admission.
+Design: reuse existing Python compatibility helpers; freeze reference outcomes
+before fixes, enumerate exception/refusal paths, and audit remaining port traps.
+Acceptance: RED/GREEN regression evidence, affected crate tests, formatting and
+offline locked Clippy. The writer made no commit; Harness Main committed the
+slice locally after its own host check (owner Discord 1570056470370984131), no push.
+
+Verification: the five finding regressions pass on macOS, including 37 handoff
+and 423 TDD reference records (writer and independent Codex reviewer on Rust
+1.98.0; the reviewer repaired 4 stderr byte differences of Unicode `repr` output,
+229 own comparisons). Harness Main in the host with the pinned Rust 1.99.1: both
+fixtures regenerated with the same bytes; the four affected test targets fail 5 of
+30 with the sources at `63efe8c` and pass 30 with the fix; Clippy clean; whole
+crate 375 passed with a scratch TMPDIR (18 fail under the default symlinked
+TMPDIR; not checked at `63efe8c`).
+Open verification: Windows build and run.
+
+## Previous task (preserved): B1b native adoption caller and delivery
+
+
+Intent authority: owner-supplied B1b brief (2026-11-01), building on the B1
+brief and report. This is the single current cursor.
+Outcome: switch only adoption-ready evaluation to a receipt-pinned native
+binary; install verified host artifacts atomically during explicit adoption;
+wire all release targets; preserve shell fallback and rollback.
+Design input: receipt native_evaluator records relative path and SHA-256;
+verify hash before exact version/protocol. Windows and unavailable artifacts
+remain shell. Explicit local builds remain receipt-pinned. No consumer writes,
+commits, tags, pushes or workflow dispatch. Public sources stay generic English.
+Scenarios: every pin/file/version/protocol fallback, real helper state and
+enforcement byte parity, installer verification and atomic placement, release
+matrix membership. Preserve all B1 evaluator parity cases.
+Acceptance: fail-first and source mutations per family, cargo gates, touched
+pytest then full pytest, Ruff, generated parity, 30 interleaved measurements
+per state/enforce and 1/8/13/32-file workload including hash and pin reads.
+Regenerate adopter payload as the final repository edit.
+
+Prior B1 outcome and decisions are preserved in tasks/change_log.md and the
+owner-requested external B1 report. G2/G4 release execution and consumer
+attestation remain outside this repository-only task.
+
+Implementation complete: receipt-pinned caller and atomic optional installation,
+five-target release wiring, operator docs and dated ADR-77 amendment. Independent
+review found and verified corrections for signal-diagnostic stderr leakage and
+the historical receipt-only write boundary. No outstanding review findings.
+Actual helper mutations (seven), installer mutations (five) and release digest
+mutation were detected and restored. Cargo gates passed with 26 tests.
+Production benchmark: 480 byte-identical samples, 30 interleaved pairs per
+state/enforce and file-count cell; median gains 1.39x to 4.62x including pin/hash.
+Main acceptance runs the complete touched selection, then final payload
+regeneration and the whole suite. Exact final counts and any open cells are
+recorded in the owner-requested external B1b report; no duplicate handoff exists.
+
+Release record (Main, 2026-11-01): source 529828a (caller simplified by the Main:
+the receipt hash fixes the version, so no version probe or stderr framing), native
+prerelease native-529828a95da6 (20 assets, target 529828a), bind 999823f, hermetic
+adoption-test fix 2487c19 after CI public Mir CLI regression failed on the bound
+lock (the report test saw the installed evaluator). Fresh-clone readiness exit 0
+(4763 passed, 195 skipped); CI validate on 2487c19 all nine jobs green, including
+Windows, before the tag `v0.13.58`. Maintainer host: provider update applied from
+the 0.13.57 record lock, three aarch64 binaries placed (SHA-256 equal to the lock),
+Codex hook trust 4/4, Claude 3dcbab47 and Codex 01a194dd attested (five mir-mcp
+calls ok, four lifecycle hooks), finalized, ready at 2487c19. Owner PC (2026-11-01): 0.13.58 applied over the
+unattested 0.13.56 (three x86_64 Windows binaries placed), Claude 121ec18b and Codex
+01a19565 attested (five mir-mcp calls ok; the Codex PowerShell lifecycle hooks ran),
+finalized, ready at f204a54; consumer commit pushed by the maintainer host.
+
+Language guidance (2026-11-01, d990257, bind 11063ff): `mir-code` bluebricks starts new
+product and tool code in Rust with fixtures first; Python stays for ML/data, analysis,
+notebooks and one-off scripts or by repository policy; rust ports a stable component and
+retires the old implementation once the Rust path is stable. Full suite after the bind:
+4322 passed, 636 skipped.
+
+Release record v0.13.59 (Main, 2026-11-01): B2 hook-scoped `.claude/settings.json`
+evidence (709dc53; helper, adoption CLI and evaluator accept the canonical hook digest or
+a legacy whole-file digest) and S7 native `runtime-verify` behind `cli.runtime_verifier`
+(9c3a9fa; wrapper median 369 -> 304 ms on a realistic closure under load); version
+4f5d7cc, native prerelease native-4f5d7cce8e1f (25 assets), bind d9aaa73, Windows test fix
+4760c2f (the empty-USERPROFILE reference verdict differs on Windows). Fresh-clone readiness
+at d9aaa73 exit 0 (4889 passed, 219 skipped); CI validate on 4760c2f all nine jobs green,
+including Windows, before the tag. Maintainer host: provider update from the 0.13.58 record
+lock, four aarch64 binaries placed (SHA-256 equal to the lock), Codex hook trust 4/4,
+Claude 7375f3b1 and Codex 01a195b2 attested (five mir-mcp calls ok), finalized, ready at
+4760c2f. Owner PC: four x86_64 Windows binaries placed (runtime-verify.exe included),
+Claude 06a768d6 and Codex 01a195b6 attested (five mir-mcp calls ok; Codex lifecycle hooks
+ran), finalized, ready at 73f1b1b; consumer commit pushed by the maintainer host.
+
+Release record v0.13.60 (Main, 2026-11-01): E1 native `executor-query` front end
+(a029d0b; same-home `status`, `result` and `list-jobs` from a read-only, fully understood
+jobs schema with exact bundled rusqlite 0.40.2; a stdlib-only entrypoint shared by both
+Python routes tries the host-locally pinned binary before importing the executor; whole
+CLI median 74.1 -> 30.4 ms, binary 3.7 ms, 270/270 identical bytes); version fc083b6,
+native prerelease native-fc083b61e55d (30 assets), bind 529b330. CI validate on a029d0b and
+529b330 all jobs green, including Windows (executor parity +76 on macOS, Ubuntu and
+Windows), before the tag. Fresh-clone readiness at 529b330 exit 0 (5006 passed, 219
+skipped). Maintainer host: provider update from the 0.13.59 record lock, five aarch64
+binaries placed (SHA-256 equal to the lock), Codex hook trust 4/4, Claude e7190a7a and
+Codex 01a19631 attested (five mir-mcp calls ok), finalized, ready at 529b330. Owner PC:
+five x86_64 Windows binaries placed (executor-query.exe included, SHA-256 equal to the
+lock), Claude a9c23877 and Codex 01a19635 attested (five mir-mcp calls ok), finalized,
+ready at 8b9573c; consumer commit pushed by the maintainer host.
+
+Release record v0.13.61 (Main, 2026-11-01): E1c native admission of same-home queries when a
+repository-local executor override exists (c1e960e) and E1d JSON surrogate escapes accepted
+like Python in validation copies (71ab8b1; list-jobs no longer declines to Python on lone
+surrogates); version fb63a7c, native prerelease native-71ab8b1c48f1 (30 assets), bind
+5a6f53e (supersedes c43d977). CI validate on 5a6f53e all jobs green, including Windows,
+before the tag. Fresh-clone readiness at 5a6f53e exit 0 (5085 passed, 219 skipped).
+Maintainer host: provider update from the 0.13.60 record lock, five aarch64 binaries placed
+(SHA-256 equal to the lock), Codex hook trust 4/4, Claude 92678a46 and Codex 01a197cf
+attested (five mir-mcp calls ok), finalized, ready at 5a6f53e. Owner PC:
+five x86_64 Windows binaries placed (SHA-256 equal to the lock), Claude a9cfb2e4 and Codex
+01a197d4 attested (five mir-mcp calls ok; a first probe pointed at the removed 0.13.60 clone
+and returned E_IO, so it was not used), finalized, ready at 5a6f53e; consumer commit pushed
+by the maintainer host; consumer memory database unchanged.
+
+Release record v0.13.62 (Main, 2026-11-03): native executor commands. Library slices
+E2-E11 (admission, registry, transport, direct execute, worktrees, merge gate, dispatch
+attempts, review, finalize, resume, sweep), E12a entrypoint routing of execute and cancel
+with an ownership receipt (an older pinned binary falls back to Python), E12b native
+dispatch, resume and sweep commands, E12c agent routes, E12w Windows environment lookups;
+mir-code bluebricks Language Choice updated. Version 7dd4a10 on release/v0.13.62, native
+prerelease native-7dd4a10f2910 (30 assets), bind df48fd5. CI validate on df48fd5 green on
+every job, including Windows, after reruns of a GitHub macOS-capacity cancellation and one
+timing-bound ontology test, before the tag. Fresh-clone readiness at df48fd5 exit 0 (5366
+passed, 219 skipped). Maintainer host: provider update from the 0.13.61 record lock, five
+aarch64 binaries placed (SHA-256 equal to the lock), Codex hook trust 4/4, Claude 7843c4ea
+and Codex 01a19d8d attested (five mir-mcp calls ok), finalized, ready at df48fd5. Owner PC:
+not attested; superseded by v0.13.63 (a consumer whose hooks import virtual-environment
+packages fails natively on 0.13.62).
+
+Release record v0.13.63 (Main, 2026-11-03): the native bridge runs consumer hooks in the
+caller's interpreter (E12v): interpreter() keeps the unresolved path, and the entrypoint
+passes sys.executable as MIR_EXECUTOR_PYTHON unless set. Fix ae878b3 (CI validate green),
+version ba79888 on release/v0.13.63, native prerelease native-ba79888394dc (30 assets, after
+a rerun of a GitHub macOS-capacity cancellation), bind 3c8fafa. CI validate on 3c8fafa green
+on every job, including Windows, after one rerun of the timing-bound ontology test, before
+the tag; main push CI green. Fresh-clone readiness at 3c8fafa exit 0 (5372 passed, 219
+skipped). Real-consumer gate on Mir Harness (venv and local.py): sweep, list-jobs, status
+and result native with no decline and byte-equal to forced Python; cancel declines to
+Python by design; a base-interpreter override reproduces the 0.13.62 failure. Maintainer
+host: provider update from the 0.13.62 record lock, five aarch64 binaries placed (SHA-256
+equal to the lock), Codex hook trust 4/4, Claude d9376e73 and Codex 01a19e2d attested
+(five mir-mcp calls ok), finalized, ready at 3c8fafa. Owner PC: not attested; superseded by
+v0.13.64.
+
+Release record v0.13.64 (Main, 2026-11-03): native local policy and command hooks.
+native_policy v1 in the local executor JSON: target admission (Y1a fae6180), verifier
+aliases (Y1b 471c469, 93c8489), agent route selection (Y1c 20801de), the
+mir-executor.hooks@1 command hooks for writer_scope and on_job_event (Y3a eb3efc5, fa92cfc),
+and the Python executor refusing execute and resume for a repository that declares
+native_policy (Y1d b63411e). Main CI on b63411e green. Version 8f2c7e2 on
+release/v0.13.64, native prerelease native-8f2c7e2ab97e (30 assets), bind 4774e56; lock
+tests 363 passed. CI validate on 4774e56 green on every job, including Windows, before the
+tag; main push CI green. Fresh-clone readiness at 4774e56 ready (5945 passed, 221
+skipped). Real-consumer gate on Mir Harness (venv and local.py): sweep, list-jobs, status,
+result and cancel native and byte-equal to forced Python; the Harness command-hook adapter
+ran one execute end to end through the released binary. Maintainer host: provider update
+from the 0.13.63 record lock, five aarch64 binaries placed in both caches (SHA-256 equal to
+the lock), Codex hook trust 4/4, Claude 3b635f52 and Codex 01a1a104 attested (five mir-mcp
+calls ok), finalized, ready at 4774e56. Owner PC (from 0.13.61): five x86_64 Windows
+binaries placed (SHA-256 and size equal to the lock), Claude d14ace58 and Codex 01a1a10c
+attested (five mir-mcp calls ok), finalized, ready at d18182a; consumer commit pushed by the
+maintainer host; consumer memory database unchanged.
+
+Release record v0.13.65 (Main, 2026-11-04): native brief and result policy; Python APIs
+honour native hooks. Python executor APIs serve native_policy hooks over mir-executor.hooks@1
+and fail closed for other sections (Y3b 66d07a4); native_policy brief profile, brief-owned
+controls and result policy (Y2a 5207397); under native_policy the resume root error prefix
+matches Python and malformed execute/resume arguments report argparse errors before the
+native-required refusal (f6034b2). Version 61d68a3 on release/v0.13.65; the first bind
+c880b2b was superseded after f6034b2: native prerelease native-f6034b233f80 (30 assets),
+bind f805848, lock tests 363 passed. Fresh-clone readiness found a timing-sensitive native
+hook session test (a 0.15 s deadline also bounded the hello handshake; 1 of 5 local runs
+failed); 7b8d2fc shortens only the call deadline (8 consecutive runs of the file passed).
+CI validate on 7b8d2fc green on every job, including Windows, before the tag; main push CI
+green after a rerun of two macOS jobs that no hosted runner acquired. Fresh-clone readiness
+at 7b8d2fc ready (6065 passed, 221 skipped). Real-consumer gate on the managing consumer,
+which now declares native_policy with the command-hook writer adapter and no local.py:
+sweep, list-jobs, status, result and cancel native and byte-equal to forced Python;
+differential parity against the retired local.py 33/33 (a signal death is 128+n natively and
+-n in Python). Tag v0.13.65 on 7b8d2fc. Maintainer host: provider update from the 0.13.64
+record lock, five aarch64 binaries placed in both caches (SHA-256 equal to the lock), Codex
+hook trust 4/4, Claude b310803f and Codex 01a1a298 attested (five mir-mcp calls ok),
+finalized, ready at 7b8d2fc. Owner PC: pending. Open: native sweep and queries decline a
+target other than the executor home, so a native_policy home cannot serve them for another
+repository (follow-up).
+
+Release record v0.13.66 (Main, 2026-11-04): native mir-mcp server; cross-repository native
+executor commands. Y4 cb03197 closes the 0.13.65 follow-up (native sweep, cancel, resume and
+queries serve another target from the executor home's pin). M1a 6788a8f, M1b 6be8898 and M1x
+cf94ab3 add the native mir-mcp server (handoff_pins native, four tools forwarded to the Python
+reference), launcher selection of a verified installed binary, the lock artifact, the release
+merge, five-target workflows and the receipt backend. Version e7c9a53 on release/v0.13.66; the
+first Windows CI run failed, and the failures were reproduced on the maintainer's Windows host:
+test-only fixes d0c46fe (elapsed Git text, Windows executable bit, the 3.11 floor) and the
+short parametrize ids / Windows launcher tests, then da76963 (native stat signatures take the
+full FileIdInfo identity, EndOfFile and FILE_BASIC_INFO.ChangeTime like CPython 3.12+ fstat; a
+regular-file root maps to E_PATH; the MSVC binary embeds the longPathAware manifest). Windows
+mir-mcp suites 705 passed. Native prerelease native-da76963d86d0, bind 3bbd1f5; CI validate on
+3bbd1f5 green on every job including Windows before the tag; fresh-clone readiness ready (6347
+passed, 226 skipped). Managing consumer: executor sync, executor-query e903fb0c, the UC-010
+cross-root sweep case passes (xfail removed), real-consumer gate native and Python byte-equal,
+full suite green. Tag v0.13.66 on 3bbd1f5; release workflow green. Receipts now record the
+process backend observed by sampling the probe's process tree. Maintainer host: provider update
+from the 0.13.65 record lock, Codex hook trust 4/4, Claude 74e8be0e and Codex 01a1a682
+attested with backend native (95246dc4), finalized, ready at 3bbd1f5; headless Claude launches
+the plugin from the materialized capability root, Codex from its cache. Owner PC: Claude
+8a4b39c9 and Codex 01a1a68d attested with backend native (98a473a0), finalized, ready; the
+first run of a new mir-mcp.exe took about 26 s (antivirus scan), so the probe warms it first.
+Constraint: Python 3.11 on Windows reports a 32-bit serial and creation time, so cross-runtime
+cursors assume 3.12+ there. Open: owner Windows field report (Discord 1567516739883765833).
+
+Release record v0.13.67-v0.13.71 (Main, 2026-11-05): Windows hooks and delegation; native
+ontology tools; declarative executor brief policies. v0.13.67 b430e52: the active capability
+tree inherits its parent ACL again (a temporary-directory 0o700 ACL had locked out the user and
+the Codex sandbox group; the owner PC confirmed inheritance after update), global rules gain a
+provider-neutral delegation section, MCP docs tidied; its cmd-syntax commandWindows failed
+because Windows Codex runs hooks in the session's user shell (PowerShell there). v0.13.68 bind
+25d7d38: one commandWindows form, python3 "<root>\hooks\windows_hook.py" <name> <ref> ; exit
+$LASTEXITCODE, keeps exit codes in cmd, PowerShell, pwsh and bash; the launcher prefers the
+native exe. v0.13.69 2e09e0e (Y6): native delegation-gate (port of the shipped gate, 66
+fixtures byte-equal, 28 mutations caught), executor sync installs it with a SHA-256 pin,
+global rules name direct executor dispatch with codex-rescue as fallback, and the Windows
+consumer procedure is documented; its release run failed (the gate fixture forced an offline
+cargo build) and no GitHub Release exists; the tag stays. v0.13.70 0d93563 builds online unless
+MIR_HANDOFF_CARGO_OFFLINE=1; Mac Claude 67cacda1 and Codex 01a1a89d attested, ready.
+v0.13.71: M1c (native ontology_validate, ontology_lookup, ontology_impact; 89 of 111 new cases
+fail when routed to Python) and Y2b-1..5 (native goal input bound and job identity, resume
+fill, brief authority, execution binding, development packet and preflight; oracle captured
+read-only from consumers, mutation checks per slice). Windows CI found test-only portability
+faults (JSON-escaped and repr-doubled roots, the verbatim canonical prefix, message
+separators). Bind 4dacc33 (native-4bd949394e69), final 1a7154e; CI validate green including
+Windows and the release-candidate check before the tag; fresh-clone readiness ready (7378
+passed, 321 skipped). Managing consumer: sync, gate 7/7 same, delegation-gate smoke, full suite
+green. Tag v0.13.71; release and main validate green. Mac: Claude 03dea499 and Codex 01a1a9fe
+attested, native backend, ready at 1a7154e. Owner PC: Claude 594f0370 and Codex 01a1ab1d
+attested, native backend, ready; all four Codex hooks complete under PowerShell (about 0.5 s).
+Y6 on a disposable Windows consumer: exported lock (force_codex), sync check, pinned
+executor-query policy query exit 0, delegation-gate deny 2 and codex-rescue 0, and the
+exec-form registration blocked a real Claude Agent spawn. Open: the first run of each new exe
+timed out three Codex hooks (2 s and 8 s budgets; antivirus scan), so update should warm them;
+the executor spawns "codex" literally, which misses npm shim installs on Windows
+(lane-unavailable) until CODEX_BIN names codex.exe; with CODEX_BIN the dispatch ran in its
+worktree and finalized fail-closed, but Codex file writes fail in both sandbox modes over SSH,
+so a merged dispatch still needs a desktop-session check.
+
 ## B1b production adoption evaluator caller and delivery (2026-11-01)
 
 Intent authority: owner-supplied B1b brief; single cursor: tasks/plan.md.

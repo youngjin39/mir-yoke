@@ -2041,7 +2041,7 @@ def test_should_bind_h1_native_session_start_to_frozen_output_and_package_versio
     assert record["returncode"] == 0
     assert unpack(record["stderr"]) == b""
     for runtime in (".claude-plugin", ".codex-plugin"):
-        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.14.0"
+        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.14.1"
     config = load_capability_config(ROOT / "config/capability-sources.json")
     assert config.declared_digest_acknowledgements == {}
     assert config.plugin_hooks == {

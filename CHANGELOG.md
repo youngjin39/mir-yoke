@@ -8,6 +8,32 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.14.1] - 2026-11-23 - Darwin installer pin and release checks
+
+### Changed
+
+- Darwin setup and release readiness use the same CLI pin selector,
+  `config/cli-native-pin.jq`.
+- Added a pre-tag consumer-contract stage that checks installed native artifacts
+  and smoke-tests the published Claude and Codex hook commands. The tag workflow
+  does not yet require a receipt from this stage.
+- CI names its preflight checks and runs per-cohort lanes. macOS is blocking,
+  while Linux and Windows are advisory for this release.
+- Added a shared P0-P3 review rubric, witness-level parity rules for Rust ports,
+  and METHOD-FLEET guidance for review, repair, and briefs.
+
+### Fixed
+
+- The v0.14.0 Darwin `setup.sh` refused its own CLI pin because the provider
+  lock's source commit differed from the CLI manifest's build commit. For new
+  installs, the bind step sets both to the same native build commit.
+
+### Known limitation
+
+- If a consumer's capability lock has been updated to the release commit,
+  rerunning Darwin `setup.sh` still fails the source-commit equality check.
+  The post-update setup path is tracked as a follow-up.
+
 ## [v0.14.0] — 2026-11-21 — Rust runtime conversion (macOS cohort)
 
 Native binaries in this release are published for the two macOS targets only. Linux and Windows
