@@ -9,7 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-METHODS = frozenset({"status", "check", "sync", "update", "finalize", "attest", "deregister"})
+METHODS = frozenset({"status", "check", "sync", "update", "finalize", "attest"})
 
 
 @contextlib.contextmanager

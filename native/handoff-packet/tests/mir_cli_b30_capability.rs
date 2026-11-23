@@ -343,7 +343,6 @@ fn every_frozen_record_replays_exactly() {
         let actual: Value = observe_paths(name, actual);
         // Apply the same existing field observation to the selected platform oracle.
         let expected = observe_paths(name, platform_expected(name, expected, cfg!(windows)));
-        let expected = capability::expected_command_list(name, expected);
         if actual != expected {
             failures.push(format!(
                 "record {name}: actual={actual}, expected={expected}"

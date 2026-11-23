@@ -7,16 +7,8 @@ use crate::python_json::{Text, Value as PyValue};
 use serde_json::{Map, Value, json};
 use std::path::Path;
 
-const COMMANDS: &[&str] = &[
-    "status",
-    "check",
-    "sync",
-    "update",
-    "finalize",
-    "attest",
-    "deregister",
-];
-const APPLY_COMMANDS: &[&str] = &["sync", "update", "finalize", "attest", "deregister"];
+const COMMANDS: &[&str] = &["status", "check", "sync", "update", "finalize", "attest"];
+const TOP: &str = "usage: mir capability [-h] {status,check,sync,update,finalize,attest} ...\n";
 
 /// The CLI owns parsing and evidence; the caller owns provider authority and state.
 pub trait Manager {
@@ -36,19 +28,9 @@ pub trait Manager {
 
 fn usage(command: &str) -> String {
     if command.is_empty() {
-        return format!(
-            "usage: mir capability [-h]\n                      {{{}}}\n                      ...\n",
-            COMMANDS.join(",")
-        );
+        return TOP.into();
     }
     let pad = " ".repeat(23 + command.len());
-    if command == "deregister" {
-        return format!(
-            "usage: mir capability deregister [-h] --project-root PROJECT_ROOT\n\
-{pad}[--config CONFIG] --capability-home\n\
-{pad}CAPABILITY_HOME [--json] [--apply]\n"
-        );
-    }
     let tail = match command {
         "status" => "[--profile PROFILE]".into(),
         "check" => "[--profile PROFILE] [--mcp | --no-mcp]".into(),
@@ -86,9 +68,9 @@ fn diag(command: &str, message: &str) -> Output {
 fn help(command: &str) -> Output {
     let mut out = usage(command);
     if command.is_empty() {
-        out.push_str(&format!(
-            "\npositional arguments:\n  {{{}}}\n\noptions:\n  -h, --help            show this help message and exit\n",
-            COMMANDS.join(",")
+        out.push_str(concat!(
+            "\npositional arguments:\n  {status,check,sync,update,finalize,attest}\n",
+            "\noptions:\n  -h, --help            show this help message and exit\n"
         ));
     } else {
         out.push_str(concat!(
@@ -117,9 +99,6 @@ fn help(command: &str) -> Output {
                 "  --after-restart       confirm that operator observations came from restarted\n",
                 "                        runtime sessions\n"
             ));
-        }
-        if command == "deregister" {
-            out.push_str("  --apply\n");
         }
         if command == "attest" {
             out.push_str(concat!(
@@ -178,7 +157,7 @@ pub fn main_with_paths(
     if ["check", "sync", "update"].contains(&command) {
         options.extend([("--mcp", false), ("--no-mcp", false)]);
     }
-    if APPLY_COMMANDS.contains(&command) {
+    if ["sync", "update", "finalize", "attest"].contains(&command) {
         options.push(("--apply", false));
     }
     if command == "finalize" {
@@ -198,9 +177,6 @@ pub fn main_with_paths(
     while let Some(&token) = argv.get(i) {
         i += 1;
         if token == "--" && parse_options {
-            if command == "deregister" {
-                unknown.push(token);
-            }
             parse_options = false;
             continue;
         }
@@ -296,21 +272,6 @@ pub fn main_with_paths(
             "the following arguments are required: --runtime",
         ));
     }
-    if command == "deregister" {
-        let missing: Vec<_> = ["--project-root", "--capability-home"]
-            .into_iter()
-            .filter(|option| !values.contains_key(*option))
-            .collect();
-        if !missing.is_empty() {
-            return Ok(diag(
-                command,
-                &format!(
-                    "the following arguments are required: {}",
-                    missing.join(", ")
-                ),
-            ));
-        }
-    }
     if !unknown.is_empty() {
         return Ok(diag(
             "",
@@ -343,7 +304,7 @@ pub fn main_with_paths(
                 .map(&path)
                 .as_deref(),
         )?;
-        let before = if matches!(command, "status" | "deregister") {
+        let before = if command == "status" {
             None
         } else {
             Some(
@@ -366,7 +327,6 @@ pub fn main_with_paths(
                 );
                 vec![]
             }
-            "deregister" => vec![],
             _ => {
                 if let Some(path) = values.get("--mcp-evidence").and_then(Value::as_str) {
                     let evidence = crate::mir_core::capabilities::mcp::closed_json(Path::new(path))
@@ -378,7 +338,7 @@ pub fn main_with_paths(
                 vec![values["--runtime"].clone(), json!(skills), json!(hooks)]
             }
         };
-        if APPLY_COMMANDS.contains(&command) {
+        if ["sync", "update", "finalize", "attest"].contains(&command) {
             kwargs.insert("apply".into(), json!(values.contains_key("--apply")));
         }
         let mut result = manager.call(command, args, kwargs)?;
@@ -407,12 +367,10 @@ pub fn main_with_paths(
             );
         } else {
             let mut evidence = crate::python_json::Object::default();
-            let reason = if command == "deregister" {
-                "registry-only-operation"
-            } else {
-                "read-only-operation"
-            };
-            for (k, v) in [("status", "not-applicable"), ("reason", reason)] {
+            for (k, v) in [
+                ("status", "not-applicable"),
+                ("reason", "read-only-operation"),
+            ] {
                 evidence.insert(k.into(), PyValue::String(v.into()));
             }
             object.insert("change_evidence".into(), PyValue::Object(evidence));

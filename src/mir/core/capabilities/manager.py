@@ -20,14 +20,6 @@ from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path, PurePosixPath
 
-from mir.core.adoption.boundary import (
-    BOUNDARY_PATH,
-    PROFILE_PATH,
-    is_canonical_provider_profile,
-    is_provider_owner,
-    load_boundary,
-    load_profile,
-)
 from mir.core.adoption.runtime import _is_transient
 
 from .config import (
@@ -522,53 +514,6 @@ def _atomic_write_bytes(path: Path, payload: bytes, *, private: bool = False) ->
         temp_path.unlink(missing_ok=True)
 
 
-def _unique_json_members(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result = dict(pairs)
-    if len(result) != len(pairs):
-        raise ValueError("duplicate JSON member")
-    return result
-
-
-def _invalid_json_constant(value: str) -> None:
-    raise ValueError(f"invalid JSON constant: {value}")
-
-
-def _json_object_spans(source: str, start: int) -> dict[str, tuple[int, int, int]]:
-    """Locate member, value, and end offsets in an already validated JSON object."""
-    whitespace = re.compile(r"[ \t\r\n]*")
-    decoder = json.JSONDecoder()
-    members = {}
-    start = whitespace.match(source, start + 1).end()
-    while source[start] != "}":
-        name, key_end = decoder.raw_decode(source, start)
-        value_start = whitespace.match(source, whitespace.match(source, key_end).end() + 1).end()
-        _, end = decoder.raw_decode(source, value_start)
-        members[name] = (start, value_start, end)
-        start = whitespace.match(source, end).end()
-        if source[start] == ",":
-            start = whitespace.match(source, start + 1).end()
-    return members
-
-
-def _remove_json_members(source: str, sections: dict[str, object], key: str) -> bytes:
-    """Drop the selected entries without reserializing any retained bytes."""
-    fields = _json_object_spans(source, len(source) - len(source.lstrip(" \t\r\n")))
-    spans = []
-    for section in sections:
-        members = list(_json_object_spans(source, fields[section][1]).items())
-        for index, (name, (start, _, end)) in enumerate(members):
-            if name == key:
-                if index + 1 < len(members):
-                    end = members[index + 1][1][0]
-                elif index:
-                    start = members[index - 1][1][2]
-                spans.append((start, end))
-                break
-    for start, end in sorted(spans, reverse=True):
-        source = source[:start] + source[end:]
-    return source.encode("utf-8")
-
-
 def _tree_digest(root: Path) -> str:
     if root.is_symlink() or not root.is_dir():
         raise CapabilityError(f"capability tree is not a real directory: {root}")
@@ -1001,191 +946,6 @@ class CapabilityManager:
                 pass
             else:
                 guard.rmdir()
-
-    def deregister(self, *, apply: bool = False) -> dict[str, object]:
-        """Remove one consumer from the registry without changing its project or the provider."""
-        if self._is_provider_source_checkout():
-            raise CapabilityError("provider source checkout cannot be deregistered")
-        key = _consumer_key(self.project_root)
-        removed, _ = self._deregistration_plan(key)
-        if apply:
-            with self._capability_apply_guard():
-                # A concurrent capability operation may have changed the state since validation.
-                removed, updates = self._deregistration_plan(key)
-                self._apply_deregistration(updates)
-        return {"consumer": key, "dry_run": not apply, "applied": apply, "removed": removed}
-
-    def _is_provider_source_checkout(self) -> bool:
-        root = self.project_root
-        try:
-            has_profile = (root / PROFILE_PATH).is_file()
-            if not (root / BOUNDARY_PATH).is_file():
-                return has_profile and is_canonical_provider_profile(load_profile(root))
-            provider = (
-                is_provider_owner(load_profile(root), load_boundary(root))
-                if has_profile
-                else (root / "src/mir/core/capabilities/manager.py").is_file()
-            )
-        except (ValueError, OSError) as exc:
-            raise CapabilityError("cannot classify the provider source checkout") from exc
-        if not provider or not (root / ".git").is_file():
-            return provider
-        # A linked worktree can enroll separately even when it carries the provider profile.
-        try:
-            git_paths = self.git._run(
-                ["git", "rev-parse", "--absolute-git-dir", "--path-format=absolute",
-                 "--git-common-dir"],
-                cwd=root,
-            ).splitlines()
-        except (CapabilityError, OSError):
-            return True
-        if len(git_paths) != 2:
-            return True
-        git_dir, common_dir = map(Path, git_paths)
-        return git_dir.parent != common_dir / "worktrees"
-
-    def _deregistration_plan(
-        self, key: str,
-    ) -> tuple[dict[str, dict[str, object]], dict[Path, tuple[bytes, bytes]]]:
-        self._assert_project_root_identity()
-        self._assert_capability_home_safe()
-        removed = {}
-        records = {}
-        registry_version = None
-        for path, versions, sections in (
-            (self.registry_path, (1, 2, 3), ("consumers",)),
-            (self.consumer_bindings_path, (1,), ("consumers",)),
-            (self.active_receipt_path, (1, 2), ("discovery", "installation_sessions")),
-        ):
-            entries_removed: dict[str, object] = {}
-            removed[path.name] = entries_removed
-            try:
-                if not stat.S_ISREG(path.lstat().st_mode):
-                    raise ValueError("registry path is not a regular file")
-                original = path.read_bytes()
-                source = original.decode("utf-8")
-                data = json.loads(
-                    source, object_pairs_hook=_unique_json_members,
-                    parse_constant=_invalid_json_constant,
-                )
-                version = data.get("schema_version") if isinstance(data, dict) else None
-                if type(version) is not int or version not in versions:
-                    raise ValueError("unexpected registry schema")
-                if path == self.registry_path:
-                    registry_version = version
-                is_bindings = path == self.consumer_bindings_path
-                for section in sections:
-                    entries = data.get(section, {} if path == self.active_receipt_path else None)
-                    if not isinstance(entries, dict) or any(
-                        (not isinstance(value, str) or not _CONSUMER_BINDING.fullmatch(value))
-                        if is_bindings else not isinstance(value, dict)
-                        for value in entries.values()
-                    ):
-                        raise ValueError(f"invalid registry section: {section}")
-                    if key in entries:
-                        entries_removed[section] = entries[key]
-                records[path] = (original, source, data)
-            except FileNotFoundError as exc:
-                if path == self.registry_path:
-                    raise CapabilityError(f"unknown capability consumer: {key}") from None
-                if path != self.consumer_bindings_path or registry_version == 3:
-                    raise CapabilityError(f"malformed capability registry: {path.name}") from exc
-                # Registries before binding enrollment may have no binding ledger.
-            except (OSError, ValueError, RecursionError) as exc:
-                raise CapabilityError(f"malformed capability registry: {path.name}") from exc
-        if not removed[self.registry_path.name]:
-            raise CapabilityError(f"unknown capability consumer: {key}")
-
-        registry = records[self.registry_path][2]
-        ledger = records.get(self.consumer_bindings_path)
-        receipt = records[self.active_receipt_path][2]
-        bindings = ledger[2]["consumers"] if ledger is not None else {}
-        self._validate_deregistration_records(key, registry, bindings, receipt)
-
-        updates = {}
-        for path, (original, source, _) in records.items():
-            entries_removed = removed[path.name]
-            try:
-                updated = (
-                    _remove_json_members(source, entries_removed, key)
-                    if entries_removed else original
-                )
-            except (ValueError, RecursionError) as exc:
-                raise CapabilityError(f"malformed capability registry: {path.name}") from exc
-            updates[path] = (original, updated)
-        return removed, updates
-
-    def _validate_deregistration_records(
-        self, key: str, registry: dict, bindings: dict[str, str], receipt: dict,
-    ) -> None:
-        consumers = registry["consumers"]
-        allow_unbound = registry["schema_version"] < 3
-        remaining = {root: entry for root, entry in consumers.items() if root != key}
-        check_union = bool(remaining) and registry["schema_version"] >= 2 and (
-            receipt["schema_version"] == 2
-        )
-        try:
-            self._registered_plugin_names(
-                {key: consumers[key]}, bindings, allow_unbound=allow_unbound,
-            )
-            if check_union:
-                names = self._registered_plugin_names(
-                    remaining, bindings, allow_unbound=allow_unbound,
-                )
-        except CapabilityError as exc:
-            raise CapabilityError(
-                f"malformed capability registry: {self.registry_path.name}"
-            ) from exc
-
-        discovery = receipt.get("discovery", {}).get(key, {})
-        sessions = receipt.get("installation_sessions", {}).get(key, {})
-        if any(not isinstance(record, dict) for record in discovery.values()) or any(
-            not isinstance(session, str) for session in sessions.values()
-        ):
-            raise CapabilityError(f"malformed capability registry: {self.active_receipt_path.name}")
-
-        if check_union:
-            active_plugins = registry.get("active_plugins")
-            receipt_plugins = receipt.get("plugins")
-            if not isinstance(active_plugins, dict):
-                raise CapabilityError(f"malformed capability registry: {self.registry_path.name}")
-            if not isinstance(receipt_plugins, dict):
-                raise CapabilityError(
-                    f"malformed capability registry: {self.active_receipt_path.name}"
-                )
-            if names != active_plugins.keys() or names != receipt_plugins.keys():
-                raise CapabilityError(
-                    f"cannot deregister capability consumer {key}: removal would change the "
-                    "active plugin union; run mir capability sync --apply with a profile that "
-                    "reconciles the registered plugin requirements before retrying"
-                )
-
-    def _apply_deregistration(self, updates: dict[Path, tuple[bytes, bytes]]) -> None:
-        backups = {path: path.with_suffix(".json.bak") for path in updates}
-        written = []
-        try:
-            for backup in backups.values():
-                if backup.is_symlink() or (backup.exists() and not backup.is_file()):
-                    raise CapabilityError(f"unsafe capability registry backup: {backup.name}")
-            for path, (original, updated) in updates.items():
-                backup = backups[path]
-                # Keep the pre-removal backup for files already replaced by an interrupted apply.
-                if original != updated or not backup.exists():
-                    _atomic_write_bytes(backup, original, private=True)
-            # Keep the registration key until last so a stop after active.json can be retried.
-            for path, (original, updated) in reversed(updates.items()):
-                if original != updated:
-                    _atomic_write_bytes(path, updated, private=True)
-                    written.append(path)
-        except OSError as exc:
-            try:
-                for path in reversed(written):
-                    _atomic_write_bytes(path, updates[path][0], private=True)
-            except OSError as rollback_error:
-                raise CapabilityError(
-                    "capability deregistration failed; restore the registry from its backups"
-                ) from rollback_error
-            raise CapabilityError(f"capability deregistration failed: {exc}") from exc
 
     def _load_lock(self) -> dict[str, object] | None:
         self._assert_project_lock_path_safe()
@@ -3401,9 +3161,7 @@ class CapabilityManager:
         self._registered_plugin_names(consumers, bindings)
         return registry
 
-    def _registered_plugin_names(
-        self, consumers: object, bindings: dict[str, str], *, allow_unbound: bool = False,
-    ) -> set[str]:
+    def _registered_plugin_names(self, consumers: object, bindings: dict[str, str]) -> set[str]:
         if not isinstance(consumers, dict):
             raise CapabilityError("global consumer registry is invalid")
         names: set[str] = set()
@@ -3414,18 +3172,14 @@ class CapabilityManager:
             plugins = entry.get("plugins")
             profile = entry.get("profile")
             binding = bindings.get(root)
-            valid_binding = (
-                isinstance(binding, str)
-                and entry.get("binding") == binding
-                and _CONSUMER_BINDING.fullmatch(binding) is not None
-            )
-            legacy_unbound = allow_unbound and binding is None and "binding" not in entry
             if (
                 not isinstance(commit_value, str)
                 or _SHA.fullmatch(commit_value) is None
                 or not isinstance(plugins, dict)
                 or not isinstance(profile, str)
-                or not (valid_binding or legacy_unbound)
+                or not isinstance(binding, str)
+                or entry.get("binding") != binding
+                or _CONSUMER_BINDING.fullmatch(binding) is None
             ):
                 raise CapabilityError("global consumer registry is invalid")
             try:
