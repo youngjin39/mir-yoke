@@ -222,6 +222,7 @@
         "tools/**"
       ],
       "exclude": [
+        "scripts/ci_preflight.py",
         "scripts/extract_changelog_entry.py",
         "scripts/observe_project_agent_kit.py",
         "scripts/verify_plugin_cli_activation.py",
@@ -261,6 +262,7 @@
         "config/template-assets.json",
         "config/template-assets.schema.json",
         "pyproject.toml",
+        "scripts/ci_preflight.py",
         "scripts/extract_changelog_entry.py",
         "scripts/observe_project_agent_kit.py",
         "scripts/verify_plugin_cli_activation.py",

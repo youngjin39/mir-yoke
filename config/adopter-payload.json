@@ -413,19 +413,19 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/native-artifacts.yml",
-      "sha256": "1a2d54e68b8e2f6e855b3aa53e1d3d98f3de04e21a7f0bf5838ee61d55e1c042"
+      "sha256": "70ce2dad8119a5cc43f1893afb7467c3f71df1f47c44de1ebc71a53948ff8c55"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/release.yml",
-      "sha256": "94938bc6bbccfa90187a8cd7ead6ab6880882be279928df24511cd92ae1cc5c0"
+      "sha256": "fd91a24e40ce929e7237f9f3a7070c66ce1a29272616535ca046efef86de80c9"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "5bb317b89116a4eb099b927e7d408e1a79c638294d5fd7cadcc86565729a5671"
+      "sha256": "987b29dace321847333ee0713ead2f6b7519354d9a01686ae593413024461618"
     },
     {
       "classification": "reference",
@@ -677,7 +677,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/template-assets.json",
-      "sha256": "1de5a6d7cbc7dab03b34ff0202abe8921f7a57b680d9fe55a04bc553d6dd6681"
+      "sha256": "e9a454c00b7dae82d524e705a0921a857c837485b4fd06642ddd73dba1b598c9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7440,6 +7440,12 @@
       "disposition": "remove",
       "path": "scripts/check_ontology_fleet.py",
       "sha256": "5f0c6734c87aa9bc4c33c2f842eb3b37077c1a4bc8aafb453c8380bb40c901bf"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "scripts/ci_preflight.py",
+      "sha256": "2f29780e54fe73c41c74596b05aefec8724272fdb12169d3ac46b35b47699cf8"
     },
     {
       "classification": "reference",

@@ -13,7 +13,9 @@ concurrency:
 
 jobs:
   validate_candidate:
+    name: validate release candidate (macOS, blocking)
     runs-on: macos-latest
+    continue-on-error: false
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
@@ -26,15 +28,23 @@ jobs:
             3.11
             3.12
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - name: Sync project with extension-capable Python
+      - name: Preflight uv lock with extension-capable Python
         run: |
           python="$(brew --prefix)/opt/python@3.12/bin/python3.12"
           if [[ ! -x "$python" ]]; then brew install python@3.12; fi
-          "$python" -c 'import sqlite3; assert hasattr(sqlite3.Connection, "enable_load_extension")'
-          uv sync --python "$python" --extra dev --extra vector --frozen
+          uv sync --python "$python" --extra dev --extra vector --locked
+      - name: Preflight checkout and Python
+        run: uv run --no-sync python scripts/ci_preflight.py --sqlite-vector
+      - name: Preflight handoff Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/handoff-packet
+      - name: Preflight mir-mcp Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/mir-mcp
       - run: echo "UV_CACHE_DIR=$(uv cache dir)" >> "$GITHUB_ENV"
       # Offline setup tests resolve the tool independently of the project lock.
-      - run: uv tool install --python .venv/bin/python --force --link-mode copy --constraints config/cli-runtime-constraints.txt .
+      - name: Preflight offline installer dependencies
+        run: uv tool install --python .venv/bin/python --force --link-mode copy --constraints config/cli-runtime-constraints.txt .
         env:
           UV_TOOL_DIR: ${{ runner.temp }}/mir-test-tools
           UV_TOOL_BIN_DIR: ${{ runner.temp }}/mir-test-bin
@@ -63,3 +73,59 @@ jobs:
               --generate-notes \
               --title "$GITHUB_REF_NAME"
           fi
+
+  validate_advisory:
+    name: release checks (${{ matrix.cohort }}, ${{ matrix.lane }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.lane == 'advisory' }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, cohort: Linux, lane: advisory}
+          - {os: windows-latest, cohort: Windows, lane: advisory}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        id: checkout
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Preflight checkout and record Git pins
+        run: python scripts/ci_preflight.py --checkout-only 2>&1 | tee "$RUNNER_TEMP/yoke-ci-pins.txt"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - name: Preflight uv lock
+        run: uv sync --extra dev --extra vector --locked
+      - name: Preflight Python
+        run: uv run --no-sync python scripts/ci_preflight.py --runtime-only --sqlite-vector
+      - name: Preflight handoff Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/handoff-packet
+      - name: Preflight mir-mcp Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/mir-mcp
+      - run: cargo test --locked
+        working-directory: native/handoff-packet
+      - run: cargo test --locked
+        working-directory: native/mir-mcp
+      - name: Record advisory lane and pins
+        if: ${{ !cancelled() }}
+        env:
+          COHORT: ${{ matrix.cohort }}
+          STATUS: ${{ job.status }}
+          CHECKOUT: ${{ steps.checkout.outcome }}
+        run: |
+          {
+            printf '### %s advisory release checks\n\n' "$COHORT"
+            printf -- '- Status: **%s**\n- Candidate: `%s` (`%s`)\n- Checkout: %s\n' \
+              "$STATUS" "$GITHUB_SHA" "$GITHUB_REF" "$CHECKOUT"
+            if [[ -f "$RUNNER_TEMP/yoke-ci-pins.txt" ]]; then
+              printf '\n```text\n'
+              cat "$RUNNER_TEMP/yoke-ci-pins.txt"
+              printf '```\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
