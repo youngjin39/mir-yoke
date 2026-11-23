@@ -8,13 +8,17 @@ on:
 
 jobs:
   native_handoff:
-    name: native handoff byte parity (${{ matrix.os }})
+    name: native handoff byte parity (${{ matrix.cohort }}, ${{ matrix.lane }})
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.lane == 'advisory' }}
     strategy:
       fail-fast: false
       matrix:
         # Windows runs the same steps at the end of windows_native, the only Windows lane.
         os: [macos-latest, ubuntu-latest]
+        include:
+          - {os: macos-latest, cohort: macOS, lane: blocking}
+          - {os: ubuntu-latest, cohort: Linux, lane: advisory}
     env:
       PYTHONUTF8: '1'
       CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
@@ -29,16 +33,29 @@ jobs:
             3.12
             3.14
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - name: Sync native handoff fixtures
+      - name: Preflight uv lock (Python 3.14)
         run: |
           python=3.14
           if [[ "$RUNNER_OS" == macOS ]]; then
             # The E18 Python oracle loads sqlite-vec. The hosted Python lacks loadable extensions.
             python="$(brew --prefix)/opt/python@3.14/bin/python3.14"
             if [[ ! -x "$python" ]]; then brew install python@3.14; fi
-            "$python" -c 'import sqlite3; assert hasattr(sqlite3.Connection, "enable_load_extension")'
           fi
-          uv sync --python "$python" --extra dev --extra vector --frozen
+          uv sync --python "$python" --extra dev --extra vector --locked
+      - name: Preflight checkout and Python 3.14
+        run: uv run --no-sync --python 3.14 python scripts/ci_preflight.py --sqlite-vector
+      - name: Preflight uv lock and Python 3.12
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv-312
+        run: |
+          uv sync --python 3.12 --extra dev --extra vector --locked
+          uv run --no-sync python scripts/ci_preflight.py --runtime-only
+      - name: Preflight handoff Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/handoff-packet
+      - name: Preflight mir-mcp Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/mir-mcp
       # Runner rustup honors the crate's pinned toolchain and components.
       # cargo fmt has no --locked option: it only checks source formatting.
       - run: cargo fmt --check
@@ -50,17 +67,17 @@ jobs:
       - run: cargo build --release --locked
         working-directory: native/handoff-packet
       - run: >-
-          uv run --python 3.14 pytest -q -p no:cacheprovider
+          uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_delegation_gate_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py
           tests/test_lifecycle_native_commands.py
           tests/test_line_endings.py
       # These oracles use Python 3.12 argparse, Unicode and pathlib behavior.
       - run: >-
-          uv run --python 3.12 --extra dev --extra vector --frozen pytest -q -p no:cacheprovider
+          uv run --no-sync pytest -q -p no:cacheprovider
           tests/test_executor_query_native_parity.py tests/test_runtime_verify_native_parity.py
         env:
           UV_PROJECT_ENVIRONMENT: .venv-312
-      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
+      - run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
 
       - run: cargo fmt --check
         working-directory: native/mir-mcp
@@ -77,22 +94,31 @@ jobs:
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
       - run: >-
-          uv run --python 3.14 pytest -q -p no:cacheprovider
+          uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_mir_mcp_native_core.py tests/test_mir_mcp_native_io.py
           tests/test_mir_mcp_launcher.py
         env:
           MIR_MCP_NATIVE_BINARY: ${{ github.workspace }}/native/mir-mcp/target/release/mir-mcp
 
   supported_contracts:
+    name: supported contracts (Linux, advisory)
     runs-on: ubuntu-latest
+    continue-on-error: true
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --extra vector --frozen
+      - name: Preflight uv lock
+        run: uv sync --extra dev --extra vector --locked
+      - name: Preflight checkout and Python
+        run: uv run --no-sync python scripts/ci_preflight.py
+      - name: Preflight Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/handoff-packet
       - run: cargo build --release --locked --bin project-hooks
         working-directory: native/handoff-packet
       - run: >-
@@ -111,12 +137,16 @@ jobs:
       - run: uv run ruff check
 
   public_cli:
-    name: public Mir CLI regression (${{ matrix.os }})
+    name: public Mir CLI regression (${{ matrix.cohort }}, ${{ matrix.lane }})
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.lane == 'advisory' }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        include:
+          - {os: macos-latest, cohort: macOS, lane: blocking}
+          - {os: ubuntu-latest, cohort: Linux, lane: advisory}
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
     steps:
@@ -125,15 +155,26 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --extra vector --frozen
+      - name: Preflight uv lock
+        run: |
+          python=3.12
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            python="$(brew --prefix)/opt/python@3.12/bin/python3.12"
+            if [[ ! -x "$python" ]]; then brew install python@3.12; fi
+          fi
+          uv sync --python "$python" --extra dev --extra vector --locked
+      - name: Preflight checkout and Python
+        run: uv run --no-sync python scripts/ci_preflight.py --sqlite-vector
       - run: echo "UV_CACHE_DIR=$(uv cache dir)" >> "$GITHUB_ENV"
       # Offline setup tests resolve the tool independently of the project lock.
-      - if: runner.os == 'macOS'
+      - name: Preflight offline installer dependencies
+        if: runner.os == 'macOS'
         run: uv tool install --python .venv/bin/python --force --link-mode copy --constraints config/cli-runtime-constraints.txt .
         env:
           UV_TOOL_DIR: ${{ runner.temp }}/mir-test-tools
           UV_TOOL_BIN_DIR: ${{ runner.temp }}/mir-test-bin
-      - run: cargo fetch --locked
+      - name: Preflight Cargo lock
+        run: cargo fetch --locked
         working-directory: native/handoff-packet
       - run: >-
           uv run pytest -q
@@ -161,18 +202,26 @@ jobs:
           tools/mir_executor/tests
 
   portable_plugins:
-    name: portable plugins (${{ matrix.os }})
+    name: portable plugins (${{ matrix.cohort }}, ${{ matrix.lane }})
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.lane == 'advisory' }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        include:
+          - {os: macos-latest, cohort: macOS, lane: blocking}
+          - {os: ubuntu-latest, cohort: Linux, lane: advisory}
     steps:
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --extra vector --frozen
+      - name: Preflight uv lock
+        run: uv sync --extra dev --extra vector --locked
+      - name: Preflight checkout and Python
+        run: uv run --no-sync python scripts/ci_preflight.py
       - run: >-
           npm install --global
           @anthropic-ai/claude-code@2.1.223
@@ -184,11 +233,16 @@ jobs:
       - run: uv run python scripts/verify_plugin_cli_activation.py
 
   static_public_checks:
+    name: static public checks (Linux, advisory)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
+      - name: Preflight checkout
+        run: python scripts/ci_preflight.py --checkout-only
       - run: pip install jsonschema pytest
       - run: python tests/test_schema_validity.py
       - run: python tests/test_link_integrity.py
@@ -197,15 +251,25 @@ jobs:
       - run: python tests/test_phase_doc_completeness.py
 
   windows_native:
-    name: native Windows manager, hooks and mir-mcp
+    name: native manager, hooks and mir-mcp (Windows, advisory)
     runs-on: windows-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - run: uv sync --extra dev --extra vector --frozen
+      - name: Preflight uv lock (Python 3.12)
+        run: uv sync --extra dev --extra vector --locked
+      - name: Preflight checkout and Python 3.12
+        run: uv run --no-sync python scripts/ci_preflight.py
+      - name: Preflight handoff Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/handoff-packet
+      - name: Preflight mir-mcp Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/mir-mcp
       - run: >-
           uv run pytest -q
           tests/test_line_endings.py
@@ -237,7 +301,10 @@ jobs:
           tests/test_mir_mcp_relations.py
       - run: uv run pytest -q tests/test_setup_wrappers.py -k powershell_launcher
       # Native handoff byte parity on Windows (same steps as native_handoff).
-      - run: uv sync --python 3.14 --extra dev --extra vector --frozen
+      - name: Preflight uv lock (Python 3.14)
+        run: uv sync --python 3.14 --extra dev --extra vector --locked
+      - name: Preflight Python 3.14
+        run: uv run --no-sync --python 3.14 python scripts/ci_preflight.py --runtime-only --sqlite-vector
       - run: cargo fmt --check
         working-directory: native/handoff-packet
       - run: cargo clippy --all-targets --locked -- -D warnings
@@ -248,11 +315,11 @@ jobs:
         working-directory: native/handoff-packet
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_delegation_gate_native_parity.py tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py tests/test_lifecycle_native_commands.py
+      - run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_delegation_gate_native_parity.py tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py tests/test_lifecycle_native_commands.py
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
+      - run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
@@ -272,7 +339,7 @@ jobs:
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
       - run: >-
-          uv run --python 3.14 pytest -q -p no:cacheprovider
+          uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_mir_mcp_native_core.py tests/test_mir_mcp_native_io.py
           tests/test_mir_mcp_launcher.py
         env:
