@@ -419,7 +419,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/release.yml",
-      "sha256": "402542edfc1d396ceed87d791c8c7cbd62478358d2f915a1c7b74506cf84546c"
+      "sha256": "a54f7164b4404ee2828342a424e5f25d172b1dd3421859cf7b7957a2abf5f6fd"
     },
     {
       "classification": "template-maintainer-tool",
@@ -521,7 +521,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "MIGRATION.md",
-      "sha256": "d7b5600ed46f314eb2eb2ab6519a2a23e3a81a5ba214dc640ef1060e8214ca0d"
+      "sha256": "dbb3e8965195a0bed5091b18523b7f033fdd19928599585142acb325f7031494"
     },
     {
       "classification": "reference",
@@ -576,6 +576,12 @@
       "disposition": "remove",
       "path": "config/cli-native-artifacts.json",
       "sha256": "24e2fd95efdd6eb9dfd0422543f2da23d1711a87c4285099826e7d96baa6ee62"
+    },
+    {
+      "classification": "reference",
+      "disposition": "remove",
+      "path": "config/cli-native-pin.jq",
+      "sha256": "874ae7926886dce5d94a08ac87596b8c8d3633c5476ea8d425f4b23bc695b9f6"
     },
     {
       "classification": "reference",
@@ -677,7 +683,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/template-assets.json",
-      "sha256": "e9a454c00b7dae82d524e705a0921a857c837485b4fd06642ddd73dba1b598c9"
+      "sha256": "f08e3d498763108c152a5b1721714ee24691df8095fa02dd5817fe13cd4ef1fd"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7445,7 +7451,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "scripts/ci_preflight.py",
-      "sha256": "2f29780e54fe73c41c74596b05aefec8724272fdb12169d3ac46b35b47699cf8"
+      "sha256": "cca4d412afcba29efa4d25d8ed067e7fe60c19cc014647be297ef8d81f3c23fa"
     },
     {
       "classification": "reference",
@@ -7547,7 +7553,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "scripts/verify_release_readiness.py",
-      "sha256": "b7eddb9ba72e4f819daf5c9920382c79cdb7c12c12226e8f31efb29a804b26d2"
+      "sha256": "e99cad9c5ac911852b3755e64e362527543eb86c18e655a0324c31faeb34b196"
     },
     {
       "classification": "reference",
@@ -7565,7 +7571,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "setup.sh",
-      "sha256": "ea00deb306cf4226bd3ca8d74f3f897ac2dbfbffb3795df74cb8776a5557713d"
+      "sha256": "9e250d1fc3491745d6df5c0fb8c479f12ea6417d396441259eff4f1ea92652bf"
     },
     {
       "classification": "reference",
@@ -9407,7 +9413,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_installed_cli.py",
-      "sha256": "3305208aad8a33bbd2ca18cfcb6e8e4c96665327247cb47827aa02ca73f6e68b"
+      "sha256": "31774a0700d5dee6902f4b17f18c9e0fd6f5dafbe55f10c9530dc8d687a0f998"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9749,7 +9755,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_release_readiness.py",
-      "sha256": "cece9b816111e7681366ab200598b882d6fcfe0bcb8751490ebfdb933bd73e86"
+      "sha256": "ee5d5efa74515fa3221bb602b306d327978c08e24cf3ba55ec675570afbae1f0"
     },
     {
       "classification": "template-maintainer-tool",

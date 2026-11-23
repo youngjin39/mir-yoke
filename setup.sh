@@ -138,13 +138,8 @@ if [[ "$PLATFORM_NAME" == Darwin ]]; then
   esac
   LOCKED_COMMIT="$(jq -r '.source.commit // empty' "$ROOT/.mir/capability-lock.json" 2>/dev/null || true)"
   [[ "$LOCKED_COMMIT" =~ ^[0-9a-fA-F]{40,64}$ ]] || die "Mir CLI source commit is invalid"
-  NATIVE_PIN="$(jq -er --arg target "$NATIVE_TARGET" --arg commit "$LOCKED_COMMIT" '
-    select(.source_commit == $commit) | .targets[$target]
-    | select(.url | type == "string" and startswith("https://") and (contains("@") | not))
-    | select(.sha256 | type == "string" and test("^[0-9a-f]{64}$"))
-    | select(.size | type == "number" and . == floor and . > 0 and . <= 2147483647)
-    | [.url, .sha256, .size] | @tsv
-  ' "$ROOT/config/cli-native-artifacts.json" 2>/dev/null)" \
+  NATIVE_PIN="$(jq -er --arg target "$NATIVE_TARGET" --arg commit "$LOCKED_COMMIT" \
+    -f "$ROOT/config/cli-native-pin.jq" "$ROOT/config/cli-native-artifacts.json" 2>/dev/null)" \
     || die "no valid native Mir CLI pin for $NATIVE_TARGET at $LOCKED_COMMIT in config/cli-native-artifacts.json"
   IFS=$'\t' read -r NATIVE_URL NATIVE_SHA256 NATIVE_SIZE <<< "$NATIVE_PIN"
 fi

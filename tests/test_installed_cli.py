@@ -48,7 +48,7 @@ def mac_setup(tmp_path, monkeypatch, mac_asset):
     runtime_home = tmp_path / "runtime with spaces"
     for path in (project / ".mir", project / "config", tmp_path / "bin"):
         path.mkdir(parents=True)
-    for name in ("setup.sh", "config/cli-runtime-constraints.txt"):
+    for name in ("setup.sh", "config/cli-native-pin.jq", "config/cli-runtime-constraints.txt"):
         shutil.copy2(ROOT / name, project / name)
     (project / "provider").symlink_to(ROOT, target_is_directory=True)
     url, commit = "https://example.invalid/mir-yoke.git", "a" * 40

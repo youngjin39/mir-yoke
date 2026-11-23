@@ -89,10 +89,16 @@ def check_sqlite(vector: bool) -> None:
 
 
 def run_temp_probe(environment: dict[str, str]) -> None:
-    subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", TEMP_PROBE],
-        cwd=ROOT, env=environment, check=True,
+    child_env = {key: value for key, value in environment.items() if not key.startswith("PYTEST_")}
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "--color=no", "-o", "addopts=",
+         "-p", "no:cacheprovider", TEMP_PROBE],
+        cwd=ROOT, env=child_env, check=False, stdout=subprocess.PIPE, text=True,
     )
+    print(result.stdout, end="", flush=True)
+    summary = result.stdout.strip().splitlines()
+    if result.returncode or not summary or not re.match(r"^1 passed\b", summary[-1]):
+        raise ValueError("representative test did not report one passing test")
 
 
 def check_tmpdir() -> None:
@@ -102,16 +108,16 @@ def check_tmpdir() -> None:
         environment.pop("TMPDIR", None)
         try:
             run_temp_probe(environment)
-        except subprocess.CalledProcessError as error:
-            raise ValueError("representative test failed with TMPDIR unset") from error
+        except ValueError as error:
+            raise ValueError(f"TMPDIR unset: {error}") from error
         print("  TMPDIR unset: representative test passed", flush=True)
 
     # Explicit dir avoids silently falling back when a configured TMPDIR is unusable.
     with tempfile.TemporaryDirectory(prefix="yoke ci ", dir=configured) as space:
         try:
             run_temp_probe({**environment, "TMPDIR": space, "TEMP": space, "TMP": space})
-        except subprocess.CalledProcessError as error:
-            raise ValueError("representative test failed with a space in TMPDIR") from error
+        except ValueError as error:
+            raise ValueError(f"TMPDIR with spaces: {error}") from error
     print("  TMPDIR with spaces: representative test passed", flush=True)
 
 

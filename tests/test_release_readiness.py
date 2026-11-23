@@ -6,14 +6,20 @@ import json
 import os
 import platform
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
+from scripts import ci_preflight
 from scripts import verify_release_readiness as readiness
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "aarch64-apple-darwin"
+CANDIDATE_COMMIT = "a" * 40
+CONSUMER_COMMIT = "b" * 40
+RECEIPT = Path("release/consumer-contract-receipt.json")
 
 
 @pytest.fixture
@@ -37,6 +43,7 @@ def consumer_candidate(tmp_path, monkeypatch):
     cli_path = Path("config/cli-native-artifacts.json")
     lock = json.loads((ROOT / lock_path).read_text())
     cli = json.loads((ROOT / cli_path).read_text())
+    lock["source"]["commit"] = cli["source_commit"]
     for pin in lock["plugins"].values():
         shutil.copytree(ROOT / pin["path"], candidate / pin["path"])
     pins = {"mir": cli["targets"][TARGET]}
@@ -48,12 +55,20 @@ def consumer_candidate(tmp_path, monkeypatch):
         artifact = assets / pin["url"].rsplit("/", 1)[-1]
         probe = "--mir-warmup" if name in {"handoff-packet", "runtime-continuity"} else "--help"
         blob = f'#!/bin/sh\n[ "$1" = "{probe}" ]\n'.encode()
+        if probe == "--mir-warmup":
+            blob = (
+                b'#!/bin/sh\nif [ "$#" -eq 0 ]; then\n'
+                b'  grep -q \'"hook_event_name"\'\n'
+                b'else\n  [ "$1" = "--mir-warmup" ]\nfi\n'
+            )
         artifact.write_bytes(blob)
         artifact.chmod(0o700)
         pin.update(sha256=hashlib.sha256(blob).hexdigest(), size=len(blob))
     for path, data in ((lock_path, lock), (cli_path, cli)):
         (candidate / path).parent.mkdir()
         (candidate / path).write_text(json.dumps(data))
+    selector = "config/cli-native-pin.jq"
+    shutil.copy2(ROOT / selector, candidate / selector)
     return candidate, assets, temp
 
 
@@ -68,6 +83,9 @@ def consumer_candidate(tmp_path, monkeypatch):
         ("contract", "consumer-contract:"),
         ("contract-mode", "consumer-contract:"),
         ("probe-exit", "consumer-hook:"),
+        ("disabled-hook", "consumer-hook:"),
+        ("discarded-event", "consumer-hook:"),
+        ("mismatched-source", "consumer-digest:"),
     ],
 )
 def test_consumer_contract_blocks_bad_candidate(
@@ -84,15 +102,30 @@ def test_consumer_contract_blocks_bad_candidate(
         word = '"${CLAUDE_PLUGIN_ROOT}/bin/runtime-continuity"'
         hook["command"] = hook["command"].replace(f"exec {word}", f"exec {word[1:-1]}")
         hooks.write_text(json.dumps(manifest))
+    elif case == "disabled-hook":
+        hooks.write_text(hooks.read_text().replace("if [", "if false && [", 1))
+    elif case == "mismatched-source":
+        pin_path = candidate / "config/cli-native-artifacts.json"
+        pin = json.loads(pin_path.read_text())
+        pin["source_commit"] = "f" * 40
+        pin_path.write_text(json.dumps(pin))
     elif case == "mode":
         binary.chmod(0o644)
     elif case == "digest":
         binary.write_bytes(binary.read_bytes().replace(b"--help", b"--halt"))
     elif case == "missing":
         binary.unlink()
-    elif case == "probe-exit":
+    elif case in {"probe-exit", "discarded-event"}:
+        if case == "discarded-event":
+            manifest = json.loads(hooks.read_text())
+            hook = manifest["hooks"]["SessionStart"][0]["hooks"][0]
+            hook["command"] = hook["command"].replace(
+                'runtime-continuity" );', 'runtime-continuity" </dev/null );',
+            )
+            hooks.write_text(json.dumps(manifest))
         probe = assets / f"runtime-continuity-{TARGET}"
-        probe.write_bytes(b"#!/bin/sh\nexit 42\n")
+        exit_code = 42 if case == "probe-exit" else 0
+        probe.write_bytes(f"#!/bin/sh\nexit {exit_code}\n".encode())
         lock_path = candidate / ".mir/capability-lock.json"
         lock = json.loads(lock_path.read_text())
         pin = lock["native_artifacts"]["runtime-continuity"]["targets"][TARGET]
@@ -110,6 +143,10 @@ def test_consumer_contract_blocks_bad_candidate(
     assert output.err.startswith(diagnostic)
     if case in {"probe-exit", "contract"}:
         assert "exited 42" in output.err
+    if case in {"disabled-hook", "discarded-event"}:
+        assert "SessionStart" in output.err
+    if case == "mismatched-source":
+        assert "no valid native Mir CLI pin" in output.err
     assert json.loads(output.out)["checks"][0]["name"] == "consumer-contract"
     assert list(temp.iterdir()) == []
 
@@ -139,6 +176,100 @@ def test_consumer_contract_passes_candidate_manifests(consumer_candidate, monkey
     assert list(temp.iterdir()) == []
     assert not (candidate / "bin").exists()
     assert not (candidate / "real home").exists()
+
+
+def _readiness_status(args: list[str]) -> int:
+    try:
+        return readiness.main(args)
+    except SystemExit as error:
+        return error.code
+
+
+def test_pretag_receipt_records_candidate_consumer_and_assets(consumer_candidate, monkeypatch):
+    candidate, assets, _ = consumer_candidate
+    monkeypatch.setattr(readiness, "_git_output", lambda root, *args: CANDIDATE_COMMIT)
+    assert _readiness_status(["--current-clean-tree", "--consumer-commit", CONSUMER_COMMIT]) == 0
+    receipt = json.loads((candidate / RECEIPT).read_text())
+    assert receipt["verdict"] == "pass"
+    assert receipt["candidate_commit"] == CANDIDATE_COMMIT
+    assert receipt["consumer_commit"] == CONSUMER_COMMIT
+    assert receipt["target"] == TARGET
+    lock = candidate / ".mir/capability-lock.json"
+    assert receipt["lock_sha256"] == hashlib.sha256(lock.read_bytes()).hexdigest()
+    assert receipt["assets"] == [
+        {"path": asset.name, "sha256": hashlib.sha256(asset.read_bytes()).hexdigest()}
+        for asset in sorted(assets.iterdir())
+    ]
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["pass", "missing", "failed", "lock", "asset", "cli-manifest", "wrong-parent", "changed-tree"],
+)
+def test_tagged_receipt_verification(consumer_candidate, monkeypatch, capsys, case):
+    candidate, assets, _ = consumer_candidate
+    lock = candidate / ".mir/capability-lock.json"
+    cli_pin = candidate / "config/cli-native-artifacts.json"
+    receipt = {
+        "verdict": "pass",
+        "candidate_commit": CANDIDATE_COMMIT,
+        "consumer_commit": CONSUMER_COMMIT,
+        "target": TARGET,
+        "lock_sha256": hashlib.sha256(lock.read_bytes()).hexdigest(),
+        "cli_pin_sha256": hashlib.sha256(cli_pin.read_bytes()).hexdigest(),
+        "assets": [
+            {"path": asset.name, "sha256": hashlib.sha256(asset.read_bytes()).hexdigest()}
+            for asset in sorted(assets.iterdir())
+        ],
+    }
+    if case == "failed":
+        receipt["verdict"] = "fail"
+    elif case == "lock":
+        lock.write_text(lock.read_text() + "\n")
+    elif case == "asset":
+        receipt["assets"][0]["sha256"] = "0" * 64
+    elif case == "cli-manifest":
+        cli_pin.write_text(cli_pin.read_text() + "\n")
+    if case != "missing":
+        (candidate / RECEIPT).parent.mkdir()
+        (candidate / RECEIPT).write_text(json.dumps(receipt))
+
+    def git_output(root, *args):
+        if args == ("show", f"HEAD:{RECEIPT}"):
+            if case == "missing":
+                raise subprocess.CalledProcessError(128, args)
+            return (root / RECEIPT).read_text()
+        if args[:1] == ("rev-parse",):
+            return "c" * 40 if case == "wrong-parent" else CANDIDATE_COMMIT
+        if args[:1] == ("diff",):
+            return "plugins/mir-lifecycle-hooks/hooks/hooks.json" if case == "changed-tree" else ""
+        pytest.fail(f"unexpected Git call: {args}")
+
+    monkeypatch.setattr(readiness, "_git_output", git_output)
+    assert _readiness_status(["--verify-consumer-receipt"]) == (0 if case == "pass" else 1)
+    if case != "pass":
+        assert "consumer-receipt:" in capsys.readouterr().err
+
+
+def test_tmpdir_preflight_executes_test_despite_inherited_collect_only(tmp_path, monkeypatch):
+    monkeypatch.setenv("PYTEST_ADDOPTS", "--collect-only")
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/ci_preflight.py"), "--runtime-only"],
+        check=False, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "1 passed" in result.stdout
+    assert "PASS TMPDIR" in result.stdout
+
+
+def test_tmpdir_probe_requires_one_passing_test(monkeypatch):
+    monkeypatch.setattr(
+        ci_preflight.subprocess, "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, "1 test collected\n"),
+    )
+    with pytest.raises(ValueError, match="representative test"):
+        ci_preflight.run_temp_probe({})
 
 
 # @spec FR-007 IR-001
@@ -174,7 +305,7 @@ def test_should_include_every_required_gate_when_release_script_is_inspected() -
         assert token in body
 
 
-def test_tag_workflow_publishes_release_after_repository_validation() -> None:
+def test_tag_workflow_publishes_release_after_receipt_and_repository_validation() -> None:
     workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
     assert "contents: write" in workflow
@@ -184,6 +315,9 @@ def test_tag_workflow_publishes_release_after_repository_validation() -> None:
     assert "--require-project-agent-kit-evidence" not in workflow
     assert "git push" not in workflow
     assert workflow.index("verify_release_readiness.py") < workflow.index("gh release create")
+    receipt_check = "verify_release_readiness.py --verify-consumer-receipt"
+    assert receipt_check in workflow
+    assert workflow.index(receipt_check) < workflow.index("gh release create")
     for token in (
         "gh release view",
         "gh release create",
