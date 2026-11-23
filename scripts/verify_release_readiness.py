@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shlex
 import shutil
 import stat
@@ -64,6 +65,10 @@ EVIDENCE_CHECK = (
 )
 CAPABILITY_LOCK = Path(".mir/capability-lock.json")
 CLI_PIN = Path("config/cli-native-artifacts.json")
+CLI_SELECTOR = Path("config/cli-native-pin.jq")
+CONSUMER_RECEIPT = Path("release/consumer-contract-receipt.json")
+ADOPTER_PAYLOAD = Path("config/adopter-payload.json")
+MAC_TARGETS = {"aarch64-apple-darwin", "x86_64-apple-darwin"}
 PLUGIN_ROOTS = ("${CLAUDE_PLUGIN_ROOT}/", "${CODEX_PLUGIN_ROOT}/")
 
 
@@ -122,8 +127,12 @@ def _materialize_candidate(source: Path, target: Path) -> None:
         )
 
 
+def _asset_name(pin: dict) -> str:
+    return Path(urlsplit(pin["url"]).path).name
+
+
 def _install_artifact(assets: Path, destination: Path, pin: dict) -> str | None:
-    name = Path(urlsplit(pin["url"]).path).name
+    name = _asset_name(pin)
     source = assets / name
     if name in {"", ".."} or source.is_symlink() or not source.is_file():
         return f"consumer-digest: missing regular pinned asset {source}"
@@ -141,16 +150,15 @@ def _install_artifact(assets: Path, destination: Path, pin: dict) -> str | None:
     return None
 
 
-def _hook_probe(plugin: Path, command: str) -> list[str]:
+def _hook_probe(plugin: Path, command: str) -> tuple[Path, bool]:
     lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
     lexer.whitespace_split = True
     tokens = list(lexer)
     if not tokens:
         raise ValueError("empty hook command")
-    executable, probe = tokens[0], "--help"
-    if executable == "if":
-        # The lifecycle launcher can exit 0 when its native hook is unavailable.
-        # Test the declared warmup directly and require the exec path to match it.
+    executable = tokens[0]
+    guarded = executable == "if"
+    if guarded:
         launchers = [tokens[i + 1] for i, token in enumerate(tokens[:-1]) if token == "exec"]
         if len(launchers) != 1:
             raise ValueError("expected one exec in guarded hook command")
@@ -161,7 +169,6 @@ def _hook_probe(plugin: Path, command: str) -> list[str]:
             for index in range(len(tokens))
         ):
             raise ValueError("guarded hook paths or declared warmup do not match exec")
-        probe = "--mir-warmup"
 
     if command.count(f'"{executable}"') != tokens.count(executable):
         raise ValueError("hook executable must be double-quoted for paths containing spaces")
@@ -178,7 +185,55 @@ def _hook_probe(plugin: Path, command: str) -> list[str]:
         or not os.access(path, os.X_OK)
     ):
         raise ValueError(f"missing executable in install: {relative}")
-    return [str(path), probe]
+    return path, guarded
+
+
+def _run_manifest_hook(
+    plugin: Path, command: str, event: str, install: Path, env: dict[str, str], timeout: int,
+) -> None:
+    path, guarded = _hook_probe(plugin, command)
+    if not guarded:
+        _run_probe([str(path), "--help"], install, env, timeout=timeout)
+    hook_env = {**env, "CLAUDE_PLUGIN_ROOT": str(plugin), "CODEX_PLUGIN_ROOT": str(plugin)}
+    with tempfile.TemporaryDirectory(prefix=".readiness-", dir=path.parent) as raw:
+        executable, marker = Path(raw) / path.name, Path(raw) / "calls"
+        event_input = Path(raw) / "event"
+        path.rename(executable)
+        try:
+            # The wrapper observes the real executable's status, even when the
+            # shipped command treats native unavailability as success. Record
+            # exactly what reaches the event invocation's stdin and forward it.
+            path.write_text(
+                '#!/bin/sh\n'
+                'kind=event\n'
+                'if [ "${1:-}" = "--mir-warmup" ]; then\n'
+                '  kind=--mir-warmup\n'
+                'else\n'
+                f'  cat > {shlex.quote(str(event_input))} || exit 1\n'
+                f'  exec < {shlex.quote(str(event_input))}\n'
+                'fi\n'
+                f'{shlex.quote(str(executable))} "$@"\n'
+                'result=$?\n'
+                f'printf "%s %s\\n" "$kind" "$result" >> {shlex.quote(str(marker))}\n'
+                'exit "$result"\n',
+                encoding="utf-8",
+            )
+            path.chmod(0o700)
+            payload = json.dumps({"hook_event_name": event, "cwd": str(install)}).encode()
+            _run_probe(["/bin/sh", "-c", command], install, hook_env, timeout=timeout,
+                       payload=payload)
+            calls = marker.read_text(encoding="utf-8").splitlines() if marker.exists() else []
+            for call in calls:
+                _, status = call.rsplit(" ", 1)
+                if status != "0":
+                    raise ValueError(f"{path.name} exited {status}")
+            expected = ["--mir-warmup 0", "event 0"] if guarded else ["event 0"]
+            if calls != expected:
+                raise ValueError(f"{path.name} did not receive the declared probe and event")
+            if event_input.read_bytes() != payload:
+                raise ValueError(f"{path.name} did not receive the synthetic event payload")
+        finally:
+            executable.replace(path)
 
 
 def _probe_hooks(plugin: Path, required: bool, install: Path, env: dict[str, str]) -> list[str]:
@@ -196,10 +251,9 @@ def _probe_hooks(plugin: Path, required: bool, install: Path, env: dict[str, str
                     label = f"{plugin.name} {event} group {group_index} hook {hook_index}"
                     try:
                         # Both runtimes use this manifest on POSIX.
-                        command = hook["command"]
-                        probe = _hook_probe(plugin, command)
-                        _run_probe(["/bin/sh", "-n", "-c", command], install, env, timeout=10)
-                        _run_probe(probe, install, env, timeout=hook.get("timeout", 10))
+                        _run_manifest_hook(
+                            plugin, hook["command"], event, install, env, hook.get("timeout", 10),
+                        )
                     except (OSError, ValueError, subprocess.SubprocessError) as exc:
                         errors.append(f"consumer-hook: {label}: {exc}")
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
@@ -207,26 +261,49 @@ def _probe_hooks(plugin: Path, required: bool, install: Path, env: dict[str, str
     return errors
 
 
-def _run_probe(command: list[str], install: Path, env: dict[str, str], *, timeout: int) -> None:
+def _run_probe(
+    command: list[str], install: Path, env: dict[str, str], *,
+    timeout: int, payload: bytes | None = None,
+) -> None:
     result = subprocess.run(
-        command, cwd=install, env=env, stdin=subprocess.DEVNULL, check=False,
+        command, cwd=install, env=env, input=payload,
+        stdin=subprocess.DEVNULL if payload is None else None, check=False,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=timeout,
     )
     if result.returncode:
         raise ValueError(f"{Path(command[0]).name} exited {result.returncode}")
 
 
+def _candidate_assets(root: Path, lock: dict, target: str | None) -> list[tuple[Path, dict]]:
+    commit = lock["source"]["commit"]
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", commit):
+        raise ValueError("Mir CLI source commit is invalid")
+    if target is None:
+        raise ValueError("no native Mir CLI target for this host")
+    selection = subprocess.run(
+        ["jq", "-er", "--arg", "target", target, "--arg", "commit", commit,
+         "-f", str(root / CLI_SELECTOR), str(root / CLI_PIN)],
+        capture_output=True, text=True, check=False,
+    )
+    if selection.returncode:
+        raise ValueError(f"no valid native Mir CLI pin for {target} at {commit} in {CLI_PIN}")
+    url, digest, size = selection.stdout.rstrip("\n").split("\t")
+    assets = [(Path("bin/mir"), {"url": url, "sha256": digest, "size": int(size)})]
+    entries = lock["plugins"]
+    binaries = validate_artifacts(lock["native_artifacts"], entries, portable=True)
+    for artifact in binaries.values():
+        if target in artifact["targets"]:
+            path = Path(entries[artifact["plugin"]]["path"]) / artifact["install_path"]
+            assets.append((path, artifact["targets"][target]))
+    return assets
+
+
 def _consumer_errors(root: Path, assets: Path, install: Path) -> list[str]:
-    target = host_target()
     try:
         lock = json.loads((root / CAPABILITY_LOCK).read_text(encoding="utf-8"))
-        cli = json.loads((root / CLI_PIN).read_text(encoding="utf-8"))
         entries = lock["plugins"]
-        binaries = validate_artifacts(lock["native_artifacts"], entries, portable=True)
-        if target not in cli["targets"]:
-            return [f"consumer-digest: no mir pin for host target {target}"]
-        artifacts = [(install / "bin/mir", cli["targets"][target])]
-        for relative in (CAPABILITY_LOCK, CLI_PIN):
+        artifacts = _candidate_assets(root, lock, host_target())
+        for relative in (CAPABILITY_LOCK, CLI_PIN, CLI_SELECTOR):
             (install / relative).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / relative, install / relative)
     except (OSError, ValueError, KeyError, TypeError) as exc:
@@ -246,12 +323,9 @@ def _consumer_errors(root: Path, assets: Path, install: Path) -> list[str]:
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
         return [f"consumer-hook: cannot copy candidate plugin: {exc}"]
 
-    for artifact in binaries.values():
-        if target in artifact["targets"]:
-            path = plugins[artifact["plugin"]] / artifact["install_path"]
-            artifacts.append((path, artifact["targets"][target]))
     errors = []
-    for destination, pin in artifacts:
+    for relative, pin in artifacts:
+        destination = install / relative
         try:
             error = _install_artifact(assets, destination, pin)
             if error:
@@ -330,6 +404,65 @@ def _verify_clean_tree(root: Path) -> None:
         raise RuntimeError("release verification requires a clean candidate Git tree")
 
 
+def _git_output(root: Path, *args: str) -> str:
+    return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
+
+
+def _receipt_inputs(root: Path, target: str | None) -> dict:
+    if target not in MAC_TARGETS:
+        raise ValueError("receipt requires a Darwin release target")
+    lock = (root / CAPABILITY_LOCK).read_bytes()
+    assets = _candidate_assets(root, json.loads(lock), target)
+    return {
+        "lock_sha256": hashlib.sha256(lock).hexdigest(),
+        "cli_pin_sha256": hashlib.sha256((root / CLI_PIN).read_bytes()).hexdigest(),
+        "assets": [
+            {"path": path, "sha256": digest}
+            for path, digest in sorted((_asset_name(pin), pin["sha256"]) for _, pin in assets)
+        ],
+    }
+
+
+def _write_consumer_receipt(root: Path, consumer_commit: str) -> None:
+    target = host_target()
+    data = {
+        "verdict": "pass",
+        "candidate_commit": _git_output(root, "rev-parse", "HEAD"),
+        "consumer_commit": consumer_commit,
+        "target": target,
+        **_receipt_inputs(root, target),
+    }
+    path = root / CONSUMER_RECEIPT
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+
+def _valid_full_commit(commit: object) -> bool:
+    return isinstance(commit, str) and bool(re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", commit))
+
+
+def _verify_consumer_receipt(root: Path) -> None:
+    _verify_clean_tree(root)
+    receipt = json.loads(_git_output(root, "show", f"HEAD:{CONSUMER_RECEIPT}"))
+    if not isinstance(receipt, dict) or receipt.get("verdict") != "pass":
+        raise ValueError("expected a passing verdict")
+    if not _valid_full_commit(receipt.get("consumer_commit")):
+        raise ValueError("expected a full consumer commit")
+    expected = _receipt_inputs(root, receipt["target"])
+    for key, value in expected.items():
+        if receipt.get(key) != value:
+            raise ValueError(f"{key} differs from the tagged manifests")
+    parent = _git_output(root, "rev-parse", "HEAD^")
+    if receipt.get("candidate_commit") != parent:
+        raise ValueError("candidate_commit differs from the tagged commit's first parent")
+    changes = _git_output(
+        root, "diff", "--no-ext-diff", "--name-only", parent, "HEAD", "--", ".",
+        f":(exclude){CONSUMER_RECEIPT}", f":(exclude){ADOPTER_PAYLOAD}",
+    )
+    if changes:
+        raise ValueError("tagged tree changed beyond the receipt and generated adopter payload")
+
+
 # @spec CR-006 FR-007 IR-001
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="verify_release_readiness.py")
@@ -338,7 +471,25 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--native-artifacts-dir", type=Path, help="offline release assets")
     mode.add_argument("--repository-only", action="store_true", help="post-tag repository checks")
+    mode.add_argument("--verify-consumer-receipt", action="store_true", help="check tagged receipt")
+    parser.add_argument("--consumer-commit", help="record this full consumer commit before tagging")
     args = parser.parse_args(argv)
+
+    if args.consumer_commit is not None and (
+        not args.current_clean_tree or args.repository_only or args.verify_consumer_receipt
+        or not _valid_full_commit(args.consumer_commit)
+    ):
+        parser.error("--consumer-commit requires a full commit and a clean pre-tag candidate")
+
+    if args.verify_consumer_receipt:
+        try:
+            _verify_consumer_receipt(ROOT)
+        except (KeyError, OSError, RuntimeError, TypeError, ValueError,
+                subprocess.SubprocessError) as exc:
+            print(f"consumer-receipt: {exc}", file=sys.stderr)
+            return 1
+        print("consumer-receipt: pass")
+        return 0
 
     if not args.current_clean_tree:
         with tempfile.TemporaryDirectory(prefix="mir-yoke-release-") as raw:
@@ -378,6 +529,12 @@ def main(argv: list[str] | None = None) -> int:
     expected_count = len(CHECKS) + args.require_project_agent_kit_evidence
     expected_count += not args.repository_only
     ready = len(results) == expected_count and all(row["exit_code"] == 0 for row in results)
+    if ready and args.consumer_commit:
+        try:
+            _write_consumer_receipt(ROOT, args.consumer_commit)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            print(f"consumer-receipt: {exc}", file=sys.stderr)
+            ready = False
     print(json.dumps({"ready": ready, "checks": results}, indent=2))
     return 0 if ready else 1
 
