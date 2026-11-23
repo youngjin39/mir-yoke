@@ -7961,7 +7961,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/adoption/slim.py",
-      "sha256": "aeffaf679d6685140342863f9d6ae8f9471a751c33df9e428eb5e9326f49ae22"
+      "sha256": "e9d8479dd3ac87cb6f02fb5391976cc031f87c3834231eb38ff955a8255eb8c3"
     },
     {
       "classification": "optional-consumer-tool",
