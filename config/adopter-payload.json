@@ -137,37 +137,37 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/commands/analyze-design.md",
-      "sha256": "b7e47422f62b82162eb1690ebcbf2ce22384ac2df6a2ca79644a117505d2415e"
+      "sha256": "c01adc8c6e9b0b47d60c75002a116222d9b5cc13562f7e6bcee60cd266de6bad"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/commands/audit-design-fit.md",
-      "sha256": "a58bf3330cd86cd99f8baff885dbcb14a45dad6415277e4961d876a0a96a9627"
+      "sha256": "a29206df0043225f7d0017c853ccec6751201b97b05fb8f839427bd7590cbc09"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/commands/develop-from-design.md",
-      "sha256": "9973ab79916674748c325f0d6ef437a08f3e308540b4f2c3dc0882b485583bcd"
+      "sha256": "7c04220f4610eedb22ae7d6b250613d211494c02996d69dd3c5f05a6762e9af0"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/commands/review-code.md",
-      "sha256": "8006dc69d5877d443633889893aba19022bba8dc2f33a6bb9335bb69e0229710"
+      "sha256": "5c090621662ee0b9b3e0d50055ea1732c9582f299b7e4036155c2b7f22464c59"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/commands/role-split-pipeline.md",
-      "sha256": "b599deb04671b9e621ca94a05f5cb951c8336dc1347eb9ff30fa2f7932515003"
+      "sha256": "fb38d44fda02fc2e2ff54e8c4af7c3e7fe93524a17071733a235385c43eafdd2"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/commands/verify-against-spec.md",
-      "sha256": "f809a6bc0a844b10ab48e43f080903ed6b54f2b4a0ef64c6ccd7ffedfeeb438a"
+      "sha256": "75adfd4e7c445560868399e0aafb7305374b381e1616ffd2a71589421c2de50f"
     },
     {
       "classification": "reference",
@@ -479,7 +479,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "AGENTS.md",
-      "sha256": "c5354ecd4e219af47e84d17b8bd071178db0d643b45aadfc27f07e80f5651605"
+      "sha256": "cc3e29b4ee3dade6337a19a619dee084639bd59bb0bc8c9be417b4b3ab47e238"
     },
     {
       "classification": "reference",
@@ -503,7 +503,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CLAUDE.md",
-      "sha256": "52531950d9c8ea43eab598ac3214c83c63d4b36b355acd490b86648b7b4b7e6f"
+      "sha256": "55f7445cc7637f3b7259d89f634158c02cd9e14948f93e282b93412d1c0ac52d"
     },
     {
       "classification": "reference",
@@ -521,7 +521,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "MIGRATION.md",
-      "sha256": "7742733a512625e618a4ef1bfd800d0965724d09c2f746a9476e3b58aacac16f"
+      "sha256": "6f5568295bf1a9dab775d080ab175abe86ebcc48f4bb7156bcac592183ef02da"
     },
     {
       "classification": "reference",
@@ -2753,7 +2753,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "examples/multi-round-review/README.md",
-      "sha256": "f84f3db0fdf7746957fb1f9aeecacb28aba13b9468df6d2ece8fed499ef0fc91"
+      "sha256": "6378157c6fae7139165b44ef01efc9b57196ce0a5c2d77af880237d5a30e8e11"
     },
     {
       "classification": "reference",
@@ -2765,13 +2765,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "global-rules/AGENTS.global.md",
-      "sha256": "8de9d02936fa859bd065d6d8470de84c8ac118a79f55de574c42849880e2db99"
+      "sha256": "cb39615e10758ba6d99ecb8e42bc2cdd89f5e9f4554fda72b5799cceacb4fb9e"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "global-rules/CLAUDE.global.md",
-      "sha256": "b3cf26f0e473e16c25b1e37439eb53642469ad458ee4c22dce0de4d8458d8a10"
+      "sha256": "85c23aa39256c4d66b02e6520231af269edfcdf364f3ba616b6b657a3f6fa81f"
     },
     {
       "classification": "reference",
@@ -6635,7 +6635,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-code/skills/code-review/SKILL.md",
-      "sha256": "3eca8b7fed0cb86574c24a9ede220f9a4225697d8ccdc93b10aa2612a72cdfb5"
+      "sha256": "22e9b1d71527b3c3ac416d82a8f28047f8c9990c92195aab1eb307c356235e42"
     },
     {
       "classification": "optional-consumer-tool",
@@ -6653,7 +6653,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-code/skills/rust/SKILL.md",
-      "sha256": "1c52009bf24b2b8553ab60898ed1ac1b47de64b2d1b19c85000652b9c72e528a"
+      "sha256": "11465bc73f6c32172859543595ed98ca425200694e49b37cac2555628b777704"
     },
     {
       "classification": "optional-consumer-tool",
@@ -6671,7 +6671,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-code/skills/rust/references/porting.md",
-      "sha256": "e68601dccdc528c7614a6f7ef9a9411d70f8a5f7430c27d9c2358a0407a8d720"
+      "sha256": "269db4b0269dede549fdad226d67b21cc282e933d28cc47411a1163b06573e48"
     },
     {
       "classification": "optional-consumer-tool",
@@ -6845,7 +6845,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/design/SKILL.md",
-      "sha256": "ab807e3522b1262d84ac4f55fc23d8c46398d4e8b25ad52bfb006358057c6e39"
+      "sha256": "c7b23b70c01878362572f0ad96913545390ba9e00b96c0405e6c8274661f2c8f"
     },
     {
       "classification": "optional-consumer-tool",
@@ -7115,7 +7115,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/default-work-method.md",
-      "sha256": "10ced8b218a655b833851ca1ea3af0595de35ba84ed996a27712018ac7603419"
+      "sha256": "5aae7185ca1f56738ee13d7418f6d59203cc394881860d3396f29e47b482bb86"
     },
     {
       "classification": "optional-consumer-tool",
@@ -8357,7 +8357,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "6fd6eda570b0f9ad4d4d0b90a0686636810e4980fd23c5a689477c5831a4b2c0"
+      "sha256": "39d927647cf2219d96cf989493b4fce1776cf8e9331082e298d512f152f5b648"
     },
     {
       "classification": "reference",
