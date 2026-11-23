@@ -77,6 +77,16 @@ def load_profile(project_root: Path) -> dict[str, object]:
     return profile
 
 
+def is_canonical_provider_profile(profile: dict[str, object]) -> bool:
+    """Recognize Mir Yoke's maintainer profile when boundary evidence is unavailable."""
+    repo = profile.get("repo")
+    return (
+        isinstance(repo, dict)
+        and repo.get("slug") == "mir-yoke"
+        and repo.get("repository_type") in ("public_harness_template", "template_transitional")
+    )
+
+
 def is_provider_owner(profile: dict[str, object], boundary: dict[str, object]) -> bool:
     repo = profile["repo"]
     assert isinstance(repo, dict)

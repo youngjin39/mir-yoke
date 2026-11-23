@@ -198,6 +198,9 @@ pub fn main_with_paths(
     while let Some(&token) = argv.get(i) {
         i += 1;
         if token == "--" && parse_options {
+            if command == "deregister" {
+                unknown.push(token);
+            }
             parse_options = false;
             continue;
         }
