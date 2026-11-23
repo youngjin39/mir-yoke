@@ -2,6 +2,33 @@ use handoff_packet::mir_cli::capability::{self, Manager};
 use serde_json::{Map, Value, json};
 use std::{fs, path::Path};
 
+pub fn expected_command_list(name: &str, mut expected: Value) -> Value {
+    let field = match name {
+        "capability.help" => 1,
+        "capability.invalid" | "capability.empty" => 2,
+        _ => return expected,
+    };
+    // Keep the pinned capture and account for the new subcommand in top-level usage.
+    expected["value"][field] = json!(
+        expected["value"][field]
+            .as_str()
+            .unwrap()
+            .replace(
+                "[-h] {status,check,sync,update,finalize,attest} ...",
+                "[-h]\n                      {status,check,sync,update,finalize,attest}\n                      ...",
+            )
+            .replace(
+                "{status,check,sync,update,finalize,attest}",
+                "{status,check,sync,update,finalize,attest,deregister}",
+            )
+            .replace(
+                "(choose from status, check, sync, update, finalize, attest)",
+                "(choose from status, check, sync, update, finalize, attest, deregister)",
+            )
+    );
+    expected
+}
+
 pub fn replay(name: &str, tmp: &Path) -> Value {
     struct Mock<'a> {
         root: &'a Path,
@@ -39,6 +66,11 @@ pub fn replay(name: &str, tmp: &Path) -> Value {
         }
     }
     let command = name.strip_prefix("capability.").unwrap_or(name);
+    let (command, apply_deregister) = if command == "deregister-apply" {
+        ("deregister", true)
+    } else {
+        (command, false)
+    };
     let mut args: Vec<String> = vec![
         command.into(),
         "--project-root".into(),
@@ -49,7 +81,7 @@ pub fn replay(name: &str, tmp: &Path) -> Value {
         tmp.join("config").display().to_string(),
         "--json".into(),
     ];
-    if ["sync", "update", "finalize", "attest"].contains(&command) {
+    if apply_deregister || ["sync", "update", "finalize", "attest"].contains(&command) {
         args.push("--apply".into());
     }
     if ["check", "sync", "update"].contains(&command) {
@@ -91,6 +123,7 @@ pub fn replay(name: &str, tmp: &Path) -> Value {
         "help" => args = vec!["--help".into()],
         "invalid" => args = vec!["bad".into()],
         "empty" => args.clear(),
+        "deregister-unscoped" => args = vec!["deregister".into(), "--apply".into()],
         "pretty" => {
             args = vec![
                 "status".into(),
@@ -123,4 +156,42 @@ pub fn replay(name: &str, tmp: &Path) -> Value {
     json!({"value":[
         code, String::from_utf8(out).unwrap(), String::from_utf8(err).unwrap(), files, mock.calls
     ]})
+}
+
+#[test]
+fn deregister_dispatches_preview_and_apply() {
+    for (command, apply) in [("deregister", false), ("deregister-apply", true)] {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let observation = replay(command, &root);
+        let result = &observation["value"];
+        assert_eq!(result[0], 0, "{result}");
+        assert_eq!(result[2], "");
+        assert_eq!(result[4][1], json!(["deregister", [], {"apply": apply}]),);
+        assert_eq!(
+            serde_json::from_str::<Value>(result[1].as_str().unwrap()).unwrap(),
+            json!({
+                "change_evidence": {
+                    "status": "not-applicable",
+                    "reason": "registry-only-operation",
+                },
+                "query": "deregister",
+            }),
+        );
+    }
+}
+
+#[test]
+fn deregister_requires_explicit_scope() {
+    let temp = tempfile::tempdir().unwrap();
+    let observation = replay("deregister-unscoped", temp.path());
+    let result = &observation["value"];
+    assert_eq!(result[0], 2, "{result}");
+    assert!(
+        result[2]
+            .as_str()
+            .unwrap()
+            .contains("the following arguments are required: --project-root, --capability-home")
+    );
+    assert_eq!(result[4], json!([]));
 }

@@ -21,6 +21,7 @@ from mir.core.capabilities import (
     CapabilityManager,
     load_capability_config,
 )
+from mir.core.capabilities import manager as capability_manager
 from mir.core.capabilities.manager import _consumer_key, _file_digest, _installed_path, _tree_digest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -107,6 +108,239 @@ def make_project(tmp_path: Path, name: str = "project", *, real_derivatives: boo
     else:
         derivative.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
     return project
+
+
+@pytest.fixture
+def deregistration_state(tmp_path: Path):
+    project = tmp_path / "release-worktree"
+    project.mkdir()
+    home = tmp_path / "capabilities"
+    home.mkdir()
+    target = _consumer_key(project)
+    other = _consumer_key(tmp_path / "provider")
+    binding = "b" * 64
+    other_binding = "c" * 64
+    plugins = {"mir-core": "d" * 64}
+    consumer = {"binding": binding, "commit": SHA_A, "plugins": plugins,
+                "profile": "code_app"}
+    # The membership layout mirrors the November 23 registry cleanup.
+    docs = {
+        "consumers.json": {
+            "schema_version": 3,
+            "active_commit": SHA_A,
+            "active_plugins": plugins,
+            "consumers": {target: consumer, other: {**consumer, "binding": other_binding}},
+        },
+        "consumer-bindings.json": {
+            "schema_version": 1,
+            "consumers": {other: other_binding, target: binding},
+        },
+        "active.json": {
+            "schema_version": 2,
+            "commit": SHA_A,
+            "plugins": plugins,
+            "marketplaces": {"catalog": {"sha256": "e" * 64}},
+            "discovery": {
+                other: {"claude-code": {"commit": SHA_A, "observed_skills": ["p:s"]}},
+                target: {"claude-code": {"commit": SHA_A, "observed_skills": ["p:t"]}},
+            },
+            "installation_sessions": {
+                target: {"claude-code": "release-install"},
+                other: {"claude-code": "other-install"},
+            },
+        },
+    }
+    for name, data in docs.items():
+        path = home / name
+        path.write_bytes(json.dumps(data, indent=4, separators=(",", " : ")).encode() + b"\r\n")
+        path.chmod(0o600)
+    for relative in ("active/plugins/payload", "active/marketplace.json"):
+        path = home / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"untouched")
+    return project, home, target, other, docs
+
+
+def _deregister_cli(project: Path, home: Path, *options: str) -> int:
+    return capability_cli.main([
+        "deregister", "--project-root", str(project), "--capability-home", str(home),
+        "--config", str(ROOT / "config/capability-sources.json"), "--json", *options,
+    ])
+
+
+def _capability_files(home: Path) -> dict[str, bytes]:
+    return {p.relative_to(home).as_posix(): p.read_bytes() for p in home.rglob("*") if p.is_file()}
+
+
+def test_deregister_previews_and_applies_manual_removal(deregistration_state, capsys):
+    project, home, target, other, docs = deregistration_state
+    before = _capability_files(home)
+    home_mtime = home.stat().st_mtime_ns
+    assert _deregister_cli(project, home) == 0
+    preview = json.loads(capsys.readouterr().out)
+    assert preview["dry_run"] and not preview["applied"]
+    assert preview["consumer"] == target
+    assert _capability_files(home) == before
+    assert home.stat().st_mtime_ns == home_mtime
+    assert not (home / ".apply.lock").exists()
+
+    assert _deregister_cli(project, home, "--apply") == 0
+    applied = json.loads(capsys.readouterr().out)
+    assert applied == {**preview, "dry_run": False, "applied": True}
+    after = _capability_files(home)
+    for name, doc in docs.items():
+        removed = {}
+        for section in ("consumers", "discovery", "installation_sessions"):
+            if section in doc:
+                untouched = json.dumps(
+                    {other: doc[section][other]}, indent=4, separators=(",", " : "),
+                ).splitlines()[1:-1]
+                other_entry = "\n".join(f"    {line}" for line in untouched).encode()
+                assert other_entry in before[name] and other_entry in after[name]
+                removed[section] = doc[section].pop(target)
+        assert preview["removed"][name] == removed
+        assert json.loads(after.pop(name)) == doc
+        assert after.pop(f"{name}.bak") == before.pop(name)
+    assert after == before
+    assert not (home / ".apply.lock").exists()
+    assert list(project.iterdir()) == []
+
+
+def _write_provider_profile(project: Path) -> None:
+    (project / ".mir").mkdir()
+    (project / ".mir/repo-profile.toml").write_text(
+        '[repo]\nslug = "mir-yoke"\nrepository_type = "public_harness_template"\n',
+        encoding="utf-8",
+    )
+    (project / "config").mkdir()
+    for name in ("adopter-boundary.json", "adopter-boundary.schema.json"):
+        shutil.copyfile(ROOT / "config" / name, project / "config" / name)
+
+
+@pytest.mark.parametrize("apply", [False, True])
+@pytest.mark.parametrize(
+    ("refusal", "message"),
+    [
+        ("unknown", "unknown capability consumer"),
+        ("provider", "provider source checkout"),
+        ("syntax", "malformed capability registry: active.json"),
+        ("shape", "malformed capability registry: active.json"),
+        ("consumers", "malformed capability registry: consumers.json"),
+        ("bindings", "malformed capability registry: consumer-bindings.json"),
+        ("duplicate", "malformed capability registry: active.json"),
+        ("nonfinite", "malformed capability registry: active.json"),
+    ],
+)
+def test_deregister_refuses_without_writing(deregistration_state, capsys, apply, refusal, message):
+    project, home, _, _, _ = deregistration_state
+    if refusal == "unknown":
+        project = project.with_name("unknown")
+        project.mkdir()
+    elif refusal == "provider":
+        _write_provider_profile(project)
+    else:
+        name, body = {
+            "syntax": ("active.json", b"{"),
+            "shape": ("active.json", b'{"schema_version": 2, "discovery": []}'),
+            "consumers": ("consumers.json", b'{"schema_version": 3, "consumers": []}'),
+            "bindings": ("consumer-bindings.json", b'{"schema_version": 1, "consumers": null}'),
+            "duplicate": (
+                "active.json", b'{"schema_version": 2, "discovery": {}, "discovery": {}}',
+            ),
+            "nonfinite": ("active.json", b'{"schema_version": 2, "value": NaN}'),
+        }[refusal]
+        (home / name).write_bytes(body)
+    before = _capability_files(home)
+    assert _deregister_cli(project, home, *(["--apply"] if apply else [])) == 1
+    captured = capsys.readouterr()
+    assert not captured.out
+    assert captured.err.startswith(f"ERROR: {message}")
+    assert _capability_files(home) == before
+    assert not (home / ".apply.lock").exists()
+
+
+def test_deregister_uses_capability_apply_lock(deregistration_state, capsys):
+    project, home, _, _, _ = deregistration_state
+    before = _capability_files(home)
+    (home / ".apply.lock").mkdir()
+    assert _deregister_cli(project, home, "--apply") == 1
+    assert "another capability apply is active" in capsys.readouterr().err
+    assert (home / ".apply.lock").is_dir()
+    assert _capability_files(home) == before
+
+
+def test_deregister_requires_explicit_scope(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit) as exc:
+        capability_cli.main(["deregister", "--apply"])
+    assert exc.value.code == 2
+    assert "the following arguments are required: --project-root, --capability-home" in (
+        capsys.readouterr().err
+    )
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_deregister_restores_replaced_registries_after_write_failure(
+    deregistration_state, monkeypatch, capsys,
+):
+    project, home, _, _, docs = deregistration_state
+    before = _capability_files(home)
+    atomic_write = capability_manager._atomic_write_bytes
+
+    def fail_registry_write(path, body, **kwargs):
+        if path == home / "consumers.json":
+            raise OSError("synthetic rename failure")
+        atomic_write(path, body, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(capability_manager, "_atomic_write_bytes", fail_registry_write)
+        assert _deregister_cli(project, home, "--apply") == 1
+    assert "capability deregistration failed: synthetic rename failure" in capsys.readouterr().err
+    restored = _capability_files(home)
+    for name in docs:
+        assert restored.pop(f"{name}.bak") == before[name]
+    assert restored == before
+    assert not (home / ".apply.lock").exists()
+    assert _deregister_cli(project, home, "--apply") == 0
+
+
+def test_deregister_allows_linked_provider_worktree(deregistration_state, capsys):
+    project, home, target, other, _ = deregistration_state
+    provider = project.with_name("provider")
+    subprocess.run(["git", "init", "-q", str(provider)], check=True)
+    subprocess.run(
+        ["git", "-C", str(provider), "worktree", "add", "--orphan", "-q", str(project)],
+        check=True,
+    )
+    _write_provider_profile(project)
+    _write_provider_profile(provider)
+    assert _deregister_cli(project, home, "--apply") == 0
+    assert json.loads(capsys.readouterr().out)["consumer"] == target
+    assert set(json.loads((home / "consumers.json").read_bytes())["consumers"]) == {other}
+    assert _deregister_cli(provider, home, "--apply") == 1
+    assert "provider source checkout" in capsys.readouterr().err
+
+
+def test_deregister_accepts_legacy_registry_without_bindings(deregistration_state, capsys):
+    project, home, target, other, docs = deregistration_state
+    registry = docs["consumers.json"]
+    registry["schema_version"] = 1
+    for consumer in registry["consumers"].values():
+        consumer.pop("binding")
+    (home / "consumers.json").write_text(json.dumps(registry), encoding="utf-8")
+    (home / "consumer-bindings.json").unlink()
+    active = docs["active.json"]
+    active["schema_version"] = 1
+    active.pop("installation_sessions")
+    (home / "active.json").write_text(json.dumps(active), encoding="utf-8")
+    assert _deregister_cli(project, home, "--apply") == 0
+    assert json.loads(capsys.readouterr().out)["removed"] == {
+        "consumers.json": {"consumers": registry["consumers"][target]},
+        "consumer-bindings.json": {},
+        "active.json": {"discovery": active["discovery"][target]},
+    }
+    assert set(json.loads((home / "consumers.json").read_bytes())["consumers"]) == {other}
+    assert not list(home.glob("consumer-bindings.json*"))
 
 
 def use_schema2_capability_source(project: Path) -> None:

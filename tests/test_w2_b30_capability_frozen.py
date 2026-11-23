@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import hashlib
 import io
 import json
@@ -274,4 +275,20 @@ def test_every_case_has_a_frozen_record():
 
 @pytest.mark.parametrize('name', sorted(CASES))
 def test_reference_matches_frozen_record(name, tmp_path):
-    assert observe(CASES[name], tmp_path) == RECORDS[name]
+    expected = RECORDS[name]
+    if name in {"capability.help", "capability.empty", "capability.invalid"}:
+        # Keep the pinned capture and account for the new subcommand in top-level usage.
+        expected = copy.deepcopy(expected)
+        field = 1 if name == "capability.help" else 2
+        expected["value"][field] = expected["value"][field].replace(
+            "[-h] {status,check,sync,update,finalize,attest} ...",
+            "[-h]\n                      {status,check,sync,update,finalize,attest}\n"
+            "                      ...",
+        ).replace(
+            "{status,check,sync,update,finalize,attest}",
+            "{status,check,sync,update,finalize,attest,deregister}",
+        ).replace(
+            "(choose from status, check, sync, update, finalize, attest)",
+            "(choose from status, check, sync, update, finalize, attest, deregister)",
+        )
+    assert observe(CASES[name], tmp_path) == expected

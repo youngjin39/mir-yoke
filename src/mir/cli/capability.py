@@ -65,13 +65,16 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         help="JSON object of operator-observed MCP evidence keyed by package name",
     )
+    deregister = subcommands.add_parser("deregister")
+    _add_common_options(deregister, require_scope=True)
+    deregister.add_argument("--apply", action="store_true")
     return parser
 
 
-def _add_common_options(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--project-root", type=Path, default=Path.cwd())
+def _add_common_options(parser: argparse.ArgumentParser, *, require_scope: bool = False) -> None:
+    parser.add_argument("--project-root", type=Path, default=Path.cwd(), required=require_scope)
     parser.add_argument("--config", type=Path)
-    parser.add_argument("--capability-home", type=Path)
+    parser.add_argument("--capability-home", type=Path, required=require_scope)
     parser.add_argument("--json", action="store_true", dest="as_json")
 
 
@@ -92,7 +95,10 @@ def main(argv: list[str] | None = None) -> int:
             config_path=namespace.config,
             capability_home=namespace.capability_home,
         )
-        before = None if namespace.command == "status" else snapshot_project(project_root)
+        before = (
+            None if namespace.command in {"status", "deregister"}
+            else snapshot_project(project_root)
+        )
         if namespace.command == "status":
             result = manager.status(namespace.profile)
         elif namespace.command == "check":
@@ -116,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
                 apply=namespace.apply,
                 after_restart=namespace.after_restart,
             )
+        elif namespace.command == "deregister":
+            result = manager.deregister(apply=namespace.apply)
         elif namespace.command == "attest":
             mcp_evidence = {}
             if namespace.mcp_evidence is not None:
@@ -140,7 +148,10 @@ def main(argv: list[str] | None = None) -> int:
     else:
         result["change_evidence"] = {
             "status": "not-applicable",
-            "reason": "read-only-operation",
+            "reason": (
+                "registry-only-operation" if namespace.command == "deregister"
+                else "read-only-operation"
+            ),
         }
     _render(result, namespace.as_json)
     return 0
