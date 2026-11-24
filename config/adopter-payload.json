@@ -5159,7 +5159,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/manifest.json",
-      "sha256": "23093e26465a1159c90064a67a5f717736ec805933fcea05f87216439e218dc7"
+      "sha256": "7709a70f159a2ada7f8a2484428a38cc1af8f25ce60b26c351341d1c7f224d63"
     },
     {
       "classification": "template-maintainer-tool",
