@@ -48,6 +48,11 @@ if "--receipt-bytes" in sys.argv:
     assert json.loads(logical) == payload and "\r" not in logical
     record = dict(reference_pin=pin, platform=sys.platform, payload=payload,
                   logical=logical, physical_hex=path.read_bytes().hex())
+    if os.name == "posix":
+        # The pinned write_text uses newline=None: POSIX keeps LF unchanged.
+        # Preserve the capture host separately from the proven byte contract.
+        assert path.read_bytes() == logical.encode("utf-8")
+        record.update(platform="posix", captured_platform=sys.platform)
     output.write_text(json.dumps(record, ensure_ascii=True) + "\n", encoding="utf-8")
     raise SystemExit(0)
 

@@ -235,12 +235,30 @@ fn provider_binding(only: Option<&str>) {
             r["mode"],
             out
         );
+        let mut expected_stdout = r["stdout"].as_str().unwrap().to_owned();
+        if cfg!(unix) && r["mode"] == "required-refused" {
+            // Independent closed loopback endpoint, not the product's socket/error.
+            let probe = TcpListener::bind("127.0.0.1:0").unwrap();
+            let address = probe.local_addr().unwrap();
+            drop(probe);
+            let error =
+                std::net::TcpStream::connect_timeout(&address, std::time::Duration::from_secs(1))
+                    .unwrap_err();
+            assert_eq!(error.kind(), std::io::ErrorKind::ConnectionRefused);
+            let errno = error
+                .raw_os_error()
+                .expect("refused probe must have OS errno");
+            let suffix = expected_stdout
+                .strip_prefix("  [failed] a.md: insert: [Errno 61]")
+                .expect("pinned Darwin refused errno slot");
+            expected_stdout = format!("  [failed] a.md: insert: [Errno {errno}]{suffix}");
+        }
         assert_eq!(
             String::from_utf8(out.stdout)
                 .unwrap()
                 .replace(url.trim_end_matches('/'), "@URLBASE@")
                 .as_bytes(),
-            r["stdout"].as_str().unwrap().as_bytes(),
+            expected_stdout.as_bytes(),
             "{}",
             r["mode"]
         );

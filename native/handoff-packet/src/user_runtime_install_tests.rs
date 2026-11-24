@@ -7,8 +7,17 @@ fn hex(b: &[u8]) -> String {
 #[test]
 #[rustfmt::skip]
 fn frozen_admission() {
-    let corpus: J = serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/admission-receipts.json")).unwrap();
+    let mut corpus: J = serde_json::from_str(include_str!("../../../tests/fixtures/user_runtime_install/admission-receipts.json")).unwrap();
     let tmp = tempfile::tempdir().unwrap(); let canonical_root = tmp.path().canonicalize().unwrap(); let root = canonical_root.as_path(); let mut seen = std::collections::BTreeSet::new(); let mut mismatches = Vec::new();
+    // Independent filesystem operation: replace only the captured Darwin errno slot.
+    let probe = fs::symlink_metadata(root.join("p".repeat(256))).unwrap_err();
+    let errno = probe.raw_os_error().expect("over-limit probe must have an OS errno");
+    assert_eq!(errno, libc::ENAMETOOLONG);
+    for name in ["home-long-name", "target-long-name", "target-long-ancestor"] {
+        let suffix = corpus["records"][name]["message"].as_str().unwrap()
+            .strip_prefix("[Errno 63]").expect("pinned Darwin errno slot").to_owned();
+        corpus["records"][name]["message"] = json!(format!("[Errno {errno}]{suffix}"));
+    }
     let mut check = |name: &str, result: Result<J, Error>| {
         let actual = match result {
             Ok(v) => json!({"value":v,"stdout":"","stderr":""}),

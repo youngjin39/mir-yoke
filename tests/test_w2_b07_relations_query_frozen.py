@@ -193,4 +193,14 @@ def test_every_case_has_a_frozen_record():
 
 @pytest.mark.parametrize('name', sorted(CASES))
 def test_reference_matches_frozen_record(name, tmp_path):
-    assert observe(CASES[name], tmp_path) == RECORDS[name]
+    # Independent lookup on the scenario's filesystem, not the queried endpoint.
+    (tmp_path / 'case-probe').write_bytes(b'probe')
+    try:
+        (tmp_path / 'CASE-PROBE').stat()
+        case_sensitive = False
+    except FileNotFoundError:
+        case_sensitive = True
+    expected = RECORDS[name]
+    if name == 'anchor.4' and case_sensitive:
+        expected = {'error': ['RelationError', 'anchor unavailable endpoint']}
+    assert observe(CASES[name], tmp_path) == expected

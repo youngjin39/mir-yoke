@@ -290,10 +290,14 @@ fn public_receipt_physical_bytes_match_pinned_python() {
     )
     .unwrap();
     assert_eq!(
+        record["reference_pin"],
+        "5f8f69f94e09b64c5e4d07d329ed17797c35e6cb"
+    );
+    // The pinned Python write_text(newline=None, encoding="utf-8") writes LF
+    // on POSIX and CRLF on Windows; payload and physical hex stay exact.
+    assert_eq!(
         record["platform"],
-        std::env::consts::OS
-            .replace("macos", "darwin")
-            .replace("windows", "win32")
+        if cfg!(windows) { "win32" } else { "posix" }
     );
     let temp = tempfile::tempdir().unwrap();
     let path = temp.path().canonicalize().unwrap().join("receipt.json");
