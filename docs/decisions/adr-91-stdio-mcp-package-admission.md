@@ -716,6 +716,14 @@ declarations stay immutable. Direct argv supplies `--reference-python python3`
 and `--reference-script` for version-sensitive Unicode forwarding. Codex keeps
 relative paths and plugin-root cwd; Claude expands `${CLAUDE_PLUGIN_ROOT}`.
 
+Direct registration additionally requires the artifact URL's native prerelease
+`native-<source.commit[:12]>` to match the installed provider lock's source build,
+and the placed binary's `--mir-warmup` probe to exit 0 within three seconds on
+every host. Older or unbound pins and failed probes retain the Python launcher,
+with a diagnostic for probe failures. Attestation derives the expected launcher
+shape from the installed runtime declaration and rejects evidence for the other
+shape; direct declarations require a verified native backend.
+
 Admission accepts canonical declarations or exact generated direct declarations
 with a verified artifact. A temporary validation view reconstructs canonical
 source bytes without changing the locked source digest. Observed receipts

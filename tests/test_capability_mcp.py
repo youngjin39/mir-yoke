@@ -1058,25 +1058,7 @@ def test_mcp_native_receipt_binds_host_pin_and_installed_binary(
         source = project / "manifest"
         manifest.rename(source)
         manifest.symlink_to(source)
-    placement_is_valid = mutation in {"valid", "target", "digest", "extra", "python-fallback"} or (
-        (windows or sys.platform == "win32") and mutation == "not-executable"
-    )
-    executable = "mir-mcp.exe" if windows else "mir-mcp"
-    direct = {
-        "claude": {
-            "command": "${CLAUDE_PLUGIN_ROOT}/bin/" + executable,
-            "args": ["--reference-python", "python3", "--reference-script",
-                     "${CLAUDE_PLUGIN_ROOT}/mir_mcp.py"],
-        },
-        "codex": {
-            "command": "./bin/" + executable,
-            "args": ["--reference-python", "python3", "--reference-script", "./mir_mcp.py"],
-            "cwd": ".",
-        },
-    }
-    assert mcp_contract.mcp_registration_launchers(installed, records) == (
-        direct if placement_is_valid else mcp_contract.MCP_LAUNCHERS
-    )
+    assert mcp_contract.mcp_registration_launchers(installed, records) == mcp_contract.MCP_LAUNCHERS
     monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "0")
     assert mcp_contract.mcp_registration_launchers(installed, records) == mcp_contract.MCP_LAUNCHERS
     assert validate_mcp_observation(
@@ -1125,7 +1107,18 @@ def test_manager_native_receipt_uses_lock_and_real_placement(
         **({"cwd": str(installed)} if client == "codex-cli-desktop" else {}),
     }
     observations["mir-mcp"]["launcher"] = launcher
+    assert not manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
+    declaration_runtime = "claude" if client == "claude-code" else "codex"
+    extra = {"type": "stdio"} if declaration_runtime == "claude" else {"env_vars": []}
+    (installed / f".mcp.{declaration_runtime}.json").write_text(json.dumps({
+        "mcpServers": {"mir-mcp": {
+            **mcp_contract.mcp_native_launchers(target)[declaration_runtime], **extra,
+        }},
+    }))
     assert manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
+    observations["mir-mcp"]["launcher"] = mcp_observed_launcher(client, installed)
+    assert not manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
+    observations["mir-mcp"]["launcher"] = launcher
     backend = observations["mir-mcp"]["backend"]
     observations["mir-mcp"]["backend"] = {"kind": "python"}
     assert not manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
@@ -1137,11 +1130,22 @@ def test_manager_native_receipt_uses_lock_and_real_placement(
     assert not manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
 
 
+@pytest.mark.parametrize("operation", ["sync", "update", "rollback"])
 @pytest.mark.parametrize("placement", ["valid", "disabled", "missing", "failed", "wrong-target"])
 def test_mcp_registration_installs_only_verified_direct_launchers(
-    tmp_path, provider, monkeypatch, placement,
+    tmp_path, provider, monkeypatch, placement, operation,
 ):
     target = "aarch64-apple-darwin"
+    if sys.platform == "win32":
+        # Windows cannot execute the POSIX fake binary used by this lifecycle test.
+        run = subprocess.run
+
+        def fake_probe(args, **kwargs):
+            if args[-1:] == ["--mir-warmup"]:
+                return subprocess.CompletedProcess(args, 0)
+            return run(args, **kwargs)
+
+        monkeypatch.setattr(subprocess, "run", fake_probe)
     monkeypatch.setattr(native_artifacts, "host_target", lambda: target)
     monkeypatch.setattr(mcp_contract, "host_target", lambda: target)
     monkeypatch.setattr("mir.core.capabilities.manager.host_target", lambda: target)
@@ -1149,10 +1153,11 @@ def test_mcp_registration_installs_only_verified_direct_launchers(
         monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "0")
     else:
         monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
-    data = b"native-placement-fixture"
+    data = f"#!{sys._base_executable}\nraise SystemExit(0)\n".encode()
     digest = hashlib.sha256(data).hexdigest()
     monkeypatch.setattr(native_artifacts, "_read", lambda url, size: data)
-    pin = {"url": "offline-fixture", "sha256": digest, "size": len(data)}
+    pin = {"url": f"https://example.test/releases/download/native-{BUILD_COMMIT[:12]}/mir-mcp",
+           "sha256": digest, "size": len(data)}
     if placement == "failed":
         pin["sha256"] = "0" * 64
     pin_target = "x86_64-unknown-linux-gnu" if placement == "wrong-target" else target
@@ -1165,9 +1170,43 @@ def test_mcp_registration_installs_only_verified_direct_launchers(
         manager.active_path, manager.codex_home, manager.user_home / ".claude",
     )
     manager.command_runner = runner
-    manager.git = CopyGit(provider, native_artifacts=records)
     acknowledge_locally(manager, provider)
-    manager.sync("code", mcp=True, apply=True)
+    if operation != "sync":
+        previous_records = copy.deepcopy(records)
+        if placement == "valid":
+            previous_records["mir-mcp"]["targets"][target]["url"] = (
+                "https://example.test/releases/download/native-bbbbbbbbbbbb/mir-mcp")
+        manager.git = SourceBuildGit(provider, native_artifacts=previous_records)
+        manager.sync("code", mcp=True, apply=True)
+        previous_lock = manager.lock_path.read_bytes()
+        previous_receipt = manager.active_receipt_path.read_bytes()
+        previous_declarations = {
+            client: (cache_path(client, "mir-mcp") / f".mcp.{client}.json").read_bytes()
+            for client in ("claude", "codex")
+        }
+    manager.git = SourceBuildGit(provider, native_artifacts=records)
+    failed = False
+    if operation == "rollback":
+        def fail_direct(args, **kwargs):
+            nonlocal failed
+            if args[1:3] == ["plugin", "add"] and not failed:
+                failed = True
+                declaration = manager.active_path / "plugins/mir-mcp/.mcp.codex.json"
+                assert ("./bin/mir-mcp" in declaration.read_text()) == (placement == "valid")
+                return subprocess.CompletedProcess(args, 1, "", "fixture failure")
+            return runner(args, **kwargs)
+        manager.command_runner = fail_direct
+        with pytest.raises(CapabilityError, match="rollback was complete"):
+            manager.update("code", mcp=True, apply=True)
+        assert failed
+        assert manager.lock_path.read_bytes() == previous_lock
+        assert manager.active_receipt_path.read_bytes() == previous_receipt
+        for client, declaration in previous_declarations.items():
+            restored = cache_path(client, "mir-mcp") / f".mcp.{client}.json"
+            assert restored.read_bytes() == declaration
+        assert manager.status()["active_integrity"] is True
+        return
+    getattr(manager, operation)("code", mcp=True, apply=True)
     lock = json.loads(manager.lock_path.read_text())
     package = provider / "plugins/mir-mcp"
     active = manager.active_path / "plugins/mir-mcp"
@@ -1224,6 +1263,15 @@ def test_mcp_registration_installs_only_verified_direct_launchers(
     assert status["discovery"]["status"] != "verified"
     tampered.write_bytes(original)
     assert manager.status()["ready"] is True
+    claude_declaration = cache_path("claude", "mir-mcp") / ".mcp.claude.json"
+    claude_bytes = claude_declaration.read_bytes()
+    claude_declaration.unlink()
+    claude_declaration.mkdir()
+    status = manager.status()
+    observed = status["activation"]["runtimes"]["claude-code"]["plugins"]["mir-mcp"]
+    assert observed["status"] == "digest-mismatch"
+    claude_declaration.rmdir()
+    claude_declaration.write_bytes(claude_bytes)
     (cache / "bin/mir-mcp").write_bytes(b"x" * len(data))
     status = manager.status()
     assert status["ready"] is False
@@ -1275,6 +1323,8 @@ def test_mcp_receipt_native_paths_and_closed_launcher(
         PureWindowsPath(r"C:\Users\A B\plugins\mir-mcp\0.13.42") if windows_root else actual
     )
     # Keep schema I/O on the real host while exercising native Windows receipt strings.
+    read_json = mcp_contract.closed_json
+    monkeypatch.setattr(mcp_contract, "closed_json", lambda path: read_json(actual / path.name))
     read_schemas = mcp_contract._input_schemas
     monkeypatch.setattr(mcp_contract, "_input_schemas", lambda path: read_schemas(actual))
     monkeypatch.setattr(mcp_contract, "sys_platform", lambda: host, raising=False)
@@ -1642,3 +1692,51 @@ def test_update_still_rejects_changed_enrollment_identity(tmp_path, provider, mu
     with pytest.raises(CapabilityError, match="current consumer enrollment is invalid"):
         manager.update("code", mcp=True, apply=True)
     assert manager.lock_path.read_bytes() == before
+
+
+BUILD_COMMIT = "c" * 40
+
+
+class SourceBuildGit(CopyGit):
+    def export(self, url, ref, commit, paths, destination):
+        super().export(url, ref, commit, paths, destination)
+        if ".mir/capability-lock.json" in paths:
+            path = destination / ".mir/capability-lock.json"
+            document = json.loads(path.read_text())
+            document["source"] = {"commit": BUILD_COMMIT}
+            path.write_text(json.dumps(document))
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="executable fixtures use POSIX shebangs")
+@pytest.mark.parametrize("build", ["current", "older", "unbound"])
+@pytest.mark.parametrize("probe", ["success", "nonzero", "spawn-error", "timeout"])
+def test_direct_registration_requires_source_build_and_start_probe(
+    tmp_path, monkeypatch, capsys, build, probe,
+):
+    target = "aarch64-apple-darwin"
+    monkeypatch.setattr(mcp_contract, "host_target", lambda: target)
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    # These are executable fixtures, not native byte placeholders.
+    script = {
+        "success": "import sys; assert sys.argv[1:] == ['--mir-warmup']",
+        "nonzero": "raise SystemExit(7)",
+        "spawn-error": "",
+        "timeout": "import time; time.sleep(3)",
+    }[probe]
+    data = (f"#!{sys._base_executable}\n{script}\n").encode() if probe != "spawn-error" else b"bad"
+    tag = BUILD_COMMIT[:12] if build == "current" else "b" * 12
+    pin = {"url": f"https://example.test/releases/download/native-{tag}/mir-mcp",
+           "sha256": hashlib.sha256(data).hexdigest(), "size": len(data)}
+    records = {"mir-mcp": {"plugin": "mir-mcp", "install_path": "bin/mir-mcp",
+                           "targets": {target: pin}}}
+    monkeypatch.setattr(native_artifacts, "_read", lambda url, size: data)
+    monkeypatch.setattr(mcp_contract, "_START_TIMEOUT", 0.75, raising=False)
+    native_artifacts.place_artifacts(tmp_path, "mir-mcp", records, target=target)
+    actual = mcp_contract.mcp_registration_launchers(
+        tmp_path, records, BUILD_COMMIT if build != "unbound" else None,
+    )
+    direct = build == "current" and probe == "success"
+    assert actual == (mcp_contract.mcp_native_launchers(target) if direct
+                      else mcp_contract.MCP_LAUNCHERS)
+    if build == "current" and probe != "success":
+        assert "start probe" in capsys.readouterr().err

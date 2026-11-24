@@ -24,17 +24,26 @@ The hosted tag job does not yet verify the pre-tag consumer-contract result.
 
 ## 0.14.2 native MCP registration
 
-When a lock-verified native `mir-mcp` placement is available, Claude and Codex
+When a lock-verified native `mir-mcp` placement belongs to the lock source build
+and its bounded `--mir-warmup` probe exits 0, Claude and Codex
 registrations start that binary directly. Refresh registrations through the
 existing authorized capability adoption flow after reviewing the new package.
-Unavailable, disabled, failed or unbound native placements keep the Python
+Unavailable, disabled, failed, older-build or unbound native placements keep the Python
 launcher route. The direct command includes the reference interpreter and script
 for Unicode-version-dependent text forwarding; per-call worker isolation stays.
 
 For the direct route, placement and discovery/attestation verify the binary
 against the capability lock. A saved command runs the bytes at that placed path;
 there is no Python launcher per-launch SHA-256 check. Replacement between
-verification and launch is outside this guarantee (ADR-91 amendment).
+verification and launch is outside this guarantee (ADR-91 amendment). Per-call
+workers are re-executed by path on both routes, so replacement after launch also
+affects the next call through the Python launcher.
+
+Native relations/ontology ship in this release's Darwin artifacts. Linux and
+Windows keep older native pins and the Python launcher route. Path references
+whose second character is `:` (for example `1:foo`) now return `E_PATH` as
+drive-qualified, matching `PureWindowsPath.drive` on CPython 3.12+. The Python
+reference floor for this rule is 3.12; general interpreter admission is unchanged.
 
 This release is Mac first. Linux and Windows are not attested; the Windows
 `mir_entry_e17` frozen record remains open for a Windows-host capture.

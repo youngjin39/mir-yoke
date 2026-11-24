@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import sys
 
 import pytest
 
@@ -647,7 +648,10 @@ def test_project_hooks_schema_rejects_invalid_pin(field, value):
         api().validate_artifacts(records, {"mir-lifecycle-hooks"})
 
 
-@pytest.mark.parametrize("mutation", [None, "extra-arg", "wrong-path", "tampered-binary"])
+@pytest.mark.parametrize(
+    "mutation", [None, "extra-arg", "wrong-path", "tampered-binary", "not-executable",
+                 "missing-bin", "declaration-directory"],
+)
 def test_direct_mcp_declarations_preserve_immutable_source_digest(tmp_path, monkeypatch, mutation):
     import shutil
 
@@ -680,6 +684,15 @@ def test_direct_mcp_declarations_preserve_immutable_source_digest(tmp_path, monk
             json.dumps({"mcpServers": {"mir-mcp": server}}, indent=2) + "\n")
     if mutation == "tampered-binary":
         (root / "bin/mir-mcp").write_bytes(b"bad")
+    if mutation == "not-executable":
+        if sys.platform == "win32":
+            pytest.skip("Windows has no POSIX executable bit")
+        (root / "bin/mir-mcp").chmod(0o644)
+    if mutation == "missing-bin":
+        shutil.rmtree(root / "bin")
+    if mutation == "declaration-directory":
+        (root / ".mcp.claude.json").unlink()
+        (root / ".mcp.claude.json").mkdir()
     if mutation:
         with pytest.raises((ValueError, CapabilityError)):
             with api().source_tree(root, "mir-mcp", records, target=target) as view:

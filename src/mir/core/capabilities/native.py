@@ -288,7 +288,11 @@ def source_tree(root: Path, plugin: str, records: dict, *, target=None):
                 if declaration.is_symlink():
                     raise ValueError("native MCP declaration is linked")
                 extra = {"type": "stdio"} if runtime == "claude" else {"env_vars": []}
-                if closed_json(declaration) == {
+                try:
+                    observed = closed_json(declaration)
+                except (OSError, ValueError) as exc:
+                    raise ValueError("native MCP declaration is unreadable or invalid") from exc
+                if observed == {
                     "mcpServers": {"mir-mcp": {**launcher, **extra}},
                 }:
                     if (records["mir-mcp"]["install_path"] != "bin/mir-mcp"
