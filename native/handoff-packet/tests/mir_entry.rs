@@ -1,4 +1,6 @@
 #![cfg(unix)]
+#[path = "support/executable.rs"]
+mod executable;
 use serde_json::Value;
 use std::{
     ffi::OsString,
@@ -99,7 +101,7 @@ fn install_mir(root: &Path) -> PathBuf {
     let bin = root.join("tool bin");
     fs::create_dir_all(&bin).unwrap();
     let mir = bin.join("mir");
-    fs::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
+    executable::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
     mir
 }
 
@@ -114,7 +116,7 @@ fn caller(root: &Path, program: &Path) -> Command {
 }
 
 fn write_script(path: &Path, script: &str, mode: u32) {
-    fs::write(path, script).unwrap();
+    executable::write(path, script).unwrap();
     fs::set_permissions(path, fs::Permissions::from_mode(mode)).unwrap();
 }
 

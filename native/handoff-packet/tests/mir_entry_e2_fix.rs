@@ -1,4 +1,6 @@
 #![cfg(unix)]
+#[path = "support/executable.rs"]
+mod executable;
 use serde_json::Value;
 use std::{
     ffi::OsString,
@@ -35,7 +37,7 @@ fn check(indices: &[usize]) {
         let executable = if r["deleted"] == true {
             std::path::PathBuf::from(env!("CARGO_BIN_EXE_mir"))
         } else {
-            fs::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
+            executable::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
             mir
         };
         let python =

@@ -1,6 +1,8 @@
 #![cfg(unix)]
 #[path = "../src/digest.rs"]
 mod digest;
+#[path = "support/executable.rs"]
+mod executable;
 use handoff_packet::mir_cli::project_hooks;
 use serde_json::{Value, json};
 use std::{
@@ -18,7 +20,7 @@ const GOOD: &[u8] = b"#!/bin/sh\nprintf 'mir-project-hooks-v1\\nmir-project-hook
 fn early_eof_uses_python_remaining_timeout_and_stays_bounded() {
     let temp = scratch();
     let script = temp.path().join("early-eof");
-    fs::write(
+    executable::write(
         &script,
         b"#!/bin/sh\nexec >/dev/null 2>/dev/null\nexec /bin/sleep 3\n",
     )

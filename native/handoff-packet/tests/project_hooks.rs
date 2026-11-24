@@ -5,6 +5,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(unix)]
+use frozen::executable;
+
 fn run(args: &[&str], code: i32, stdout: &[u8], stderr: &[u8]) {
     let mut child = Command::new(env!("CARGO_BIN_EXE_project-hooks"))
         .args(args)
@@ -400,7 +403,7 @@ mod stop_audit_impl;
 
 #[cfg(unix)]
 mod stop_audit {
-    use super::{frozen, stop_audit_impl as audit};
+    use super::{executable, frozen, stop_audit_impl as audit};
     use regex::Regex;
     use serde_json::{Value, json};
     use std::{collections::BTreeMap, fs, io::Write, os::unix::fs::PermissionsExt, process::Stdio};
@@ -477,7 +480,7 @@ mod stop_audit {
         }
         if record["case"] == "review" {
             let adapter = root.join("tools/review-adapter");
-            fs::write(&adapter, "#!/bin/sh\n[ \"$1\" = -m ] && [ \"$2\" = tools.mir_executor ] || exit 2\nshift 2\n{ printf '['; sep=''; for arg do printf '%s\"%s\"' \"$sep\" \"$arg\"; sep=', '; done; printf ']'; } > review-argv.json\necho ignored >&2\nexit 9\n").unwrap();
+            executable::write(&adapter, "#!/bin/sh\n[ \"$1\" = -m ] && [ \"$2\" = tools.mir_executor ] || exit 2\nshift 2\n{ printf '['; sep=''; for arg do printf '%s\"%s\"' \"$sep\" \"$arg\"; sep=', '; done; printf ']'; } > review-argv.json\necho ignored >&2\nexit 9\n").unwrap();
             fs::set_permissions(&adapter, fs::Permissions::from_mode(0o755)).unwrap();
             command.env("MIR_STOP_REVIEW_ADAPTER", adapter);
         }

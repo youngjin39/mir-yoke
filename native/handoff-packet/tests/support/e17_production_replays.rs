@@ -1,5 +1,5 @@
 //! Original E17 bootstrap/provider records; private adapters match pinned provider seams.
-use super::{reaped, setup};
+use super::{executable, reaped, setup};
 use handoff_packet::mir_cli::{
     bootstrap::{self as b, Host},
     capability::Manager,
@@ -387,7 +387,7 @@ class CapabilityManager:
     fs::create_dir(&tools).unwrap();
     for name in ["git", "jq"] {
         let path = tools.join(name);
-        fs::write(&path, "#!/bin/sh\nexit 1\n").unwrap();
+        executable::write(&path, "#!/bin/sh\nexit 1\n").unwrap();
         fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
     }
     let out = Command::new(infra.join("mir"))

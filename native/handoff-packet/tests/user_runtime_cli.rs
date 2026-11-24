@@ -1,4 +1,7 @@
 #![cfg(unix)]
+#[path = "support/executable.rs"]
+mod executable;
+
 use serde_json::Value;
 use std::{
     ffi::OsString,
@@ -32,7 +35,7 @@ fn frozen_processes(group: &str) {
             git = git.replace("case \"$CASE:$3\" in", "if [ \"$3\" = rev-parse ]; then /usr/bin/touch \"$CASE_ROOT/claude\"; fi\ncase \"$CASE:$3\" in");
         }
         if name != "missing-git" {
-            fs::write(root.join("bin/git"), git).unwrap();
+            executable::write(root.join("bin/git"), git).unwrap();
             fs::set_permissions(root.join("bin/git"), fs::Permissions::from_mode(0o755)).unwrap();
         }
         if name == "transaction-error" {

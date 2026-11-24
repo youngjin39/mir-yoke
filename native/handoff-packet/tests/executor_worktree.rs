@@ -7,6 +7,9 @@ use std::{
     process::Command,
 };
 
+#[cfg(unix)]
+#[path = "support/executable.rs"]
+mod executable;
 #[path = "support/worktree_errors.rs"]
 mod worktree_errors;
 use worktree_errors::path_repr;
@@ -325,7 +328,7 @@ fn failed_worktree_add_preserves_replacement_auto_base() {
     );
     let hook = hooks.join("post-checkout");
     // Git waits for this hook after checkout and returns its failure status.
-    fs::write(
+    executable::write(
         &hook,
         r#"#!/bin/sh
 set -eu

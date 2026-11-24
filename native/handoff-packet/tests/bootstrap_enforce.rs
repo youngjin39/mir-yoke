@@ -72,22 +72,18 @@ fn frozen_bootstrap_enforcement_and_instructions() {
         if record["operation"] == "instructions" {
             command.arg(record["state"].as_str().unwrap());
         }
+        // Preload the exact input bytes so early refusal cannot race the writer.
+        let input = frozen::transform(frozen::decode(&record["stdin"]), root, true);
+        assert!(input.len() <= 4096, "frozen stdin exceeds one pipe buffer");
+        let (reader, mut writer) = std::io::pipe().unwrap();
+        writer.write_all(&input).unwrap();
+        drop(writer);
         command
             .arg(root.join("project"))
-            .stdin(Stdio::piped())
+            .stdin(reader)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
-        let mut child = command.spawn().unwrap();
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(&frozen::transform(
-                frozen::decode(&record["stdin"]),
-                root,
-                true,
-            ))
-            .unwrap();
+        let child = command.spawn().unwrap();
         let result = child.wait_with_output().unwrap();
         assert_eq!(
             result.status.code(),

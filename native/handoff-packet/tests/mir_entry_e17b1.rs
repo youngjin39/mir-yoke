@@ -1,4 +1,6 @@
 #![cfg(unix)]
+#[path = "support/executable.rs"]
+mod executable;
 use handoff_packet::mir_cli::{capability::Manager, capability_manager::*};
 use serde_json::{Value, json};
 use std::{
@@ -45,7 +47,7 @@ runpy.run_module('mir.cli.capability_manager_bridge',run_name='__main__')
         python.display(),
         bootstrap.replace('\'', "'\\''")
     );
-    fs::write(&cli, shell).unwrap();
+    executable::write(&cli, shell).unwrap();
     fs::set_permissions(&cli, fs::Permissions::from_mode(0o755)).unwrap();
     (temp, root, cli)
 }
@@ -92,7 +94,7 @@ fn child_exit_and_partial_frames_do_not_wait_for_descendants() {
         "{\"value\":null,\"error\":null,\"events\":[]}\n",
     ] {
         let (_temp, root, cli) = setup(Some(""));
-        fs::write(&cli, format!("#!/bin/sh\nexport HOME='{}'\nread line\n/bin/sleep 2 &\necho $! > descendant\nprintf '%s' '{}'\n", root.display(), wire)).unwrap();
+        executable::write(&cli, format!("#!/bin/sh\nexport HOME='{}'\nread line\n/bin/sleep 2 &\necho $! > descendant\nprintf '%s' '{}'\n", root.display(), wire)).unwrap();
         let mut m = ProductionManager::start(&cli, &root).unwrap();
         let start = std::time::Instant::now();
         let result = m.request(json!({"op":"import"}));
@@ -206,7 +208,7 @@ fn manager_boundary() {
     let faults = r#"[["read line\necho launcher >&2\nexit 23\n","eof"],["read line\nexit 0\n","eof"],["read line\necho garbage\n","malformed"],["read x\necho '{\"events\":[]}'\n","malformed"],["read line\nexec 1>&-\nwhile :; do :; done\n","eof"],["read x\necho '{\"value\":null,\"error\":null,\"events\":[]}'\nexit 23\n","child"]]"#;
     let faults: Vec<(String, Failure)> = serde_json::from_str(faults).unwrap();
     for (body, kind) in faults {
-        fs::write(&cli, format!("#!/bin/sh\n{body}")).unwrap();
+        executable::write(&cli, format!("#!/bin/sh\n{body}")).unwrap();
         let mut m = ProductionManager::start(&cli, &root).unwrap();
         let reply = m.request(json!({"op":"import"}));
         let e = if kind == Failure::Child {
@@ -227,7 +229,7 @@ fn manager_boundary() {
             assert_eq!(e.status.unwrap().code(), Some(23));
         }
     }
-    fs::write(&cli, "#!/bin/sh\nread line\nexec 0<&-\necho '{\"value\":null,\"error\":null,\"events\":[]}'\nwhile :; do :; done\n").unwrap();
+    executable::write(&cli, "#!/bin/sh\nread line\nexec 0<&-\necho '{\"value\":null,\"error\":null,\"events\":[]}'\nwhile :; do :; done\n").unwrap();
     let mut m = ProductionManager::start(&cli, &root).unwrap();
     m.request(json!({"op":"import"})).unwrap();
     assert_eq!(
@@ -253,7 +255,7 @@ fn manager_boundary() {
             .class,
         "FileNotFoundError"
     );
-    fs::write(&cli, "#!/bin/sh\nread x\necho '{\"value\":null,\"error\":{\"class\":\"OddProviderError\",\"message\":\"refused\"},\"events\":[]}'\nexit 23\n").unwrap();
+    executable::write(&cli, "#!/bin/sh\nread x\necho '{\"value\":null,\"error\":{\"class\":\"OddProviderError\",\"message\":\"refused\"},\"events\":[]}'\nexit 23\n").unwrap();
     let mut m = ProductionManager::start(&cli, &root).unwrap();
     let error = m.call("status", vec![], Default::default()).unwrap_err();
     assert_eq!(
@@ -473,7 +475,7 @@ fn lossless_rpc_schema_refusal() {
         serde_json::from_str(include_str!("fixtures/y-e17b2b2a.json")).unwrap();
     for r in records.into_iter().filter(|r| r["mode"] == "protocol") {
         let (_tmp, root, cli) = setup(Some(""));
-        fs::write(
+        executable::write(
             &cli,
             format!(
                 "#!/bin/sh\nread line\nprintf '%s\\n' '{}'\n",

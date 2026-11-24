@@ -1,3 +1,5 @@
+#[path = "support/executable.rs"]
+mod executable;
 use serde_json::Value;
 use std::{fs, process::Command};
 
@@ -199,6 +201,9 @@ fn check_family(family: &str) {
             bin
         };
         let mir = bin.join(format!("mir{}", std::env::consts::EXE_SUFFIX));
+        #[cfg(unix)]
+        executable::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
+        #[cfg(windows)]
         fs::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
         fs::create_dir(root.join("config")).unwrap();
         fs::write(
@@ -299,6 +304,9 @@ fn missing_managed_interpreter_refuses() {
     let mir = temp
         .path()
         .join(format!("mir{}", std::env::consts::EXE_SUFFIX));
+    #[cfg(unix)]
+    executable::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
+    #[cfg(windows)]
     fs::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
     let out = Command::new(mir)
         .args(["run-python", "--help"])

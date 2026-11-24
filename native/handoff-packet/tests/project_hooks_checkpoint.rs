@@ -1,5 +1,6 @@
 //! Exact immutable full-effect replay, implemented entirely in Rust.
 #![cfg(unix)]
+use frozen::executable;
 #[path = "support/replay.rs"]
 mod frozen;
 
@@ -18,7 +19,7 @@ fn git_status_and_checkpoint_permissions() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path();
     let mut command = frozen::prepare(root);
-    fs::write(root.join("tools/git"), "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$HOME/git-calls\"\ncase \"$3\" in rev-parse) exit 0 ;; status) printf ' M a\\n?? b\\n' ;; esac\n").unwrap();
+    executable::write(root.join("tools/git"), "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$HOME/git-calls\"\ncase \"$3\" in rev-parse) exit 0 ;; status) printf ' M a\\n?? b\\n' ;; esac\n").unwrap();
     let target = root.join("project/tasks/handoffs/session-handoff-LATEST.md");
     fs::create_dir_all(target.parent().unwrap()).unwrap();
     fs::write(&target, "curated\n").unwrap();
@@ -64,7 +65,7 @@ fn slow_git_is_killed_and_reaped_within_collection_budget() {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path();
         let mut command = frozen::prepare(root);
-        fs::write(root.join("tools/git"), format!("#!/bin/sh\nif [ \"$3\" = {phase} ]; then\n echo $$ > \"$HOME/git-pid\"\n exec /bin/sleep 10\nfi\nexit 0\n")).unwrap();
+        executable::write(root.join("tools/git"), format!("#!/bin/sh\nif [ \"$3\" = {phase} ]; then\n echo $$ > \"$HOME/git-pid\"\n exec /bin/sleep 10\nfi\nexit 0\n")).unwrap();
         let start = Instant::now();
         let result = command.arg("session-end").output().unwrap();
         let elapsed = start.elapsed();

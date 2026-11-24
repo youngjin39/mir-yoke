@@ -1,4 +1,6 @@
 //! Frozen W1 isolation, setup and full-effect comparison, without an interpreter.
+#[path = "executable.rs"]
+pub mod executable;
 use regex::Regex;
 use serde_json::{Value, json};
 use std::{
@@ -70,7 +72,7 @@ pub fn prepare(root: &Path) -> Command {
         fs::create_dir_all(root.join(name)).unwrap();
     }
     let git = root.join("tools/git");
-    fs::write(&git, "#!/bin/sh\nexit 1\n").unwrap();
+    executable::write(&git, "#!/bin/sh\nexit 1\n").unwrap();
     fs::set_permissions(git, fs::Permissions::from_mode(0o755)).unwrap();
     let mut command = Command::new(env!("CARGO_BIN_EXE_project-hooks"));
     command
@@ -103,16 +105,18 @@ pub fn install(files: &Value, root: &Path) {
             )
             .unwrap();
         } else {
+            let mode = entry["mode"].as_u64().unwrap() as u32;
             if entry.get("directory").is_some() {
                 fs::create_dir_all(&path).unwrap();
             } else {
-                fs::write(&path, transform(decode(&entry["base64"]), root, true)).unwrap();
+                let bytes = transform(decode(&entry["base64"]), root, true);
+                if mode & 0o111 != 0 {
+                    executable::write(&path, bytes).unwrap();
+                } else {
+                    fs::write(&path, bytes).unwrap();
+                }
             }
-            fs::set_permissions(
-                path,
-                fs::Permissions::from_mode(entry["mode"].as_u64().unwrap() as u32),
-            )
-            .unwrap();
+            fs::set_permissions(path, fs::Permissions::from_mode(mode)).unwrap();
         }
     }
 }
@@ -187,17 +191,18 @@ pub fn replay(family: &str, count: usize) {
         } else {
             command.arg(subcommand);
         }
-        let mut child = command
-            .stdin(Stdio::piped())
+        // Freeze input in the same pipe before an early-exiting child can close it.
+        // These frozen inputs fit within one pipe buffer on Linux and macOS.
+        let input = decode(&record["stdin"]);
+        assert!(input.len() <= 4096, "frozen stdin exceeds one pipe buffer");
+        let (reader, mut writer) = std::io::pipe().unwrap();
+        writer.write_all(&input).unwrap();
+        drop(writer);
+        let child = command
+            .stdin(reader)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .unwrap();
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(&decode(&record["stdin"]))
             .unwrap();
         let result = child.wait_with_output().unwrap();
         let after = snapshot(&root.join("project"));
