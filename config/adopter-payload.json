@@ -455,7 +455,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "43764903d7e7883840fe234d9ae655e592b80b52b6b94f1949e7eae94dae7664"
+      "sha256": "96b3430bfee4478fdf2a09c11b0827e2a6a198254d549cadeafbfccd8622c7d0"
     },
     {
       "classification": "reference",
@@ -575,7 +575,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/cli-native-artifacts.json",
-      "sha256": "e6f1bef901a0b9d57d176198f234d230a335a0ec08c001eb91f312b4a6997a33"
+      "sha256": "aef96519abf8f48a15cae8eba10d7bc35df87bd2221a601aa5c7d7695e2aab02"
     },
     {
       "classification": "reference",
