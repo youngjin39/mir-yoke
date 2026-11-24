@@ -13,7 +13,7 @@
     "src/mir/cli/migrate.py",
     "src/mir/core/engine/memory/**/*.py",
     "src/mir/core/engine/memory/migrations/*.sql",
-    "scripts/post_edit_memory_sync.py"
+    "native/handoff-packet/src/post_edit_memory_sync.rs"
   ],
   "adoption_assets": [
     {"source": "packs/memory/payload/MEMORY.md", "target": "docs/harness/memory.md"},

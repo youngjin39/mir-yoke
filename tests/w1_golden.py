@@ -46,6 +46,13 @@ TOOLS = (
 )
 
 
+def reference_source(relative: str) -> Path:
+    # The W1 Python launch envelope is historical after the native cutover.
+    if relative == ".claude/hooks/post-edit-self-ingest.sh":
+        return FIXTURES / "post-edit-self-ingest.reference.sh"
+    return ROOT / relative
+
+
 def expand(value: str, root: Path) -> str:
     for token, replacement in (
         ("@TMP@", str(root)),
@@ -177,7 +184,7 @@ def run(record: dict, root: Path, *, native: Path | None = None) -> dict:
     install(record["setup"], root)
     # Source copies carry the exact original bytes and modes, not a reimplementation.
     for relative in record.get("copies", []):
-        source = ROOT / relative
+        source = reference_source(relative)
         target = root / "project" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)

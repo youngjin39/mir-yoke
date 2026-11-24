@@ -49,7 +49,7 @@
     "native/handoff-packet/src/executor_brief_execution.rs": "b6dacfacab3c19f0f7f5f079ed3955c2a58352214589d4241c1f129e0717f8a0",
     "native/handoff-packet/src/executor_dispatch_provider.rs": "1128b53a1d765264c5e5f1234317e469c16f4e8009d22cfc4cacad7edc1e1e3a",
     "native/handoff-packet/src/bootstrap_gate.rs": "abe20e67ddf9d99765fcd27e9b5b65f5c4d23d60884552d6e1051a9fe2913f4e",
-    "native/handoff-packet/src/lib.rs": "4605f2713eddcfd2c45b2cb138c3b822b7a0d4024227a7f9ad20da032a17570e",
+    "native/handoff-packet/src/lib.rs": "107655aed7a57c111d42b5f9169575175d85f180c5af09ba21fbcac4829f6bc3",
     "native/handoff-packet/src/codex_binary.rs": "2f07c23516c47452d4b8895e21551bf7ad7b0c6faee03962d809c9d535b2ce44",
     "native/handoff-packet/src/transcript.rs": "592d9e03babe774dcb43bb127e149ff94577fe485bf68c8905265996d27ce5c8",
     "native/handoff-packet/src/digest.rs": "9082e8bfe5a5fe73eb5b0d75cbfdc30f784177882ca28e305d9312c9d08b0913",

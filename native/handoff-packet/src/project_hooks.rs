@@ -32,6 +32,24 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
 
 fn main() -> ExitCode {
     let args: Vec<_> = env::args_os().skip(1).collect();
+    if args.len() == 1 && args[0] == "post-edit-memory-sync" {
+        let project = std::path::PathBuf::from(
+            env::var_os("CLAUDE_PROJECT_DIR")
+                .filter(|p| !p.is_empty())
+                .unwrap_or_else(|| ".".into()),
+        );
+        let mut input = Vec::new();
+        if io::stdin().read_to_end(&mut input).is_err() {
+            return ExitCode::SUCCESS;
+        }
+        return match handoff_packet::post_edit_memory_sync::run(&project, &input) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                let _ = io::stderr().write_all(error.as_bytes());
+                ExitCode::FAILURE
+            }
+        };
+    }
     if args.len() == 1 && args[0] == "pre-tool-use" {
         return ExitCode::from(pre_tool_use::run());
     }

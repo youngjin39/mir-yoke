@@ -1,0 +1,1395 @@
+{
+  "source": "scripts/post_edit_memory_sync.py",
+  "source_sha256": "f3753b6d9e22e0cebea816b1cd4e7b0320122dce06095346973e7a44560ac222",
+  "cases": [
+    {
+      "id": "sync-invalid-stdout",
+      "stdin": "{\"tool_input\": {\"file_path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf '\\377'\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"36c4d32ea04dcc5d6e0fa58511ab937d4dfa2f7a3edbee3b2f40aa0224bf9672\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit sync failed: invalid UTF-8 output\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      },
+      "python_expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"@REFERENCE@\", line 177, in <module>\n    raise SystemExit(main(sys.argv[1:]))\n                     ~~~~^^^^^^^^^^^^^^\n  File \"@REFERENCE@\", line 154, in main\n    completed = subprocess.run(\n        [\n    ...<11 lines>...\n        check=False,\n    )\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 557, in run\n    stdout, stderr = process.communicate(input, timeout=timeout)\n                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1221, in communicate\n    stdout, stderr = self._communicate(input, endtime, timeout)\n                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 2194, in _communicate\n    stdout = self._translate_newlines(stdout,\n                                      self.stdout.encoding,\n                                      self.stdout.errors)\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1099, in _translate_newlines\n    data = data.decode(encoding, errors)\nUnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      },
+      "python_defect": "PYTHON-DEFECT: invalid UTF-8 subprocess output raises UnicodeDecodeError; diagnose without a traceback"
+    },
+    {
+      "id": "sync-invalid-stderr",
+      "stdin": "{\"tool_input\": {\"file_path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf '\\377' >&2\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"cc9e063bae6642a53f722c04c3a848b6f805de3ba71f5da44092df1e751f7d8f\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit sync failed: invalid UTF-8 output\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      },
+      "python_expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"@REFERENCE@\", line 177, in <module>\n    raise SystemExit(main(sys.argv[1:]))\n                     ~~~~^^^^^^^^^^^^^^\n  File \"@REFERENCE@\", line 154, in main\n    completed = subprocess.run(\n        [\n    ...<11 lines>...\n        check=False,\n    )\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 557, in run\n    stdout, stderr = process.communicate(input, timeout=timeout)\n                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1221, in communicate\n    stdout, stderr = self._communicate(input, endtime, timeout)\n                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 2198, in _communicate\n    stderr = self._translate_newlines(stderr,\n                                      self.stderr.encoding,\n                                      self.stderr.errors)\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1099, in _translate_newlines\n    data = data.decode(encoding, errors)\nUnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      },
+      "python_defect": "PYTHON-DEFECT: invalid UTF-8 subprocess output raises UnicodeDecodeError; diagnose without a traceback"
+    },
+    {
+      "id": "sync-invalid-failure",
+      "stdin": "{\"tool_input\": {\"file_path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf '\\377'; exit 1\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"ddd9592ab106e5f6c87bc3818832204d4cd7800eebb865862c4a05c6f81dc67a\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit sync failed: invalid UTF-8 output\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      },
+      "python_expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"@REFERENCE@\", line 177, in <module>\n    raise SystemExit(main(sys.argv[1:]))\n                     ~~~~^^^^^^^^^^^^^^\n  File \"@REFERENCE@\", line 154, in main\n    completed = subprocess.run(\n        [\n    ...<11 lines>...\n        check=False,\n    )\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 557, in run\n    stdout, stderr = process.communicate(input, timeout=timeout)\n                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1221, in communicate\n    stdout, stderr = self._communicate(input, endtime, timeout)\n                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 2194, in _communicate\n    stdout = self._translate_newlines(stdout,\n                                      self.stdout.encoding,\n                                      self.stdout.errors)\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1099, in _translate_newlines\n    data = data.decode(encoding, errors)\nUnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      },
+      "python_defect": "PYTHON-DEFECT: invalid UTF-8 subprocess output raises UnicodeDecodeError; diagnose without a traceback"
+    },
+    {
+      "id": "malformed",
+      "stdin": "{",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "empty",
+      "stdin": "",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "array",
+      "stdin": "[]",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "no-input",
+      "stdin": "{}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "wrong-tool-input",
+      "stdin": "{\"tool_input\": []}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "non-durable",
+      "stdin": "{\"tool_input\": {\"file_path\": \"src/app.py\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "generated-map",
+      "stdin": "{\"tool_input\": {\"file_path\": \"docs/memory-map.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "generated-lessons",
+      "stdin": "{\"tool_input\": {\"path\": \"tasks/lessons.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "wrong-extension",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/readme.MD\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "outside",
+      "stdin": "{\"tool_input\": {\"path\": \"../outside/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "prefix",
+      "stdin": "{\"tool_input\": {\"path\": \"docs-other/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "blank",
+      "stdin": "{\"tool_input\": {\"path\": \"  \"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "non-string",
+      "stdin": "{\"tool_input\": {\"path\": 3}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "docs",
+      "stdin": "{\"tool_input\": {\"file_path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "tasks",
+      "stdin": "{\"tool_input\": {\"file_path\": \"tasks/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "harness",
+      "stdin": "{\"tool_input\": {\"file_path\": \".ai-harness/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "absolute",
+      "stdin": "{\"tool_input\": {\"file_path\": \"@BASE@/project/docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "deleted",
+      "stdin": "{\"tool_input\": {\"file_path\": \"docs/deleted.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "normalized",
+      "stdin": "{\"tool_input\": {\"file_path\": \"tasks/../docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "unicode",
+      "stdin": "{\"tool_input\": {\"file_path\": \"docs/\\uac00.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "whitespace",
+      "stdin": "{\"tool_input\": {\"file_path\": \" docs/x.md \"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "patch-command",
+      "stdin": "{\"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: docs/x.md\\n*** Delete File: tasks/a.md\\n*** Add File: .ai-harness/b.md\\n*** End Patch\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "patch-patch",
+      "stdin": "{\"tool_input\": {\"patch\": \"*** Begin Patch\\n*** Update File: docs/x.md\\n*** Delete File: tasks/a.md\\n*** Add File: .ai-harness/b.md\\n*** End Patch\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "patch-input",
+      "stdin": "{\"tool_input\": {\"input\": \"*** Begin Patch\\n*** Update File: docs/x.md\\n*** Delete File: tasks/a.md\\n*** Add File: .ai-harness/b.md\\n*** End Patch\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "patch-content",
+      "stdin": "{\"tool_input\": {\"content\": \"*** Begin Patch\\n*** Update File: docs/x.md\\n*** Delete File: tasks/a.md\\n*** Add File: .ai-harness/b.md\\n*** End Patch\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "move-ignored",
+      "stdin": "{\"tool_input\": {\"patch\": \"*** Move to: docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "duplicate",
+      "stdin": "{\"tool_input\": {\"file_path\": \"docs/x.md\", \"path\": \"docs/x.md\", \"patch\": \"*** Update File: docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "crlf-patch",
+      "stdin": "{\"tool_input\": {\"patch\": \"*** Update File: docs/x.md\\r\\n\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "unready",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: bootstrap memory is not ready\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "no-receipt",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir CLI is unavailable\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "invalid-receipt",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir CLI is unavailable\n",
+        "effects": {}
+      },
+      "python_expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"@REFERENCE@\", line 177, in <module>\n    raise SystemExit(main(sys.argv[1:]))\n                     ~~~~^^^^^^^^^^^^^^\n  File \"@REFERENCE@\", line 92, in main\n    if not resolved_cli.is_file() or not os.access(cli, os.X_OK):\n           ^^^^^^^^^^^^\nUnboundLocalError: cannot access local variable 'resolved_cli' where it is not associated with a value\n",
+        "effects": {}
+      },
+      "python_defect": "PYTHON-DEFECT: uncaught exception replaced by diagnosed failure"
+    },
+    {
+      "id": "inside",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/project/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir",
+        "project/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: Mir CLI must be outside the project\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "symlink-inside",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/external-link\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir",
+        "project/mir"
+      ],
+      "links": {
+        "external-link": "project/mir"
+      },
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: Mir CLI must be outside the project\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "bad-hash",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir CLI hash changed\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "not-executable",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: Mir CLI is not executable\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "missing-cli",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/missing\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir CLI is unavailable\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "outside-doc",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {
+        "project/docs": "../outside"
+      },
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "inside-doc",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {
+        "project/docs": "actual-docs"
+      },
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {}
+      }
+    },
+    {
+      "id": "sync-stderr",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  echo detail >&2; exit 7\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"17686de41e8ba2c2365f7c7bcb14f8242d7d356a3a0f755a2b5870f0fc105d64\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit sync failed: detail\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      }
+    },
+    {
+      "id": "sync-stdout",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  echo detail; exit 7\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"a30a4e31def39fff672dd8b42fad488c942c586cf7eecf1345633d45d9855465\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit sync failed: detail\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      }
+    },
+    {
+      "id": "sync-empty",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  exit 7\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"f65a5b3504f09121a5c86acc74053de7cfb204804061c92ae4bebfaf1684a3a3\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit sync failed: unknown failure\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      }
+    },
+    {
+      "id": "manifest-ready",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "runtime/runtime-manifest.json": "{}",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\", \"runtime_manifest\": \"@BASE@/runtime/runtime-manifest.json\", \"runtime_manifest_sha256\": \"44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a\", \"source_url\": \"synthetic://source\", \"source_commit\": \"abc\", \"constraints_sha256\": \"def\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "runtime-manifest\nverify\n--runtime-root\n@BASE@/runtime\n--manifest\n@BASE@/runtime/runtime-manifest.json\n--source-url\nsynthetic://source\n--source-commit\nabc\n--constraints-sha256\ndef\ncontext\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "manifest-bad-manifest",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "runtime/runtime-manifest.json": "{}",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\", \"runtime_manifest\": \"@BASE@/runtime/runtime-manifest.json\", \"runtime_manifest_sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\", \"source_url\": \"synthetic://source\", \"source_commit\": \"abc\", \"constraints_sha256\": \"def\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir runtime changed\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "manifest-manifest-symlink",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "runtime/actual.json": "{}",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\", \"runtime_manifest\": \"@BASE@/runtime/runtime-manifest.json\", \"runtime_manifest_sha256\": \"44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a\", \"source_url\": \"synthetic://source\", \"source_commit\": \"abc\", \"constraints_sha256\": \"def\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {
+        "runtime/runtime-manifest.json": "actual.json"
+      },
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir runtime changed\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "verify-failure",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 8\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "runtime/runtime-manifest.json": "{}",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"f22ece5e8949e1cf301dde54a91e92006db1ca3df76f87dbb05612210d593c13\", \"runtime_manifest\": \"@BASE@/runtime/runtime-manifest.json\", \"runtime_manifest_sha256\": \"44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a\", \"source_url\": \"synthetic://source\", \"source_commit\": \"abc\", \"constraints_sha256\": \"def\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir runtime changed\n",
+        "effects": {
+          "calls.txt": "runtime-manifest\nverify\n--runtime-root\n@BASE@/runtime\n--manifest\n@BASE@/runtime/runtime-manifest.json\n--source-url\nsynthetic://source\n--source-commit\nabc\n--constraints-sha256\ndef\n"
+        }
+      }
+    },
+    {
+      "id": "nan-extra",
+      "stdin": "{\"tool_input\":{\"path\":\"docs/x.md\"},\"extra\":NaN}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "control-whitespace",
+      "stdin": "{\"tool_input\": {\"path\": \"\\u001cdocs/x.md\\u001f\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "sync-newlines",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf 'a\\r\\nb\\rc' >&2; exit 1\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"1c1fa6345acde3206362a2827b95246a1c240f526142c2989b1570f833bcda71\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit sync failed: a\nb\nc\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      }
+    },
+    {
+      "id": "sync-timeout",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  sleep 26\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"b543a936f18dba0f375f9e01f4fa98f2c737d519d879a2d6eac8e91a428987a3\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit sync failed: Mir CLI timed out after 25 seconds\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      },
+      "python_expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"@REFERENCE@\", line 177, in <module>\n    raise SystemExit(main(sys.argv[1:]))\n                     ~~~~^^^^^^^^^^^^^^\n  File \"@REFERENCE@\", line 154, in main\n    completed = subprocess.run(\n        [\n    ...<11 lines>...\n        check=False,\n    )\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 557, in run\n    stdout, stderr = process.communicate(input, timeout=timeout)\n                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1221, in communicate\n    stdout, stderr = self._communicate(input, endtime, timeout)\n                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 2154, in _communicate\n    self._check_timeout(endtime, orig_timeout, stdout, stderr)\n    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1268, in _check_timeout\n    raise TimeoutExpired(\n    ...<2 lines>...\n            stderr=b''.join(stderr_seq) if stderr_seq else None)\nsubprocess.TimeoutExpired: Command '['@BASE@/runtime/bin/mir', 'context', 'sync', '--db', '@BASE@/project/.mir/memory.db']' timed out after 25 seconds\n",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n"
+        }
+      },
+      "python_defect": "PYTHON-DEFECT: uncaught exception replaced by diagnosed failure"
+    },
+    {
+      "id": "verify-timeout",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  sleep 26\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "runtime/runtime-manifest.json": "{}",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"cee41fa8593a580679a006356fa98bf00d9dc7421785aa906fb8a0f78638ee7a\", \"runtime_manifest\": \"@BASE@/runtime/runtime-manifest.json\", \"runtime_manifest_sha256\": \"44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a\", \"source_url\": \"synthetic://source\", \"source_commit\": \"abc\", \"constraints_sha256\": \"def\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir runtime changed\n",
+        "effects": {
+          "calls.txt": "runtime-manifest\nverify\n--runtime-root\n@BASE@/runtime\n--manifest\n@BASE@/runtime/runtime-manifest.json\n--source-url\nsynthetic://source\n--source-commit\nabc\n--constraints-sha256\ndef\n"
+        }
+      },
+      "python_expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"@REFERENCE@\", line 177, in <module>\n    raise SystemExit(main(sys.argv[1:]))\n                     ~~~~^^^^^^^^^^^^^^\n  File \"@REFERENCE@\", line 125, in main\n    verified = subprocess.run(\n        [\n    ...<19 lines>...\n        check=False,\n    )\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 557, in run\n    stdout, stderr = process.communicate(input, timeout=timeout)\n                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1221, in communicate\n    stdout, stderr = self._communicate(input, endtime, timeout)\n                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 2154, in _communicate\n    self._check_timeout(endtime, orig_timeout, stdout, stderr)\n    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py\", line 1268, in _check_timeout\n    raise TimeoutExpired(\n    ...<2 lines>...\n            stderr=b''.join(stderr_seq) if stderr_seq else None)\nsubprocess.TimeoutExpired: Command '['@BASE@/runtime/bin/mir', 'runtime-manifest', 'verify', '--runtime-root', '@BASE@/runtime', '--manifest', '@BASE@/runtime/runtime-manifest.json', '--source-url', 'synthetic://source', '--source-commit', 'abc', '--constraints-sha256', 'def']' timed out after 25 seconds\n",
+        "effects": {
+          "calls.txt": "runtime-manifest\nverify\n--runtime-root\n@BASE@/runtime\n--manifest\n@BASE@/runtime/runtime-manifest.json\n--source-url\nsynthetic://source\n--source-commit\nabc\n--constraints-sha256\ndef\n"
+        }
+      },
+      "python_defect": "PYTHON-DEFECT: uncaught exception replaced by diagnosed failure"
+    },
+    {
+      "id": "receipt-array",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "[]"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir CLI is unavailable\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "cli-array",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": []}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir CLI is unavailable\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "cli-number",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": 3, \"sha256\": \"x\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir CLI is unavailable\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "cli-null",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": null, \"sha256\": \"x\"}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 1,
+        "stdout": "",
+        "stderr": "[mir-memory] durable edit was not indexed: external Mir CLI is unavailable\n",
+        "effects": {}
+      }
+    },
+    {
+      "id": "manifest-false-0",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\", \"runtime_manifest\": 0}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "manifest-false-False",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\", \"runtime_manifest\": false}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "manifest-false-[]",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\", \"runtime_manifest\": []}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "manifest-false-{}",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\", \"runtime_manifest\": {}}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    },
+    {
+      "id": "manifest-false-None",
+      "stdin": "{\"tool_input\": {\"path\": \"docs/x.md\"}}",
+      "files": {
+        "runtime/bin/mir": "#!/bin/sh\nprintf \"%s\\n\" \"$@\" >> calls.txt\nif [ \"$1\" = runtime-manifest ]; then\n  exit 0\nelse\n  printf synced > effect.txt\nfi\n",
+        "project/harness_a.toml": "",
+        "project/.mir/memory.db": "synthetic-placeholder",
+        "project/.mir/bootstrap-receipt.json": "{\"cli\": {\"executable\": \"@BASE@/runtime/bin/mir\", \"sha256\": \"beecac52f0232555d48daf84afa90ccda7c212d9eec8ca00b078efd1f78884d9\", \"runtime_manifest\": null}}"
+      },
+      "executable": [
+        "runtime/bin/mir"
+      ],
+      "links": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "effects": {
+          "calls.txt": "context\nsync\n--db\n@BASE@/project/.mir/memory.db\n",
+          "effect.txt": "synced"
+        }
+      }
+    }
+  ]
+}

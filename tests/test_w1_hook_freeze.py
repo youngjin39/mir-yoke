@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from w1_golden import FIXTURES, ROOT, assert_replay
+from w1_golden import FIXTURES, ROOT, assert_replay, reference_source
 
 MANIFEST = json.loads((FIXTURES / "manifest.json").read_text())
 RECORDS = json.loads((FIXTURES / "records.json").read_text())
@@ -64,7 +64,7 @@ def test_freeze_completeness_and_provenance():
     assert required_sources <= MANIFEST["sources"].keys()
     assert all("__pycache__" not in Path(source).parts for source in MANIFEST["sources"])
     for source, digest in MANIFEST["sources"].items():
-        assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == digest, source
+        assert hashlib.sha256(reference_source(source).read_bytes()).hexdigest() == digest, source
     for record in RECORDS:
         assert set(record["copies"]) <= MANIFEST["sources"].keys()
         assert set(record["expected"]) == {"exit", "stdout", "stderr", "delta", "deleted"}
@@ -132,7 +132,7 @@ def test_tdd_ledger_freeze_provenance_and_inventory():
     frozen = json.loads((FIXTURES / "tdd-ledger.json").read_text())
     assert frozen["schema"] == "mir.w1-tdd-ledger@1"
     for source, digest in frozen["sources"].items():
-        assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == digest
+        assert hashlib.sha256(reference_source(source).read_bytes()).hexdigest() == digest
     records = frozen["records"]
     assert len({r["id"] for r in records}) == len(records)
     assert Counter(r["mode"] for r in records) == {

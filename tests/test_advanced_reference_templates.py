@@ -58,7 +58,7 @@ EXPECTED_SOURCE_HASHES = {
         "c2cd74906979b9e8fc3a34a40d344caf5c74356c03ae1bdb13bb89ed333193ef"
     ),
     "packs/memory/pack.json": (
-        "aa0b9bd3605fbc237102133fd91c0ed41cd02e9621c50b825028f3ead00dd092"
+        "1e1eb43b34a4fd97e370b080d6c88cc540b6258ceaffe05ecbe92e5fc6f5c6e5"
     ),
     "packs/memory/payload/MEMORY.md": (
         "d064cf07e04e074a4f799e832aeaa8739842723d68d943bc24a0252c1e4f7ed5"
