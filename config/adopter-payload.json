@@ -425,7 +425,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "a4d062698b102f06e36e0c0ffa1130bbad0ccb0ca73c41304ea35c624df92c84"
+      "sha256": "2f6d89e02de0d46f7d40e475858c000f534b00cecec52d9e5e096ba3daff52a8"
     },
     {
       "classification": "reference",
@@ -1757,7 +1757,7 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-91-stdio-mcp-package-admission.md",
-      "sha256": "64c0f5e55a45cb81f6ed9cb92d85374410d3997ffb6643dd983bdc1bc980dd62"
+      "sha256": "0f4f33a8a6dcc20f5e6872f7bc765a561e801a2ee3b98eeb5f6ccd061acaf247"
     },
     {
       "classification": "reference",
@@ -8015,19 +8015,19 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "096cd74a7bb88606bbae1bf46f97902b2c24c5643edc192ea66da3d1a16f56ca"
+      "sha256": "18c99b2e52312cf6051e81c9428936ad5e6abd69c81bd24dc3a230076ce2d7dc"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/mcp.py",
-      "sha256": "65572af48b814770c0a1c02d4e276a295bbc0b02f67db8bae01d9cc3b914a5b1"
+      "sha256": "fceca3b89db14fea633432db0ce86b81b094a64a51c9fdd7fadb8906c1d4f1c5"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/native.py",
-      "sha256": "c4b05fedbd44f91d15863eed0a14210de99b139e3cab5b90b1185023290ec77a"
+      "sha256": "779b546fe3aebfe1fc50ae628881d78831539410374d34009c4b9185e893adc6"
     },
     {
       "classification": "optional-consumer-tool",
@@ -9143,7 +9143,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_mcp.py",
-      "sha256": "5862f38cb44929a96cd0f2e337acaa6abbc4e253d8941f0ad9a7a28251b536e8"
+      "sha256": "28d7527c3f665a2e1aec055cacf2e4882187be83d5a837a7bf6304a4cfff1186"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9155,7 +9155,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_native_artifacts.py",
-      "sha256": "a30790c2f95fe41d15ea619ed54886da0850012389fd0aaac4ab3a18366a27cd"
+      "sha256": "246e59a7ac03af68094ffad7ba9a10a0ad18433c01a8b43f304846298b11f5f0"
     },
     {
       "classification": "template-maintainer-tool",

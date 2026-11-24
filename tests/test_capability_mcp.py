@@ -20,6 +20,7 @@ from mir.core.capabilities import (
     load_capability_config,
 )
 from mir.core.capabilities import mcp as mcp_contract
+from mir.core.capabilities import native as native_artifacts
 from mir.core.capabilities.config import load_consumer_acknowledgements
 from mir.core.capabilities.manager import _consumer_key, _tree_digest, _validate_plugin
 from mir.core.capabilities.mcp import mcp_observed_launcher, validate_mcp_observation
@@ -31,6 +32,7 @@ from tests.test_capability_cli import (
     observed_hooks,
     observed_skills,
     runtime_runner,
+    sticky_runtime_runner,
     write_acknowledgements,
 )
 from tests.test_mir_mcp_package import FILES
@@ -1004,6 +1006,7 @@ def test_mcp_native_receipt_binds_host_pin_and_installed_binary(
     installed, project, provider = receipt_context
     target = "x86_64-pc-windows-msvc" if windows else "aarch64-apple-darwin"
     monkeypatch.setattr(mcp_contract, "host_target", lambda: target, raising=False)
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
     data = b"native-artifact-fixture"
     digest = hashlib.sha256(data).hexdigest()
     artifact = installed / "bin" / ("mir-mcp.exe" if windows else "mir-mcp")
@@ -1030,7 +1033,7 @@ def test_mcp_native_receipt_binds_host_pin_and_installed_binary(
     elif mutation == "size":
         records["mir-mcp"]["targets"][target]["size"] += 1
     elif mutation == "bytes":
-        artifact.write_bytes(b"tampered")
+        artifact.write_bytes(b"x" * len(data))
     elif mutation == "symlink":
         source = project / "artifact"
         artifact.rename(source)
@@ -1055,6 +1058,27 @@ def test_mcp_native_receipt_binds_host_pin_and_installed_binary(
         source = project / "manifest"
         manifest.rename(source)
         manifest.symlink_to(source)
+    placement_is_valid = mutation in {"valid", "target", "digest", "extra", "python-fallback"} or (
+        (windows or sys.platform == "win32") and mutation == "not-executable"
+    )
+    executable = "mir-mcp.exe" if windows else "mir-mcp"
+    direct = {
+        "claude": {
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/" + executable,
+            "args": ["--reference-python", "python3", "--reference-script",
+                     "${CLAUDE_PLUGIN_ROOT}/mir_mcp.py"],
+        },
+        "codex": {
+            "command": "./bin/" + executable,
+            "args": ["--reference-python", "python3", "--reference-script", "./mir_mcp.py"],
+            "cwd": ".",
+        },
+    }
+    assert mcp_contract.mcp_registration_launchers(installed, records) == (
+        direct if placement_is_valid else mcp_contract.MCP_LAUNCHERS
+    )
+    monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "0")
+    assert mcp_contract.mcp_registration_launchers(installed, records) == mcp_contract.MCP_LAUNCHERS
     assert validate_mcp_observation(
         item, digest="a" * 64, runtime="claude-code", session="fresh",
         installed=installed, provider=provider, native_artifacts=records,
@@ -1063,8 +1087,9 @@ def test_mcp_native_receipt_binds_host_pin_and_installed_binary(
         (windows or sys.platform == "win32") and mutation == "not-executable"))
 
 
+@pytest.mark.parametrize("client", ["claude-code", "codex-cli-desktop"])
 def test_manager_native_receipt_uses_lock_and_real_placement(
-    tmp_path, provider, receipt_context, monkeypatch,
+    tmp_path, provider, receipt_context, monkeypatch, client,
 ):
     from mir.core.capabilities.native import host_target, place_artifacts
 
@@ -1082,16 +1107,127 @@ def test_manager_native_receipt_uses_lock_and_real_placement(
     place_artifacts(installed, "mir-mcp", records)
     manager = manager_for(tmp_path, provider)
     lock = {"plugins": {"mir-mcp": {"sha256": "a" * 64}}, "native_artifacts": records}
-    observations = mcp_receipt("claude-code", "fresh", project, str(installed), "a" * 64)
+    observations = mcp_receipt(client, "fresh", project, str(installed), "a" * 64)
     observations["mir-mcp"]["backend"] = {
         "kind": "native", "target": target, "artifact_sha256": digest,
     }
     runtime = {"verified": True, "plugins": {"mir-mcp": {
         "status": "enabled", "installed_path": str(installed),
     }}}
-    assert manager._mcp_observations_valid(lock, "claude-code", "fresh", observations, runtime)
+    assert manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
+    executable = "mir-mcp.exe" if target.endswith("windows-msvc") else "mir-mcp"
+    launcher_root = str(installed) if client == "claude-code" else "."
+    launcher = {
+        "command": f"{launcher_root}/bin/{executable}",
+        "args": ["--reference-python", "python3", "--reference-script",
+                 f"{launcher_root}/mir_mcp.py"],
+        "env": {},
+        **({"cwd": str(installed)} if client == "codex-cli-desktop" else {}),
+    }
+    observations["mir-mcp"]["launcher"] = launcher
+    assert manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
+    backend = observations["mir-mcp"]["backend"]
+    observations["mir-mcp"]["backend"] = {"kind": "python"}
+    assert not manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
+    observations["mir-mcp"]["backend"] = backend
+    launcher["args"].append("--unexpected")
+    assert not manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
+    launcher["args"].pop()
     lock.pop("native_artifacts")
-    assert not manager._mcp_observations_valid(lock, "claude-code", "fresh", observations, runtime)
+    assert not manager._mcp_observations_valid(lock, client, "fresh", observations, runtime)
+
+
+@pytest.mark.parametrize("placement", ["valid", "disabled", "missing", "failed", "wrong-target"])
+def test_mcp_registration_installs_only_verified_direct_launchers(
+    tmp_path, provider, monkeypatch, placement,
+):
+    target = "aarch64-apple-darwin"
+    monkeypatch.setattr(native_artifacts, "host_target", lambda: target)
+    monkeypatch.setattr(mcp_contract, "host_target", lambda: target)
+    monkeypatch.setattr("mir.core.capabilities.manager.host_target", lambda: target)
+    if placement == "disabled":
+        monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "0")
+    else:
+        monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    data = b"native-placement-fixture"
+    digest = hashlib.sha256(data).hexdigest()
+    monkeypatch.setattr(native_artifacts, "_read", lambda url, size: data)
+    pin = {"url": "offline-fixture", "sha256": digest, "size": len(data)}
+    if placement == "failed":
+        pin["sha256"] = "0" * 64
+    pin_target = "x86_64-unknown-linux-gnu" if placement == "wrong-target" else target
+    records = {} if placement == "missing" else {
+        "mir-mcp": {"plugin": "mir-mcp", "install_path": "bin/mir-mcp",
+                    "targets": {pin_target: pin}},
+    }
+    manager = manager_for(tmp_path, provider)
+    runner, _, cache_path = sticky_runtime_runner(
+        manager.active_path, manager.codex_home, manager.user_home / ".claude",
+    )
+    manager.command_runner = runner
+    manager.git = CopyGit(provider, native_artifacts=records)
+    acknowledge_locally(manager, provider)
+    manager.sync("code", mcp=True, apply=True)
+    lock = json.loads(manager.lock_path.read_text())
+    package = provider / "plugins/mir-mcp"
+    active = manager.active_path / "plugins/mir-mcp"
+    assert lock["plugins"]["mir-mcp"]["sha256"] == _tree_digest(package)
+    assert lock["plugins"]["mir-mcp"]["mcp"]["launchers"] == mcp_contract.MCP_LAUNCHERS
+    assert manager.status()["active_integrity"] is True
+    for client in ("claude", "codex"):
+        cache = cache_path(client, "mir-mcp")
+        filename = f".mcp.{client}.json"
+        installed = cache / filename
+        assert installed.read_bytes() == (active / filename).read_bytes()
+        if placement == "valid":
+            root = "${CLAUDE_PLUGIN_ROOT}" if client == "claude" else "."
+            assert json.loads(installed.read_bytes()) == {"mcpServers": {"mir-mcp": {
+                "command": root + "/bin/mir-mcp",
+                "args": ["--reference-python", "python3", "--reference-script",
+                         root + "/mir_mcp.py"],
+                **({"type": "stdio"} if client == "claude" else {"cwd": ".", "env_vars": []}),
+            }}}
+            assert (cache / "bin/mir-mcp").read_bytes() == data
+        else:
+            assert installed.read_bytes() == (package / filename).read_bytes()
+            assert not (cache / "bin").exists()
+    if placement != "valid":
+        return
+
+    for runtime, client, env in (
+        ("codex-cli-desktop", "codex", "CODEX_THREAD_ID"),
+        ("claude-code", "claude", "CLAUDE_SESSION_ID"),
+    ):
+        session = f"fresh-{runtime}"
+        monkeypatch.setenv(env, session)
+        observations = mcp_evidence(manager, runtime, session)
+        observations["mir-mcp"].update({
+            "backend": {"kind": "native", "target": target, "artifact_sha256": digest},
+            "launcher": mcp_observed_launcher(runtime, cache_path(client, "mir-mcp"), native=True),
+        })
+        manager.attest(
+            runtime, observed_skills(manager), observed_hooks(manager),
+            observed_mcp=observations, apply=True,
+        )
+    manager.finalize(apply=True, after_restart=True)
+    status = manager.status()
+    assert status["ready"] is True
+    assert status["provider_ready"] is True
+    cache = cache_path("codex", "mir-mcp")
+    tampered = cache / ".mcp.codex.json"
+    original = tampered.read_bytes()
+    declaration = json.loads(original)
+    declaration["mcpServers"]["mir-mcp"]["args"].append("--unexpected")
+    tampered.write_text(json.dumps(declaration), encoding="utf-8")
+    status = manager.status()
+    assert status["ready"] is False
+    assert status["discovery"]["status"] != "verified"
+    tampered.write_bytes(original)
+    assert manager.status()["ready"] is True
+    (cache / "bin/mir-mcp").write_bytes(b"x" * len(data))
+    status = manager.status()
+    assert status["ready"] is False
+    assert status["discovery"]["status"] != "verified"
 
 
 @pytest.mark.parametrize("runtime", ["claude-code", "codex-cli-desktop"])

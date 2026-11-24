@@ -644,3 +644,45 @@ def test_project_hooks_schema_rejects_invalid_pin(field, value):
     records["project-hooks"]["targets"]["aarch64-apple-darwin"][field] = value
     with pytest.raises(ValueError, match="invalid native artifact target pin"):
         api().validate_artifacts(records, {"mir-lifecycle-hooks"})
+
+
+@pytest.mark.parametrize("mutation", [None, "extra-arg", "wrong-path", "tampered-binary"])
+def test_direct_mcp_declarations_preserve_immutable_source_digest(tmp_path, monkeypatch, mutation):
+    import shutil
+
+    from test_capability_cli import ROOT
+
+    from mir.core.capabilities.manager import CapabilityError, _validate_plugin
+
+    root = tmp_path / "mir-mcp"
+    shutil.copytree(ROOT / "plugins/mir-mcp", root)
+    expected = _validate_plugin(root, "mir-mcp", package_kind="mcp-stdio")
+    source = tmp_path / "artifact"
+    source.write_bytes(DATA)
+    records = mcp_manifest(str(source))
+    target = "aarch64-apple-darwin"
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    api().place_artifacts(root, "mir-mcp", records, target=target)
+    for runtime in ("claude", "codex"):
+        prefix = "${CLAUDE_PLUGIN_ROOT}" if runtime == "claude" else "."
+        server = {
+            "command": f"{prefix}/bin/mir-mcp",
+            "args": ["--reference-python", "python3", "--reference-script",
+                     f"{prefix}/mir_mcp.py"],
+            **({"type": "stdio"} if runtime == "claude" else {"cwd": ".", "env_vars": []}),
+        }
+        if mutation == "extra-arg":
+            server["args"].append("--extra")
+        if mutation == "wrong-path":
+            server["command"] += "-wrong"
+        (root / f".mcp.{runtime}.json").write_text(
+            json.dumps({"mcpServers": {"mir-mcp": server}}, indent=2) + "\n")
+    if mutation == "tampered-binary":
+        (root / "bin/mir-mcp").write_bytes(b"bad")
+    if mutation:
+        with pytest.raises((ValueError, CapabilityError)):
+            with api().source_tree(root, "mir-mcp", records, target=target) as view:
+                _validate_plugin(view, "mir-mcp", package_kind="mcp-stdio")
+    else:
+        with api().source_tree(root, "mir-mcp", records, target=target) as view:
+            assert _validate_plugin(view, "mir-mcp", package_kind="mcp-stdio") == expected
