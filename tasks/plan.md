@@ -1,19 +1,25 @@
 # Plan
 
-## Active task: v0.14.1 release preparation (item 11)
+## Active task: v0.14.2 release preparation
 
-Intent authority: owner Discord messages 1574276820516217004 (items 6 and 11)
-and 1574366612612714497 (ship the pre-tag consumer stage without a tag receipt).
-Baseline: `release/v0.14.1` at `e46761a7`. Prepare source commit B for Main
-review. Include the agreed MIG-RETRO release changes and METHOD-FLEET guidance.
-The macOS native build and bind, promotion, tagging, and consumer rollout are
-later release steps.
+Intent authority: owner Discord 1574707453637951510 (2026-11-24),
+release the tested candidate now, Mac first; Windows E17 remains open for
+its next PC window. The source/version commit B brief authorizes local edits
+only. Baseline: `release/v0.14.2` at `061ecb07`.
 
-Source preparation: align the version pins, record the Darwin installer
-limitation and bind procedure, refresh managed package and command digests, and
-regenerate the adopter payload last. Verify with the offline SQLite vector
-preflight, focused release and public-surface tests, full pytest and Ruff.
-Clean-tree readiness remains a gate for B after commit. The Darwin pin checks
-and pre-tag consumer stage remain gates for bind C before promotion and tagging.
+Design: follow the v0.14.1 source checklist, align release and server versions,
+document native MCP and cohort changes, insert the approved automation wait
+cap, and refresh managed plugin, marketplace and command digests. Preserve
+native artifact pins and source.commit for bind C. Main owns generated Codex
+files, final adopter payload generation, review and commit, native publication,
+main update, push and tag. No consumer writes are authorized.
 
-Prior cursor and release records: [change log](change_log.md).
+Acceptance: offline frozen Python 3.12 dev/vector environment, lock check,
+SQLite vector preflight, the nine requested pytest files, mir-mcp locked
+Cargo tests, Ruff, fixture pin audit and ASCII diff check. Behaviour scenarios
+are not applicable: this slice changes release metadata and skill guidance,
+not runtime control flow. Windows and Linux attestation remain outside scope;
+Windows mir_entry_e17 needs a Windows-host capture. Adopter classification is
+expected to remain stale until Main regenerates its payload.
+
+Prior cursors and release records: [change log](change_log.md).

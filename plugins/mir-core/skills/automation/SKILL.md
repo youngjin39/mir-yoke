@@ -26,6 +26,9 @@ use step 4 and verify the requested outcome without a ledger.
    Create a run ledger only when the repository has none and write authority exists.
 2. Before launching work, inspect the ledger and running processes so a resumed session does not duplicate an active run.
 3. Persist every external process identifier, output location, last verified checkpoint, and safe resume command. Never rely on chat history as the only state.
+   Bound every wait: watch a Codex sub-agent task with a 2-hour wall-clock cap, then inspect its status and output
+   and report instead of waiting longer. Give other background runs (tests, mutation loops) a per-run timeout that
+   also stops their child processes; a hung run never sends an exit notification.
 4. For browser work, use an available browser tool, take the best supported semantic snapshot,
    perform the smallest action, and verify the resulting page state before the next action. If no
    compatible browser capability exists, report the unevaluated browser boundary instead of

@@ -8,6 +8,36 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.14.2] - 2026-11-24 - Native MCP and platform parity fixes
+
+### Changed
+
+- `mir-mcp` runs `relations_query` and ontology numerics natively. Python
+  forwarding remains only for text whose classification depends on the
+  interpreter's Unicode version. Per-call worker isolation is preserved.
+- Claude and Codex directly register the lock-verified native `mir-mcp` binary
+  when available, as admitted by the ADR-91 amendment. A saved direct command
+  runs the bytes placed at verification time: placement and discovery
+  verification replace the Python launcher's per-launch SHA-256 check.
+- Automation guidance caps Codex sub-agent waits at two hours before status
+  inspection and reporting, and requires per-run timeouts that also stop child
+  processes for other background runs.
+
+### Fixed
+
+- Linux tests avoid executable write races and use Linux-specific frozen
+  records for the L5 and L7 platform-dependent outputs.
+- Windows error oracles follow localized OS messages and platform path
+  spellings. Bootstrap adoption preserves CRT error bytes and custom OS error
+  text; Windows tests avoid POSIX mode-bit assumptions.
+
+### Known limitations
+
+- The Windows `mir_entry_e17` frozen record still needs a capture on a Windows
+  host; its advisory lane remains red until then.
+- Windows and Linux are not attested in this release. Delivery remains Mac
+  first; non-Mac deployment and Windows E17 verification await later windows.
+
 ## [v0.14.1] - 2026-11-23 - Darwin installer pin and release checks
 
 ### Changed

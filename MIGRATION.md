@@ -22,6 +22,23 @@ A red consumer-contract stage blocks tagging. Record the Yoke candidate commit, 
 commit, and each checked artifact's SHA-256 in the release record.
 The hosted tag job does not yet verify the pre-tag consumer-contract result.
 
+## 0.14.2 native MCP registration
+
+When a lock-verified native `mir-mcp` placement is available, Claude and Codex
+registrations start that binary directly. Refresh registrations through the
+existing authorized capability adoption flow after reviewing the new package.
+Unavailable, disabled, failed or unbound native placements keep the Python
+launcher route. The direct command includes the reference interpreter and script
+for Unicode-version-dependent text forwarding; per-call worker isolation stays.
+
+For the direct route, placement and discovery/attestation verify the binary
+against the capability lock. A saved command runs the bytes at that placed path;
+there is no Python launcher per-launch SHA-256 check. Replacement between
+verification and launch is outside this guarantee (ADR-91 amendment).
+
+This release is Mac first. Linux and Windows are not attested; the Windows
+`mir_entry_e17` frozen record remains open for a Windows-host capture.
+
 ## 0.13.61 native executor queries with local executor files
 
 Native `executor-query` now admits same-home `status`, `result` and `list-jobs`
