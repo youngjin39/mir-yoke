@@ -42,7 +42,7 @@ pub fn relative_path(value: &str, pattern: bool) -> Result<String> {
         || value.contains('\\')
         || value.starts_with('-')
         || value.starts_with('/')
-        || (value.as_bytes().get(1) == Some(&b':') && value.as_bytes()[0].is_ascii_alphabetic())
+        || value.chars().nth(1) == Some(':')
         || value.split('/').any(|p| p == "..")
     {
         return Err("E_PATH");

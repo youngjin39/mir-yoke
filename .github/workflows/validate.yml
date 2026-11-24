@@ -96,6 +96,8 @@ jobs:
       - run: >-
           uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_mir_mcp_native_core.py tests/test_mir_mcp_native_io.py
+          tests/test_mir_mcp_native_ontology.py tests/test_mir_mcp_native_relations.py
+          tests/test_mir_mcp_native_dispatch.py
           tests/test_mir_mcp_launcher.py
         env:
           MIR_MCP_NATIVE_BINARY: ${{ github.workspace }}/native/mir-mcp/target/release/mir-mcp
@@ -341,6 +343,9 @@ jobs:
       - run: >-
           uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_mir_mcp_native_core.py tests/test_mir_mcp_native_io.py
+          tests/test_mir_mcp_native_ontology.py tests/test_mir_mcp_native_relations.py
+          tests/test_mir_mcp_native_dispatch.py
           tests/test_mir_mcp_launcher.py
         env:
+          PYTHONUTF8: 1
           MIR_MCP_NATIVE_BINARY: ${{ github.workspace }}/native/mir-mcp/target/release/mir-mcp.exe

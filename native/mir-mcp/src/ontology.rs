@@ -1,7 +1,13 @@
-//! Guarded ontology projections with explicit Python-semantic fallback.
+//! Guarded ontology projections with explicit numeric formatting fallback.
 use crate::{checker::Checker, guard::Guard, handoff, pagination, wire};
+use regex::Regex;
 use serde_json::{Value, json};
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, sync::LazyLock};
+
+#[path = "../../handoff-packet/src/python_float.rs"]
+mod python_float;
+#[path = "../../handoff-packet/src/python_text.rs"]
+pub(crate) mod python_text;
 
 fn text(v: &Value, max: usize) -> bool {
     v.as_str().is_some_and(|s| !s.is_empty() && s.len() <= max)
@@ -55,20 +61,66 @@ fn validate(name: &str, args: &Value) -> Result<(), &'static str> {
     }
     Ok(())
 }
-// Python numeric repr participates in word matching; do not approximate floats.
-fn complex_number(v: &Value) -> bool {
+fn has_float(v: &Value) -> bool {
     match v {
-        Value::Number(n) => n.as_i64().is_none() && n.as_u64().is_none(),
-        Value::Array(a) => a.iter().any(complex_number),
-        Value::Object(o) => o.values().any(complex_number),
+        Value::Number(n) => pagination::is_float(n),
+        Value::Array(a) => a.iter().any(has_float),
+        Value::Object(o) => o.values().any(has_float),
         _ => false,
     }
 }
-fn words(s: &str) -> BTreeSet<String> {
-    s.split(|c: char| !c.is_ascii_alphanumeric())
-        .filter(|s| !s.is_empty())
-        .map(str::to_ascii_lowercase)
-        .collect()
+
+#[derive(Clone, Copy)]
+enum FloatUse {
+    Lookup,
+    Impact,
+}
+
+fn normalize_floats(value: &mut Value, usage: FloatUse) -> Result<(), &'static str> {
+    match value {
+        Value::Array(values) => {
+            for value in values {
+                normalize_floats(value, usage)?;
+            }
+        }
+        Value::Object(values) => {
+            for value in values.values_mut() {
+                normalize_floats(value, usage)?;
+            }
+        }
+        Value::Number(number) if pagination::is_float(number) => {
+            if let Some(float) = number.as_f64() {
+                let text = python_float::python_float(float).map_err(|_| "E_FORMAT")?;
+                *number = text.parse().map_err(|_| "E_FORMAT")?;
+            } else if let FloatUse::Lookup = usage {
+                // Quoted `Infinity` supplies the same lookup word as an
+                // overflowed float. Impact leaves it for pagination to check.
+                *value = Value::String("Infinity".into());
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+fn words(s: &str) -> Result<BTreeSet<String>, &'static str> {
+    if s.is_ascii() {
+        return Ok(s
+            .split(|c: char| !c.is_ascii_alphanumeric())
+            .filter(|s| !s.is_empty())
+            .map(str::to_ascii_lowercase)
+            .collect());
+    }
+    handoff::require_stable_unicode(s)?;
+    // Python [^\W_] is its Unicode word class with underscore removed.
+    static WORDS: LazyLock<Result<Regex, regex::Error>> =
+        LazyLock::new(|| Regex::new(&format!("[[{}]--[_]]+", python_text::WORD)));
+    let folded = python_text::casefold(s);
+    Ok(WORDS
+        .as_ref()
+        .map_err(|_| "E_FORMAT")?
+        .find_iter(&folded)
+        .map(|token| token.as_str().to_owned())
+        .collect())
 }
 fn truthy(v: &Value) -> bool {
     match v {
@@ -82,10 +134,7 @@ fn truthy(v: &Value) -> bool {
 }
 fn lookup(mapping: &Value, args: &Value) -> Result<Value, &'static str> {
     let query = args["query"].as_str().ok_or("E_SCHEMA")?;
-    if !query.is_ascii() {
-        return Err("FORWARD");
-    }
-    let terms = words(query);
+    let terms = words(query)?;
     let mut matches = Vec::new();
     for (at, entry) in handoff::map_entries(mapping) {
         if !["/questions/", "/concepts/", "/domain/"]
@@ -94,11 +143,15 @@ fn lookup(mapping: &Value, args: &Value) -> Result<Value, &'static str> {
         {
             continue;
         }
-        let text = serde_json::to_string(entry).map_err(|_| "E_FORMAT")?;
-        if !at.is_ascii() || !text.is_ascii() || complex_number(entry) {
-            return Err("FORWARD");
+        let text = if has_float(entry) {
+            let mut normalized = entry.clone();
+            normalize_floats(&mut normalized, FloatUse::Lookup)?;
+            serde_json::to_string(&normalized)
+        } else {
+            serde_json::to_string(entry)
         }
-        let tokens = words(&format!("{at} {text}"));
+        .map_err(|_| "E_FORMAT")?;
+        let tokens = words(&format!("{at} {text}"))?;
         let score = terms.intersection(&tokens).count();
         if score == 0 {
             continue;
@@ -137,11 +190,6 @@ fn touches(path: &str, changed: &[Value]) -> bool {
     })
 }
 fn impact(mapping: &Value, args: &Value, io: &mut Guard) -> Result<Value, &'static str> {
-    // Malformed semantic entries can still project a numeric `ref`; preserve
-    // Python's float spelling (and non-finite handling) through the reference.
-    if complex_number(mapping) {
-        return Err("FORWARD");
-    }
     let changed = args["paths"].as_array().ok_or("E_SCHEMA")?;
     let mut affected = Vec::new();
     let mut affected_paths = BTreeSet::new();
@@ -161,7 +209,9 @@ fn impact(mapping: &Value, args: &Value, io: &mut Guard) -> Result<Value, &'stat
                 if let Some(check) = entry["check"].as_str() {
                     checks.insert(check.to_owned());
                 } else if entry.get("check").is_none() {
-                    undeclared.push(json!({"pointer":at,"ref":entry["ref"]}));
+                    let mut reference = entry["ref"].clone();
+                    normalize_floats(&mut reference, FloatUse::Impact)?;
+                    undeclared.push(json!({"pointer":at,"ref":reference}));
                 }
             }
         }
@@ -195,6 +245,41 @@ fn impact(mapping: &Value, args: &Value, io: &mut Guard) -> Result<Value, &'stat
         json!({"affected_entries":affected,"checks_to_run":checks,"stale_refs":stale,"undeclared_check_links":undeclared,"revalidate":changed.contains(&json!(".mir/ontology-map.json"))}),
     )
 }
+// CPython's default decimal integer limit applies to raw JSON tokens, even
+// values that a projection would discard. Float tokens and quoted text are exempt.
+fn mapping_integer_bound(raw: &[u8]) -> Result<(), &'static str> {
+    let (mut i, mut quoted, mut escaped) = (0, false, false);
+    while i < raw.len() {
+        let c = raw[i];
+        if quoted {
+            if escaped {
+                escaped = false;
+            } else if c == b'\\' {
+                escaped = true;
+            } else if c == b'"' {
+                quoted = false;
+            }
+        } else if c == b'"' {
+            quoted = true;
+        } else if c == b'-' || c.is_ascii_digit() {
+            let start = i;
+            i += 1;
+            while i < raw.len() && matches!(raw[i], b'0'..=b'9' | b'.' | b'e' | b'E' | b'+' | b'-')
+            {
+                i += 1;
+            }
+            let token = &raw[start..i];
+            if !token.iter().any(|c| matches!(c, b'.' | b'e' | b'E'))
+                && token.len() - usize::from(token[0] == b'-') > 4300
+            {
+                return Err("E_FORMAT");
+            }
+            continue;
+        }
+        i += 1;
+    }
+    Ok(())
+}
 pub fn execute(name: &str, args: &Value) -> Result<Value, &'static str> {
     validate(name, args)?;
     let mut io = Guard::new(args["target_root"].as_str().ok_or("E_SCHEMA")?)?;
@@ -215,6 +300,7 @@ pub fn execute(name: &str, args: &Value) -> Result<Value, &'static str> {
     } else {
         let raw = io.read(".mir/ontology-map.json")?;
         std::str::from_utf8(&raw).map_err(|_| "E_IO")?;
+        mapping_integer_bound(&raw)?;
         wire::parse(&raw)?;
         // The protocol validator retains number types only. Mapping semantics
         // require the original arbitrary-precision values.

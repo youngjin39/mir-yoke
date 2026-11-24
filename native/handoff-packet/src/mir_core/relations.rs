@@ -1,5 +1,9 @@
 //! Read-only bounded traversal of declared YAML relations; no live callers.
 use super::{canonical::canonical_json, yaml};
+pub use crate::relation_terms::{
+    PURPOSES, allowed, endpoint_path, file_relation, has_control_characters, normalized_locator,
+    notices, unique,
+};
 use crate::{digest::sha256, executor_verifier::matches};
 use serde_json::{Value, json};
 use std::{
@@ -9,7 +13,6 @@ use std::{
     path::{Path, PathBuf},
 };
 pub const DEFAULT_GRAPH: &str = "spec/graph.yaml";
-pub const PURPOSES: [&str; 4] = ["implementation", "verification", "impact", "dependencies"];
 const SCOPE: &str = "declared_spec_relations_only";
 const BYTE_NOTICE: &str = "truncated: output byte limit reached; edges omitted";
 #[derive(Debug, Clone)]
@@ -70,10 +73,6 @@ impl<'a> Options<'a> {
             max_bytes: json!(6000),
         }
     }
-}
-pub fn has_control_characters(v: &str) -> bool {
-    v.chars()
-        .any(|c| matches!(c as u32, 0..=31 | 127..=159 | 0x2028 | 0x2029))
 }
 fn parts(v: &str) -> Vec<&str> {
     v.split('/')
@@ -300,10 +299,6 @@ pub fn load_graph(root: &Path, graph: &str, protections: &[String]) -> Result<Gr
     }
     Ok((edges, sha256(&raw), display))
 }
-pub fn endpoint_path(value: &str, force_file: bool) -> Option<&str> {
-    let path = value.split("::").next().unwrap_or_default();
-    (force_file || path.contains('/') || path.starts_with('.')).then_some(path)
-}
 pub fn validate_endpoint(
     value: &str,
     root: &Path,
@@ -355,21 +350,6 @@ pub fn anchor_safe(anchor: &Value) -> Result<&str> {
     }
     Ok(anchor)
 }
-pub fn normalized_locator(v: &str) -> String {
-    let (path, suffix) = v.split_once("::").map_or((v, None), |(a, b)| (a, Some(b)));
-    let prefix = if path.starts_with("//") && !path.starts_with("///") {
-        "//"
-    } else if path.starts_with('/') {
-        "/"
-    } else {
-        ""
-    };
-    format!(
-        "{prefix}{}{}",
-        parts(path).join("/"),
-        suffix.map_or(String::new(), |s| format!("::{s}"))
-    )
-}
 fn limit(v: &Value, min: u64, max: u64, message: &str) -> Result<usize> {
     v.as_u64()
         .filter(|n| (min..=max).contains(n))
@@ -391,40 +371,6 @@ pub fn limits(o: &Options<'_>, purpose: &str) -> Result<(usize, usize)> {
         "max-bytes must be between 1024 and 16000",
     )?;
     Ok((d, n))
-}
-pub fn allowed(p: &str, relation: &str, reverse: bool) -> bool {
-    let list = match (p, reverse) {
-        ("implementation", false) => {
-            "has_req refines realized_by constrains implemented_in \
-exposes decided_by governed_by"
-        }
-        ("verification", false) => "has_req refines verified_by",
-        ("impact", false) => "affects blocks verified_by decided_by governed_by",
-        ("dependencies", false) => "depends_on",
-        ("verification", true) => "implemented_in realized_by constrains",
-        ("impact", true) => "implemented_in realized_by constrains depends_on has_req",
-        _ => "",
-    };
-    list.split_whitespace().any(|r| r == relation)
-}
-pub fn file_relation(r: &str) -> bool {
-    matches!(r, "implemented_in" | "verified_by")
-}
-pub fn unique<T: PartialEq>(items: Vec<T>) -> Vec<T> {
-    let mut out = Vec::new();
-    for item in items {
-        if !out.contains(&item) {
-            out.push(item);
-        }
-    }
-    out
-}
-pub fn notices(skipped: &BTreeMap<String, usize>, extra: Vec<String>) -> Vec<String> {
-    skipped
-        .iter()
-        .map(|(r, n)| format!("skipped {r}: {n} edge(s)"))
-        .chain(extra)
-        .collect()
 }
 pub fn result(
     metadata: (&str, &str, &str, &str),

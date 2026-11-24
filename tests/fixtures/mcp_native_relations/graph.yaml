@@ -1,0 +1,15 @@
+# Synthetic three-string relation graph
+edges: # only the admitted flow-row subset
+  - [FEAT, has_req, REQ]
+  - [REQ, realized_by, MOD]
+  - [MOD, implemented_in, src/m.py::run]
+  - [MOD, implemented_in, src/./m.py::other]
+  - [MOD, implemented_in, ../outside.py]
+  - [MOD, implemented_in, missing/file.py]
+  - [REQ, verified_by, tests/check.py::test_run]
+  - [src/m.py::run, exposes, "API, π"] # trailing comment
+  - [src/./m.py::other, exposes, 'it''s a target']
+  - [MOD, depends_on, DEP]
+  - [DEP, depends_on, MOD]
+  - [MOD, depends_on, DEP]
+  - [ISOLATED, undescribed, OTHER]

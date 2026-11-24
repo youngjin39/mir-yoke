@@ -67,6 +67,8 @@ pub fn call(name: &str, args: &Value) -> Value {
     let completed = bounded(std::time::Duration::from_secs(10), move || {
         if name == "handoff_pins" {
             execute(&args)
+        } else if name == "relations_query" {
+            crate::relations::execute(&args)
         } else {
             crate::ontology::execute(&name, &args)
         }

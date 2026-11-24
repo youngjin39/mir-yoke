@@ -1,11 +1,13 @@
-//! Mapping validation with guarded reads. Unsupported symbol grammars forward.
+//! Mapping validation and symbol resolution with guarded reads.
 use crate::{
     digest::sha256,
     guard::Guard,
-    handoff::{CONTRACT, pointer as ptr},
+    handoff::{CONTRACT, decimal_digit, line_ref, pointer as ptr, require_stable_unicode},
+    ontology::python_text::WORD,
 };
+use regex::Regex;
 use serde_json::{Value, json};
-use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashSet};
 
 type Result<T> = std::result::Result<T, &'static str>;
 
@@ -17,60 +19,74 @@ pub struct Checker {
     pub line_refs: HashSet<String>,
 }
 
-// Keep Python's unbounded integers exact by forwarding out-of-range versions.
-#[derive(Eq, PartialEq, Ord, PartialOrd)]
-struct Version(u64, u64, u64, Vec<(u8, u64, String)>);
-fn version(raw: &Value) -> Result<Option<Version>> {
-    let Some(text) = raw.as_str() else {
-        return Ok(None);
-    };
-    if !text.is_ascii() {
-        return Ok(None);
+// Validated decimal identifiers have no leading zeroes. Length and lexical
+// order therefore compare them without imposing a machine integer limit.
+#[derive(Eq, PartialEq)]
+struct Decimal<'a>(&'a str);
+impl Ord for Decimal<'_> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.0.len(), self.0).cmp(&(other.0.len(), other.0))
     }
+}
+impl PartialOrd for Decimal<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Eq, PartialEq, Ord, PartialOrd)]
+enum Prerelease<'a> {
+    Number(Decimal<'a>),
+    Text(&'a str),
+    Release,
+}
+#[derive(Eq, PartialEq, Ord, PartialOrd)]
+struct Version<'a>([Decimal<'a>; 3], Vec<Prerelease<'a>>);
+fn version(text: &str) -> Option<Version<'_>> {
     let (main, build) = text
         .split_once('+')
         .map_or((text, None), |(a, b)| (a, Some(b)));
     let identifier =
         |s: &str| !s.is_empty() && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-');
     if build.is_some_and(|b| !b.split('.').all(identifier)) {
-        return Ok(None);
+        return None;
     }
     let (core, pre) = main
         .split_once('-')
         .map_or((main, None), |(a, b)| (a, Some(b)));
     let parts: Vec<_> = core.split('.').collect();
-    if parts.len() != 3
-        || parts.iter().any(|p| {
-            p.is_empty()
-                || !p.bytes().all(|b| b.is_ascii_digit())
-                || (p.len() > 1 && p.starts_with('0'))
-        })
-    {
-        return Ok(None);
-    }
-    let mut nums = Vec::new();
-    for p in parts {
-        nums.push(p.parse().map_err(|_| "FORWARD")?);
+    let [major, minor, patch] = parts.as_slice() else {
+        return None;
+    };
+    if parts.iter().any(|p| {
+        p.is_empty()
+            || !p.bytes().all(|b| b.is_ascii_digit())
+            || (p.len() > 1 && p.starts_with('0'))
+    }) {
+        return None;
     }
     let mut prerelease = Vec::new();
     if let Some(pre) = pre {
         for p in pre.split('.') {
             if !identifier(p) {
-                return Ok(None);
+                return None;
             }
             if p.bytes().all(|b| b.is_ascii_digit()) {
                 if p.len() > 1 && p.starts_with('0') {
-                    return Ok(None);
+                    return None;
                 }
-                prerelease.push((0, p.parse().map_err(|_| "FORWARD")?, String::new()));
+                prerelease.push(Prerelease::Number(Decimal(p)));
             } else {
-                prerelease.push((1, 0, p.into()));
+                prerelease.push(Prerelease::Text(p));
             }
         }
     } else {
-        prerelease.push((2, 0, String::new()));
+        prerelease.push(Prerelease::Release);
     }
-    Ok(Some(Version(nums[0], nums[1], nums[2], prerelease)))
+    Some(Version(
+        [Decimal(major), Decimal(minor), Decimal(patch)],
+        prerelease,
+    ))
 }
 
 impl Checker {
@@ -126,18 +142,9 @@ impl Checker {
         }
         let value = value.as_str().unwrap_or("");
         let path = value.split('#').next().unwrap_or("");
-        // Unicode decimal suffixes use Python's regex/int semantics.
-        if !path.is_ascii()
-            && path
-                .rsplit_once(':')
-                .is_some_and(|(_, n)| n.chars().all(char::is_numeric))
-        {
-            return Err("FORWARD");
-        }
-        let line = path
-            .rsplit_once(':')
-            .filter(|(_, n)| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()));
-        if line.is_some() {
+        let line = line_ref(path);
+        if let Some((_, number)) = line {
+            require_stable_unicode(number)?;
             self.line_refs.insert(at.into());
         }
         let raw = line.map_or(path, |(p, _)| p);
@@ -175,12 +182,13 @@ impl Checker {
             .unwrap_or("")
             .to_ascii_lowercase();
         if let Some((_, name)) = value.split_once('#') {
-            // shortcut: non-JSON grammars remain with Python until a parity-tested parser exists.
-            if suffix != "json" {
-                return Err("FORWARD");
-            }
             let text = read_text(io, raw)?;
-            if !json_symbol(&text, name)? {
+            let found = if suffix == "json" {
+                json_symbol(&text, name)?
+            } else {
+                text_symbol(&text, name, &suffix)?
+            };
+            if !found {
                 self.error(
                     at,
                     &format!("symbol anchor not found (check name not found): {name}"),
@@ -190,7 +198,13 @@ impl Checker {
         if covered {
             let text = read_text(io, raw)?;
             if let Some((_, number)) = line {
-                let number: usize = number.parse().map_err(|_| "FORWARD")?;
+                // Overflow is still larger than every possible guarded file's line count.
+                let number = number
+                    .chars()
+                    .filter_map(decimal_digit)
+                    .fold(0usize, |n, digit| {
+                        n.saturating_mul(10).saturating_add(digit as usize)
+                    });
                 if number == 0 {
                     self.error(at, "check line must be positive");
                 } else if number > python_lines(&text) {
@@ -273,7 +287,7 @@ impl Checker {
         if d["id"] != contract["contract_id"] {
             self.error("/contract/id", "contract id mismatch");
         }
-        let validated = version(&d["version"])?;
+        let validated = d["version"].as_str().and_then(version);
         if validated.is_none() {
             self.error("/contract/version", "invalid semver");
         }
@@ -285,12 +299,15 @@ impl Checker {
             if a.contains(['-', '+']) || b.contains(['-', '+']) {
                 None
             } else {
-                version(&json!(a))?.zip(version(&json!(b))?)
+                version(a).zip(version(b))
             }
         } else {
             None
         };
-        let current = version(&contract["version"])?.ok_or("E_FORMAT")?;
+        let current = contract["version"]
+            .as_str()
+            .and_then(version)
+            .ok_or("E_FORMAT")?;
         match bounds {
             Some((low, high)) if low < high => {
                 if !(low <= current && current < high) {
@@ -334,9 +351,6 @@ impl Checker {
             self.error("/namespace", "missing Profile: .mir/repo-profile.toml");
         } else {
             let profile = read_text(io, ".mir/repo-profile.toml")?;
-            if !profile.is_ascii() {
-                return Err("FORWARD");
-            }
             let slug = profile_slug(&profile);
             match slug {
                 None => self.error("/namespace", "Profile needs a slug = \"...\" key"),
@@ -425,8 +439,9 @@ impl Checker {
                 }
             }
         }
-        let required =
-            validated.is_some_and(|v| v >= Version(1, 1, 0, vec![(2, 0, String::new())]));
+        let required = validated
+            .zip(version("1.1.0"))
+            .is_some_and(|(v, minimum)| v >= minimum);
         for (i, raw) in self.array(&m["relations"], "/relations").iter().enumerate() {
             let at = ptr("/relations", i);
             let r = self.object(raw, &at);
@@ -540,32 +555,21 @@ fn read_text(io: &mut Guard, path: &str) -> Result<String> {
         .map(|s| s.replace("\r\n", "\n").replace('\r', "\n"))
         .map_err(|_| "E_IO")
 }
+fn python_line_break(c: char) -> bool {
+    matches!(
+        c,
+        '\n' | '\u{b}'
+            | '\u{c}'
+            | '\u{1c}'
+            | '\u{1d}'
+            | '\u{1e}'
+            | '\u{85}'
+            | '\u{2028}'
+            | '\u{2029}'
+    )
+}
 fn python_lines(text: &str) -> usize {
-    if text.is_empty() {
-        return 0;
-    }
-    let mut count = text
-        .chars()
-        .filter(|c| {
-            matches!(
-                c,
-                '\n' | '\u{b}'
-                    | '\u{c}'
-                    | '\u{1c}'
-                    | '\u{1d}'
-                    | '\u{1e}'
-                    | '\u{85}'
-                    | '\u{2028}'
-                    | '\u{2029}'
-            )
-        })
-        .count();
-    if !text.ends_with([
-        '\n', '\u{b}', '\u{c}', '\u{1c}', '\u{1d}', '\u{1e}', '\u{85}', '\u{2028}', '\u{2029}',
-    ]) {
-        count += 1;
-    }
-    count
+    text.split_terminator(python_line_break).count()
 }
 fn profile_slug(text: &str) -> Option<&str> {
     // re.MULTILINE \s may consume newlines before/after the declaration.
@@ -605,6 +609,123 @@ fn profile_slug(text: &str) -> Option<&str> {
     }
     None
 }
+
+const SPACE: &str = r"[\s\x{1c}-\x{1f}]";
+
+fn regex(pattern: &str) -> Result<Regex> {
+    Regex::new(pattern).map_err(|_| "E_FORMAT")
+}
+
+fn text_symbol(text: &str, name: &str, suffix: &str) -> Result<bool> {
+    if name.is_empty() {
+        return Ok(false);
+    }
+    require_stable_unicode(text)?;
+    require_stable_unicode(name)?;
+    let candidates = [name, name.rsplit('.').next().unwrap_or(name)];
+    let markdown = matches!(suffix, "md" | "markdown" | "mdx");
+    let kotlin = matches!(suffix, "kt" | "kts" | "dart");
+    let transformed;
+    let text = if markdown {
+        let comments = regex(r"(?s:<!--.*?-->)")?;
+        let headings = regex(&format!(
+            r"^ {{0,3}}#{{1,6}}{SPACE}+(.+?){SPACE}*#*{SPACE}*$"
+        ))?;
+        let markers = regex(r"^ {0,3}(`{3,}|~{3,})")?;
+        let slug_chars = regex(&format!("[^{WORD} -]"))?;
+        let mut seen = HashSet::new();
+        let mut fence: Option<&str> = None;
+        let mut unfenced = Vec::new();
+        let uncommented = comments.replace_all(text, "");
+        for line in uncommented.split_terminator(python_line_break) {
+            if let Some(marker) = markers.captures(line).and_then(|captures| captures.get(1)) {
+                let marker = marker.as_str();
+                if let Some(open) = fence {
+                    if marker.starts_with(open) {
+                        fence = None;
+                    }
+                } else {
+                    fence = Some(marker);
+                }
+                continue;
+            }
+            if fence.is_some() {
+                continue;
+            }
+            unfenced.push(line);
+            if let Some(title) = headings.captures(line).and_then(|captures| captures.get(1)) {
+                let title = title.as_str();
+                let slug = slug_chars
+                    .replace_all(&title.to_lowercase(), "")
+                    .replace(' ', "-");
+                let mut unique = slug.clone();
+                let mut count = 0;
+                while !seen.insert(unique.clone()) {
+                    count += 1;
+                    unique = format!("{slug}-{count}");
+                }
+                if name == unique || candidates.contains(&title) {
+                    return Ok(true);
+                }
+            }
+        }
+        transformed = unfenced.join("\n");
+        &transformed
+    } else if kotlin {
+        let comments = regex(r"(?s:/\*.*?\*/)|//[^\n]*")?;
+        transformed = comments.replace_all(text, "").into_owned();
+        &transformed
+    } else {
+        text
+    };
+
+    let modifiers = if kotlin {
+        format!(r"(?:(?:[{WORD}]+|@[{WORD}.]+(?:\([^\n]*?\))?){SPACE}+)*")
+    } else {
+        format!(r"(?:(?:export|default|public|private|protected|static|async|pub|open){SPACE}+)*")
+    };
+    for (i, candidate) in candidates.into_iter().enumerate() {
+        if i == 1 && candidate == name {
+            break;
+        }
+        // Consume the inspected boundary instead of backtracking over lookahead.
+        let boundary = if kotlin {
+            let word = regex(&format!("[{WORD}]$"))?;
+            let gap = if word.is_match(candidate) { "+" } else { "*" };
+            format!(
+                r"(?:{SPACE}*(?:[({{:<=>]|$)|{SPACE}{gap}(?:extends|implements|with)(?:[^{WORD}]|\z))"
+            )
+        } else {
+            format!(r"(?:[^{WORD}$]|\z)")
+        };
+        let symbol = regex::escape(candidate);
+        let mut patterns = vec![
+            format!(
+                concat!(
+                    r"{0}(?:def|class|function|const|let|var|interface|type|enum|struct|fn|func|val|fun|object)",
+                    r"{1}+(?:<[^>\n]+>{1}*)?{2}{3}"
+                ),
+                modifiers, SPACE, symbol, boundary
+            ),
+            format!(r"{symbol}{SPACE}*(?::|=(?:[^=]|\z))"),
+            format!(r#"["']?{symbol}["']?{SPACE}*=(?:[^=]|\z)"#),
+            format!(r"\[\[?{SPACE}*{symbol}{SPACE}*\]\]?{SPACE}*(?:#.*)?$"),
+            format!(r#"(?:test|it|describe){SPACE}*\({SPACE}*["']{symbol}["']"#),
+        ];
+        if matches!(suffix, "sh" | "bash" | "zsh") {
+            patterns.push(format!(
+                r"(?:function{SPACE}+)?{symbol}{SPACE}*\({SPACE}*\){SPACE}*\{{"
+            ));
+            patterns.push(format!(r"function{SPACE}+{symbol}{SPACE}*\{{"));
+        }
+        let pattern = format!(r"(?m)^{SPACE}*(?:{})", patterns.join("|"));
+        if regex(&pattern)?.is_match(text) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 fn json_symbol(text: &str, name: &str) -> Result<bool> {
     if name.is_empty() {
         return Ok(false);
@@ -715,14 +836,14 @@ mod tests {
         ];
         for pair in ordered.windows(2) {
             assert!(matches!(
-                (version(&json!(pair[0])), version(&json!(pair[1]))),
-                (Ok(Some(low)), Ok(Some(high))) if low < high
+                (version(pair[0]), version(pair[1])),
+                (Some(low), Some(high)) if low < high
             ));
         }
-        assert!(matches!(version(&json!("1.0.0-01")), Ok(None)));
+        assert!(version("1.0.0-01").is_none());
         assert!(matches!(
-            version(&json!("999999999999999999999999.0.0")),
-            Err("FORWARD")
+            (version("999999999999999999999999.0.0"), version("1000000000000000000000000.0.0")),
+            (Some(low), Some(high)) if low < high
         ));
     }
 

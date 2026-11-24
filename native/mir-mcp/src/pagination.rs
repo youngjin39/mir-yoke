@@ -1,8 +1,21 @@
 //! Stateless Python-compatible cursor encoding and bounded page selection.
 use crate::{digest::sha256, wire};
-use serde_json::{Value, json};
+use serde_json::{Number, Value, json};
 pub fn compact(v: &Value) -> Result<Vec<u8>, &'static str> {
     serde_json::to_vec(v).map_err(|_| "E_FORMAT")
+}
+
+pub(crate) fn is_float(number: &Number) -> bool {
+    number.as_str().contains(['.', 'e', 'E'])
+}
+
+fn contains_nonfinite(value: &Value) -> bool {
+    match value {
+        Value::Number(number) => is_float(number) && number.as_f64().is_none(),
+        Value::Array(values) => values.iter().any(contains_nonfinite),
+        Value::Object(values) => values.values().any(contains_nonfinite),
+        _ => false,
+    }
 }
 const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 fn encode(raw: &[u8]) -> String {
@@ -123,6 +136,11 @@ pub fn page_tool(
         if handoff {
             let paths = args["paths"].as_array().ok_or("E_SCHEMA")?;
             crate::handoff::finalize(&mut page, &paths[offset..end]);
+        }
+        // The reference rejects nonfinite numbers when serializing a selected
+        // page, before deciding whether that page needs to shrink.
+        if contains_nonfinite(&page) {
+            return Err("E_FORMAT");
         }
         let cursor = if end < count {
             json!(encode(&compact(&json!({"h":binding,"o":end}))?))
