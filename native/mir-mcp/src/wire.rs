@@ -99,9 +99,11 @@ pub fn parse(raw: &[u8]) -> Result<Value, &'static str> {
 
 // Only integer IDs are serialized by the core. Tool arguments and child replies
 // retain their original bytes. Represent other numbers by type for validation:
-// Python admits arbitrary integers and overflowing float literals; serde's normal
-// f64 decoder does not. Validate their grammar with arbitrary_precision first.
+// Python admits large integers and overflowing float literals; serde's normal
+// f64 decoder does not. Check the integer digit limit and validate number grammar
+// with arbitrary_precision before replacing their values.
 fn numbers(raw: &[u8]) -> Result<Vec<u8>, &'static str> {
+    const INTEGER_DIGITS: usize = 4300;
     let mut out = Vec::new();
     let (mut i, mut quoted, mut escaped) = (0, false, false);
     while i < raw.len() {
@@ -128,8 +130,12 @@ fn numbers(raw: &[u8]) -> Result<Vec<u8>, &'static str> {
                 i += 1;
             }
             let token = std::str::from_utf8(&raw[start..i]).map_err(|_| "E_FORMAT")?;
+            let float = token.contains(['.', 'e', 'E']);
+            if !float && token.len() - usize::from(c == b'-') > INTEGER_DIGITS {
+                return Err("E_FORMAT");
+            }
             let _: serde_json::Number = serde_json::from_str(token).map_err(|_| "E_FORMAT")?;
-            if token.contains(['.', 'e', 'E']) {
+            if float {
                 out.extend_from_slice(b"0.0");
             } else if let Ok(n) = token.parse::<i64>() {
                 out.extend_from_slice(n.to_string().as_bytes());

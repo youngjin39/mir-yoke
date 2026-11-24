@@ -1,18 +1,21 @@
 use crate::{OUTPUT, wire};
 use std::ffi::OsString;
 use std::io::{Read, Write};
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, Stdio};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
+
+const REAP_GRACE: Duration = Duration::from_millis(25);
+
 pub struct Forward {
     pub python: OsString,
     pub script: OsString,
 }
 
 impl Forward {
-    // One child at a time; the caller's deadline includes native dispatch and
-    // any semantic forwarding, including spawn/write/read/wait. Never retry.
+    // Native dispatch and semantic fallback share the caller's execution
+    // deadline, including child spawn, pipe I/O, and exit.
     pub fn call(&self, raw: &[u8], deadline: Instant) -> Result<Vec<u8>, &'static str> {
         let mut command = Command::new(&self.python);
         command
@@ -56,11 +59,9 @@ impl Forward {
                     let _ = tx.send((is_stdout, result, bytes));
                 });
             }
-            // A non-reading child must not block the protocol thread's deadline.
-            let mut payload = raw.to_vec();
-            if !payload.ends_with(b"\n") {
-                payload.push(b'\n');
-            }
+            // Close stdin after writing the frame unchanged so an unterminated
+            // final frame is delimited by EOF. Write off the protocol thread.
+            let payload = raw.to_vec();
             thread::spawn(move || {
                 let mut stdin = stdin;
                 let _ = stdin.write_all(&payload);
@@ -99,10 +100,31 @@ impl Forward {
         })();
         if result.is_err() {
             let _ = child.kill();
+            reap_after_kill(child);
         }
-        let _ = child.wait();
         result
     }
+}
+
+fn reap_after_kill(mut child: Child) {
+    let deadline = Instant::now() + REAP_GRACE;
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => return,
+            Ok(None) => {
+                let remaining = deadline.saturating_duration_since(Instant::now());
+                if remaining.is_zero() {
+                    break;
+                }
+                thread::sleep(remaining.min(Duration::from_millis(1)));
+            }
+            Err(_) => break,
+        }
+    }
+    // A child blocked in kernel I/O can outlive the grace period.
+    let _ = thread::Builder::new().spawn(move || {
+        let _ = child.wait();
+    });
 }
 
 #[cfg(test)]
@@ -116,5 +138,63 @@ mod tests {
             Forward::capture(command, b"{}\n", Instant::now()),
             Err("E_TIMEOUT")
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn capture_times_out_when_child_ignores_input() {
+        let mut command = Command::new("sleep");
+        command.arg("60");
+        let deadline = Instant::now() + Duration::from_millis(50);
+        assert_eq!(
+            Forward::capture(command, &[b' '; crate::FRAME], deadline),
+            Err("E_TIMEOUT")
+        );
+        let scheduler_slack = Duration::from_millis(500);
+        assert!(Instant::now() <= deadline + REAP_GRACE + scheduler_slack);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn reap_returns_when_a_child_is_still_running() -> std::io::Result<()> {
+        let start = Instant::now();
+        // Model a killed worker that has not exited by keeping this child alive.
+        let child = Command::new("sleep").arg("2").spawn()?;
+        let pid = child.id().to_string();
+        assert!(process_exists(&pid)?);
+        reap_after_kill(child);
+        assert!(start.elapsed() < Duration::from_secs(1));
+        assert_reaped(&pid, Duration::from_secs(3))
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn reap_collects_a_killed_child() -> std::io::Result<()> {
+        let mut child = Command::new("sleep").arg("60").spawn()?;
+        let pid = child.id().to_string();
+        assert!(process_exists(&pid)?);
+        child.kill()?;
+        reap_after_kill(child);
+        assert_reaped(&pid, Duration::from_secs(1))
+    }
+
+    #[cfg(unix)]
+    fn assert_reaped(pid: &str, timeout: Duration) -> std::io::Result<()> {
+        let deadline = Instant::now() + timeout;
+        while process_exists(pid)? {
+            assert!(Instant::now() < deadline, "child {pid} was not reaped");
+            thread::sleep(Duration::from_millis(50));
+        }
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    fn process_exists(pid: &str) -> std::io::Result<bool> {
+        // Signal zero probes the process table without affecting the child.
+        Ok(Command::new("sh")
+            .args(["-c", "kill -0 \"$1\"", "probe-child", pid])
+            .stderr(Stdio::null())
+            .status()?
+            .success())
     }
 }

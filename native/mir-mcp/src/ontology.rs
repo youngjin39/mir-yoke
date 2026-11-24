@@ -245,41 +245,6 @@ fn impact(mapping: &Value, args: &Value, io: &mut Guard) -> Result<Value, &'stat
         json!({"affected_entries":affected,"checks_to_run":checks,"stale_refs":stale,"undeclared_check_links":undeclared,"revalidate":changed.contains(&json!(".mir/ontology-map.json"))}),
     )
 }
-// CPython's default decimal integer limit applies to raw JSON tokens, even
-// values that a projection would discard. Float tokens and quoted text are exempt.
-fn mapping_integer_bound(raw: &[u8]) -> Result<(), &'static str> {
-    let (mut i, mut quoted, mut escaped) = (0, false, false);
-    while i < raw.len() {
-        let c = raw[i];
-        if quoted {
-            if escaped {
-                escaped = false;
-            } else if c == b'\\' {
-                escaped = true;
-            } else if c == b'"' {
-                quoted = false;
-            }
-        } else if c == b'"' {
-            quoted = true;
-        } else if c == b'-' || c.is_ascii_digit() {
-            let start = i;
-            i += 1;
-            while i < raw.len() && matches!(raw[i], b'0'..=b'9' | b'.' | b'e' | b'E' | b'+' | b'-')
-            {
-                i += 1;
-            }
-            let token = &raw[start..i];
-            if !token.iter().any(|c| matches!(c, b'.' | b'e' | b'E'))
-                && token.len() - usize::from(token[0] == b'-') > 4300
-            {
-                return Err("E_FORMAT");
-            }
-            continue;
-        }
-        i += 1;
-    }
-    Ok(())
-}
 pub fn execute(name: &str, args: &Value) -> Result<Value, &'static str> {
     validate(name, args)?;
     let mut io = Guard::new(args["target_root"].as_str().ok_or("E_SCHEMA")?)?;
@@ -300,7 +265,6 @@ pub fn execute(name: &str, args: &Value) -> Result<Value, &'static str> {
     } else {
         let raw = io.read(".mir/ontology-map.json")?;
         std::str::from_utf8(&raw).map_err(|_| "E_IO")?;
-        mapping_integer_bound(&raw)?;
         wire::parse(&raw)?;
         // The protocol validator retains number types only. Mapping semantics
         // require the original arbitrary-precision values.

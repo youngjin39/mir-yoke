@@ -253,6 +253,37 @@ def test_number_and_bom(native, payload):
     assert run(native, payload) == run([sys.executable, '-I', '-B', str(SCRIPT)], payload)
 
 
+@pytest.mark.parametrize('digits', [4300, 4301])
+@pytest.mark.parametrize('sign', ['', '-'])
+def test_request_integer_digit_bound(native, tmp_path, digits, sign):
+    payload = wire(request('tools/call', {'name': 'relations_query', 'arguments': {
+        'target_root': str(tmp_path), 'anchor': 'README.md', 'depth': 'INTEGER'}}))
+    payload = payload.replace(b'"INTEGER"', sign.encode() + b'9' * digits)
+    expected = run([sys.executable, '-I', '-B', str(SCRIPT)], payload)
+    result = json.loads(expected)
+    if digits == 4300:
+        assert result['id'] == 1
+        assert result['result']['structuredContent']['error'] == {'code': 'E_SCHEMA'}
+    else:
+        assert result['id'] is None
+        assert result['error']['code'] == -32700
+        assert result['error']['data'] == {'code': 'E_FORMAT'}
+    assert run(native, payload) == expected
+
+
+@pytest.mark.parametrize('fallback', [False, True])
+def test_full_unterminated_call_frame(native, tmp_path, fallback):
+    if fallback:
+        payload = fallback_call(tmp_path)
+    else:
+        payload = wire(request('tools/call', {'name': 'ontology_validate', 'arguments': {
+            'target_root': str(tmp_path), 'scope': 'contract'}}))
+    payload = payload.rstrip(b'\n').ljust(65536, b' ')
+    expected = run([sys.executable, '-I', '-B', str(SCRIPT)], payload)
+    assert json.loads(expected)['result']['structuredContent']['ok'] is True
+    assert run(native, payload) == expected
+
+
 def test_forward_preserves_child_bytes(native, tmp_path):
     expected = b'{ "jsonrpc": "2.0", "id": 1, "result": {"opaque": 1e400} }\n'
     wrapper = tmp_path / 'literal.py'
@@ -280,6 +311,7 @@ def test_numeric_and_structure_oracle(native):
                     '.1', '1.', '1e+', 'NaN', 'Infinity', '-Infinity'):
         frames.append(('{"jsonrpc":"2.0","id":' + literal +
                        ',"method":"tools/list"}\n').encode())
+    frames.append(b'{"jsonrpc":"2.0","id":' + b'9' * 4301 + b'e-4301,"method":"tools/list"}\n')
     for depth in (31, 32, 33):
         frames.append(b'[' * depth + b'0' + b']' * depth + b'\n')
     for size in (4096, 4097):

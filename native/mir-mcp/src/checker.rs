@@ -7,7 +7,11 @@ use crate::{
 };
 use regex::Regex;
 use serde_json::{Value, json};
-use std::{cmp::Ordering, collections::HashSet};
+use std::{
+    cmp::Ordering,
+    collections::{HashMap, HashSet},
+    sync::LazyLock,
+};
 
 type Result<T> = std::result::Result<T, &'static str>;
 
@@ -17,6 +21,7 @@ pub struct Checker {
     pub warnings: Vec<Value>,
     pub checked_refs: HashSet<String>,
     pub line_refs: HashSet<String>,
+    symbol_patterns: HashMap<(SymbolGrammar, String), Regex>,
 }
 
 // Validated decimal identifiers have no leading zeroes. Length and lexical
@@ -180,13 +185,13 @@ impl Checker {
             .extension()
             .and_then(|s| s.to_str())
             .unwrap_or("")
-            .to_ascii_lowercase();
+            .to_lowercase();
         if let Some((_, name)) = value.split_once('#') {
             let text = read_text(io, raw)?;
             let found = if suffix == "json" {
                 json_symbol(&text, name)?
             } else {
-                text_symbol(&text, name, &suffix)?
+                text_symbol(&text, name, &suffix, &mut self.symbol_patterns)?
             };
             if !found {
                 self.error(
@@ -612,11 +617,37 @@ fn profile_slug(text: &str) -> Option<&str> {
 
 const SPACE: &str = r"[\s\x{1c}-\x{1f}]";
 
+static MARKDOWN_PATTERNS: LazyLock<Result<[Regex; 4]>> = LazyLock::new(|| {
+    Ok([
+        regex(r"(?s:<!--.*?-->)")?,
+        regex(&format!(
+            r"^ {{0,3}}#{{1,6}}{SPACE}+(.+?){SPACE}*#*{SPACE}*$"
+        ))?,
+        regex(r"^ {0,3}(`{3,}|~{3,})")?,
+        regex(&format!("[^{WORD} -]"))?,
+    ])
+});
+static KOTLIN_COMMENTS: LazyLock<Result<Regex>> =
+    LazyLock::new(|| regex(r"(?s:/\*.*?\*/)|//[^\n]*"));
+static TRAILING_WORD: LazyLock<Result<Regex>> = LazyLock::new(|| regex(&format!("[{WORD}]$")));
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum SymbolGrammar {
+    Generic,
+    Kotlin,
+    Shell,
+}
+
 fn regex(pattern: &str) -> Result<Regex> {
     Regex::new(pattern).map_err(|_| "E_FORMAT")
 }
 
-fn text_symbol(text: &str, name: &str, suffix: &str) -> Result<bool> {
+fn text_symbol(
+    text: &str,
+    name: &str,
+    suffix: &str,
+    patterns: &mut HashMap<(SymbolGrammar, String), Regex>,
+) -> Result<bool> {
     if name.is_empty() {
         return Ok(false);
     }
@@ -624,15 +655,15 @@ fn text_symbol(text: &str, name: &str, suffix: &str) -> Result<bool> {
     require_stable_unicode(name)?;
     let candidates = [name, name.rsplit('.').next().unwrap_or(name)];
     let markdown = matches!(suffix, "md" | "markdown" | "mdx");
-    let kotlin = matches!(suffix, "kt" | "kts" | "dart");
+    let grammar = match suffix {
+        "kt" | "kts" | "dart" => SymbolGrammar::Kotlin,
+        "sh" | "bash" | "zsh" => SymbolGrammar::Shell,
+        _ => SymbolGrammar::Generic,
+    };
     let transformed;
     let text = if markdown {
-        let comments = regex(r"(?s:<!--.*?-->)")?;
-        let headings = regex(&format!(
-            r"^ {{0,3}}#{{1,6}}{SPACE}+(.+?){SPACE}*#*{SPACE}*$"
-        ))?;
-        let markers = regex(r"^ {0,3}(`{3,}|~{3,})")?;
-        let slug_chars = regex(&format!("[^{WORD} -]"))?;
+        let [comments, headings, markers, slug_chars] =
+            MARKDOWN_PATTERNS.as_ref().map_err(|&e| e)?;
         let mut seen = HashSet::new();
         let mut fence: Option<&str> = None;
         let mut unfenced = Vec::new();
@@ -671,59 +702,77 @@ fn text_symbol(text: &str, name: &str, suffix: &str) -> Result<bool> {
         }
         transformed = unfenced.join("\n");
         &transformed
-    } else if kotlin {
-        let comments = regex(r"(?s:/\*.*?\*/)|//[^\n]*")?;
+    } else if grammar == SymbolGrammar::Kotlin {
+        let comments = KOTLIN_COMMENTS.as_ref().map_err(|&e| e)?;
         transformed = comments.replace_all(text, "").into_owned();
         &transformed
     } else {
         text
     };
 
+    for (i, candidate) in candidates.into_iter().enumerate() {
+        if i == 1 && candidate == name {
+            break;
+        }
+        let key = (grammar, candidate.to_owned());
+        let found = if let Some(pattern) = patterns.get(&key) {
+            pattern.is_match(text)
+        } else {
+            let pattern = symbol_pattern(candidate, grammar)?;
+            let found = pattern.is_match(text);
+            // Keep a small per-checker cache so user-derived patterns cannot accumulate across
+            // calls or retain a compiled regex for every distinct symbol in a large mapping.
+            if patterns.len() == 8 {
+                patterns.clear();
+            }
+            patterns.insert(key, pattern);
+            found
+        };
+        if found {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn symbol_pattern(candidate: &str, grammar: SymbolGrammar) -> Result<Regex> {
+    let kotlin = grammar == SymbolGrammar::Kotlin;
     let modifiers = if kotlin {
         format!(r"(?:(?:[{WORD}]+|@[{WORD}.]+(?:\([^\n]*?\))?){SPACE}+)*")
     } else {
         format!(r"(?:(?:export|default|public|private|protected|static|async|pub|open){SPACE}+)*")
     };
-    for (i, candidate) in candidates.into_iter().enumerate() {
-        if i == 1 && candidate == name {
-            break;
-        }
-        // Consume the inspected boundary instead of backtracking over lookahead.
-        let boundary = if kotlin {
-            let word = regex(&format!("[{WORD}]$"))?;
-            let gap = if word.is_match(candidate) { "+" } else { "*" };
-            format!(
-                r"(?:{SPACE}*(?:[({{:<=>]|$)|{SPACE}{gap}(?:extends|implements|with)(?:[^{WORD}]|\z))"
-            )
-        } else {
-            format!(r"(?:[^{WORD}$]|\z)")
-        };
-        let symbol = regex::escape(candidate);
-        let mut patterns = vec![
-            format!(
-                concat!(
-                    r"{0}(?:def|class|function|const|let|var|interface|type|enum|struct|fn|func|val|fun|object)",
-                    r"{1}+(?:<[^>\n]+>{1}*)?{2}{3}"
-                ),
-                modifiers, SPACE, symbol, boundary
+    // Consume the inspected boundary instead of backtracking over lookahead.
+    let boundary = if kotlin {
+        let word = TRAILING_WORD.as_ref().map_err(|&e| e)?;
+        let gap = if word.is_match(candidate) { "+" } else { "*" };
+        format!(
+            r"(?:{SPACE}*(?:[({{:<=>]|$)|{SPACE}{gap}(?:extends|implements|with)(?:[^{WORD}]|\z))"
+        )
+    } else {
+        format!(r"(?:[^{WORD}$]|\z)")
+    };
+    let symbol = regex::escape(candidate);
+    let mut alternatives = vec![
+        format!(
+            concat!(
+                r"{0}(?:def|class|function|const|let|var|interface|type|enum|struct|fn|func|val|fun|object)",
+                r"{1}+(?:<[^>\n]+>{1}*)?{2}{3}"
             ),
-            format!(r"{symbol}{SPACE}*(?::|=(?:[^=]|\z))"),
-            format!(r#"["']?{symbol}["']?{SPACE}*=(?:[^=]|\z)"#),
-            format!(r"\[\[?{SPACE}*{symbol}{SPACE}*\]\]?{SPACE}*(?:#.*)?$"),
-            format!(r#"(?:test|it|describe){SPACE}*\({SPACE}*["']{symbol}["']"#),
-        ];
-        if matches!(suffix, "sh" | "bash" | "zsh") {
-            patterns.push(format!(
-                r"(?:function{SPACE}+)?{symbol}{SPACE}*\({SPACE}*\){SPACE}*\{{"
-            ));
-            patterns.push(format!(r"function{SPACE}+{symbol}{SPACE}*\{{"));
-        }
-        let pattern = format!(r"(?m)^{SPACE}*(?:{})", patterns.join("|"));
-        if regex(&pattern)?.is_match(text) {
-            return Ok(true);
-        }
+            modifiers, SPACE, symbol, boundary
+        ),
+        format!(r"{symbol}{SPACE}*(?::|=(?:[^=]|\z))"),
+        format!(r#"["']?{symbol}["']?{SPACE}*=(?:[^=]|\z)"#),
+        format!(r"\[\[?{SPACE}*{symbol}{SPACE}*\]\]?{SPACE}*(?:#.*)?$"),
+        format!(r#"(?:test|it|describe){SPACE}*\({SPACE}*["']{symbol}["']"#),
+    ];
+    if grammar == SymbolGrammar::Shell {
+        alternatives.push(format!(
+            r"(?:function{SPACE}+)?{symbol}{SPACE}*\({SPACE}*\){SPACE}*\{{"
+        ));
+        alternatives.push(format!(r"function{SPACE}+{symbol}{SPACE}*\{{"));
     }
-    Ok(false)
+    regex(&format!(r"(?m)^{SPACE}*(?:{})", alternatives.join("|")))
 }
 
 fn json_symbol(text: &str, name: &str) -> Result<bool> {
@@ -820,6 +869,36 @@ mod tests {
         assert_eq!(json_symbol(document, "/a~1b/00"), Ok(false));
         assert_eq!(json_symbol(document, "/a~2b"), Ok(false));
         assert_eq!(json_symbol("{", "symbol"), Err("E_FORMAT"));
+    }
+
+    #[test]
+    // Fixture I/O failures should fail the test immediately.
+    #[allow(clippy::unwrap_used)]
+    fn unicode_suffix_selects_kotlin_grammar() {
+        let root = std::env::temp_dir().join(format!("checker-suffix-{}", std::process::id()));
+        let path = "x.\u{212a}t";
+        std::fs::create_dir(&root).unwrap();
+        std::fs::write(
+            root.join(path),
+            "/*\nfun hidden() {}\n*/\nfun visible() {}\n",
+        )
+        .unwrap();
+        let mut io = Guard::new(root.to_str().unwrap()).unwrap();
+        let mut checker = Checker::new();
+        let visible = checker.ref_check(
+            &json!(format!("{path}#visible")),
+            "/visible",
+            false,
+            &mut io,
+        );
+        let hidden = checker.ref_check(&json!(format!("{path}#hidden")), "/hidden", false, &mut io);
+        drop(io);
+        std::fs::remove_dir_all(root).unwrap();
+
+        assert_eq!(visible, Ok(()));
+        assert_eq!(hidden, Ok(()));
+        assert_eq!(checker.errors.len(), 1);
+        assert_eq!(checker.errors[0]["pointer"], "/hidden");
     }
 
     #[test]
