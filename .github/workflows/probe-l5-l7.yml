@@ -1,0 +1,156 @@
+name: Linux L5/L7 paired probe
+on:
+  push:
+    branches: [dev/cohort-lw-probe]
+
+permissions:
+  contents: read
+
+jobs:
+  paired_probe:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - name: Initialize probe evidence
+        run: |
+          PROBE_ROOT="$RUNNER_TEMP/cohort-b/probe"
+          mkdir -p "$PROBE_ROOT/home" "$PROBE_ROOT/tmp"
+          touch "$PROBE_ROOT/paired.jsonl"
+          printf 'PROBE_ROOT=%s\nUV_CACHE_DIR=%s\n' "$PROBE_ROOT" "$RUNNER_TEMP/cohort-b/uv-cache" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: |
+            3.11
+            3.12
+            3.14
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - name: Preflight uv lock (Python 3.14)
+        run: uv sync --python 3.14 --extra dev --extra vector --locked
+      - name: Preflight checkout and Python 3.14
+        run: uv run --no-sync --python 3.14 python scripts/ci_preflight.py --sqlite-vector
+      - name: Preflight uv lock and Python 3.12
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv-312
+        run: |
+          uv sync --python 3.12 --extra dev --extra vector --locked
+          uv run --no-sync python scripts/ci_preflight.py --runtime-only
+      - name: Preflight handoff Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/handoff-packet
+      - name: Preflight mir-mcp Cargo lock
+        run: cargo fetch --locked
+        working-directory: native/mir-mcp
+      - name: Run paired probe offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          export UV_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1
+          export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 CARGO_BUILD_JOBS=2
+          # Keep the preflight caches when switching to the synthetic home.
+          export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+          export HOME="$PROBE_ROOT/home" TMPDIR="$PROBE_ROOT/tmp"
+          export CARGO_TARGET_DIR="$PROBE_ROOT/target"
+          (
+            cd native/handoff-packet
+            cargo build --offline --locked --bin mir --bin executor-query
+          ) 2>&1 | tee "$PROBE_ROOT/cargo-build.log"
+          .venv/bin/python -u - <<'PY' > "$PROBE_ROOT/paired.jsonl" 2> "$PROBE_ROOT/probe.stderr.log"
+          import fcntl, hashlib, json, os, pathlib, re, shutil, sqlite3, subprocess, sys
+          repo = pathlib.Path.cwd().resolve()
+          base = pathlib.Path(os.environ['PROBE_ROOT'])
+          native = pathlib.Path(os.environ['CARGO_TARGET_DIR'])/'debug/mir'
+          query = native.with_name('executor-query')
+          bindings = list(pathlib.Path(os.environ['CARGO_TARGET_DIR']).glob('debug/build/libsqlite3-sys-*/out/bindgen.rs'))
+          assert bindings, 'native SQLite build metadata missing'
+          native_sqlite = [re.findall(r'pub const SQLITE_VERSION[^;]+;', p.read_text()) for p in bindings]
+          print(json.dumps({'native_sqlite':native_sqlite, 'python':sys.version, 'python_sqlite':sqlite3.sqlite_version,
+                            'pin':'5f8f69f94e09b64c5e4d07d329ed17797c35e6cb',
+                            'native_sha256':hashlib.sha256(native.read_bytes()).hexdigest()}))
+          # Execute only source acquisition and wrapper creation, before capture loops.
+          wrappers = {}
+          for family, generator in [('L5','generate_y_e2.py'), ('L7','generate_y_e1_fix.py')]:
+              source = repo/'native/handoff-packet/tests/fixtures'/generator
+              scratch = base/family
+              argv = [str(source),'--scratch',str(scratch),'--output',str(scratch/'unused.json')]
+              if family == 'L5': argv += ['--query-bin',str(query),'--fix']
+              sys.argv = argv
+              scope = {'__file__':str(source),'__name__':'probe_acquisition'}
+              preamble = source.read_text().split('records = []',1)[0]
+              exec(compile(preamble,str(source),'exec'),scope)
+              assert scope['PIN'] == '5f8f69f94e09b64c5e4d07d329ed17797c35e6cb'
+              wrappers[family] = scope['wrapper']
+
+          def effects(work):
+              # Raw filenames are encoded without replacement; every file is hashed.
+              return [{'name_hex':os.fsencode(p.relative_to(work)).hex(),
+                       'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+                      for p in sorted(work.rglob('*')) if p.is_file()]
+
+          def replay(family,index,row,implementation,closed):
+              work = base/f'{family}-{index}-{implementation}-{closed}'
+              work.mkdir()  # Fresh scratch required, never reuse a previous run.
+              (work/'tasks').mkdir()
+              if family == 'L7': (work/'tasks/plan.md').write_text(row['plan'])
+              else: (work/'helper.py').write_text("print('script extension')\n")
+              argv = [bytes.fromhex(a) for a in row['argv']]
+              command = ([os.fsencode(native)] if implementation == 'native' else
+                         [os.fsencode(sys.executable),b'-I',os.fsencode(wrappers[family])]) + argv
+              env = {'HOME':str(base/'home'), 'TMPDIR':str(base/'tmp'),
+                     'PATH':os.defpath, 'PYTHONIOENCODING':row.get('encoding','utf-8')}
+              metadata = {}
+              if family == 'L7' and row['mode'] == 'badfd' and closed:
+                  with (work/'tasks/plan.md').open('rb') as output:
+                      result = subprocess.run(command,cwd=work,env=env,stdout=output,
+                                              stderr=subprocess.PIPE,timeout=30)
+                  stdout = b''
+              elif closed:
+                  reader,writer = os.pipe()
+                  metadata = {'st_blksize':os.fstat(writer).st_blksize,
+                              'pipe_capacity':fcntl.fcntl(writer,fcntl.F_GETPIPE_SZ)}
+                  os.close(reader)
+                  try:
+                      result = subprocess.run(command,cwd=work,env=env,stdout=writer,
+                                              stderr=subprocess.PIPE,timeout=30)
+                  finally: os.close(writer)
+                  stdout = b''
+              else:
+                  result = subprocess.run(command,cwd=work,env=env,capture_output=True,timeout=30)
+                  stdout = result.stdout
+              # Preserve exact streams. Only classify after inspecting the raw artifact.
+              raw = base / 'raw' / family / str(index) / implementation / ('closed' if closed else 'open')
+              raw.mkdir(parents=True)
+              (raw / 'stdout.bin').write_bytes(stdout)
+              (raw / 'stderr.bin').write_bytes(result.stderr)
+              print(json.dumps({'family':family,'record':index,'implementation':implementation,
+                  'closed':closed,'argv_hex':row['argv'],'exit':result.returncode,
+                  'stdout_hex':stdout.hex(),'stdout_size':len(stdout),'stderr_hex':result.stderr.hex(),
+                  'pipe':metadata,'effects':effects(work),
+                  'plan_hex':(work/'tasks/plan.md').read_bytes().hex() if family=='L7' else None,
+                  'raw_db':(work/os.fsdecode(b'raw-\xff.db')).is_file(),
+                  'lossy_db':(work/'raw-�.db').exists(),
+                  'escaped_db':(work/r'raw-\udcff.db').exists(),
+                  'default_db':(work/'.mir').exists()}),flush=True)
+          for family,fixture,indices in [('L5','y-e2-fix.json',[0,1,2,3]),
+                                        ('L7','y-e1-fix.json',[12,17,18,19])]:
+              rows = json.loads((repo/'native/handoff-packet/tests/fixtures'/fixture).read_text())
+              for index in indices:
+                  for implementation in ['python','native']:
+                      replay(family,index,rows[index],implementation,family=='L7')
+                      if family=='L7': replay(family,index,rows[index],implementation,False)
+          PY
+      - name: Upload raw probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-l5-l7-paired
+          path: |
+            ${{ runner.temp }}/cohort-b/probe/paired.jsonl
+            ${{ runner.temp }}/cohort-b/probe/cargo-build.log
+            ${{ runner.temp }}/cohort-b/probe/probe.stderr.log
+            ${{ runner.temp }}/cohort-b/probe/raw/
+          if-no-files-found: error
