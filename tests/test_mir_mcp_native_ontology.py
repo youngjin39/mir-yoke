@@ -424,3 +424,18 @@ def test_mapping_integer_digit_bound(ontology_native, ontology_target, digits, s
         sign.encode() + b'9' * digits + b'}}}')
     result = parity(ontology_native, ontology_target, 'ontology_lookup', {'query': 'sample'})
     assert result['error'] == (None if digits == 4300 else {'code': 'E_FORMAT'})
+
+
+def test_mapping_depth_precedes_integer_digit_bound(ontology_native, ontology_target):
+    (ontology_target / '.mir/ontology-map.json').write_bytes(
+        b'{"value":' + b'[' * 32 + b'9' * 4301 + b']' * 32 + b'}')
+    result = parity(ontology_native, ontology_target, 'ontology_lookup', {'query': 'sample'})
+    assert result['error'] == {'code': 'E_LIMIT'}
+
+
+@pytest.mark.parametrize('digits', [4300, 4301])
+def test_json_symbol_integer_digit_bound(ontology_native, ontology_target, digits):
+    (ontology_target / 'check.json').write_bytes(
+        b'{"sample":true,"value":' + b'9' * digits + b'}')
+    result = parity(ontology_native, ontology_target, 'ontology_validate')
+    assert result['error'] == (None if digits == 4300 else {'code': 'E_FORMAT'})
