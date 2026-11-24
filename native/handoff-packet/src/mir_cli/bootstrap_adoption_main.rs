@@ -334,14 +334,19 @@ fn write_receipt_for_platform(
                 operation,
                 crate::executor_text::FilenameArgument::Path,
             );
-            Error::Io {
-                class,
-                message: rendered
-                    .strip_prefix(&format!("{class}: "))
-                    .unwrap()
-                    .to_owned(),
-            }
+            receipt_io_error(class, &rendered)
         })
+    }
+}
+
+#[cfg(any(windows, test))]
+fn receipt_io_error(class: &'static str, rendered: &str) -> Error {
+    Error::Io {
+        class,
+        message: rendered
+            .strip_prefix(&format!("{class}: "))
+            .unwrap_or(rendered)
+            .to_owned(),
     }
 }
 
@@ -684,6 +689,16 @@ pub fn main(
 #[cfg(test)]
 mod receipt_tests {
     use super::*;
+
+    #[test]
+    fn receipt_error_prefix_preserves_class_paths_and_bytes() {
+        let message = "[WinError 5] access denied: 'source' -> 'destination'";
+        for rendered in [format!("PermissionError: {message}"), message.to_owned()] {
+            let error = receipt_io_error("PermissionError", &rendered);
+            assert_eq!(error.class(), "PermissionError");
+            assert_eq!(error.to_string().as_bytes(), message.as_bytes());
+        }
+    }
 
     #[test]
     fn pc3_receipt_real_directory_failure_keeps_both_names() {
