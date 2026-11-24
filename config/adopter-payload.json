@@ -3293,7 +3293,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/bootstrap_adoption.rs",
-      "sha256": "812a906a1874635d223dac562f7873dba6eb2678cbf01b0e771a0e6d98318b98"
+      "sha256": "c892775861edb13cd3a20fc550b8ab9da07091cdefb67ab87b4e31877bcd6ebd"
     },
     {
       "classification": "template-maintainer-tool",

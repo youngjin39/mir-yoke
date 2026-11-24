@@ -152,6 +152,14 @@ pub(super) fn wire(path: &Path) -> String {
     }
 }
 pub(crate) fn io_error(path: &Path, e: io::Error) -> Error {
+    #[cfg(windows)]
+    if e.raw_os_error().is_some() {
+        let (class, errno, message) = crate::adoption_fs::windows_crt_error(&e);
+        return Error::Io {
+            class,
+            message: format!("[Errno {errno}] {message}: {}", repr(&wire(path))),
+        };
+    }
     let (class, errno, message) = match e.kind() {
         io::ErrorKind::NotFound => ("FileNotFoundError", 2, "No such file or directory"),
         io::ErrorKind::AlreadyExists => ("FileExistsError", 17, "File exists"),
@@ -178,9 +186,48 @@ pub(crate) fn io_error(path: &Path, e: io::Error) -> Error {
         message: format!("[Errno {errno}] {message}: {}", repr(&wire(path))),
     }
 }
+#[cfg(all(test, windows))]
+#[test]
+fn bootstrap_io_error_crt_bytes() {
+    for (code, class, expected) in [
+        (
+            2,
+            "FileNotFoundError",
+            "[Errno 2] No such file or directory: 'manifest.json'",
+        ),
+        (
+            5,
+            "PermissionError",
+            "[Errno 13] Permission denied: 'manifest.json'",
+        ),
+    ] {
+        let error = io_error(
+            Path::new("manifest.json"),
+            io::Error::from_raw_os_error(code),
+        );
+        assert_eq!(error.class(), class);
+        assert_eq!(error.to_string().as_bytes(), expected.as_bytes());
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn jq_custom_oserror_preserves_exact_bytes() {
+    let error = io::Error::other("jq unavailable: exact.");
+    assert_eq!(
+        windows_spawn_message(&error, |_| "OSError: [WinError 87] incorrect".into()).as_bytes(),
+        b"jq unavailable: exact."
+    );
+}
+
 // Keep the platform renderer replaceable for a Mac simulation of Windows.
 #[cfg(any(windows, test))]
 fn windows_spawn_message(error: &io::Error, render: impl FnOnce(&io::Error) -> String) -> String {
+    // Custom OSError messages have no Win32 code. Preserve their bytes instead
+    // of manufacturing ERROR_INVALID_PARAMETER in windows_error.
+    if error.raw_os_error().is_none() && error.kind() != io::ErrorKind::NotFound {
+        return error.to_string();
+    }
     // Rust's Windows PATH lookup can return NotFound without a Win32 code;
     // Python CreateProcess raises WinError 2 for the same missing executable.
     let missing;
@@ -279,11 +326,10 @@ fn pc3_missing_jq_windows_mapping() {
         );
         let without_code = io::Error::new(error.kind(), error);
         assert_eq!(
-            windows_spawn_message(&without_code, |mapped| {
-                assert_eq!(mapped.raw_os_error(), None);
-                "OSError: preserved".into()
-            }),
-            "preserved"
+            windows_spawn_message(&without_code, |_| panic!(
+                "custom error reached Win32 renderer"
+            )),
+            without_code.to_string()
         );
     }
 }
