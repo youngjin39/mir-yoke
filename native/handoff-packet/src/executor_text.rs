@@ -188,6 +188,7 @@ pub(crate) fn windows_frozen_error(name: &str, path: &Path) -> String {
         .split(": '")
         .next()
         .unwrap();
+    let rendered = crate::windows_oracle::localize(rendered);
     format!(
         "{}: {rendered}: {}",
         error["class"].as_str().unwrap(),

@@ -1,5 +1,8 @@
 //! Frozen adoption main oracle; every expectation comes from the Python capture.
 #![forbid(unsafe_code)]
+#[cfg(windows)]
+#[path = "support/windows_oracle.rs"]
+mod windows_oracle;
 use handoff_packet::mir_cli::bootstrap_adoption::{self as m, Error, Host};
 use serde_json::{Value, json};
 use std::{
@@ -44,7 +47,11 @@ fn py_json(v: &Value) -> String {
 fn raw_observation(v: Value, root: &Path) -> Value {
     fn normalize(v: Value, root: &str) -> Value {
         match v {
-            Value::String(s) => json!(s.replace(root, "<tmp>")),
+            Value::String(s) => {
+                #[cfg(windows)]
+                let s = windows_oracle::root(&s, root, "<tmp>");
+                json!(s.replace(root, "<tmp>"))
+            }
             Value::Array(a) => a.into_iter().map(|v| normalize(v, root)).collect(),
             Value::Object(o) => o
                 .into_iter()

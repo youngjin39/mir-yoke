@@ -1,5 +1,8 @@
 use serde_json::Value;
 use std::{fs, path::Path, process::Command};
+#[cfg(windows)]
+#[path = "support/windows_oracle.rs"]
+mod windows_oracle;
 
 fn test_git() -> std::path::PathBuf {
     std::env::split_paths(&std::env::var_os("PATH").expect("test PATH"))
@@ -162,6 +165,14 @@ fn frozen_bootstrap_adoption_public() {
     let mut failures = Vec::new();
     let temporary_name = regex::Regex::new(r"\.bootstrap-receipt\.json\.[^']+").unwrap();
     for r in records {
+        #[cfg(windows)]
+        let r = {
+            let mut r = r;
+            for field in ["stdout", "stderr"] {
+                r[field] = Value::String(windows_oracle::localize(r[field].as_str().unwrap()));
+            }
+            r
+        };
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         for (name, body) in r["files"].as_object().unwrap() {

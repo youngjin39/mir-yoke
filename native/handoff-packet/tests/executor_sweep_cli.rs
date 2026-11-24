@@ -33,9 +33,10 @@ impl Fixture {
             .output()
             .unwrap();
         assert!(output.status.success());
-        Self(PathBuf::from(
+        // SQLite URI mode treats a verbatim drive prefix as authority "%3F".
+        Self(handoff_packet::supply::plain(PathBuf::from(
             String::from_utf8(output.stdout).unwrap().trim(),
-        ))
+        )))
     }
     fn repo(&self) -> PathBuf {
         self.0.join("repo")
@@ -233,7 +234,7 @@ fn parity(apply: bool) {
         .env("PYTHONDONTWRITEBYTECODE", "1")
         .output()
         .unwrap();
-    assert!(snapshot.status.success());
+    assert!(snapshot.status.success(), "snapshot: {snapshot:?}");
     assert_eq!(
         normalize(
             serde_json::from_slice(&snapshot.stdout).unwrap(),

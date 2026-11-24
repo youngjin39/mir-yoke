@@ -13,6 +13,9 @@ mod account_home;
 #[cfg(unix)]
 #[allow(unsafe_code)]
 pub mod executor_process_unix;
+#[cfg(test)]
+#[path = "../tests/support/windows_oracle.rs"]
+mod windows_oracle;
 /// Account-database fallback for Python-compatible runtime Path.expanduser.
 #[cfg(unix)]
 pub fn runtime_account_home(name: Option<&std::ffi::OsStr>) -> Option<std::path::PathBuf> {

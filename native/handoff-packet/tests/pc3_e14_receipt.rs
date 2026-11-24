@@ -1,4 +1,7 @@
 use handoff_packet::mir_cli::bootstrap_adoption::write_receipt_with;
+#[cfg(windows)]
+#[path = "support/windows_oracle.rs"]
+mod windows_oracle;
 use serde_json::Value;
 use std::{fs, path::Path};
 
@@ -39,6 +42,8 @@ fn directory_destination_preserves_both_names_and_cleanup() {
             )
         };
         let expected = record["stderr"].as_str().unwrap();
+        #[cfg(windows)]
+        let expected = windows_oracle::localize(expected);
         let source_start = expected.find(": '").unwrap() + 2;
         let actual = format!(
             "{}{} -> {}\r\n",

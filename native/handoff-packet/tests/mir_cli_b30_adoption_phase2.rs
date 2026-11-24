@@ -1,5 +1,8 @@
 //! Replay all frozen Python content, memory, and phase-2 acceptance records.
 #![forbid(unsafe_code)]
+#[cfg(windows)]
+#[path = "support/windows_oracle.rs"]
+mod windows_oracle;
 use handoff_packet::mir_cli::bootstrap_adoption::{self as m, Error, Host};
 use rusqlite::Connection;
 use serde_json::{Value, json};
@@ -130,6 +133,17 @@ fn py_json(v: &Value) -> String {
     }
 }
 fn observe(mut v: Value, tmp: &Path) -> Value {
+    #[cfg(windows)]
+    fn paths(v: &mut Value, tmp: &Path) {
+        match v {
+            Value::String(s) => *s = windows_oracle::root(s, tmp.to_str().unwrap(), "<tmp>"),
+            Value::Array(a) => a.iter_mut().for_each(|v| paths(v, tmp)),
+            Value::Object(o) => o.values_mut().for_each(|v| paths(v, tmp)),
+            _ => {}
+        }
+    }
+    #[cfg(windows)]
+    paths(&mut v, tmp);
     let serialized = serde_json::to_string(&v).unwrap();
     let escaped = serde_json::to_string(tmp.to_str().unwrap()).unwrap();
     v = serde_json::from_str(&serialized.replace(&escaped[1..escaped.len() - 1], "<tmp>")).unwrap();

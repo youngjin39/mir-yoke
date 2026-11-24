@@ -1,5 +1,8 @@
 //! Replay all immutable Python bootstrap surface records.
 #![forbid(unsafe_code)]
+#[cfg(windows)]
+#[path = "support/windows_oracle.rs"]
+mod windows_oracle;
 use handoff_packet::mir_cli::bootstrap::{self as m, Error, Host};
 use handoff_packet::plugin_scripts::ontology_check::Doc;
 use rusqlite::{Connection, types::ValueRef};
@@ -87,22 +90,11 @@ impl Host for Fake<'_> {
 fn normalise(value: Value, root: &Path) -> Value {
     match value {
         Value::String(s) => {
+            #[cfg(windows)]
+            let s = windows_oracle::root(&s, root.to_str().unwrap(), "<tmp>");
             let s = s.replace(root.to_str().unwrap(), "<tmp>");
             #[cfg(windows)]
-            let mut s = s
-                .replace("\\\\?\\", "")
-                .replace(
-                    root.to_str().unwrap().trim_start_matches("\\\\?\\"),
-                    "<tmp>",
-                )
-                .replace(
-                    &root
-                        .to_str()
-                        .unwrap()
-                        .trim_start_matches("\\\\?\\")
-                        .replace('\\', "/"),
-                    "<tmp>",
-                );
+            let mut s = s;
             #[cfg(windows)]
             for path in SURFACES.iter().copied().chain([
                 "value",

@@ -94,17 +94,23 @@ fn timeout_console_records() {
             r["name"],
             String::from_utf8_lossy(&out.stdout)
         );
+        let stdout = r["stdout"].as_str().unwrap();
+        #[cfg(windows)]
+        let stdout = stdout.replace('\n', "\r\n");
+        let stderr = r["stderr"].as_str().unwrap();
+        #[cfg(windows)]
+        let stderr = stderr.replace('\n', "\r\n");
         assert_eq!(
             String::from_utf8(out.stdout)
                 .unwrap()
                 .replace(root.to_str().unwrap(), "@ROOT@"),
-            r["stdout"],
+            stdout,
             "{}",
             r["name"]
         );
         assert_eq!(
             String::from_utf8(out.stderr).unwrap(),
-            r["stderr"],
+            stderr,
             "{}",
             r["name"]
         );

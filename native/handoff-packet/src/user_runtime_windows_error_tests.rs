@@ -1,4 +1,4 @@
-//! OS failures from scratch only; localized text comes from the frozen PC corpus.
+//! Scratch OS failures; localize only Win32 message text in the pinned PC corpus.
 // Windows only: set_readonly(false) clears FILE_ATTRIBUTE_READONLY set by the test itself; no Unix mode bits exist here.
 #![allow(clippy::permissions_set_readonly_false)]
 use super::*;
@@ -49,6 +49,7 @@ fn check(name: &str, error: Error, root: &Path) {
             1,
         );
     }
+    let rendered = crate::windows_oracle::localize(&rendered);
     let mut message = error
         .message
         .replace(&root.to_str().unwrap().replace('\\', "\\\\"), "{ROOT}")

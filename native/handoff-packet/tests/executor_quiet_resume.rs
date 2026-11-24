@@ -1,4 +1,7 @@
 use handoff_packet::executor_target_policy::NativePolicy;
+#[cfg(windows)]
+#[path = "support/windows_oracle.rs"]
+mod windows_oracle;
 use serde_json::{Value, json};
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
@@ -69,6 +72,10 @@ fn captured_resume_patches_and_failures_match() {
         // Error text carries the path raw and as a Python repr (backslashes doubled on Windows).
         let repr_root = root.to_str().unwrap().replace('\\', "\\\\");
         let normalize = |value: &str| {
+            #[cfg(windows)]
+            let localized = windows_oracle::root(value, root.to_str().unwrap(), "<root>");
+            #[cfg(windows)]
+            let value = localized.as_str();
             value
                 .replace(&repr_root, "<root>")
                 .replace(root.to_str().unwrap(), "<root>")

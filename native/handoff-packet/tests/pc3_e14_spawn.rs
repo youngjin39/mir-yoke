@@ -1,4 +1,7 @@
 use handoff_packet::mir_cli::bootstrap_adoption::{Host, evidence_digest};
+#[cfg(windows)]
+#[path = "support/windows_oracle.rs"]
+mod windows_oracle;
 use serde_json::Value;
 use std::{env, fs, path::PathBuf, process::Command};
 
@@ -34,7 +37,10 @@ fn missing_jq_child() {
             .iter()
             .find(|r| r["mode"] == "settings")
             .unwrap();
-        let report: Value = serde_json::from_str(record["stdout"].as_str().unwrap()).unwrap();
+        let captured = record["stdout"].as_str().unwrap().to_owned();
+        #[cfg(windows)]
+        let captured = windows_oracle::localize(&captured);
+        let report: Value = serde_json::from_str(&captured).unwrap();
         assert!(
             report["errors"]
                 .as_array()

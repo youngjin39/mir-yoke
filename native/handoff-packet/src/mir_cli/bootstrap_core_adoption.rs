@@ -1833,8 +1833,8 @@ mod tests {
             #[cfg(windows)]
             let expected = if case["name"].as_str() == Some("safe_directory.unavailable") {
                 let record = path_records::record("adoption.safe_directory.unavailable");
-                json!({"error":[record["error"]["kind"], record["error"]["message"]
-                    .as_str().unwrap().replace("{ROOT}\\\\adoption", "<root>")]})
+                json!({"error":[record["error"]["kind"], crate::windows_oracle::localize(record["error"]["message"]
+                    .as_str().unwrap()).replace("{ROOT}\\\\adoption", "<root>")]})
             } else {
                 expected
             };

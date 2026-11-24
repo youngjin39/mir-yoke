@@ -1,5 +1,8 @@
 //! All 83 cells are compared to the unmodified Python capture, including call traces.
 #![forbid(unsafe_code)]
+#[cfg(windows)]
+#[path = "support/windows_oracle.rs"]
+mod windows_oracle;
 use handoff_packet::mir_cli::bootstrap::{self as m, Error, Host};
 use serde_json::{Value, json};
 use std::{
@@ -56,23 +59,9 @@ fn compact(value: Value) -> Value {
 fn normalise(value: Value, root: &Path) -> Value {
     match value {
         Value::String(s) => {
-            let s = s.replace(root.to_str().unwrap(), "<tmp>");
             #[cfg(windows)]
-            let s = s
-                .replace("\\\\?\\", "")
-                .replace(
-                    root.to_str().unwrap().trim_start_matches("\\\\?\\"),
-                    "<tmp>",
-                )
-                .replace(
-                    &root
-                        .to_str()
-                        .unwrap()
-                        .trim_start_matches("\\\\?\\")
-                        .replace('\\', "/"),
-                    "<tmp>",
-                )
-                .replace("<tmp>\\", "<tmp>/");
+            let s = windows_oracle::root(&s, root.to_str().unwrap(), "<tmp>");
+            let s = s.replace(root.to_str().unwrap(), "<tmp>");
             json!(s)
         }
         Value::Array(v) => Value::Array(v.into_iter().map(|v| normalise(v, root)).collect()),

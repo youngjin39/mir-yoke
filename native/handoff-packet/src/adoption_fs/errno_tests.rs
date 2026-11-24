@@ -98,7 +98,7 @@ fn w_errno2_captured_operations() {
                 format!(
                     "{}: {}",
                     record["exception"].as_str().unwrap(),
-                    record["message"].as_str().unwrap()
+                    crate::windows_oracle::localize(record["message"].as_str().unwrap())
                 ),
                 "{}",
                 record["case"]
