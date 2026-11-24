@@ -5,6 +5,8 @@ pub fn root(text: &str, root: &str, token: &str) -> String {
     let plain = root.strip_prefix(r"\\?\").unwrap_or(root);
     let mut spellings = vec![root.to_owned(), plain.to_owned(), plain.replace('\\', "/")];
     spellings.extend([root.replace('\\', r"\\"), plain.replace('\\', r"\\")]);
+    // Python repr inside JSON text doubles each separator twice.
+    spellings.extend([root.replace('\\', r"\\\\"), plain.replace('\\', r"\\\\")]);
     spellings.sort_by_key(|s| std::cmp::Reverse(s.len()));
     spellings.dedup();
     let mut result = text.to_owned();
@@ -18,7 +20,10 @@ pub fn root(text: &str, root: &str, token: &str) -> String {
         let end = result[start..]
             .find(['\'', '"', '\r', '\n'])
             .map_or(result.len(), |i| start + i);
-        let suffix = result[start..end].replace(r"\\", "/").replace('\\', "/");
+        let suffix = result[start..end]
+            .replace(r"\\\\", "/")
+            .replace(r"\\", "/")
+            .replace('\\', "/");
         result.replace_range(start..end, &suffix);
         offset = start + suffix.len();
     }

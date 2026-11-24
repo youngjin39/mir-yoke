@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 
 import pytest
 
@@ -66,7 +67,7 @@ def test_placement(tmp_path, monkeypatch, uri, target, name):
     api().place_artifacts(root, "mir-lifecycle-hooks", records, target=target)
     path = root / (f"bin/{name}" + (".exe" if "windows" in target else ""))
     assert path.read_bytes() == DATA
-    assert path.stat().st_mode & 0o111
+    assert os.name == "nt" or path.stat().st_mode & 0o111  # Windows has no mode bits
     with api().source_tree(root, "mir-lifecycle-hooks", records, target=target) as view:
         assert sorted(p.name for p in view.iterdir()) == ["reference"]
     path.write_bytes(b"tampered")

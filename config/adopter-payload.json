@@ -6467,7 +6467,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/support/windows_oracle.rs",
-      "sha256": "02279a176ea5b41c62e74a723df49c982b5740f3b5a44df6fc2dada5c2742f97"
+      "sha256": "d57de6cbd1fda2146af035a0e3678e4778e1fdb57d48ab77b689d009c259519d"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9167,7 +9167,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_native_artifacts.py",
-      "sha256": "246e59a7ac03af68094ffad7ba9a10a0ad18433c01a8b43f304846298b11f5f0"
+      "sha256": "56d192cc870549628a6e2b21cc1d3c0fc54b52a63dccd95dcd76f5aa997225ad"
     },
     {
       "classification": "template-maintainer-tool",
