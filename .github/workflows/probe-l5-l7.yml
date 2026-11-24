@@ -59,7 +59,7 @@ jobs:
             cd native/handoff-packet
             cargo build --offline --locked --bin mir --bin executor-query
           ) 2>&1 | tee "$PROBE_ROOT/cargo-build.log"
-          .venv/bin/python -u - <<'PY' > "$PROBE_ROOT/paired.jsonl" 2> "$PROBE_ROOT/probe.stderr.log"
+          .venv-312/bin/python -u - <<'PY' > "$PROBE_ROOT/paired.jsonl" 2> "$PROBE_ROOT/probe.stderr.log"
           import fcntl, hashlib, json, os, pathlib, re, shutil, sqlite3, subprocess, sys
           repo = pathlib.Path.cwd().resolve()
           base = pathlib.Path(os.environ['PROBE_ROOT'])
