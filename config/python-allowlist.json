@@ -78,7 +78,6 @@
     ],
     "scripts": [
       "check_ontology_fleet.py",
-      "extract_changelog_entry.py",
       "generate_codex_derivatives.py",
       "install_user_runtime_agents.py",
       "intent_store.py",

@@ -641,7 +641,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/python-allowlist.json",
-      "sha256": "98b642120110790a7206f43a074a580b8a0d370eefdd8302c5ea2f4b7ec30e1a"
+      "sha256": "03dd3c65f97c9854698cf360597c7d12e095db223a39228c8b7e98f8e2eaa75e"
     },
     {
       "classification": "reference",
@@ -683,7 +683,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/template-assets.json",
-      "sha256": "05382fa763806de281a6e3056c37bed004308fb0a9b460a6db48f96154aed801"
+      "sha256": "298f098cd723801fe86092304db4d4b9ffb8a09cf7b061abeada812b40b2a2f5"
     },
     {
       "classification": "template-maintainer-tool",
@@ -7554,12 +7554,6 @@
       "disposition": "remove",
       "path": "scripts/codex-shim.sh",
       "sha256": "d06699b6545b1b83599213318488d06f5b4a05930952a530406b662cdda5ea74"
-    },
-    {
-      "classification": "template-maintainer-tool",
-      "disposition": "remove",
-      "path": "scripts/extract_changelog_entry.py",
-      "sha256": "c76a63fa3681649de9c57f4bc61dacdffe86d8aae23d36e501288704b23c93ef"
     },
     {
       "classification": "reference",
