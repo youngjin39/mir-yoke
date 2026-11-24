@@ -12,19 +12,28 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
-- `mir-mcp` runs `relations_query` and ontology numerics natively. Python
-  forwarding remains only for text whose classification depends on the
-  interpreter's Unicode version. Per-call worker isolation is preserved.
+- The Darwin `mir-mcp` artifacts run `relations_query` and ontology numerics
+  natively. Python forwarding remains for text whose classification depends on
+  the interpreter's Unicode version. Linux/Windows keep the older native pins
+  and the Python launcher route. Per-call worker isolation is preserved.
+- Path references whose second character is `:` (for example `1:foo`) are
+  rejected as drive-qualified with `E_PATH`, matching CPython 3.12+
+  `PureWindowsPath.drive`. The Python reference floor for this rule is 3.12;
+  the general interpreter admission floor is unchanged.
 - Claude and Codex directly register the lock-verified native `mir-mcp` binary
   when available, as admitted by the ADR-91 amendment. A saved direct command
   runs the bytes placed at verification time: placement and discovery
   verification replace the Python launcher's per-launch SHA-256 check.
+  Per-call workers are re-executed by path, so replacing binary bytes after
+  launch also affects the next call through the Python launcher route.
 - Automation guidance caps Codex sub-agent waits at two hours before status
   inspection and reporting, and requires per-run timeouts that also stop child
   processes for other background runs.
 
 ### Fixed
 
+- Direct MCP registration requires a pin from the capability lock's source
+  build and a successful bounded start probe; otherwise it retains Python.
 - Linux tests avoid executable write races and use Linux-specific frozen
   records for the L5 and L7 platform-dependent outputs.
 - Windows error oracles follow localized OS messages and platform path

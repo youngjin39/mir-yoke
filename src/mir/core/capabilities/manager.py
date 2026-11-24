@@ -3346,8 +3346,14 @@ class CapabilityManager:
                 for name, path in self.config.plugins.items():
                     place_artifacts(staged_active / path, name, native_artifacts)
                     if name == MCP_NAME:
+                        provider_lock = (
+                            _read_json(checkout / ".mir/capability-lock.json") or {}
+                            if MCP_NAME in native_artifacts else {}
+                        )
+                        source = provider_lock.get("source")
+                        source_commit = source.get("commit") if isinstance(source, dict) else None
                         launchers = mcp_registration_launchers(
-                            staged_active / path, native_artifacts)
+                            staged_active / path, native_artifacts, source_commit)
                         if launchers != MCP_LAUNCHERS:
                             for runtime, launcher in launchers.items():
                                 extra = ({"type": "stdio"} if runtime == "claude"

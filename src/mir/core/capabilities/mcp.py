@@ -7,13 +7,18 @@ import json
 import os
 import re
 import stat
+import subprocess
+import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator, ValidationError, validators
 from jsonschema.exceptions import SchemaError
 
 from .config import MCP_FILES, MCP_NAME, MCP_TOOLS
 from .native import _verify, host_target
+
+_START_TIMEOUT = 3
 
 _VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?")
 
@@ -73,16 +78,35 @@ def mcp_native_launchers(target: str) -> dict:
     }
 
 
-def mcp_registration_launchers(installed: Path, records: dict) -> dict:
+def mcp_registration_launchers(
+    installed: Path, records: dict, source_commit: str | None = None,
+) -> dict:
     """Choose direct launch only after verifying a host-native placement against the lock."""
     target = host_target()
     if os.environ.get("MIR_CAPABILITY_NATIVE_ARTIFACTS") == "0" or target is None:
         return MCP_LAUNCHERS
     try:
         pin = records[MCP_NAME]["targets"][target]
+        if (not isinstance(source_commit, str)
+                or re.fullmatch(r"[0-9a-f]{40}", source_commit) is None
+                or urlsplit(pin["url"]).path.split("/")[-3:-1]
+                != ["download", f"native-{source_commit[:12]}"]):
+            return MCP_LAUNCHERS
         backend = {"kind": "native", "target": target, "artifact_sha256": pin["sha256"]}
         if _backend_valid(backend, installed, records):
-            return mcp_native_launchers(target)
+            try:
+                result = subprocess.run(
+                    [str(installed / "bin" / _native_binary(target)), "--mir-warmup"],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL, timeout=_START_TIMEOUT, check=False,
+                )
+                if result.returncode == 0:
+                    return mcp_native_launchers(target)
+                reason = f"exit {result.returncode}"
+            except (OSError, subprocess.SubprocessError) as exc:
+                reason = str(exc)
+            print(f"Warning: native mir-mcp start probe failed: {reason}; "
+                  "retaining Python launcher", file=sys.stderr)
     except (KeyError, TypeError, ValueError, OSError):
         pass
     return MCP_LAUNCHERS
@@ -102,6 +126,19 @@ def mcp_observed_launcher(runtime: str, installed: Path, *, native: bool = False
     if not claude:
         launcher["cwd"] = str(installed)
     return {**launcher, "env": {}}
+
+
+def _installed_observed_launcher(runtime: str, installed: Path) -> dict:
+    key = "claude" if runtime == "claude-code" else "codex"
+    declaration = closed_json(installed / f".mcp.{key}.json")
+    server = declaration["mcpServers"][MCP_NAME]
+    extra = {"type": "stdio"} if key == "claude" else {"env_vars": []}
+    if server == {**MCP_LAUNCHERS[key], **extra}:
+        return mcp_observed_launcher(runtime, installed)
+    target = host_target()
+    if target and server == {**mcp_native_launchers(target)[key], **extra}:
+        return mcp_observed_launcher(runtime, installed, native=True)
+    raise ValueError("installed MCP launcher mismatch")
 
 
 def _max_utf8_length(validator, maximum, instance, schema):
@@ -311,13 +348,8 @@ def validate_mcp_observation(
             or not _backend_valid(backend, installed, native_artifacts or {})
             or observation["server"] != MCP_NAME
             or observation["protocol_version"] not in {"2026-07-28", "2025-11-25"}
-            or (
-                launcher != mcp_observed_launcher(runtime, installed)
-                and (
-                    backend["kind"] != "native"
-                    or launcher != mcp_observed_launcher(runtime, installed, native=True)
-                )
-            )
+            or launcher != _installed_observed_launcher(runtime, installed)
+            or (launcher["command"] != "python3" and backend["kind"] != "native")
             or not isinstance(tools, list)
             or len(tools) != len(MCP_TOOLS)
             or [tool["name"] for tool in tools] != list(MCP_TOOLS)

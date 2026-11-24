@@ -2,10 +2,13 @@
 
 This independent crate avoids the lifecycle crate's unrelated SQLite and executor
 dependencies. Its dependency tree builds offline without derive macros.
-The Python script remains the client entrypoint. It selects an installed native
-artifact only after checking the target, byte size and SHA-256 recorded in
-`bin/native-artifacts.json`, a projection of the installed capability lock.
-Missing or invalid artifacts retain Python before any input is read.
+Claude and Codex register the placed native artifact directly when its lock pin
+belongs to the lock's source build and its bounded `--mir-warmup` probe exits 0.
+The manager verifies target, size, SHA-256, executable availability and the
+installed manifest before registration. Missing, invalid, older-build or
+unstartable artifacts retain the Python launcher entrypoint. That launcher
+checks target, size and SHA-256 against `bin/native-artifacts.json` before
+selecting a native backend; otherwise it retains Python before reading input.
 Unix replaces the launcher with `exec`; Windows relays binary pipes with fixed-size
 chunks and `CREATE_NO_WINDOW`. Input EOF closes child stdin and allows ten seconds
 for exit; expiration kills the child and exits 1. Child exit codes propagate,
@@ -20,10 +23,14 @@ limits, protocol state, discovery, listing and RPC errors. The embedded tool
 inventory is a frozen copy of the Python inventory. Byte transcript tests detect
 inventory and version drift.
 
-`handoff_pins` runs natively. The other four tools start an isolated Python child
-with `--internal-reference`. That mode enters the reference directly, treats
-legacy negotiation as complete, refuses any other argument, and never selects a
-native backend, so a forwarded call cannot recurse. The native parent forwards the
+The Darwin artifacts in v0.14.2 run `handoff_pins`, `relations_query` and
+ontology checks natively. Ontology and handoff text whose classification depends
+on the reference interpreter's Unicode version may forward to an isolated Python
+child with `--internal-reference`. Linux/Windows pins remain on the older build:
+`handoff_pins` is native and the other four tools forward. Internal reference mode
+enters Python directly, treats legacy negotiation as complete, refuses any other
+argument and never selects a native backend, so forwarding cannot recurse.
+The native parent forwards the
 original request bytes, closes child stdin, and returns the single response bytes
 unchanged. Spawn, input, output and wait share one ten-second deadline. Each pipe
 is capped at 16,384 bytes; a refusal kills and reaps the child. There is no retry.
@@ -67,3 +74,12 @@ an indivisible page refuses with `E_LIMIT`. Page inventories are recalculated
 while retaining full-result unknowns. Cursors work across Python/native process
 boundaries when their complete inputs remain unchanged. Distribution and runtime
 selection remain unchanged.
+
+Workers are re-executed by binary path for each call. Replacing bytes after launch
+therefore affects the next call on both direct and Python-launcher routes; the
+launcher's per-launch hash covers the front process only. Discovery/attestation
+checks do not prevent replacement between verification and execution.
+Path references with `:` as their second character (for example `1:foo`) are
+rejected as drive-qualified with `E_PATH`, matching `PureWindowsPath.drive` on
+CPython 3.12+. The Python reference floor for this rule is 3.12; this statement
+does not change the server's general interpreter admission floor.
