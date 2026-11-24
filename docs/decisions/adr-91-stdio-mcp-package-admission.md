@@ -700,3 +700,32 @@ the WSL `bash` launcher found on the Windows `PATH`; Windows uses the fixed Git 
 (`C:\Program Files\Git\bin\bash.exe`), as `mir-mcp` uses the fixed Git binary. An isolated copy
 of the PC's enrollment (provider, registry, receipt, consumer clone, isolated CLI homes) then
 applied with `active_integrity: true` and `restart-required` registration.
+## 2026-11-24 amendment: verified direct native registration
+
+The owner selected option 3-A and retained option 4-B in decision
+1574619779908509879 (2026-11-24 11:56 KST), replying to 1574612185106096202.
+Clients start the Rust binary directly where verified native placement exists.
+Per-call worker process isolation remains unchanged.
+
+Registration generates host-local Claude and Codex declarations only after
+checking the installed artifact against the capability lock: host target, size,
+SHA-256, installed native manifest and executable availability. Target membership
+alone is insufficient. Missing, disabled (`MIR_CAPABILITY_NATIVE_ARTIFACTS=0`),
+failed or unbound placement retains the existing Python launcher. Tracked source
+declarations stay immutable. Direct argv supplies `--reference-python python3`
+and `--reference-script` for version-sensitive Unicode forwarding. Codex keeps
+relative paths and plugin-root cwd; Claude expands `${CLAUDE_PLUGIN_ROOT}`.
+
+Admission accepts canonical declarations or exact generated direct declarations
+with a verified artifact. A temporary validation view reconstructs canonical
+source bytes without changing the locked source digest. Observed receipts
+distinguish both launch shapes. Direct launch requires a lock-bound native
+backend; Python-launcher receipts may report Python or verified native execution.
+
+Direct-route integrity timing changes from the launcher's per-start SHA-256
+check to placement and subsequent discovery/attestation verification against the
+capability lock. A binary changed after placement is refused at the next
+discovery/attestation. Direct startup itself does not rehash; changes between
+verification and launch are outside that check's timing guarantee. The Python
+launcher retains its per-start check. This adds no executable layer, rollback
+mechanism or consumer authority.

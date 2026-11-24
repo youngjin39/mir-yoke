@@ -29,7 +29,13 @@ from .config import (
     load_capability_config,
     load_consumer_acknowledgements,
 )
-from .mcp import MCP_LAUNCHERS, MCP_NAME, validate_mcp_observation, validate_mcp_package
+from .mcp import (
+    MCP_LAUNCHERS,
+    MCP_NAME,
+    mcp_registration_launchers,
+    validate_mcp_observation,
+    validate_mcp_package,
+)
 from .native import host_target, place_artifacts, source_tree, validate_artifacts, warm_artifacts
 from .private_file import is_private, make_private, make_tree_inherit_parent
 
@@ -1428,6 +1434,7 @@ class CapabilityManager:
             lock = {
                 "source": {"commit": receipt.get("commit")},
                 "plugins": {name: {"sha256": digest} for name, digest in selected.items()},
+                "native_artifacts": self._native_records(receipt),
             }
             if self._discovery_evidence(lock, consumer_key=root)["status"] == "verified":
                 verified.update(expected & set(selected))
@@ -3338,6 +3345,16 @@ class CapabilityManager:
 
                 for name, path in self.config.plugins.items():
                     place_artifacts(staged_active / path, name, native_artifacts)
+                    if name == MCP_NAME:
+                        launchers = mcp_registration_launchers(
+                            staged_active / path, native_artifacts)
+                        if launchers != MCP_LAUNCHERS:
+                            for runtime, launcher in launchers.items():
+                                extra = ({"type": "stdio"} if runtime == "claude"
+                                         else {"env_vars": []})
+                                _atomic_write_json(staged_active / path / f".mcp.{runtime}.json", {
+                                    "mcpServers": {MCP_NAME: {**launcher, **extra}},
+                                })
                 staged_hashes = {
                     name: self._materialized_plugin(
                         staged_active / path, name, package_kind=self.config.plugin_kinds[name],

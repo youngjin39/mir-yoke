@@ -54,11 +54,54 @@ MCP_LAUNCHERS = {
 }
 
 
-def mcp_observed_launcher(runtime: str, installed: Path) -> dict:
+def _native_binary(target: str) -> str:
+    return "mir-mcp.exe" if target.endswith("windows-msvc") else "mir-mcp"
+
+
+def _native_launcher(root: str, target: str) -> dict:
+    return {
+        "command": f"{root}/bin/{_native_binary(target)}",
+        "args": ["--reference-python", "python3", "--reference-script", f"{root}/mir_mcp.py"],
+    }
+
+
+def mcp_native_launchers(target: str) -> dict:
+    """Return the closed direct declarations for an already verified native placement."""
+    return {
+        "claude": _native_launcher("${CLAUDE_PLUGIN_ROOT}", target),
+        "codex": {**_native_launcher(".", target), "cwd": "."},
+    }
+
+
+def mcp_registration_launchers(installed: Path, records: dict) -> dict:
+    """Choose direct launch only after verifying a host-native placement against the lock."""
+    target = host_target()
+    if os.environ.get("MIR_CAPABILITY_NATIVE_ARTIFACTS") == "0" or target is None:
+        return MCP_LAUNCHERS
+    try:
+        pin = records[MCP_NAME]["targets"][target]
+        backend = {"kind": "native", "target": target, "artifact_sha256": pin["sha256"]}
+        if _backend_valid(backend, installed, records):
+            return mcp_native_launchers(target)
+    except (KeyError, TypeError, ValueError, OSError):
+        pass
+    return MCP_LAUNCHERS
+
+
+def mcp_observed_launcher(runtime: str, installed: Path, *, native: bool = False) -> dict:
     """The process an operator observes each client launch from the installed root."""
-    if runtime == "claude-code":
-        return {**mcp_launcher(str(installed) + "/mir_mcp.py"), "env": {}}
-    return {**mcp_launcher("./mir_mcp.py"), "cwd": str(installed), "env": {}}
+    claude = runtime == "claude-code"
+    root = str(installed) if claude else "."
+    if native:
+        target = host_target()
+        if target is None:
+            raise ValueError("direct MCP launcher requires a supported native target")
+        launcher = _native_launcher(root, target)
+    else:
+        launcher = mcp_launcher(f"{root}/mir_mcp.py")
+    if not claude:
+        launcher["cwd"] = str(installed)
+    return {**launcher, "env": {}}
 
 
 def _max_utf8_length(validator, maximum, instance, schema):
@@ -178,11 +221,14 @@ def _backend_valid(backend: object, installed: Path, records: dict) -> bool:
     if (not isinstance(record, dict) or record.get("plugin") != MCP_NAME
             or record.get("install_path") != "bin/mir-mcp"):
         return False
-    pin = record["targets"].get(target)
+    targets = record.get("targets")
+    if not isinstance(targets, dict):
+        return False
+    pin = targets.get(target)
     if not isinstance(pin, dict) or backend["artifact_sha256"] != pin["sha256"]:
         return False
     directory = installed / "bin"
-    artifact = directory / ("mir-mcp.exe" if target.endswith("windows-msvc") else "mir-mcp")
+    artifact = directory / _native_binary(target)
     manifest = directory / "native-artifacts.json"
     if (directory.is_symlink() or manifest.is_symlink() or not manifest.is_file()
             or manifest.stat().st_size > 4096):
@@ -237,6 +283,8 @@ def validate_mcp_observation(
         tools = observation["tools"]
         calls = observation["safe_calls"]
         budget = observation["tools_list"]
+        launcher = observation["launcher"]
+        backend = observation["backend"]
         version = interpreter["version"]
         windows = sys_platform() == "win32"
         executable = (
@@ -260,10 +308,16 @@ def validate_mcp_observation(
             or not isinstance(version, str)
             or re.fullmatch(r"3\.\d+\.\d+", version) is None
             or int(version.split(".")[1]) < 11
-            or not _backend_valid(observation["backend"], installed, native_artifacts or {})
+            or not _backend_valid(backend, installed, native_artifacts or {})
             or observation["server"] != MCP_NAME
             or observation["protocol_version"] not in {"2026-07-28", "2025-11-25"}
-            or observation["launcher"] != mcp_observed_launcher(runtime, installed)
+            or (
+                launcher != mcp_observed_launcher(runtime, installed)
+                and (
+                    backend["kind"] != "native"
+                    or launcher != mcp_observed_launcher(runtime, installed, native=True)
+                )
+            )
             or not isinstance(tools, list)
             or len(tools) != len(MCP_TOOLS)
             or [tool["name"] for tool in tools] != list(MCP_TOOLS)

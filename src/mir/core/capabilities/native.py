@@ -245,6 +245,7 @@ def source_tree(root: Path, plugin: str, records: dict, *, target=None):
         raise ValueError("native artifact root is linked")
     target = target or host_target()
     present = []
+    declarations = {}
     mcp_pin = None
     for name, relative, pin in _entries(plugin, records, target):
         path = root
@@ -267,13 +268,37 @@ def source_tree(root: Path, plugin: str, records: dict, *, target=None):
             expected = {"mir-mcp": {
                 "target": target, "sha256": mcp_pin["sha256"], "size": mcp_pin["size"],
             }}
+            from .mcp import closed_json
+
             try:
-                observed = json.loads(metadata.read_bytes())
+                observed = closed_json(metadata)
             except (OSError, ValueError) as exc:
                 raise ValueError("native artifact metadata is missing or invalid") from exc
             if observed != expected:
                 raise ValueError("native artifact metadata mismatch")
             present.append("bin/native-artifacts.json")
+            # Host-local registration is derived data, not a new source package.
+            from .mcp import MCP_LAUNCHERS, mcp_native_launchers
+
+            for runtime, launcher in mcp_native_launchers(target).items():
+                relative = f".mcp.{runtime}.json"
+                declaration = root / relative
+                if not declaration.exists():
+                    continue
+                if declaration.is_symlink():
+                    raise ValueError("native MCP declaration is linked")
+                extra = {"type": "stdio"} if runtime == "claude" else {"env_vars": []}
+                if closed_json(declaration) == {
+                    "mcpServers": {"mir-mcp": {**launcher, **extra}},
+                }:
+                    if (records["mir-mcp"]["install_path"] != "bin/mir-mcp"
+                            or (not target.endswith("windows-msvc")
+                                and not os.access(root / "bin/mir-mcp", os.X_OK))):
+                        raise ValueError(
+                            "native MCP direct declaration has no executable placement")
+                    declarations[relative] = json.dumps({
+                        "mcpServers": {"mir-mcp": {**MCP_LAUNCHERS[runtime], **extra}},
+                    }, indent=2) + "\n"
         elif metadata.exists():
             raise ValueError("native artifact metadata has no installed artifact")
     if not present:
@@ -283,6 +308,8 @@ def source_tree(root: Path, plugin: str, records: dict, *, target=None):
     with tempfile.TemporaryDirectory(prefix="native-check-") as temporary:
         view = Path(temporary) / "source"
         shutil.copytree(root, view, symlinks=True)
+        for relative, contents in declarations.items():
+            (view / relative).write_bytes(contents.encode("utf-8"))
         for relative in present:
             path = view / relative
             path.unlink()

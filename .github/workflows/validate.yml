@@ -196,6 +196,7 @@ jobs:
           tests/test_loop_driver.py
           tests/test_capability_cli.py
           tests/test_capability_native_artifacts.py
+          tests/test_capability_mcp.py
           tests/test_capability_security.py
           tests/test_run_python_cli.py
           tests/test_runtime_manifest.py
@@ -282,6 +283,7 @@ jobs:
           tests/test_capability_cli.py
           tests/test_capability_security.py
           tests/test_capability_mcp.py
+          tests/test_capability_native_artifacts.py
           tests/test_capability_legacy_080.py
           tests/test_mechanical_handoff.py
           tests/test_compact_lifecycle_hooks.py
