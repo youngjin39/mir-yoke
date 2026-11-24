@@ -20,8 +20,41 @@ fn bytes(value: &Value) -> Vec<u8> {
         .map(|v| u8::from_str_radix(std::str::from_utf8(v).unwrap(), 16).unwrap())
         .collect()
 }
+fn expected_records(linux: bool) -> Vec<Value> {
+    let mut records: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/y-e2-fix.json")).unwrap();
+    if linux {
+        // Independent pinned Python 3.12 capture: run 45324535790, cf8efe00.
+        let capture: Value =
+            serde_json::from_str(include_str!("fixtures/y-e2-fix-linux.json")).unwrap();
+        for i in [1, 2] {
+            for key in ["stderr", "raw_db"] {
+                records[i][key] = capture["records"][i.to_string()][key].clone();
+            }
+        }
+    }
+    records
+}
+
+#[test]
+fn linux_records_preserve_exact_bytes_and_raw_path() {
+    let original = expected_records(false);
+    let mut linux = expected_records(true);
+    for i in [1, 2] {
+        assert_eq!(linux[i]["raw_db"], true);
+        assert_eq!(
+            bytes(&linux[i]["stderr"]),
+            b"OperationalError: no such table: schema_migrations\n"
+        );
+        for key in ["stderr", "raw_db"] {
+            linux[i][key] = original[i][key].clone();
+        }
+    }
+    assert_eq!(linux, original);
+}
+
 fn check(indices: &[usize]) {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e2-fix.json")).unwrap();
+    let records = expected_records(cfg!(target_os = "linux"));
     for &i in indices {
         let r = &records[i];
         let temp = tempfile::tempdir().unwrap();

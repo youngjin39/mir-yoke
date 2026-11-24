@@ -19,8 +19,37 @@ fn unhex(v: &Value) -> Vec<u8> {
 // On macOS pipe()+fcntl(CLOEXEC) is not atomic. Every spawn in this process
 // shares the lock until Command drops its parent copy of the pipe writer.
 static SPAWN: std::sync::Mutex<()> = std::sync::Mutex::new(());
+fn expected_records(linux: bool) -> Vec<Value> {
+    let mut records: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/y-e1-fix.json")).unwrap();
+    if linux {
+        // Independent pinned Python 3.12 capture: run 45324535790, cf8efe00.
+        let capture: Value =
+            serde_json::from_str(include_str!("fixtures/y-e1-fix-linux.json")).unwrap();
+        for key in ["exit", "stderr"] {
+            records[17][key] = capture["records"]["17"][key].clone();
+        }
+    }
+    records
+}
+
+#[test]
+fn linux_records_preserve_exact_closed_stdout() {
+    let original = expected_records(false);
+    let mut linux = expected_records(true);
+    assert_eq!(linux[17]["exit"], 1);
+    assert_eq!(
+        unhex(&linux[17]["stderr"]),
+        b"BrokenPipeError: [Errno 32] Broken pipe\n"
+    );
+    for key in ["exit", "stderr"] {
+        linux[17][key] = original[17][key].clone();
+    }
+    assert_eq!(linux, original);
+}
+
 fn check(indices: &[usize]) {
-    let records: Vec<Value> = serde_json::from_str(include_str!("fixtures/y-e1-fix.json")).unwrap();
+    let records = expected_records(cfg!(target_os = "linux"));
     for &index in indices {
         let r = &records[index];
         let temp = tempfile::tempdir().unwrap();
