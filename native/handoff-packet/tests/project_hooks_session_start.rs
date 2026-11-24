@@ -61,11 +61,9 @@ fn bootstrap_states_and_builder_presence_match_reference_without_mutation() {
     let cases = records();
     let selected: Vec<_> = cases
         .iter()
-        .filter(|r| {
-            r["case"].as_str().unwrap().starts_with("bootstrap-") || r["case"] == "builder-absent"
-        })
+        .filter(|r| r["case"].as_str().unwrap().starts_with("bootstrap-"))
         .collect();
-    assert_eq!(selected.len(), 11);
+    assert_eq!(selected.len(), 10);
     for record in selected {
         assert_native(record);
     }
@@ -142,7 +140,27 @@ fn captured_reference_sources_remain_pinned() {
     let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for (path, expected) in fixture["sources"].as_object().unwrap() {
         assert_eq!(
-            digest::sha256(&std::fs::read(repo.join(path)).unwrap()),
+            digest::sha256(&match path.as_str() {
+                ".claude/hooks/session-start.sh" => std::fs::read(
+                    repo.join("native/handoff-packet/tests/fixtures/w1/session-start.reference.sh")
+                )
+                .unwrap(),
+                "scripts/build_session_upfront_context.py" => {
+                    let record = fixture["records"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .find(|r| {
+                            r["setup"]["project/scripts/build_session_upfront_context.py"]["base64"]
+                                .is_string()
+                        })
+                        .unwrap();
+                    frozen::decode(
+                        &record["setup"]["project/scripts/build_session_upfront_context.py"]["base64"],
+                    )
+                }
+                _ => std::fs::read(repo.join(path)).unwrap(),
+            }),
             expected.as_str().unwrap(),
             "{path}"
         );
@@ -161,4 +179,20 @@ fn retired_python_builder_errors_use_native_renderer_without_mutation() {
         native["expected"] = baseline["expected"].clone();
         assert_native(&native);
     }
+}
+
+#[test]
+fn absent_retired_builder_still_renders_ready_context() {
+    let cases = records();
+    let mut absent = cases
+        .iter()
+        .find(|r| r["case"] == "builder-absent")
+        .unwrap()
+        .clone();
+    absent["expected"] = cases
+        .iter()
+        .find(|r| r["case"] == "profile-missing")
+        .unwrap()["expected"]
+        .clone();
+    assert_native(&absent);
 }

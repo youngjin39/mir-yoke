@@ -1,0 +1,79 @@
+[package]
+name = "handoff-packet"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Native lifecycle handoff hook paths (proof of concept)."
+license = "MIT"
+
+[[bin]]
+name = "mir"
+path = "src/mir.rs"
+
+[[bin]]
+name = "handoff-packet"
+path = "src/main.rs"
+
+[[bin]]
+name = "runtime-continuity"
+path = "src/runtime_continuity.rs"
+
+[[bin]]
+name = "bootstrap-gate"
+path = "src/bootstrap_gate.rs"
+
+[dependencies]
+libc = "=0.2.191"
+serde = { version = "1", features = ["derive"] }
+tempfile = "3"
+serde_json = { version = "1", features = ["unbounded_depth", "float_roundtrip", "raw_value"] }
+regex = "1"
+sqlite-vec = "=0.1.9"
+fancy-regex = "0.14"
+toml = { version = "=0.8.2", default-features = false, features = ["parse", "preserve_order"] }
+rusqlite = { version = "=0.40.2", features = ["backup", "bundled", "trace", "functions"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = ["Win32_Storage_FileSystem", "Wdk_Storage_FileSystem", "Wdk_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_IO", "Win32_System_Diagnostics_Debug", "Win32_System_SystemServices"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[[bin]]
+name = "runtime-verify"
+path = "src/runtime_verify.rs"
+
+[[bin]]
+name = "executor-query"
+path = "src/executor_query.rs"
+
+[[bin]]
+name = "delegation-gate"
+path = "src/delegation_gate.rs"
+
+[[bin]]
+name = "project-hooks"
+path = "src/project_hooks.rs"
+
+[[bin]]
+name = "run-python"
+path = "src/run_python.rs"
+
+[[bin]]
+name = "run-python-launcher"
+path = "src/run_python.rs"
+
+[[bin]]
+name = "runtime-manifest"
+path = "src/runtime_manifest.rs"
+
+[[bin]]
+name = "adoption-install"
+path = "src/adoption_install.rs"
+
+[[bin]]
+name = "user-runtime-install"
+path = "src/user_runtime_install_main.rs"

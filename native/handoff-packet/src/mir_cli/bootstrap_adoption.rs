@@ -1085,6 +1085,16 @@ pub fn hook_commands(document: &Value) -> Vec<String> {
     }
     commands
 }
+fn native_session_start(body: &str) -> bool {
+    [
+        ".mir/bin/project-hooks",
+        "\"$native\" session-start",
+        "--mir-warmup",
+    ]
+    .iter()
+    .all(|marker| body.contains(marker))
+}
+
 pub fn validate_bootstrap_gate(
     root: &Path,
     host: &mut dyn Host,
@@ -1122,7 +1132,9 @@ pub fn validate_bootstrap_gate(
         ),
     ] {
         let body = bodies.get(label).map(String::as_str).unwrap_or("");
-        if markers.iter().any(|m| !body.contains(m)) {
+        if !(label == "session" && native_session_start(body))
+            && markers.iter().any(|m| !body.contains(m))
+        {
             errors.push(message.into());
         }
     }
@@ -1282,10 +1294,12 @@ pub fn validate_python_launcher(root: &Path, host: &mut dyn Host) -> (Vec<String
                 continue;
             }
         };
-        if !body.contains("run-python.sh") {
-            errors.push(format!("managed Python launcher is not wired into {hook}"));
-        } else {
+        if body.contains("run-python.sh") {
             wired.push(hook);
+        } else if hook == ".claude/hooks/session-start.sh" && native_session_start(&body) {
+            // The native handler owns bootstrap, rendering and its output cap.
+        } else {
+            errors.push(format!("managed Python launcher is not wired into {hook}"));
         }
         if has_raw_python(&body) {
             errors.push(format!("managed Python launcher bypass found in {hook}"));

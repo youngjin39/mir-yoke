@@ -371,6 +371,13 @@ def _hook_commands(document: object) -> list[str]:
     return commands
 
 
+def _native_session_start(body: str) -> bool:
+    return all(
+        marker in body
+        for marker in ('.mir/bin/project-hooks', '"$native" session-start', '--mir-warmup')
+    )
+
+
 def _validate_bootstrap_gate(root: Path) -> tuple[list[str], dict[str, object]]:
     errors: list[str] = []
     paths = {
@@ -396,7 +403,9 @@ def _validate_bootstrap_gate(root: Path) -> tuple[list[str], dict[str, object]]:
     mutation = bodies.get("mutation", "")
     if "mir_bootstrap_gate_state" not in helper or "mir_bootstrap_gate_enforce" not in helper:
         errors.append("bootstrap gate helper does not expose state and enforcement functions")
-    if "bootstrap-gate.sh" not in session or "mir_bootstrap_gate_state" not in session:
+    if not _native_session_start(session) and (
+        "bootstrap-gate.sh" not in session or "mir_bootstrap_gate_state" not in session
+    ):
         errors.append("bootstrap gate is not wired into SessionStart")
     if "bootstrap-gate.sh" not in mutation or "mir_bootstrap_gate_enforce" not in mutation:
         errors.append("bootstrap gate is not wired into the mutation hook")
@@ -514,10 +523,13 @@ def _validate_python_launcher(root: Path) -> tuple[list[str], dict[str, object]]
         except (OSError, UnicodeDecodeError) as exc:
             errors.append(f"managed Python launcher wiring is unreadable: {hook_relative}: {exc}")
             continue
-        if "run-python.sh" not in hook_body:
-            errors.append(f"managed Python launcher is not wired into {hook_relative}")
-        else:
+        if "run-python.sh" in hook_body:
             wired.append(hook_relative)
+        elif hook_relative == ".claude/hooks/session-start.sh" and _native_session_start(hook_body):
+            # The native handler owns bootstrap, rendering and its output cap.
+            pass
+        else:
+            errors.append(f"managed Python launcher is not wired into {hook_relative}")
         if _has_raw_python(hook_body):
             errors.append(f"managed Python launcher bypass found in {hook_relative}")
     return errors, {

@@ -135,6 +135,7 @@ dependencies = [
  "sqlite-vec",
  "tempfile",
  "toml",
+ "toml_edit",
  "windows-sys",
 ]
 

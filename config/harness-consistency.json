@@ -238,8 +238,7 @@
       ],
       "allowed_path_substrings": [
         ".claude/hooks/archive/",
-        "__pycache__",
-        "scripts/build_session_upfront_context.py"
+        "__pycache__"
       ],
       "retired_symbols": []
     },

@@ -2,7 +2,6 @@
 use std::path::Path;
 
 const HEADER: &str = "=== SESSION CONTEXT ===\n";
-const FALLBACK: &str = "repository_profile: unavailable\nmandatory_safety: inspect repository-local instructions before mutation\nContext depth on demand: scripts/mir.sh context pull \"<query>\" (--history for archived/expired)\n\n";
 
 /// Reproduce the shell's UTF-8 cap and command-substitution newline handling.
 fn capped(body: &str) -> String {
@@ -32,16 +31,7 @@ pub fn run(project: &Path) -> String {
             crate::bootstrap_enforce::instructions(state, project)
         );
     }
-    // File presence is retained solely because it chooses observable fallback
-    // bytes in the frozen hook. Neither Python nor script contents are executed.
-    let body = if project
-        .join("scripts/build_session_upfront_context.py")
-        .is_file()
-    {
-        format!("{HEADER}{}\n\n", crate::session_upfront::build(project))
-    } else {
-        format!("{HEADER}{FALLBACK}")
-    };
+    let body = format!("{HEADER}{}\n\n", crate::session_upfront::build(project));
     capped(&body)
 }
 

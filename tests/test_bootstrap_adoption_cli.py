@@ -582,7 +582,7 @@ def test_bootstrap_adoption_should_verify_gate_and_managed_launcher_wiring(tmp_p
     _ready_project(tmp_path)
     _write(
         tmp_path / ".claude/hooks/session-start.sh",
-        "#!/usr/bin/env bash\npython3 scripts/build_session_upfront_context.py\n",
+        "#!/usr/bin/env bash\npython3 scripts/example.py\n",
     )
 
     report = _run_native_adoption(installed_mir, tmp_path, 2)
@@ -725,3 +725,27 @@ def test_bootstrap_adoption_schema_should_validate_the_portable_manifest() -> No
     )
     jsonschema.Draft202012Validator.check_schema(schema)
     jsonschema.validate(_manifest(), schema)
+
+
+@pytest.mark.parametrize("native", [False, True], ids=["python-validator", "native-validator"])
+@pytest.mark.parametrize("raw_python", [False, True], ids=["native-hook", "python-bypass"])
+def test_adoption_accepts_native_session_start_without_python_launcher(
+    tmp_path, installed_mir, capsys, native, raw_python
+):
+    _ready_project(tmp_path)
+    source = Path(__file__).resolve().parents[1] / ".claude/hooks/session-start.sh"
+    body = source.read_text(encoding="utf-8")
+    if raw_python:
+        body += "python3 scripts/example.py\n"
+    _write(tmp_path / ".claude/hooks/session-start.sh", body)
+    expected_exit = 2 if raw_python else 0
+    if native:
+        report = _run_native_adoption(installed_mir, tmp_path, expected_exit)
+    else:
+        assert _run(tmp_path) == expected_exit
+        report = json.loads(capsys.readouterr().out)
+    if raw_python:
+        assert "managed Python launcher bypass" in json.dumps(report)
+    else:
+        assert report["status"] == "ready"
+        assert not (tmp_path / ".mir/bootstrap-receipt.json").exists()

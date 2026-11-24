@@ -1,33 +1,45 @@
 # Plan
 
-## Active task: v0.14.2 release preparation
+## Active task: SG-Y-PORT2 SessionStart upfront context port
 
-Intent authority: owner Discord 1574707453637951510 (2026-11-24),
-release the tested candidate now, Mac first; Windows E17 remains open for
-its next PC window. The source/version commit B brief authorizes local edits
-only. Baseline: `release/v0.14.2` at `061ecb07`.
+Intent authority: the owner-supplied SG-Y-PORT2 brief and Stage G common rules.
+Scope: port scripts/build_session_upfront_context.py into the existing native
+project-hooks SessionStart handler; leave an uncommitted, reviewable diff.
+Main owns generated .codex files, final adopter-payload regeneration and commits.
 
-Design: follow the v0.14.1 source checklist, align release and server versions,
-document native MCP and cohort changes, insert the approved automation wait
-cap, and refresh managed plugin, marketplace and command digests. Preserve
-native artifact pins and source.commit for bind C. Main owns generated Codex
-files, final adopter payload generation, review and commit, native publication,
-main update, push and tag. No consumer writes are authorized.
+Design: reuse session_upfront.rs, already called by native session-start for
+repository context, and remove its obsolete Python-file presence selector.
+Switch the legacy shell to session-start with the common native availability
+policy. The native handler already owns bootstrap gating and the UTF-8 output
+budget; this avoids a second assembler and any Python fallback.
+Recognize the native wrapper in both consumer adoption validators while retaining
+legacy wiring and raw-Python rejection. Use the already-pinned TOML syntax tree
+to preserve key identity, calendar validity, BOM and newline parity.
+Keep W1 reference bytes pinned separately from live files. Freeze the Python
+on synthetic projects before deletion; invalid UTF-8 crashes are diagnosed
+reference defects and the native renderer supplies safe unavailable context.
+Out-of-range TOML integers and JSON lone surrogates fail safely as undesigned
+format inputs; their permissive Python outputs remain frozen as defect evidence.
 
-Acceptance: offline frozen Python 3.12 dev/vector environment, lock check,
-SQLite vector preflight, the nine requested pytest files, mir-mcp locked
-Cargo tests, Ruff, fixture pin audit and ASCII diff check. Behaviour scenarios
-are not applicable: this slice changes release metadata and skill guidance,
-not runtime control flow. Windows and Linux attestation remain outside scope;
-Windows mir_entry_e17 needs a Windows-host capture. Adopter classification is
-expected to remain stale until Main regenerates its payload.
+Scenarios / acceptance matrix:
+- Frozen direct renderer: absent/empty/malformed/types, Unicode, long inputs,
+  directories, symlinks, intent conflict/completion and source gate order.
+- Real shell: ready native, missing/disabled/unexecutable/symlinked native,
+  failed warmup, launch statuses 64/126/127 and propagated ordinary failures.
+- SessionStart: bootstrap states, read-only behavior and UTF-8 10KB cap.
+- Retirement: no live callers, allowlist and inventory changes; W1 pin replay.
+- Offline fmt, clippy and crate tests; affected Python tests and Ruff.
+- Same synthetic ready project, ten hook start-to-exit runs before/after.
 
-Pre-tag review (owner decision 2026-11-24, Fable review before the tag): two
-read-only Fable slices found no P0; the P1 (direct registration on hosts whose
-pin is not from the source build) and all P2 findings were fixed in
-`fix/rel142-r` (A1, A2, A3, A7, A8, A9) and `fix/rel142-p` (B-01, B-02, B-04,
-B-05, B-06, docs). Deferred: Windows-only B-07/B-08 (next Windows window) and
-A6. The source commit after these merges replaces B; native artifacts are
-rebuilt and bound again from it.
+Current evidence: 38 frozen cases pass through the renderer and native handler;
+the crate passes 928 tests with one existing ignored capture test. The selected
+Python checks pass 592 tests plus the corrected W1 provenance check (1 test).
+Fmt, Clippy, Ruff, shell syntax and ontology mapping checks pass. Original local
+venv state is restored. Native availability mutation is rejected by the test.
 
-Prior cursors and release records: [change log](change_log.md).
+Integration acceptance remains with Main: stage archived deletions for the raw
+Git-index guard, regenerate adopter payload, and handle the pre-existing local
+jobs file that fails the public-path scan. Rebuild/bind the native artifact before
+delivering the retired Python source. No commit or release is authorized here.
+
+Prior cursor: tasks/change_log.md#cursor-before-sg-y-port2-2026-11-25.

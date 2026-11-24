@@ -77,7 +77,6 @@
       "composer.py"
     ],
     "scripts": [
-      "build_session_upfront_context.py",
       "check_ontology_fleet.py",
       "extract_changelog_entry.py",
       "generate_codex_derivatives.py",
@@ -348,7 +347,6 @@
       "test_runtime_verify_native_parity.py",
       "test_schema_validity.py",
       "test_selective_relations_skill.py",
-      "test_session_upfront_context.py",
       "test_setup_profile.py",
       "test_setup_wrappers.py",
       "test_spec_integrity.py",

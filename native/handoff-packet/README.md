@@ -403,19 +403,26 @@ Y6b and the existing shell tests.
 ## Own-project SessionStart (W1-Y9a)
 
 `project-hooks session-start` adds
-`mir-project-hooks-session-start-v1` without changing callers or registrations.
+`mir-project-hooks-session-start-v1`. The legacy `.claude/hooks/session-start.sh`
+now calls this native handler using the common availability policy, without
+Python fallback; registration paths remain unchanged.
 It reads `CLAUDE_PROJECT_DIR` (default `.`), shares the bootstrap state and
 instruction source modules, and renders repository identity, safety and the
 existing intent-conflict advisory in process. Startup never cleans up a cursor
 or writes project files. Incomplete bootstrap instructions are uncapped; ready
 output retains the shell's 10,239-byte threshold, UTF-8-safe prefix and final LF.
 
-The builder file's existence remains an input only because the frozen shell
-observably selects different fallback bytes when it is absent. Its contents and
-Python availability are never executed or tested. Python interpreter failures,
+SG-Y-PORT2 retires the Python builder and its file-presence selector. Ready
+startup always renders repository context directly. Frozen W1 shell bytes and
+the builder bytes already embedded in W1 setup retain the historical oracle. Python interpreter failures,
 builder exceptions and invalid UTF-8 tracebacks are retired execution branches:
 the native renderer reads the profile directly, treats unreadable or malformed
 profiles as unavailable, and omits unreadable or malformed intent advisories.
+The renderer uses the already-pinned `toml_edit` syntax tree to distinguish
+ordinary map keys from dates, validates calendar dates, and mirrors Python
+universal-newline handling and BOM rejection. Out-of-range TOML integers use
+unavailable-profile output; JSON lone surrogates omit the advisory, instead of
+Python's permissive acceptance of these undesigned format inputs.
 The three original ready envelopes using a synthetic launcher that swallowed the
 cap command remain immutable historical evidence, rather than native output
 expectations. Real-launcher supplementary captures establish rendered output.
@@ -423,5 +430,4 @@ expectations. Real-launcher supplementary captures establish rendered output.
 The shared bootstrap engine's unsupported platform/path inputs stay fail-closed
 with missing-state recovery instructions. Windows type checking does not prove
 Windows shell parity or runtime readiness. Receipt-bound runtime verification
-retains the bootstrap engine's existing external verifier boundary. No release,
-consumer adoption or caller migration is part of this slice.
+retains the bootstrap engine's existing external verifier boundary. No release or consumer adoption is part of this slice.

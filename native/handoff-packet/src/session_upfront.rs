@@ -76,25 +76,70 @@ impl<'de> Deserialize<'de> for Value {
 }
 
 fn parse_toml(text: &str) -> Option<Value> {
-    let mut value = Value::deserialize(toml::Deserializer::new(text)).ok()?;
-    fn dates(v: &mut Value) {
-        match v {
-            Value::Map(fields)
-                if fields.len() == 1 && fields[0].0 == "$__toml_private_datetime" =>
-            {
-                if let Value::String(s) = &fields[0].1
-                    && let Ok(date) = s.parse()
-                {
-                    *v = Value::Date(date);
-                }
-            }
-            Value::Map(fields) => fields.iter_mut().for_each(|(_, v)| dates(v)),
-            Value::List(values) => values.iter_mut().for_each(dates),
-            _ => (),
+    // tomllib rejects a UTF-8 BOM; the Rust TOML parser accepts it.
+    if text.starts_with('\u{feff}') {
+        return None;
+    }
+    fn table(t: &toml_edit::Table) -> Option<Value> {
+        t.iter()
+            .map(|(key, value)| Some((key.into(), item(value)?)))
+            .collect::<Option<Vec<_>>>()
+            .map(Value::Map)
+    }
+    fn item(i: &toml_edit::Item) -> Option<Value> {
+        match i {
+            toml_edit::Item::None => None,
+            toml_edit::Item::Table(t) => table(t),
+            toml_edit::Item::ArrayOfTables(t) => t
+                .iter()
+                .map(table)
+                .collect::<Option<Vec<_>>>()
+                .map(Value::List),
+            toml_edit::Item::Value(v) => value(v),
         }
     }
-    dates(&mut value);
-    Some(value)
+    fn value(v: &toml_edit::Value) -> Option<Value> {
+        Some(match v {
+            toml_edit::Value::String(v) => Value::String(v.value().clone()),
+            toml_edit::Value::Integer(v) => Value::Int(v.value().to_string()),
+            toml_edit::Value::Float(v) => Value::Float(*v.value()),
+            toml_edit::Value::Boolean(v) => Value::Bool(*v.value()),
+            toml_edit::Value::Datetime(v) => {
+                let d = v.value();
+                if let Some(date) = d.date {
+                    let leap = date.year % 4 == 0 && (date.year % 100 != 0 || date.year % 400 == 0);
+                    let days = match date.month {
+                        2 => {
+                            if leap {
+                                29
+                            } else {
+                                28
+                            }
+                        }
+                        4 | 6 | 9 | 11 => 30,
+                        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+                        _ => return None,
+                    };
+                    if date.year == 0 || date.day == 0 || date.day > days {
+                        return None;
+                    }
+                }
+                if d.time.is_some_and(|t| t.second > 59) {
+                    return None;
+                }
+                Value::Date(*d)
+            }
+            toml_edit::Value::Array(v) => Value::List(v.iter().map(value).collect::<Option<_>>()?),
+            toml_edit::Value::InlineTable(v) => Value::Map(
+                v.iter()
+                    .map(|(key, v)| Some((key.into(), value(v)?)))
+                    .collect::<Option<_>>()?,
+            ),
+        })
+    }
+    // Match Path.read_text's universal-newline conversion before TOML parsing.
+    let text = text.replace("\r\n", "\n").replace('\r', "\n");
+    table(text.parse::<toml_edit::Document>().ok()?.as_table())
 }
 
 fn parse_json(text: &str) -> Option<Value> {
