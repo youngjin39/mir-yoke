@@ -1,15 +1,15 @@
 {
-  "source_commit": "7f2fbc1373600c5fc8c872dccbd086525652936b",
+  "source_commit": "9c36051506849fad8d32cd360f77eef0d3e71a9e",
   "targets": {
     "aarch64-apple-darwin": {
-      "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-7f2fbc137360/mir-aarch64-apple-darwin",
-      "sha256": "d96dd7de58598aaa9c4b80cc06e8781e3340a63d7f4ce28d627ed627d6d3977f",
-      "size": 5777552
+      "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-9c3605150684/mir-aarch64-apple-darwin",
+      "sha256": "a8e5ae88443de7d63720f25845c8cfc8d891e6515b21317111d12f1ed7433bf9",
+      "size": 5777568
     },
     "x86_64-apple-darwin": {
-      "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-7f2fbc137360/mir-x86_64-apple-darwin",
-      "sha256": "7d09839748a642388ecb9d72ffc9736db08d030c0db637c36b00213e385c78be",
-      "size": 6539944
+      "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-9c3605150684/mir-x86_64-apple-darwin",
+      "sha256": "49e89085ac58ad76120dbd8d03a7be1456f4ca9dfb9e9068b5e31051b6fa90cd",
+      "size": 6544056
     }
   }
 }
