@@ -4139,7 +4139,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_quiet_resume.rs",
-      "sha256": "1e958be2d12e3ed6d5d4e78dc3c7ef0e1825923c31222399d94fc57fd4a86eb3"
+      "sha256": "88f135a9cd67b8213ee015520186670365d77706e5097648d150fad4375cbbb3"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6455,7 +6455,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/support/windows_oracle.rs",
-      "sha256": "fe3ba069f0f25d5500fb5f99e7692de478be3da9c4256b104b53a655f9f90b7a"
+      "sha256": "02279a176ea5b41c62e74a723df49c982b5740f3b5a44df6fc2dada5c2742f97"
     },
     {
       "classification": "template-maintainer-tool",

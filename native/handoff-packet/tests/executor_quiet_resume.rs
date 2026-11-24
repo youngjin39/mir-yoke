@@ -43,7 +43,11 @@ fn captured_resume_patches_and_failures_match() {
     .unwrap();
     let root = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-scratch"))
+        .unwrap_or_else(|| {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("target")
+                .join("test-scratch")
+        })
         .join(format!("resume-oracle-{}", std::process::id()));
     fs::create_dir_all(root.join("config")).unwrap();
     fs::write(

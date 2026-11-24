@@ -86,8 +86,7 @@ mod tests {
     use super::*;
     #[test]
     fn locale_slot_preserves_code_class_paths_and_crlf() {
-        let captured =
-            "PermissionError: [WinError 5] 액세스가 거부되었습니다: 'source' -> 'destination'\r\n";
+        let captured = "PermissionError: [WinError 5] \u{c561}\u{c138}\u{c2a4}\u{ac00} \u{ac70}\u{bd80}\u{b418}\u{c5c8}\u{c2b5}\u{b2c8}\u{b2e4}: 'source' -> 'destination'\r\n";
         let raw = std::io::Error::from_raw_os_error(5).to_string();
         let message = raw
             .strip_suffix(" (os error 5)")
