@@ -202,6 +202,15 @@ m.main(reference="--internal-reference" in sys.argv)
         [sys.executable, '-I', '-B', str(wrapper)])
 
 
+def fallback_call(tmp_path):
+    """Use version-sensitive Unicode to exercise reference transport."""
+    (tmp_path / '.mir').mkdir()
+    (tmp_path / '.mir/ontology-map.json').write_text(
+        '{"concepts":{"sample":{"name":"\u1c8a"}}}', encoding='utf-8')
+    return wire(request('tools/call', {'name': 'ontology_lookup', 'arguments': {
+        'target_root': str(tmp_path), 'query': '\u1c89'}}))
+
+
 @pytest.mark.parametrize('mode,code', [('flood', 'E_LIMIT'), ('fail', 'E_IO'),
                                       ('invalid', 'E_FORMAT'), ('hang', 'E_TIMEOUT')])
 def test_forward_failure_recovery(native, tmp_path, mode, code):
@@ -217,7 +226,7 @@ def test_forward_failure_recovery(native, tmp_path, mode, code):
                        f'with Path({str(attempts)!r}).open("a") as log: log.write("attempt\\n")\n'
                        + wrapper.read_text())
     start = time.monotonic()
-    payload = wire(request('tools/call', {'name': 'unknown', 'arguments': {}}))
+    payload = fallback_call(tmp_path)
     values = [json.loads(line) for line in run(
         [*native[:-1], str(wrapper)], payload + wire(request())).splitlines()]
     assert values[0]['result']['structuredContent']['error'] == {'code': code}
@@ -248,7 +257,7 @@ def test_forward_preserves_child_bytes(native, tmp_path):
     expected = b'{ "jsonrpc": "2.0", "id": 1, "result": {"opaque": 1e400} }\n'
     wrapper = tmp_path / 'literal.py'
     wrapper.write_text(f'import sys\nsys.stdout.buffer.write({expected!r})\n')
-    payload = wire(request('tools/call', {'name': 'unknown', 'arguments': {}}))
+    payload = fallback_call(tmp_path)
     assert run([*native[:-1], str(wrapper)], payload) == expected
 
 

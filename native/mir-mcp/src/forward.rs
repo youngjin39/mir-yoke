@@ -9,23 +9,31 @@ pub struct Forward {
     pub python: OsString,
     pub script: OsString,
 }
+
 impl Forward {
-    // One child, one deadline including spawn/write/read/wait, never retry.
-    pub fn call(&self, raw: &[u8]) -> Result<Vec<u8>, &'static str> {
+    // One child at a time; the caller's deadline includes native dispatch and
+    // any semantic forwarding, including spawn/write/read/wait. Never retry.
+    pub fn call(&self, raw: &[u8], deadline: Instant) -> Result<Vec<u8>, &'static str> {
         let mut command = Command::new(&self.python);
         command
             .args(["-I", "-B", "-u"])
             .arg(&self.script)
             .arg("--internal-reference");
-        Self::capture(command, raw)
+        Self::capture(command, raw, deadline)
     }
-    pub fn native(raw: &[u8]) -> Result<Vec<u8>, &'static str> {
+    pub fn native(raw: &[u8], deadline: Instant) -> Result<Vec<u8>, &'static str> {
         let mut command = Command::new(std::env::current_exe().map_err(|_| "E_IO")?);
         command.arg("--internal-native");
-        Self::capture(command, raw)
+        Self::capture(command, raw, deadline)
     }
-    fn capture(mut command: Command, raw: &[u8]) -> Result<Vec<u8>, &'static str> {
-        let deadline = Instant::now() + Duration::from_secs(10);
+    fn capture(
+        mut command: Command,
+        raw: &[u8],
+        deadline: Instant,
+    ) -> Result<Vec<u8>, &'static str> {
+        if Instant::now() >= deadline {
+            return Err("E_TIMEOUT");
+        }
         let mut child = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -94,5 +102,19 @@ impl Forward {
         }
         let _ = child.wait();
         result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn expired_call_deadline_never_spawns_another_child() {
+        let command = Command::new("nonexistent-reference-must-not-run");
+        assert_eq!(
+            Forward::capture(command, b"{}\n", Instant::now()),
+            Err("E_TIMEOUT")
+        );
     }
 }

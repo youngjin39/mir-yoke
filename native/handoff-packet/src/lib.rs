@@ -61,6 +61,10 @@ pub(crate) mod python_decimal;
 #[forbid(unsafe_code)]
 pub mod python_json;
 #[forbid(unsafe_code)]
+mod relation_terms;
+#[forbid(unsafe_code)]
+mod relations_reader;
+#[forbid(unsafe_code)]
 pub mod session_start;
 #[forbid(unsafe_code)]
 mod session_upfront;

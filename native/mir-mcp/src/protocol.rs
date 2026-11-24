@@ -132,26 +132,15 @@ impl Protocol {
                 if self.worker {
                     crate::native::call(params["name"].as_str().unwrap_or(""), &params["arguments"])
                 } else {
-                    let response = if matches!(
-                        params["name"].as_str(),
-                        Some(
-                            "handoff_pins"
-                                | "ontology_validate"
-                                | "ontology_lookup"
-                                | "ontology_impact"
-                        )
-                    ) {
-                        Forward::native(raw).and_then(|bytes| {
-                            let value = crate::wire::parse(&bytes)?;
-                            if value["result"]["structuredContent"]["error"]["code"] == "FORWARD" {
-                                forward.call(raw)
-                            } else {
-                                Ok(bytes)
-                            }
-                        })
-                    } else {
-                        forward.call(raw)
-                    };
+                    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+                    let response = Forward::native(raw, deadline).and_then(|bytes| {
+                        let value = crate::wire::parse(&bytes)?;
+                        if value["result"]["structuredContent"]["error"]["code"] == "FORWARD" {
+                            forward.call(raw, deadline)
+                        } else {
+                            Ok(bytes)
+                        }
+                    });
                     match response {
                         Ok(bytes) => return Response::Raw(bytes),
                         Err(code) => {

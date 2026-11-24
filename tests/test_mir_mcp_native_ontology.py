@@ -244,11 +244,103 @@ def test_unicode_reference_parity(ontology_native, ontology_target, query, label
     assert result['data']['matches'][0]['label'] == label
 
 
-@pytest.mark.parametrize('case', ['unicode-query', 'unicode-text', 'unicode-pointer', 'relations',
+@pytest.mark.parametrize('case', ['unicode-query', 'unicode-text', 'unicode-pointer',
                                  'regex-anchor', 'covered-check', 'unicode-line',
-                                 'semver-overflow', 'float-lookup', 'integer-overflow',
-                                 'unicode-profile', 'float-impact'])
-def test_explicit_reference_forwarding(ontology_native, ontology_target, tmp_path, case):
+                                 'semver-overflow', 'prerelease-overflow', 'integer-overflow',
+                                 'unicode-profile'])
+def test_native_ontology_edge_cases(ontology_native, ontology_target, case):
+    name, arguments = 'ontology_lookup', {'query': 'sample'}
+    if case == 'unicode-query':
+        arguments['query'] = 'stra\u00dfe'
+        mapping_write(ontology_target, {'concepts': {'strasse': {'name': 'STRASSE'}}})
+    elif case == 'unicode-text':
+        arguments['query'] = '\ud55c\uae00 ²'
+        mapping_write(ontology_target, {'domain': {'concepts': [
+            {'name': '\ud55c\uae00 ²', 'ref': 'source.py'}]}})
+    elif case == 'unicode-pointer':
+        arguments['query'] = '\ud55c\uae00'
+        mapping_write(ontology_target, {'concepts': {'\ud55c\uae00': {'name': 'sample'}}})
+    elif case in ('regex-anchor', 'covered-check', 'unicode-line'):
+        name, arguments = 'ontology_impact', {'paths': ['source.py']}
+        entry = {'name': 'sample', 'ref': 'source.py#sample'}
+        if case == 'covered-check':
+            entry = {'name': 'sample', 'ref': 'source.py', 'check': 'source.py#sample'}
+        elif case == 'unicode-line':
+            entry = {'ref': 'source.py', 'check': 'source.py:\u0660\u0663'}
+        mapping_write(ontology_target, {'domain': {'invariants': [entry]}})
+    elif case in ('semver-overflow', 'prerelease-overflow'):
+        name, arguments = 'ontology_validate', {}
+        version = ('18446744073709551616.1.0' if case == 'semver-overflow'
+                   else '1.1.0-18446744073709551616')
+        mapping_write(ontology_target, {'contract': {'version': version,
+                                                    'version_range': '>=1.0.0 <2.0.0'}})
+    elif case == 'unicode-profile':
+        name, arguments = 'ontology_validate', {}
+        (ontology_target / '.mir/repo-profile.toml').write_text(
+            'slug="\ud55c\uae00"\n', encoding='utf-8')
+        mapping_write(ontology_target, {'namespace': '\ud55c\uae00'})
+    else:
+        arguments['query'] = str(2 ** 80)
+        mapping_write(ontology_target, {'domain': {'concepts': [
+            {'name': 'sample', 'value': 2 ** 80, 'ref': 'source.py'}]}})
+    result = parity(ontology_native, ontology_target, name, arguments)
+    assert result['ok'] is True
+    if name == 'ontology_lookup':
+        assert result['data']['matches']
+
+
+@pytest.mark.parametrize('number,query,score', [
+    ('1e-7', '1e 07', 2),
+    ('1e16', '1e 16', 2),
+    ('1e15', '1000000000000000 0', 2),
+    ('-0.000e-4', '0', 1),
+    ('1.234567890123456789', '2345678901234567', 1),
+    ('1e9999', 'infinity', 1),
+    ('-1e9999', 'infinity', 1),
+])
+def test_native_lookup_number_words(ontology_native, ontology_target, number, query, score):
+    (ontology_target / '.mir/ontology-map.json').write_text(
+        '{"concepts":{"number":{"name":"sample","value":' + number + '}}}', encoding='utf-8')
+    result = parity(ontology_native, ontology_target, 'ontology_lookup', {'query': query})
+    assert result['data']['matches'][0]['score'] == score
+
+
+def test_native_impact_formats_finite_refs(ontology_native, ontology_target):
+    (ontology_target / '.mir/ontology-map.json').write_text(
+        '{"domain":{"invariants":[{"ref":{"numbers":[-0.000e-4,1e-7,1e16]},'
+        '"evidence":["source.py"]}]}}', encoding='utf-8',
+    )
+    result = parity(ontology_native, ontology_target, 'ontology_impact', {'paths': ['source.py']})
+    assert result['data']['undeclared_check_links'] == [
+        {'pointer': '/domain/invariants/0', 'ref': {'numbers': [-0.0, 1e-7, 1e16]}},
+    ]
+
+
+@pytest.mark.parametrize('spelling', ['1e9999', '0.0'])
+def test_native_impact_selects_before_serializing_refs(ontology_native, ontology_target, spelling):
+    mapping = {'domain': {'invariants': [
+        {'ref': {'padding': ['x' * 4000] * 3}, 'evidence': ['source.py']},
+        {'ref': {'padding': 'x' * 4000, 'number': 'NUMBER'}, 'evidence': ['source.py']},
+    ]}}
+    (ontology_target / '.mir/ontology-map.json').write_text(
+        json.dumps(mapping).replace('"NUMBER"', spelling), encoding='utf-8',
+    )
+    args = {'paths': ['source.py']}
+    first = parity(ontology_native, ontology_target, 'ontology_impact', {**args, 'page_size': 1})
+    second = parity(ontology_native, ontology_target, 'ontology_impact', {
+        **args, 'page_size': 1, 'cursor': first['next_cursor'],
+    })
+    both = parity(ontology_native, ontology_target, 'ontology_impact', {**args, 'page_size': 2})
+    assert first['ok'] and first['next_cursor']
+    if spelling == '1e9999':
+        assert second['error'] == both['error'] == {'code': 'E_FORMAT'}
+    else:
+        assert second['ok'] and second['next_cursor'] is None
+        # The full page would exceed the response limit and shrinks to one item.
+        assert both['ok'] and both['data'] == first['data'] and both['next_cursor']
+
+
+def test_explicit_reference_forwarding(ontology_native, ontology_target, tmp_path):
     sentinel = tmp_path / 'sentinel.py'
     log = tmp_path / 'forwarded.json'
     sentinel.write_text(
@@ -257,39 +349,8 @@ def test_explicit_reference_forwarding(ontology_native, ontology_target, tmp_pat
         'request = json.loads(raw)\n'
         'print(json.dumps({"jsonrpc":"2.0","id":request["id"],'
         '"result":{"forwarded":True}},separators=(",",":")))\n', encoding='utf-8')
-    name, arguments = 'ontology_lookup', {'query': 'sample'}
-    if case == 'unicode-query':
-        arguments['query'] = 'stra\u00dfe'
-    elif case == 'unicode-text':
-        mapping_write(ontology_target, {'domain': {'concepts': [
-            {'name': 'sample \ud55c\uae00', 'ref': 'source.py'}]}})
-    elif case == 'unicode-pointer':
-        mapping_write(ontology_target, {'concepts': {'\ud55c\uae00': {'name': 'sample'}}})
-    elif case == 'relations':
-        name, arguments = 'relations_query', {'anchor': 'REQ', 'purpose': 'implementation'}
-    elif case in ('regex-anchor', 'covered-check', 'unicode-line'):
-        name, arguments = 'ontology_impact', {'paths': ['source.py']}
-        entry = {'name': 'sample', 'ref': 'source.py#sample'}
-        if case == 'covered-check':
-            entry = {'name': 'sample', 'ref': 'source.py', 'check': 'source.py#sample'}
-        elif case == 'unicode-line':
-            entry['ref'] = 'source.py:\u0661'
-        mapping_write(ontology_target, {'domain': {'invariants': [entry]}})
-    elif case == 'semver-overflow':
-        name, arguments = 'ontology_validate', {}
-        mapping_write(ontology_target, {'contract': {'version': '18446744073709551616.1.0'}})
-    elif case == 'float-impact':
-        name, arguments = 'ontology_impact', {'paths': ['source.py']}
-        mapping_write(ontology_target, {'domain': {'invariants': [
-            {'ref': 1e-7, 'evidence': ['source.py']}]}})
-    elif case == 'unicode-profile':
-        name, arguments = 'ontology_validate', {}
-        (ontology_target / '.mir/repo-profile.toml').write_text(
-            'slug="\ud55c\uae00"\n', encoding='utf-8')
-    else:
-        mapping_write(ontology_target, {'domain': {'concepts': [
-            {'name': 'sample', 'value': 1e-7 if case == 'float-lookup' else 2 ** 80,
-             'ref': 'source.py'}]}})
+    name, arguments = 'ontology_lookup', {'query': '\u1c89'}  # Assigned in Unicode 16.
+    mapping_write(ontology_target, {'concepts': {'sample': {'name': '\u1c8a'}}})
     raw = call([*ontology_native[:-1], str(sentinel)], ontology_target, name, arguments)
     assert json.loads(raw)['result'] == {'forwarded': True}
     forwarded = json.loads(log.read_text())
@@ -329,12 +390,37 @@ def test_invalid_mapping_utf8(ontology_native, ontology_target, name, args):
     assert result['error'] == {'code': 'E_IO'}
 
 
-def test_covered_line_overflow_forwarding(ontology_native, ontology_target, tmp_path):
+def test_native_covered_line_overflow(ontology_native, ontology_target):
     mapping_write(ontology_target, {'domain': {'invariants': [
         {'ref': 'source.py', 'check': 'source.py:18446744073709551616'}]}})
-    command = [*ontology_native[:-1], str(SCRIPT)]
-    result = parity(command, ontology_target, 'ontology_impact', {'paths': ['source.py']})
+    result = parity(ontology_native, ontology_target, 'ontology_impact', {'paths': ['source.py']})
     assert result['data']['stale_refs']
-    # A broken reference proves this path requests forwarding.
-    failed = call(ontology_native, ontology_target, 'ontology_impact', {'paths': ['source.py']})
-    assert json.loads(failed)['result']['structuredContent']['error'] == {'code': 'E_IO'}
+
+
+@pytest.mark.parametrize('path,source,anchor,found', [
+    ('README.md', '<!-- # Hidden -->\n# Title\n# Title\n', 'title-1', True),
+    ('README.md', '~~~\n# Hidden\n~~~\n# Visible\n', 'hidden', False),
+    ('README.md', 'first\u2028# Heading\n', 'heading', True),
+    ('code.kt', '// fun sample()\n@Example\nprivate fun sample() {}', 'scope.sample', True),
+    ('code.dart', '/* class thing {} */\nclass things {}', 'thing', False),
+    ('thing.sh', 'function run \n { echo ok; }', 'run', True),
+    ('config.toml', '[[\nsection\n]] # a comment', 'section', True),
+    ('sample.js', 'const sample$extra = 1\nsample == 4', 'sample', False),
+    ('sample.js', 'test("sample", f);', 'sample', True),
+    ('sample.py', 'def sample(): pass\n', '', False),
+])
+def test_native_symbol_grammars(ontology_native, ontology_target, path, source, anchor, found):
+    (ontology_target / path).write_text(source, encoding='utf-8')
+    mapping_write(ontology_target, {'domain': {'invariants': [{'ref': f'{path}#{anchor}'}]}})
+    result = parity(ontology_native, ontology_target, 'ontology_impact', {'paths': [path]})
+    assert bool(result['data']['stale_refs']) is not found
+
+
+@pytest.mark.parametrize('digits', [4300, 4301])
+@pytest.mark.parametrize('sign', ['', '-'])
+def test_mapping_integer_digit_bound(ontology_native, ontology_target, digits, sign):
+    (ontology_target / '.mir/ontology-map.json').write_bytes(
+        b'{"concepts":{"sample":{"name":"sample","value":' +
+        sign.encode() + b'9' * digits + b'}}}')
+    result = parity(ontology_native, ontology_target, 'ontology_lookup', {'query': 'sample'})
+    assert result['error'] == (None if digits == 4300 else {'code': 'E_FORMAT'})

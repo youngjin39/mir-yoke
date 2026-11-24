@@ -13,6 +13,7 @@ mod native;
 mod ontology;
 mod pagination;
 mod protocol;
+mod relations;
 mod wire;
 use forward::Forward;
 use protocol::{Protocol, Response, error};
