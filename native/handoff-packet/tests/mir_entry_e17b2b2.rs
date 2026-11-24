@@ -1,4 +1,6 @@
 #![cfg(unix)]
+#[path = "support/executable.rs"]
+mod executable;
 #[path = "support/e17_production_replays.rs"]
 mod original_bootstrap_replays;
 use handoff_packet::mir_cli::{bootstrap as b, capability_manager::Output};
@@ -7,7 +9,7 @@ use std::{fs, os::unix::fs::PermissionsExt, path::PathBuf, process::Command};
 fn setup(source: &str) -> (tempfile::TempDir, PathBuf) {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path().canonicalize().unwrap();
-    fs::copy(env!("CARGO_BIN_EXE_mir"), root.join("mir")).unwrap();
+    executable::copy(env!("CARGO_BIN_EXE_mir"), root.join("mir")).unwrap();
     fs::create_dir(root.join(".mir")).unwrap();
     let package = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../src/mir");
     let script = format!(
@@ -20,7 +22,7 @@ fn setup(source: &str) -> (tempfile::TempDir, PathBuf) {
     );
     fs::write(root.join("launch.py"), script).unwrap();
     let python = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.venv/bin/python");
-    fs::write(
+    executable::write(
         root.join("python"),
         format!(
             "#!/bin/sh\nif [ \"$1\" = -I ]; then exec '{}' \"$@\"; fi\nexec '{}' -I '{}' \"$@\"\n",

@@ -1,3 +1,6 @@
+#[cfg(unix)]
+#[path = "support/executable.rs"]
+mod executable;
 use serde_json::Value;
 use std::{fs, process::Command};
 
@@ -135,7 +138,7 @@ fn host_child() {
         "RuntimeError"
     );
     let fake = root.join("fake");
-    fs::write(&fake, "#!/bin/sh\necho $$ > child.pid\n[ -z \"$PYTHONPATH$VIRTUAL_ENV$UV_PROJECT_ENVIRONMENT\" ] || exit 9\n[ \"$HOME\" = \"$PWD\" ] || exit 8\nprintf '%s' '{\"ready\":true,\"changed_paths\":[]}'\n").unwrap();
+    executable::write(&fake, "#!/bin/sh\necho $$ > child.pid\n[ -z \"$PYTHONPATH$VIRTUAL_ENV$UV_PROJECT_ENVIRONMENT\" ] || exit 9\n[ \"$HOME\" = \"$PWD\" ] || exit 8\nprintf '%s' '{\"ready\":true,\"changed_paths\":[]}'\n").unwrap();
     fs::set_permissions(&fake, fs::Permissions::from_mode(0o755)).unwrap();
     let mut request = CommandRequest {
         argv: vec![fake.to_str().unwrap().into()],

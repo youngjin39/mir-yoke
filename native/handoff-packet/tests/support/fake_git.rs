@@ -1,3 +1,6 @@
+#[cfg(unix)]
+#[path = "executable.rs"]
+mod executable;
 use std::{fs, path::Path, process::Command, sync::OnceLock};
 
 pub fn install(tools: &Path, command: &mut Command, changed: &str, mode: &str) {
@@ -26,12 +29,14 @@ pub fn install(tools: &Path, command: &mut Command, changed: &str, mode: &str) {
     let executable = tools.join(format!("git{}", std::env::consts::EXE_SUFFIX));
     // Each replay owns this directory; preserve the executable across records.
     if !executable.exists() {
-        fs::write(&executable, build).unwrap();
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
+            executable::write(&executable, build).unwrap();
             fs::set_permissions(&executable, fs::Permissions::from_mode(0o755)).unwrap();
         }
+        #[cfg(not(unix))]
+        fs::write(&executable, build).unwrap();
     }
     command
         .env("PATH", tools)

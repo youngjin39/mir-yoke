@@ -1,3 +1,5 @@
+#[path = "support/executable.rs"]
+mod executable;
 use handoff_packet::{
     executor_command_hooks::{CommandHooks, TeardownOutcome},
     executor_hooks::{HookSession, HooksConfig},
@@ -47,7 +49,7 @@ impl Fixture {
         let name = format!("fixture{}", std::env::consts::EXE_SUFFIX);
         let example = fixture_binary();
         let copy_timing = Timing::new("fixture/copy");
-        fs::copy(&example, root.join(&name))
+        executable::copy(&example, root.join(&name))
             .expect("build fixture first: cargo build --offline --locked --example hook_fixture");
         drop(copy_timing);
         let hash_timing = Timing::new("fixture/hash");

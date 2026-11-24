@@ -7,6 +7,10 @@ use std::{
     process::Command,
 };
 
+#[cfg(unix)]
+#[path = "support/executable.rs"]
+mod executable;
+
 const NOW: &str = "2026-07-11T00:03:01+00:00";
 struct Fixture(PathBuf);
 impl Fixture {
@@ -793,7 +797,7 @@ os.execv({git}, [{git}, *args])
     )
     .unwrap();
     let quote = |path: &Path| format!("'{}'", path.to_str().unwrap().replace('\'', "'\\''"));
-    fs::write(
+    executable::write(
         shim.join("git"),
         format!(
             "#!/bin/sh\nexec {} -I {} \"$@\"\n",

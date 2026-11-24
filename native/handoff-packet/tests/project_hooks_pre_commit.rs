@@ -2,6 +2,7 @@
 #![cfg(unix)]
 #[path = "../src/digest.rs"]
 mod digest;
+use frozen::executable;
 #[path = "support/replay.rs"]
 #[allow(dead_code)]
 mod frozen;
@@ -78,7 +79,7 @@ fn assert_native(record: &Value) {
     // Do not execute ambient profile snippets in the isolated fixture.
     use std::os::unix::fs::PermissionsExt;
     let startup = root.join("tools/run-parts");
-    std::fs::write(&startup, "#!/bin/sh\nexit 0\n").unwrap();
+    executable::write(&startup, "#!/bin/sh\nexit 0\n").unwrap();
     std::fs::set_permissions(&startup, std::fs::Permissions::from_mode(0o755)).unwrap();
     std::fs::write(
         root.join("home/.bash_profile"),

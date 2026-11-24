@@ -15,6 +15,10 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(unix)]
+#[path = "support/executable.rs"]
+mod executable;
+
 struct Fixture(PathBuf);
 impl Fixture {
     fn new(name: &str) -> Self {
@@ -502,7 +506,7 @@ fn refused_commit_alias_case(nested: bool) {
     let wt = create_dispatch_worktree(&repo, "alias", "HEAD", "brief", Some(&alias)).unwrap();
     write(&wt.path, "pkg/a.py", "a = 2\n");
     let hook = repo.join(".git/hooks/pre-commit");
-    fs::write(&hook, "#!/bin/sh\nexit 73\n").unwrap();
+    executable::write(&hook, "#!/bin/sh\nexit 73\n").unwrap();
     fs::set_permissions(&hook, fs::Permissions::from_mode(0o700)).unwrap();
     let outcome = DispatchOutcome {
         status: "completed".into(),
@@ -613,7 +617,7 @@ fn commit_hook_invalid_utf8_matches_python_diagnostic() {
     .unwrap();
     write(&wt.path, "pkg/a.py", "a = 2\n");
     let hook = repo.join(".git/hooks/pre-commit");
-    fs::write(&hook, "#!/bin/sh\nprintf '\\377' >&2\nexit 1\n").unwrap();
+    executable::write(&hook, "#!/bin/sh\nprintf '\\377' >&2\nexit 1\n").unwrap();
     fs::set_permissions(&hook, fs::Permissions::from_mode(0o700)).unwrap();
     let options = FinalizeOptions {
         artifacts_root: Some(fixture.0.join("artifacts")),
@@ -1018,7 +1022,7 @@ fn caller_spelling_producer_matrix() {
                                     options.gate.expect_changes = true;
                                     let hook = repo.join(".git/hooks/pre-commit");
                                     if producer == "commit" {
-                                        fs::write(&hook, "#!/bin/sh\nexit 1\n").unwrap();
+                                        executable::write(&hook, "#!/bin/sh\nexit 1\n").unwrap();
                                         fs::set_permissions(
                                             &hook,
                                             fs::Permissions::from_mode(0o700),
