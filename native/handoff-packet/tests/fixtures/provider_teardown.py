@@ -133,9 +133,15 @@ def run(binary, root, mode):
     (root / 'mode').write_text(mode)
     env = {'HOME': str(root / 'home'), 'TMPDIR': str(root / 'tmp'),
            'PATH': str(root / 'bin'), 'CODEX_BIN': str(launcher), 'MIR_CODEX_MAIN': '1',
-           'MIR_EXECUTOR_OWNED_RECEIPT': str(root / 'receipt')}
+           'MIR_EXECUTOR_OWNED_RECEIPT': str(root / 'receipt'),
+           'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': '/dev/null'}
     subprocess.run(['/usr/bin/git', 'init', str(root)], cwd=root, env=env,
                    check=True, capture_output=True)
+    # Linked worktrees share this local identity for later worker commits.
+    for key, value in (('user.name', 'Synthetic'),
+                       ('user.email', 'synthetic@example.invalid')):
+        subprocess.run(['/usr/bin/git', 'config', '--local', key, value],
+                       cwd=root, env=env, check=True, capture_output=True)
     extra = []
     if mode.startswith(('dispatch-', 'reviewer-')):
         config_path = root / 'config/mir-executor.local.json'
@@ -150,8 +156,7 @@ def run(binary, root, mode):
         (root / 'code.txt').write_text('initial\n')
         (root / '.gitignore').write_text('*\n!code.txt\n!.gitignore\n')
         for argv in (['add', 'code.txt', '.gitignore'],
-                     ['-c', 'user.name=Synthetic', '-c', 'user.email=synthetic@example.invalid',
-                      'commit', '-qm', 'synthetic']):
+                     ['commit', '-qm', 'synthetic']):
             subprocess.run(['/usr/bin/git', *argv], cwd=root, env=env,
                            check=True, capture_output=True)
         for name in ('uv', 'claude'):

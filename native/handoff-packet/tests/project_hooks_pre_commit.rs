@@ -74,6 +74,17 @@ fn assert_native(record: &Value) {
             .unwrap(),
         );
     }
+    // Login profiles may use run-parts even with this restricted PATH.
+    // Do not execute ambient profile snippets in the isolated fixture.
+    use std::os::unix::fs::PermissionsExt;
+    let startup = root.join("tools/run-parts");
+    std::fs::write(&startup, "#!/bin/sh\nexit 0\n").unwrap();
+    std::fs::set_permissions(&startup, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::write(
+        root.join("home/.bash_profile"),
+        format!("export PATH='{}'\n", root.join("tools").display()),
+    )
+    .unwrap();
     let before = frozen::snapshot(&root.join("project"));
     let result = command.arg("pre-commit-verification").output().unwrap();
     let after = frozen::snapshot(&root.join("project"));

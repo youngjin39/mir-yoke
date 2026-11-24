@@ -218,7 +218,7 @@ fn jq_spawn_message(error: &io::Error) -> String {
 #[test]
 fn pc3_missing_jq_windows_mapping() {
     let root = tempfile::tempdir().unwrap();
-    let error = Command::new("jq")
+    let error = Command::new(root.path().join("missing-jq.exe"))
         .env_clear()
         .env("HOME", root.path())
         .env("PATH", root.path())

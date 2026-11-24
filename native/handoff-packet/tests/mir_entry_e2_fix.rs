@@ -30,11 +30,18 @@ fn check(indices: &[usize]) {
         let bin = root.join("bin");
         fs::create_dir(&bin).unwrap();
         let mir = bin.join("mir");
-        fs::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
+        // Reuse the built executable for deleted cwd so parallel forks cannot
+        // inherit a copy's open writer for the executable about to be spawned.
+        let executable = if r["deleted"] == true {
+            std::path::PathBuf::from(env!("CARGO_BIN_EXE_mir"))
+        } else {
+            fs::copy(env!("CARGO_BIN_EXE_mir"), &mir).unwrap();
+            mir
+        };
         let python =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.venv/bin/python");
         std::os::unix::fs::symlink(python, bin.join("python")).unwrap();
-        let mut cmd = Command::new(mir);
+        let mut cmd = Command::new(executable);
         cmd.args(
             r["argv"]
                 .as_array()
