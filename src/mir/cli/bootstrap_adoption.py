@@ -22,6 +22,7 @@ from mir.core.engine.memory.distill import sanitize_fts_query
 from ._adoption_native import install_evaluator
 from ._changes import changed_paths, snapshot_project
 from .bootstrap import _scan_content_candidates
+from .project_hooks import _path as _project_hook_path
 
 _SURFACE_KEYS = (
     "bootstrap_start_gate",
@@ -371,10 +372,26 @@ def _hook_commands(document: object) -> list[str]:
     return commands
 
 
-def _native_session_start(body: str) -> bool:
-    return all(
-        marker in body
-        for marker in ('.mir/bin/project-hooks', '"$native" session-start', '--mir-warmup')
+def _native_session_start(root: Path, body: str) -> bool | None:
+    """Return None for a legacy launcher and readiness for the native route."""
+    lines = (line.strip() for line in body.splitlines())
+    if 'native="$project_root/.mir/bin/project-hooks"' not in lines:
+        return None
+    if 'CLAUDE_PROJECT_DIR="$project_root" "$native" session-start' not in lines:
+        return False
+    try:
+        binary = _project_hook_path(root, ".mir/bin/project-hooks")
+        if not binary.is_file() or not os.access(binary, os.X_OK):
+            return False
+        result = subprocess.run(
+            [binary, "capabilities"], stdin=subprocess.DEVNULL,
+            capture_output=True, check=False, cwd=root, timeout=2,
+        )
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return False
+    return (
+        result.returncode == 0
+        and b"mir-project-hooks-session-start-v2" in result.stdout.splitlines()
     )
 
 
@@ -403,9 +420,10 @@ def _validate_bootstrap_gate(root: Path) -> tuple[list[str], dict[str, object]]:
     mutation = bodies.get("mutation", "")
     if "mir_bootstrap_gate_state" not in helper or "mir_bootstrap_gate_enforce" not in helper:
         errors.append("bootstrap gate helper does not expose state and enforcement functions")
-    if not _native_session_start(session) and (
-        "bootstrap-gate.sh" not in session or "mir_bootstrap_gate_state" not in session
-    ):
+    session_ready = _native_session_start(root, session)
+    if session_ready is None:
+        session_ready = "bootstrap-gate.sh" in session and "mir_bootstrap_gate_state" in session
+    if not session_ready:
         errors.append("bootstrap gate is not wired into SessionStart")
     if "bootstrap-gate.sh" not in mutation or "mir_bootstrap_gate_enforce" not in mutation:
         errors.append("bootstrap gate is not wired into the mutation hook")
@@ -523,12 +541,14 @@ def _validate_python_launcher(root: Path) -> tuple[list[str], dict[str, object]]
         except (OSError, UnicodeDecodeError) as exc:
             errors.append(f"managed Python launcher wiring is unreadable: {hook_relative}: {exc}")
             continue
-        if "run-python.sh" in hook_body:
+        native_ready = (
+            _native_session_start(root, hook_body)
+            if hook_relative == ".claude/hooks/session-start.sh"
+            else None
+        )
+        if native_ready is None and "run-python.sh" in hook_body:
             wired.append(hook_relative)
-        elif hook_relative == ".claude/hooks/session-start.sh" and _native_session_start(hook_body):
-            # The native handler owns bootstrap, rendering and its output cap.
-            pass
-        else:
+        elif not native_ready:
             errors.append(f"managed Python launcher is not wired into {hook_relative}")
         if _has_raw_python(hook_body):
             errors.append(f"managed Python launcher bypass found in {hook_relative}")

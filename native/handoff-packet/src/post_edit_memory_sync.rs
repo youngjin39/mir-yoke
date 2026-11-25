@@ -8,6 +8,11 @@ use std::{
     time::{Duration, Instant},
 };
 
+// Large Write/apply_patch events must still index their durable paths. Bound the
+// raw reader at 16 MiB before decoding/allocating JSON, rather than silently
+// inheriting the general hook parser's 1 MiB character limit.
+pub const MAX_PAYLOAD_BYTES: usize = 16 * 1024 * 1024;
+
 fn diagnostic(reason: &str) -> String {
     format!("[mir-memory] durable edit was not indexed: {reason}\n")
 }
@@ -329,7 +334,12 @@ pub fn run(project: &Path, input: &[u8]) -> Result<(), String> {
     )
     .map_err(|e| diagnostic(&e.to_string()))?;
     // External hook payloads intentionally allow unknown fields and malformed JSON is quiet.
-    let Ok(payload) = python_json::parse_stdin(input) else {
+    if input.len() > MAX_PAYLOAD_BYTES {
+        return Err(diagnostic(
+            "payload exceeds 16777216 bytes; repair: scripts/mir.sh project-hooks install --project-root .; retry sync with scripts/mir.sh context sync",
+        ));
+    }
+    let Ok(payload) = python_json::parse_stdin_with_limit(input, MAX_PAYLOAD_BYTES) else {
         return Ok(());
     };
     if !has_relevant(&payload, &root).map_err(|e| diagnostic(&e.to_string()))? {

@@ -839,6 +839,11 @@ pub fn parse_codepoints(codepoints: Vec<u32>) -> Result<Value, Error> {
 
 /// sys.stdin uses UTF-8 with surrogateescape: undecodable bytes remain codepoints.
 pub fn parse_stdin(bytes: &[u8]) -> Result<Value, Error> {
+    parse_stdin_with_limit(bytes, crate::LIMIT)
+}
+
+/// A caller that bounds bytes while reading may admit larger event bodies.
+pub fn parse_stdin_with_limit(bytes: &[u8], limit: usize) -> Result<Value, Error> {
     let mut chars = Vec::new();
     let mut remaining = bytes;
     while !remaining.is_empty() {
@@ -878,7 +883,7 @@ pub fn parse_stdin(bytes: &[u8]) -> Result<Value, Error> {
         }
     }
     let chars = normalized;
-    if chars.len() > crate::LIMIT {
+    if chars.len() > limit {
         let r = Reader { chars, offset: 0 };
         return Err(r.error("oversized hook payload", 0));
     }

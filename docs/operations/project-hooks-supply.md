@@ -54,6 +54,22 @@ warmup and statuses 64/126/127 report unavailability on stderr and return 0.
 Other handler statuses pass through. Per-invocation guards establish launchability,
 not artifact integrity; explicit supply/check establishes the pinned bytes.
 
+The repository SessionStart and durable-edit launchers additionally require
+`mir-project-hooks-session-start-v2` and
+`mir-project-hooks-post-edit-memory-sync-v1`, respectively. The legacy
+SessionStart v1 marker does not certify the native renderer. Unavailable,
+disabled, linked or outdated binaries leave visible bootstrap and safety context
+on SessionStart stdout, or a skipped-sync diagnostic on PostToolUse stderr.
+Both identify `scripts/mir.sh project-hooks install --project-root .` as the
+explicit repair operation; it requires released provider pins as described above.
+These degraded paths never fetch binaries or run the retired Python handlers.
+
+Durable-edit payloads use a bounded reader of 16 MiB plus one sentinel byte.
+This admits large Write and patch events above the general 1 MiB hook-parser
+limit while bounding JSON decoding memory. An unreadable or larger payload
+produces a diagnostic and returns non-blocking status 0; after repair the operator
+can run `scripts/mir.sh context sync` to rescan durable documents.
+
 Windows command tests are structural evidence only. Windows shell parsing, stdin,
 client discovery and timing still require a Windows host. No cross-platform
 retirement or registration readiness follows from rendering.

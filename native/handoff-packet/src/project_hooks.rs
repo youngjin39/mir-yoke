@@ -18,7 +18,7 @@ use std::{
 };
 
 // The release smoke reads this literal to check the full capabilities output.
-const CAPABILITIES: &str = "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\nmir-project-hooks-pre-tool-use-v1\n";
+const CAPABILITIES: &str = "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-session-start-v2\nmir-project-hooks-post-edit-memory-sync-v1\nmir-project-hooks-pre-commit-v1\nmir-project-hooks-pre-tool-use-v1\n";
 
 fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
     if args.iter().any(|arg| arg == "--mir-warmup") {
@@ -39,7 +39,12 @@ fn main() -> ExitCode {
                 .unwrap_or_else(|| ".".into()),
         );
         let mut input = Vec::new();
-        if io::stdin().read_to_end(&mut input).is_err() {
+        let limit = handoff_packet::post_edit_memory_sync::MAX_PAYLOAD_BYTES;
+        let read = io::stdin().take(limit as u64 + 1).read_to_end(&mut input);
+        if read.is_err() || input.len() > limit {
+            eprintln!(
+                "[mir-memory] skipped post-edit-memory-sync: payload unreadable or exceeds {limit} bytes; repair: scripts/mir.sh project-hooks install --project-root .; retry sync with scripts/mir.sh context sync"
+            );
             return ExitCode::SUCCESS;
         }
         return match handoff_packet::post_edit_memory_sync::run(&project, &input) {
@@ -215,7 +220,7 @@ mod tests {
             response(&["capabilities".into()]),
             (
                 0,
-                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-pre-commit-v1\nmir-project-hooks-pre-tool-use-v1\n",
+                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\nmir-project-hooks-session-start-v2\nmir-project-hooks-post-edit-memory-sync-v1\nmir-project-hooks-pre-commit-v1\nmir-project-hooks-pre-tool-use-v1\n",
                 ""
             )
         );

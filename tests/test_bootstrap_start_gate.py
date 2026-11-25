@@ -11,6 +11,18 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 HOOKS = ROOT / ".claude" / "hooks"
+NATIVE_REPAIR = "scripts/mir.sh project-hooks install --project-root ."
+OLD_PROJECT_HOOK_CAPABILITIES = (
+    "mir-project-hooks-v1\n"
+    "mir-project-hooks-compact-v1\n"
+    "mir-project-hooks-tdd-v1\n"
+    "mir-project-hooks-post-edit-v1\n"
+    "mir-project-hooks-prompt-v1\n"
+    "mir-project-hooks-stop-v1\n"
+    "mir-project-hooks-session-start-v1\n"
+    "mir-project-hooks-pre-commit-v1\n"
+    "mir-project-hooks-pre-tool-use-v1\n"
+)
 
 
 @pytest.fixture
@@ -1098,56 +1110,127 @@ def test_restart_required_receipt_blocks_phase2_when_runtime_closure_drifts(
     assert "bootstrap is invalid" in blocked.stderr
 
 
-def test_session_start_requires_bootstrap_without_running_python(tmp_path: Path) -> None:
-    hooks = _copy_hooks(tmp_path)
-    shutil.copy2(
-        ROOT / "native/handoff-packet/tests/fixtures/w1/session-start.reference.sh",
-        hooks / "session-start.sh",
-    )
-    env = os.environ.copy()
-    env["CLAUDE_PROJECT_DIR"] = str(tmp_path)
-    env["PATH"] = "/usr/bin:/bin"
+def _run_live_hook(
+    project: Path, script: str, *, native_disabled: bool = False
+) -> subprocess.CompletedProcess[str]:
+    home = project.parent / "home"
+    home.mkdir(exist_ok=True)
+    env = {
+        "CLAUDE_PROJECT_DIR": str(project),
+        "HOME": str(home),
+        "MIR_NATIVE_HOOKS": "0" if native_disabled else "1",
+        "PATH": "/usr/bin:/bin",
+    }
 
-    completed = subprocess.run(
-        ["bash", str(hooks / "session-start.sh")],
+    return subprocess.run(
+        ["bash", str(HOOKS / script)],
+        input='{"tool_name":"Write","tool_input":{"file_path":"docs/guide.md"}}',
         capture_output=True,
         text=True,
         check=False,
         env=env,
+        cwd=project,
+        timeout=10,
+    )
+
+
+@pytest.fixture(params=["missing", "disabled", "symlink", "old", "unusable"])
+def unavailable_project_hook(request: pytest.FixtureRequest, tmp_path: Path) -> str:
+    state = request.param
+    mir = tmp_path / ".mir"
+    if state == "symlink":
+        target = tmp_path / "other-mir"
+        target.mkdir()
+        mir.symlink_to(target, target_is_directory=True)
+    else:
+        mir.mkdir()
+
+    (mir / "repo-profile.toml").write_text(
+        '[paths]\nprotected_paths = [\n  "fixtures/protected/**",\n]\n'
+        '[boundaries]\nsecrets = ["fixtures/confidential/**"]\n',
+        encoding="utf-8",
+    )
+    if state == "missing":
+        return state
+
+    native = mir / "bin/project-hooks"
+    native.parent.mkdir()
+    if state == "unusable":
+        native.write_text("#!/nonexistent-test-interpreter\n", encoding="utf-8")
+    else:
+        capabilities = OLD_PROJECT_HOOK_CAPABILITIES
+        if state != "old":
+            capabilities += (
+                "mir-project-hooks-session-start-v2\n"
+                "mir-project-hooks-post-edit-memory-sync-v1\n"
+            )
+        native.write_text(
+            "#!/bin/sh\n"
+            'case "$1" in\n'
+            '  --mir-warmup) touch "$CLAUDE_PROJECT_DIR/native-probed" ;;\n'
+            '  capabilities) touch "$CLAUDE_PROJECT_DIR/native-probed"; '
+            f"printf '%s' '{capabilities}' ;;\n"
+            '  *) touch "$CLAUDE_PROJECT_DIR/native-dispatched"; '
+            "echo 'project-hooks: unknown subcommand' >&2; exit 64 ;;\n"
+            "esac\n",
+            encoding="utf-8",
+        )
+    native.chmod(0o755)
+    return state
+
+
+def _assert_unavailable_native_was_not_dispatched(project: Path, state: str) -> None:
+    assert not (project / "native-dispatched").exists()
+    if state in {"disabled", "symlink"}:
+        assert not (project / "native-probed").exists()
+
+
+def test_session_start_requires_bootstrap_without_running_python(
+    tmp_path: Path, unavailable_project_hook: str
+) -> None:
+    completed = _run_live_hook(
+        tmp_path, "session-start.sh", native_disabled=unavailable_project_hook == "disabled"
     )
 
     assert completed.returncode == 0, completed.stderr
     assert "bootstrap_gate: required (state=missing)" in completed.stdout
+    assert f"native_repair_command: {NATIVE_REPAIR}" in completed.stdout
     assert "normal_mutation: blocked" in completed.stdout
     assert "run setup.sh with --profile" in completed.stdout
     assert "inside WSL on Windows hosts" in completed.stdout
     assert "setup.sh/setup.ps1" not in completed.stdout
+    assert "fixtures/protected/**" in completed.stdout
+    assert "fixtures/confidential/**" in completed.stdout
+    _assert_unavailable_native_was_not_dispatched(tmp_path, unavailable_project_hook)
+
+
+def test_post_tool_use_reports_skipped_memory_sync(
+    tmp_path: Path, unavailable_project_hook: str
+) -> None:
+    completed = _run_live_hook(
+        tmp_path,
+        "post-edit-self-ingest.sh",
+        native_disabled=unavailable_project_hook == "disabled",
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert not completed.stdout
+    (diagnostic,) = completed.stderr.splitlines()
+    assert "post-edit-memory-sync" in diagnostic
+    assert "skip" in diagnostic.lower()
+    assert NATIVE_REPAIR in diagnostic
+    _assert_unavailable_native_was_not_dispatched(tmp_path, unavailable_project_hook)
 
 
 def test_session_start_routes_existing_repository_to_adoption(tmp_path: Path) -> None:
     (tmp_path / "config").mkdir()
     (tmp_path / "config" / "bootstrap-adoption.json").write_text("{}\n", encoding="utf-8")
-    hooks = _copy_hooks(tmp_path)
-    shutil.copy2(
-        ROOT / "native/handoff-packet/tests/fixtures/w1/session-start.reference.sh",
-        hooks / "session-start.sh",
-    )
-    env = os.environ.copy()
-    env["CLAUDE_PROJECT_DIR"] = str(tmp_path)
-    env["PATH"] = "/usr/bin:/bin"
 
-    completed = subprocess.run(
-        ["bash", str(hooks / "session-start.sh")],
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
-    )
+    completed = _run_live_hook(tmp_path, "session-start.sh")
 
     assert completed.returncode == 0, completed.stderr
     assert "recovery_command: uv run --project" in completed.stdout
     assert "mir bootstrap-adoption --apply" in completed.stdout
-    assert "scripts/mir.sh" not in completed.stdout
     assert "run setup.sh/setup.ps1" not in completed.stdout
 
 

@@ -144,7 +144,7 @@ fn shell_native_availability_and_exit_policy() {
         fs::create_dir_all(&bin).unwrap();
         let native = bin.join("project-hooks");
         let body = format!(
-            "#!/bin/sh\nif [ \"$1\" = --mir-warmup ]; then exit {}; fi\n[ \"$1\" = post-edit-memory-sync ] || exit 90\ncat > input.json\nexit {status}\n",
+            "#!/bin/sh\nif [ \"$1\" = capabilities ]; then echo mir-project-hooks-post-edit-memory-sync-v1; exit 0; fi\nif [ \"$1\" = --mir-warmup ]; then exit {}; fi\n[ \"$1\" = post-edit-memory-sync ] || exit 90\ncat > input.json\nexit {status}\n",
             if state == "warmup-fails" { 1 } else { 0 }
         );
         if state != "missing" {
@@ -190,10 +190,75 @@ fn shell_native_availability_and_exit_policy() {
         assert_eq!(
             out.stderr,
             if unavailable {
-                b"project-hooks: native unavailable\n".as_slice()
+                b"[mir-memory] skipped post-edit-memory-sync: native unavailable or outdated; repair: scripts/mir.sh project-hooks install --project-root .\n".as_slice()
             } else {
                 b""
             }
         );
+    }
+}
+
+#[test]
+fn live_launcher_large_payload_syncs_and_reports_bound() {
+    let temp = tempfile::tempdir().unwrap();
+    let project = temp.path().join("project");
+    fs::create_dir_all(project.join(".mir/bin")).unwrap();
+    fs::write(project.join("harness_a.toml"), "").unwrap();
+    fs::write(project.join(".mir/memory.db"), "synthetic").unwrap();
+    let cli = temp.path().join("mir");
+    let body = "#!/bin/sh\nprintf synced > effect.txt\n";
+    fs::write(&cli, body).unwrap();
+    fs::set_permissions(&cli, fs::Permissions::from_mode(0o755)).unwrap();
+    let out = Command::new("shasum")
+        .args(["-a", "256"])
+        .arg(&cli)
+        .output()
+        .unwrap();
+    let hash = String::from_utf8(out.stdout)
+        .unwrap()
+        .split_whitespace()
+        .next()
+        .unwrap()
+        .to_owned();
+    fs::write(
+        project.join(".mir/bootstrap-receipt.json"),
+        serde_json::json!({
+            "cli": {"executable": cli, "sha256": hash}
+        })
+        .to_string(),
+    )
+    .unwrap();
+    fs::copy(
+        env!("CARGO_BIN_EXE_project-hooks"),
+        project.join(".mir/bin/project-hooks"),
+    )
+    .unwrap();
+    let script =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.claude/hooks/post-edit-self-ingest.sh");
+    for size in [1_048_577, 10_000_000, 16 * 1024 * 1024 + 1] {
+        let payload =
+            serde_json::json!({"tool_input":{"file_path":"docs/x.md", "content":"a".repeat(size)}})
+                .to_string();
+        let input = temp.path().join("input.json");
+        fs::write(&input, payload).unwrap();
+        let out = Command::new("bash")
+            .arg(&script)
+            .current_dir(&project)
+            .env("CLAUDE_PROJECT_DIR", &project)
+            .env("MIR_NATIVE_HOOKS", "1")
+            .stdin(fs::File::open(input).unwrap())
+            .output()
+            .unwrap();
+        assert_eq!(out.status.code(), Some(0));
+        if size <= 10_000_000 {
+            assert_eq!(fs::read(project.join("effect.txt")).unwrap(), b"synced");
+            fs::remove_file(project.join("effect.txt")).unwrap();
+            assert!(out.stderr.is_empty(), "{:?}", out.stderr);
+        } else {
+            assert!(!project.join("effect.txt").exists());
+            let diagnostic = String::from_utf8(out.stderr).unwrap();
+            assert!(diagnostic.contains("16777216"), "{diagnostic}");
+            assert!(diagnostic.contains("project-hooks install"), "{diagnostic}");
+        }
     }
 }

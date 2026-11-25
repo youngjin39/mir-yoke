@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sqlite3
 import subprocess
 from pathlib import Path
@@ -727,25 +728,49 @@ def test_bootstrap_adoption_schema_should_validate_the_portable_manifest() -> No
     jsonschema.validate(_manifest(), schema)
 
 
+@pytest.mark.skipif(os.name == "nt", reason="native SessionStart uses a POSIX shell launcher")
 @pytest.mark.parametrize("native", [False, True], ids=["python-validator", "native-validator"])
-@pytest.mark.parametrize("raw_python", [False, True], ids=["native-hook", "python-bypass"])
-def test_adoption_accepts_native_session_start_without_python_launcher(
-    tmp_path, installed_mir, capsys, native, raw_python
+@pytest.mark.parametrize(
+    "mode", ["ready", "python-bypass", "commented", "missing", "old", "linked", "nonexecutable"],
+)
+def test_adoption_validates_native_session_start(
+    tmp_path, installed_mir, capsys, native, mode
 ):
     _ready_project(tmp_path)
     source = Path(__file__).resolve().parents[1] / ".claude/hooks/session-start.sh"
     body = source.read_text(encoding="utf-8")
-    if raw_python:
+    if mode == "python-bypass":
         body += "python3 scripts/example.py\n"
+    if mode == "commented":
+        body = '#!/bin/sh\n# .mir/bin/project-hooks\n# "$native" session-start\n# --mir-warmup\n'
     _write(tmp_path / ".claude/hooks/session-start.sh", body)
-    expected_exit = 2 if raw_python else 0
+    if mode != "missing":
+        binary = tmp_path / ".mir/bin/project-hooks"
+        target = tmp_path / "linked-hook" if mode == "linked" else binary
+        version = "v1" if mode == "old" else "v2"
+        _write(
+            target,
+            '#!/bin/sh\n[ "$1" = capabilities ] || exit 64\n'
+            f"printf '%s\\n' 'mir-project-hooks-session-start-{version}'\n",
+        )
+        if mode != "nonexecutable":
+            target.chmod(0o755)
+        if mode == "linked":
+            binary.parent.mkdir(exist_ok=True)
+            binary.symlink_to(target)
+    expected_exit = 0 if mode == "ready" else 2
     if native:
         report = _run_native_adoption(installed_mir, tmp_path, expected_exit)
     else:
-        assert _run(tmp_path) == expected_exit
-        report = json.loads(capsys.readouterr().out)
-    if raw_python:
-        assert "managed Python launcher bypass" in json.dumps(report)
-    else:
+        exit_code = _run(tmp_path)
+        output = capsys.readouterr().out
+        assert exit_code == expected_exit, output
+        report = json.loads(output)
+    if mode == "ready":
         assert report["status"] == "ready"
         assert not (tmp_path / ".mir/bootstrap-receipt.json").exists()
+    elif mode == "python-bypass":
+        assert any("managed Python launcher bypass" in error for error in report["errors"])
+    else:
+        assert any("bootstrap gate" in error for error in report["errors"])
+        assert any("managed Python launcher" in error for error in report["errors"])

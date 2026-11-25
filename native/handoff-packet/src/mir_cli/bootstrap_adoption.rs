@@ -4,6 +4,7 @@
 mod entry;
 #[path = "bootstrap_adoption_phase2.rs"]
 pub(super) mod phase2;
+use super::project_hooks::{ProbeRequest, project_path, run_probe};
 use crate::executor_execute::{list_repr, repr};
 pub use entry::{
     JqOutput, JqRequest, ValidationKind, ValidationOutput, ValidationRequest, atomic_write_json,
@@ -1085,14 +1086,38 @@ pub fn hook_commands(document: &Value) -> Vec<String> {
     }
     commands
 }
-fn native_session_start(body: &str) -> bool {
-    [
-        ".mir/bin/project-hooks",
-        "\"$native\" session-start",
-        "--mir-warmup",
-    ]
-    .iter()
-    .all(|marker| body.contains(marker))
+/// None denotes a legacy launcher. Native launchers need a working binary even
+/// when their fallback also uses the legacy bootstrap gate.
+fn native_session_start(root: &Path, body: &str) -> Option<bool> {
+    let mut lines = body.lines().map(str::trim);
+    if !lines.any(|line| line == r#"native="$project_root/.mir/bin/project-hooks""#) {
+        return None;
+    }
+    if !lines.any(|line| line == r#"CLAUDE_PROJECT_DIR="$project_root" "$native" session-start"#) {
+        return Some(false);
+    }
+    let Ok(binary) = project_path(root, ".mir/bin/project-hooks") else {
+        return Some(false);
+    };
+    if !binary.is_file() || !crate::adoption_fs::is_executable(&binary) {
+        return Some(false);
+    }
+    let ready = run_probe(ProbeRequest {
+        argv: [binary.to_string_lossy().into_owned(), "capabilities".into()],
+        stdin: -3,
+        capture_output: true,
+        timeout: 2,
+        check: false,
+        cwd: root,
+    })
+    .is_ok_and(|output| {
+        output.returncode == 0
+            && output
+                .stdout
+                .split(|byte| matches!(*byte, b'\n' | b'\r'))
+                .any(|line| line == b"mir-project-hooks-session-start-v2")
+    });
+    Some(ready)
 }
 
 pub fn validate_bootstrap_gate(
@@ -1132,9 +1157,12 @@ pub fn validate_bootstrap_gate(
         ),
     ] {
         let body = bodies.get(label).map(String::as_str).unwrap_or("");
-        if !(label == "session" && native_session_start(body))
-            && markers.iter().any(|m| !body.contains(m))
-        {
+        let native_ready = if label == "session" {
+            native_session_start(root, body)
+        } else {
+            None
+        };
+        if !native_ready.unwrap_or_else(|| markers.iter().all(|m| body.contains(m))) {
             errors.push(message.into());
         }
     }
@@ -1294,11 +1322,14 @@ pub fn validate_python_launcher(root: &Path, host: &mut dyn Host) -> (Vec<String
                 continue;
             }
         };
-        if body.contains("run-python.sh") {
-            wired.push(hook);
-        } else if hook == ".claude/hooks/session-start.sh" && native_session_start(&body) {
-            // The native handler owns bootstrap, rendering and its output cap.
+        let native_ready = if hook == ".claude/hooks/session-start.sh" {
+            native_session_start(root, &body)
         } else {
+            None
+        };
+        if native_ready.is_none() && body.contains("run-python.sh") {
+            wired.push(hook);
+        } else if native_ready != Some(true) {
             errors.push(format!("managed Python launcher is not wired into {hook}"));
         }
         if has_raw_python(&body) {
