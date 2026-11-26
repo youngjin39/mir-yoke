@@ -143,6 +143,17 @@ def test_should_match_exact_adopter_payload_when_release_inventory_is_generated(
     assert adr_79["disposition"] == "remove"
 
 
+def test_staged_payload_retires_python_tdd_helper() -> None:
+    manifest = load_manifest(ROOT / "config/template-assets.json")
+    boundary = json.loads((ROOT / "config/adopter-boundary.json").read_text())
+    staged = build_adopter_payload(ROOT, manifest, boundary)
+    paths = {item["path"]: item for item in staged["files"]}
+    assert ".claude/hooks/tdd-matrix-guard.py" not in paths
+    for name in ("tdd-guard.sh", "pre-commit-verification.sh"):
+        entry = paths[f".claude/hooks/{name}"]
+        assert (entry["classification"], entry["disposition"]) == ("reference", "remove")
+
+
 # @spec FR-001 FR-003
 def test_should_remove_provider_state_and_preserve_adopter_runtime_when_payload_is_built() -> None:
     manifest = load_manifest(ROOT / "config/template-assets.json")

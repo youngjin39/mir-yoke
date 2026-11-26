@@ -179,8 +179,17 @@ fn captured_precommit_reference_sources_remain_pinned() {
         serde_json::from_str(include_str!("fixtures/w1/pre-commit-verification.json")).unwrap();
     let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for (path, expected) in data["sources"].as_object().unwrap() {
+        let source = match path.as_str() {
+            ".claude/hooks/pre-commit-verification.sh" => repo.join(
+                "native/handoff-packet/tests/fixtures/w1/pre-commit-verification.reference.sh",
+            ),
+            ".claude/hooks/tdd-matrix-guard.py" => {
+                repo.join("native/handoff-packet/tests/fixtures/w1/tdd-matrix-guard.reference.txt")
+            }
+            _ => repo.join(path),
+        };
         assert_eq!(
-            digest::sha256(&std::fs::read(repo.join(path)).unwrap()),
+            digest::sha256(&std::fs::read(source).unwrap()),
             expected.as_str().unwrap(),
             "{path}"
         );
