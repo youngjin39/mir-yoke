@@ -9,6 +9,11 @@ round: R18
 
 # Phase-4 — 5-Tier Execution Unit IDs
 
+Historical implementation note: the Python run orchestrator referenced below
+was retired by Y-W5-RETIRE. Its source remains available at commit
+`5b65894635d3c4f2a22d1059db13847377ee6a16`; these references do not describe
+current runtime availability.
+
 > **R18-T07 deliverable**. Spec for the 5-tier hierarchy:
 > `Turn ⊂ Step ⊂ Run ⊂ Task ⊂ Session`.
 

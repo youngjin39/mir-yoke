@@ -13,9 +13,13 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from w5_reference import load_reference
 
-from mir.core.engine.audit_log import AuditLog
 from mir.core.engine.memory import store
+
+AuditLog = load_reference(
+    "mir.core.engine.audit_log", "src/mir/core/engine/audit_log.py"
+).AuditLog
 
 FIXTURE = Path(__file__).parent / "../native/handoff-packet/tests/fixtures/w2/b04-audit.json"
 NOW = "2030-01-02T00:00:00.123456+00:00"

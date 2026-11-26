@@ -14,9 +14,12 @@ from unittest import mock
 
 import pytest
 from pydantic import BaseModel
+from w5_reference import load_reference
 
-from mir.core.crypto import canonical
-from mir.core.engine import instance_id, structured_error, tool_contract
+from mir.core.engine import structured_error, tool_contract
+
+canonical = load_reference("mir.core.crypto.canonical", "src/mir/core/crypto/canonical.py")
+instance_id = load_reference("mir.core.engine.instance_id", "src/mir/core/engine/instance_id.py")
 
 FIXTURE = Path(__file__).parent / "../native/handoff-packet/tests/fixtures/w2/b01.json"
 

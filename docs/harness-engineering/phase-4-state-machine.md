@@ -7,6 +7,11 @@ depends_on: phase-2-enforcement
 
 # Phase 4 -- State Machine & Run Orchestration
 
+Historical implementation note: Y-W5-RETIRE removed the unused Python
+interrupt/orchestrator cluster. Implementation paths and application statuses
+below describe the preserved source at commit
+`5b65894635d3c4f2a22d1059db13847377ee6a16`, not current runtime availability.
+
 > **Purpose**: Track task progress through a JSON schema + state machine, not through the model's natural-language responses. Handle interrupts, failures, and restarts deterministically.
 
 ## 0.5 Design Goals (R9 anchor)

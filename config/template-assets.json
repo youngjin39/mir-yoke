@@ -202,8 +202,7 @@
         "tools/catalog_loader.py",
         "tools/hooks/**",
         "tools/mir_executor/**",
-        "tools/plan_archive/**",
-        "tools/run_orchestrator/**"
+        "tools/plan_archive/**"
       ],
       "exclude": [],
       "reason": "Supported installed v0.8-compatible Mir operator CLI and wheel-bundled runtime resources; never copied into a target payload."
@@ -235,7 +234,6 @@
         "tools/hooks/**",
         "tools/mir_executor/**",
         "tools/plan_archive/**",
-        "tools/run_orchestrator/**",
         "tools/template_assets.py",
         "tools/native_release.py",
         "tools/executor_sync.py"

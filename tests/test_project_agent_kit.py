@@ -257,7 +257,6 @@ def test_should_limit_optional_consumer_tools_to_explicit_adoption_surfaces() ->
         "tools/hooks/**",
         "tools/mir_executor/**",
         "tools/plan_archive/**",
-        "tools/run_orchestrator/**",
     }
 
 

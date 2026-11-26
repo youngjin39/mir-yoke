@@ -11,10 +11,18 @@ from types import SimpleNamespace as NS
 from unittest import mock
 
 import pytest
+from w5_reference import load_reference
 
 from mir.cli import loop
 from mir.core.conductor import dispatch_brief as brief
-from mir.core.engine import interrupt_handler as interrupt
+
+_state = load_reference(
+    "tools.run_orchestrator.state_machine", "tools/run_orchestrator/state_machine.py"
+)
+interrupt = load_reference(
+    "mir.core.engine.interrupt_handler", "src/mir/core/engine/interrupt_handler.py",
+    {"tools.run_orchestrator.state_machine": _state},
+)
 
 FIXTURE = Path(__file__).parent / "../native/handoff-packet/tests/fixtures/w2/b27-brief-loop.json"
 BASE = dict(intent="  Ship change!  ", scope=("src/a", "tests/a"), success_criteria=("pass",),

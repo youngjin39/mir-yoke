@@ -160,16 +160,8 @@
       "route_decision.py",
       "task_spec.py"
     ],
-    "src/mir/core/crypto": [
-      "__init__.py",
-      "canonical.py"
-    ],
     "src/mir/core/engine": [
       "__init__.py",
-      "async_adapter.py",
-      "audit_log.py",
-      "instance_id.py",
-      "interrupt_handler.py",
       "structured_error.py",
       "tool_contract.py"
     ],
@@ -551,21 +543,11 @@
       "__init__.py",
       "test_plan_archive.py"
     ],
-    "tools/run_orchestrator": [
-      "__init__.py",
-      "approval_gate.py",
-      "run_orchestrator.py",
-      "state_machine.py"
-    ],
     "tools/tdd_archive": [
-      "__init__.py",
-      "__main__.py",
-      "cli.py",
-      "compactor.py"
+      "__init__.py"
     ],
     "tools/tdd_archive/tests": [
-      "__init__.py",
-      "test_tdd_archive.py"
+      "__init__.py"
     ]
   },
   "allowlist": {

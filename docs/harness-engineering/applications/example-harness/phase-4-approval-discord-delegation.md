@@ -9,6 +9,11 @@ round: R18
 
 # Phase-4 Approval UI — Discord Plugin Delegation
 
+Historical implementation note: the Python approval gate referenced below was
+retired by Y-W5-RETIRE. Its source remains available at commit
+`5b65894635d3c4f2a22d1059db13847377ee6a16`; these references do not describe
+current runtime availability.
+
 > **R18-T09 deliverable**. Documents why your-harness does NOT implement an
 > interactive CLI approval prompt, and how Discord plugin reply fills the
 > approval channel role.
