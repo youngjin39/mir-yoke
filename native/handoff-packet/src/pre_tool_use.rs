@@ -763,35 +763,12 @@ fn policy(root: &Path, input: &[u8], output: &mut String) -> Gate {
         }
     }
     if enabled("MIR_TOOL_CONTRACT_REQUIRED") {
-        let validator = root.join("tools/hooks/validate_tool_contract.py");
-        if !validator.is_file() {
-            return Err(block("required tool contract validator missing"));
-        }
-        let launcher = root.join(".claude/hooks/_lib/run-python.sh");
-        let exit = match Command::new(&launcher)
-            .arg(validator)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-        {
-            Ok(mut child) => {
-                if let Some(mut stdin) = child.stdin.take() {
-                    let _ = stdin.write_all(input);
-                }
-                child.wait().map(shell_status).unwrap_or(1)
-            }
-            Err(e) => {
-                if e.kind() == io::ErrorKind::PermissionDenied {
-                    126
-                } else {
-                    127
-                }
-            }
-        };
+        // The enclosing hook suppresses leaf details just as the shell entry
+        // does; no Python process or source marker is required.
+        let exit = crate::tool_contract_hook::validate(input, &mut String::new());
         if exit != 0 {
             return Err(format!(
-                "[mir CONTRACT BLOCK] tool contract validation failed (exit {exit}); inspect tools/hooks/validate_tool_contract.py\n"
+                "[mir CONTRACT BLOCK] tool contract validation failed (exit {exit}); inspect project-hooks tool-contract\n"
             ));
         }
     } else if enabled("MIR_TOOL_CONTRACT_LOG") {
@@ -809,20 +786,6 @@ fn policy(root: &Path, input: &[u8], output: &mut String) -> Gate {
         match present { Some(true)=>(), Some(false)=>output.push_str("[mir TC ADVISORY LOG] tool call missing _mir_contract (advisory only, not enforced)\n"), None=>warn(output,"tool-contract advisory inspection failed") }
     }
     Ok(())
-}
-
-fn shell_status(status: std::process::ExitStatus) -> i32 {
-    if let Some(code) = status.code() {
-        return code;
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::process::ExitStatusExt;
-        if let Some(signal) = status.signal() {
-            return 128 + signal;
-        }
-    }
-    1
 }
 
 fn python_repr(value: &Value) -> String {
@@ -991,18 +954,5 @@ mod phase_tests {
             enabled_phase(br#"{"enabled_phases":[{"phase":1},{}]}"#, "1"),
             None
         );
-    }
-}
-
-#[cfg(all(test, unix))]
-mod tests {
-    use super::shell_status;
-    use std::{os::unix::process::ExitStatusExt, process::ExitStatus};
-
-    #[test]
-    fn validator_signal_status_matches_shell() {
-        assert_eq!(shell_status(ExitStatus::from_raw(0)), 0);
-        assert_eq!(shell_status(ExitStatus::from_raw(7 << 8)), 7);
-        assert_eq!(shell_status(ExitStatus::from_raw(15)), 143);
     }
 }

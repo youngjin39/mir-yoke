@@ -9,12 +9,13 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from w1_golden import ROOT
+from w1_golden import ROOT, reference_source
 from w1_pretool_golden import (
     EXISTING,
     FROZEN,
     HELPER_ABSENCE_RECORDS,
     RECORDS,
+    RETIRED_VALIDATOR_RECORDS,
     replay,
     with_reference_helpers,
 )
@@ -24,17 +25,29 @@ def test_pre_tool_use_oracle_provenance():
     assert FROZEN["schema"] == "mir.w1-pre-tool-use@1"
     assert FROZEN["oracle"]["kind"] == "unmodified-shell"
     for source, digest in FROZEN["oracle"]["sources"].items():
-        assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == digest
+        assert hashlib.sha256(reference_source(source).read_bytes()).hexdigest() == digest
     assert len({r["id"] for r in RECORDS}) == len(RECORDS)
-    assert {r["id"] for r in RECORDS if "retired_native_reason" in r} == {
-        r["id"] for r in HELPER_ABSENCE_RECORDS
+    assert {r["id"] for r in RETIRED_VALIDATOR_RECORDS} == {
+        ".claude/hooks/pre-tool-use.sh:contract-required",
+        ".claude/hooks/pre-tool-use.sh:contract-validator-0",
+        ".claude/hooks/pre-tool-use.sh:contract-validator-2",
+        "pre-tool-use:commit-then-validator",
+        "pre-tool-use:contract-missing-field",
+        "pre-tool-use:contract-validator-0",
+        "pre-tool-use:contract-validator-2",
+        "pre-tool-use:contract-validator-37",
+        "pre-tool-use:contract-validator-missing",
+        "pre-tool-use:contract-validator-redaction",
+    }
+    assert {r["id"] for r in EXISTING + RECORDS if "retired_native_reason" in r} == {
+        r["id"] for r in HELPER_ABSENCE_RECORDS + RETIRED_VALIDATOR_RECORDS
     } | {
         "pre-tool-use:bootstrap-helper-missing",
         "pre-tool-use:bootstrap-helper-broken",
         "pre-tool-use:commit-impl-missing-tdd",
     }
     assert len(RECORDS) == 133
-    assert len(HELPER_ABSENCE_RECORDS) == 127
+    assert len(HELPER_ABSENCE_RECORDS) == 120
     assert all("tool-presence diagnostic" in r["retired_native_reason"]
                for r in HELPER_ABSENCE_RECORDS)
     assert len(EXISTING) == 15

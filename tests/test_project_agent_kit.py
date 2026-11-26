@@ -254,7 +254,6 @@ def test_should_limit_optional_consumer_tools_to_explicit_adoption_surfaces() ->
         "tools/agent_loader/**",
         "tools/autonomous_loop/**",
         "tools/catalog_loader.py",
-        "tools/hooks/**",
         "tools/mir_executor/**",
         "tools/plan_archive/**",
     }

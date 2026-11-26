@@ -18,6 +18,26 @@ EXISTING = [
     if r["family"] == ".claude/hooks/pre-tool-use.sh"
 ]
 
+RETIRED_VALIDATOR_CASES = {
+    "commit-then-validator",
+    "contract-missing-field",
+    "contract-required",
+    "contract-validator-0",
+    "contract-validator-2",
+    "contract-validator-37",
+    "contract-validator-missing",
+    "contract-validator-redaction",
+}
+RETIRED_VALIDATOR_RECORDS = [
+    record for record in EXISTING + RECORDS if record["case"] in RETIRED_VALIDATOR_CASES
+]
+for record in RETIRED_VALIDATOR_RECORDS:
+    record["retired_native_reason"] = (
+        "Retired Python validator subprocess: this shell fixture depends on a stub exit, "
+        "a stub side effect, or the Python script's presence. Native validates the payload "
+        "in process."
+    )
+
 RETIRED_HELPERS = (
     ".claude/hooks/_lib/tier_dispatch.sh",
     ".claude/hooks/_lib/invocation_log.sh",

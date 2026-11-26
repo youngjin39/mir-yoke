@@ -7,9 +7,30 @@ per user decision 2026-05-24 Discord 1508028248.
 from __future__ import annotations
 
 import hashlib
+import json
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from src.mir.core.engine.tool_contract import ToolContract
+
+@dataclass(frozen=True)
+class ToolContract:
+    """Tool contract fields emitted by the instrumenter."""
+
+    idempotency_key: str
+    precondition: str
+    dry_run: bool
+    side_effect_summary: str
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        result = asdict(self)
+        if not result["extra"]:
+            result.pop("extra")
+        return result
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
+
 
 # Precondition lookup: tool -> declared state requirement
 _PRECONDITIONS: dict[str, str] = {
