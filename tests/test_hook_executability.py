@@ -265,12 +265,13 @@ def test_should_block_when_configured_deny_list_inspection_fails(failure, tmp_pa
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_should_redact_validator_output_when_required_contract_fails(tmp_path):
     script = _isolated_guard(tmp_path)
-    validator = tmp_path / "tools/hooks/validate_tool_contract.py"
+    validator = tmp_path / ".mir/bin/project-hooks"
     validator.parent.mkdir(parents=True)
     validator.write_text(
-        "import sys\nprint(sys.stdin.read(), file=sys.stderr)\nraise SystemExit(1)\n",
+        "#!/bin/bash\ncat >&2\nexit 1\n",
         encoding="utf-8",
     )
+    validator.chmod(0o755)
     marker = "PRIVATE_VALIDATOR_FIXTURE_123"
     result = _run_pre_tool_use(
         f"echo {marker}", tmp_path, script=script,

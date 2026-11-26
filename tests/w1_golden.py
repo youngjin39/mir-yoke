@@ -54,6 +54,8 @@ def reference_source(relative: str) -> Path:
         return FIXTURES / Path(relative).name.replace(".sh", ".reference.sh")
     if relative == ".claude/hooks/post-edit-self-ingest.sh":
         return FIXTURES / "post-edit-self-ingest.reference.sh"
+    if relative == ".claude/hooks/pre-tool-use.sh":
+        return FIXTURES / "pre-tool-use.reference.sh"
     if relative == ".claude/hooks/session-start.sh":
         return FIXTURES / "session-start.reference.sh"
     if relative in {"native/handoff-packet/Cargo.toml", "native/handoff-packet/Cargo.lock"}:

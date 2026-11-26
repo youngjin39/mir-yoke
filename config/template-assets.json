@@ -200,7 +200,6 @@
         "tools/agent_loader/**",
         "tools/autonomous_loop/**",
         "tools/catalog_loader.py",
-        "tools/hooks/**",
         "tools/mir_executor/**",
         "tools/plan_archive/**"
       ],
@@ -231,7 +230,6 @@
         "tools/autonomous_loop/**",
         "tools/catalog_loader.py",
         "tools/harness_consistency/**",
-        "tools/hooks/**",
         "tools/mir_executor/**",
         "tools/plan_archive/**",
         "tools/template_assets.py",

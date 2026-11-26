@@ -9,6 +9,7 @@ mod prompt_submit;
 mod python_decimal;
 mod stop_audit;
 mod tdd_ledger;
+mod tool_contract_hook;
 
 use std::{
     env,
@@ -57,6 +58,9 @@ fn main() -> ExitCode {
     }
     if args.len() == 1 && args[0] == "pre-tool-use" {
         return ExitCode::from(pre_tool_use::run());
+    }
+    if args.len() == 1 && args[0] == "tool-contract" {
+        return ExitCode::from(tool_contract_hook::run());
     }
     if args.len() == 1 && args[0] == "pre-commit-verification" {
         return ExitCode::from(pre_commit_verification::run());

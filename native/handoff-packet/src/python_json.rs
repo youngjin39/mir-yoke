@@ -842,8 +842,8 @@ pub fn parse_stdin(bytes: &[u8]) -> Result<Value, Error> {
     parse_stdin_with_limit(bytes, crate::LIMIT)
 }
 
-/// A caller that bounds bytes while reading may admit larger event bodies.
-pub fn parse_stdin_with_limit(bytes: &[u8], limit: usize) -> Result<Value, Error> {
+/// Decode Python stdin's UTF-8/surrogateescape without changing newline bytes.
+pub fn stdin_codepoints(bytes: &[u8]) -> Vec<u32> {
     let mut chars = Vec::new();
     let mut remaining = bytes;
     while !remaining.is_empty() {
@@ -867,6 +867,12 @@ pub fn parse_stdin_with_limit(bytes: &[u8], limit: usize) -> Result<Value, Error
             }
         }
     }
+    chars
+}
+
+/// A caller that bounds bytes while reading may admit larger event bodies.
+pub fn parse_stdin_with_limit(bytes: &[u8], limit: usize) -> Result<Value, Error> {
+    let chars = stdin_codepoints(bytes);
     // TextIOWrapper's universal newline translation precedes read(LIMIT+1).
     let mut normalized = Vec::with_capacity(chars.len());
     let mut i = 0;

@@ -509,19 +509,26 @@ fi
 
 # mir:tool-contract:begin
 # --- R20-T01: phase-4 §4 tool contract validation (gated by env) ---
-# The shared launcher uses the receipt-bound external Mir runtime after bootstrap.
+# The required validator is native, including when this shell policy is selected.
 if [ "${MIR_TOOL_CONTRACT_REQUIRED:-0}" = "1" ]; then
-    _MIR_TC_VALIDATOR="$PROJECT_DIR/tools/hooks/validate_tool_contract.py"
-    if [ -f "$_MIR_TC_VALIDATOR" ]; then
+    _MIR_TC_VALIDATOR="$PROJECT_DIR/.mir/bin/project-hooks"
+    if [ -f "$_MIR_TC_VALIDATOR" ] && [ -x "$_MIR_TC_VALIDATOR" ] && \
+       [ ! -L "$_MIR_TC_VALIDATOR" ] && [ ! -L "$PROJECT_DIR/.mir" ] && \
+       [ ! -L "$PROJECT_DIR/.mir/bin" ]; then
         # Replay INPUT through stdin to the validator
-        printf '%s' "${INPUT:-}" | "$_MIR_PYTHON_LAUNCHER" "$_MIR_TC_VALIDATOR" >/dev/null 2>&1
+        printf '%s' "${INPUT:-}" | "$_MIR_TC_VALIDATOR" tool-contract >/dev/null 2>&1
         _mir_tc_exit=$?
+        case "$_mir_tc_exit" in
+            64|126|127)
+                block "required native tool contract validator unavailable or outdated; run scripts/mir.sh project-hooks install --project-root ."
+                ;;
+        esac
         if [ "$_mir_tc_exit" -ne 0 ]; then
-            echo "[mir CONTRACT BLOCK] tool contract validation failed (exit $_mir_tc_exit); inspect tools/hooks/validate_tool_contract.py" >&2
+            echo "[mir CONTRACT BLOCK] tool contract validation failed (exit $_mir_tc_exit); inspect project-hooks tool-contract" >&2
             exit 2
         fi
     else
-        block "required tool contract validator missing"
+        block "required native tool contract validator missing or linked; run scripts/mir.sh project-hooks install --project-root ."
     fi
 elif [ "${MIR_TOOL_CONTRACT_LOG:-0}" = "1" ]; then
     # Advisory log mode — record contract presence without enforcing
