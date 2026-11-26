@@ -458,8 +458,7 @@
       "__main__.py",
       "cli.py",
       "detector.py",
-      "extractor.py",
-      "instrumenter.py"
+      "extractor.py"
     ],
     "tools/mir_executor": [
       "__init__.py",

@@ -635,7 +635,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/python-allowlist.json",
-      "sha256": "57547b98d7189aa3babdba3d47bbd25999eb3ebdd6630fc984cce42cc727b91d"
+      "sha256": "c947057dd51fae2c523282531e3d3b99a9c511cac47cc9373690be519f7fef11"
     },
     {
       "classification": "reference",
@@ -10518,12 +10518,6 @@
       "disposition": "remove",
       "path": "tools/harness_contract/extractor.py",
       "sha256": "93ccaffa2fe189bde838e9bfe7f633b4209068d75db5f2a970492af2610a2e5d"
-    },
-    {
-      "classification": "reference",
-      "disposition": "remove",
-      "path": "tools/harness_contract/instrumenter.py",
-      "sha256": "5e480fa8081eeac84b81343b6a3dee95cf64d4c3725f6842c1c1e7b1ac92b1d7"
     },
     {
       "classification": "optional-consumer-tool",
