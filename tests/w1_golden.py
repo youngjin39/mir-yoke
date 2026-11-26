@@ -48,6 +48,10 @@ TOOLS = (
 
 def reference_source(relative: str) -> Path:
     # The W1 Python launch envelope is historical after the native cutover.
+    if relative == ".claude/hooks/tdd-matrix-guard.py":
+        return FIXTURES / "tdd-matrix-guard.reference.txt"
+    if relative in {".claude/hooks/tdd-guard.sh", ".claude/hooks/pre-commit-verification.sh"}:
+        return FIXTURES / Path(relative).name.replace(".sh", ".reference.sh")
     if relative == ".claude/hooks/post-edit-self-ingest.sh":
         return FIXTURES / "post-edit-self-ingest.reference.sh"
     if relative == ".claude/hooks/session-start.sh":

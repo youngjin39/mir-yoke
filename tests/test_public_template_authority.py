@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import importlib.util
 import json
+import os
+import subprocess
 from pathlib import Path
 
+from e02a_binary import binary
 from installed_mir import installed_mir as installed_mir
 from installed_mir import run_installed_mir
 
@@ -64,11 +66,7 @@ def test_product_commit_gate_recognizes_adopter_paths_and_commands() -> None:
 def test_should_require_tdd_evidence_when_adopter_product_roots_change(
     tmp_path: Path,
 ) -> None:
-    module_path = ROOT / ".claude/hooks/tdd-matrix-guard.py"
-    spec = importlib.util.spec_from_file_location("mir_tdd_matrix_guard", module_path)
-    assert spec is not None and spec.loader is not None
-    guard = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(guard)
+    guard = binary("project-hooks", "W5_PROJECT_HOOKS_BINARY")
 
     tasks = tmp_path / "tasks"
     tasks.mkdir()
@@ -80,8 +78,17 @@ def test_should_require_tdd_evidence_when_adopter_product_roots_change(
 
     for product_path in ("apps/web/main.ts", "packages/core/index.ts"):
         changed.write_text(product_path + "\n", encoding="utf-8")
-        assert guard.is_implementation_path(product_path)
-        assert guard.precommit(tmp_path, changed) == 2
+        result = subprocess.run(
+            [guard, "tdd-matrix", "precommit", str(tmp_path), str(changed)],
+            cwd=tmp_path, env=dict(os.environ, HOME=str(tmp_path)),
+            capture_output=True, timeout=15,
+        )
+        assert result.returncode == 2
+        assert result.stdout == b""
+        assert result.stderr == (
+            "[PreCommitVerification BLOCK] No composite TDD entry found in "
+            f"tasks/tdd.json for {product_path}.\n"
+        ).encode()
 
     assert "apps/*" in shell_guard
     assert "packages/*" in shell_guard

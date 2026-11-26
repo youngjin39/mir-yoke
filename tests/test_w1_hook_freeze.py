@@ -142,3 +142,16 @@ def test_tdd_ledger_freeze_provenance_and_inventory():
         assert record["expected"]["delta"] == {}
         assert record["expected"]["deleted"] == []
         assert (record["usage"] == "unused-mode") == (record["mode"] == "precommit-merge")
+
+
+def test_w5_tdd_retirement_freeze_provenance():
+    frozen = json.loads((FIXTURES.parent / "w5-tdd.json").read_text())
+    assert frozen["oracle"] == "abb0dd82:.claude/hooks/tdd-matrix-guard.py"
+    assert hashlib.sha256(reference_source(".claude/hooks/tdd-matrix-guard.py").read_bytes()
+                          ).hexdigest() == frozen["sha256"]
+    records = frozen["records"]
+    assert len(records) == len({r["id"] for r in records}) == 196
+    for record in records:
+        assert record["expected"]["delta"] == {}
+        assert record["expected"]["deleted"] == []
+        assert isinstance(record["oracle_stderr"], str)

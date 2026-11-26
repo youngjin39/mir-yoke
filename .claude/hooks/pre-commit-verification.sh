@@ -17,7 +17,7 @@ _MIR_TIER_DISPATCH="$(dirname "$0")/_lib/tier_dispatch.sh"
 set -u
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-TDD_MATRIX_GUARD_SCRIPT="$PROJECT_DIR/.claude/hooks/tdd-matrix-guard.py"
+native="$PROJECT_DIR/.mir/bin/project-hooks"
 
 # The consumer repository owns its tools/ commit-gate posture through the local
 # harness-consistency manifest. Catalog presence never changes authority or bypasses checks.
@@ -120,11 +120,16 @@ main() {
   trap 'rm -f "$changed_code_file" "$tdd_commands_file"' EXIT
   : >"$tdd_commands_file"
   if [ -s "$changed_code_file" ]; then
-    if [ ! -f "$TDD_MATRIX_GUARD_SCRIPT" ]; then
-      echo "[PreCommitVerification BLOCK] Missing helper: $TDD_MATRIX_GUARD_SCRIPT" >&2
+    if ! { [ "${MIR_NATIVE_HOOKS:-1}" != 0 ] && \
+           [ -f "$native" ] && [ -x "$native" ] && [ ! -L "$native" ] && \
+           [ ! -L "$PROJECT_DIR/.mir" ] && [ ! -L "$PROJECT_DIR/.mir/bin" ] && \
+           "$native" --mir-warmup </dev/null >/dev/null 2>&1 && \
+           capabilities="$("$native" capabilities </dev/null 2>/dev/null)" && \
+           printf '%s\n' "$capabilities" | grep -qx 'mir-project-hooks-tdd-v1'; }; then
+      echo "[PreCommitVerification BLOCK] Native TDD validation unavailable" >&2
       exit 2
     fi
-    if ! "$_MIR_PYTHON_LAUNCHER" "$TDD_MATRIX_GUARD_SCRIPT" precommit "$PROJECT_DIR" "$changed_code_file" >"$tdd_commands_file"; then
+    if ! "$native" tdd-matrix precommit "$PROJECT_DIR" "$changed_code_file" >"$tdd_commands_file"; then
       exit 2
     fi
   fi

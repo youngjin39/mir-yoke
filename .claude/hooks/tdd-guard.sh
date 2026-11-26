@@ -1,12 +1,11 @@
 #!/bin/bash
-_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # Optional TDD advisory: report missing composite TDD evidence without blocking edits.
 # tier: warn — invoke directly when ledger guidance is useful.
 _MIR_HOOK_TIER="warn"
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 TARGET_PATH="${1:-}"
-TDD_MATRIX_GUARD_SCRIPT="$PROJECT_DIR/.claude/hooks/tdd-matrix-guard.py"
+native="$PROJECT_DIR/.mir/bin/project-hooks"
 
 normalize_path() {
   local path="$1"
@@ -42,12 +41,17 @@ main() {
   if ! is_implementation_file "$rel"; then
     exit 0
   fi
-  if [ -f "$TDD_MATRIX_GUARD_SCRIPT" ]; then
-    if ! "$_MIR_PYTHON_LAUNCHER" "$TDD_MATRIX_GUARD_SCRIPT" prewrite "$PROJECT_DIR" "$rel" >/dev/null 2>&1; then
+  if [ "${MIR_NATIVE_HOOKS:-1}" != 0 ] && \
+     [ -f "$native" ] && [ -x "$native" ] && [ ! -L "$native" ] && \
+     [ ! -L "$PROJECT_DIR/.mir" ] && [ ! -L "$PROJECT_DIR/.mir/bin" ] && \
+     "$native" --mir-warmup </dev/null >/dev/null 2>&1 && \
+     capabilities="$("$native" capabilities </dev/null 2>/dev/null)" && \
+     printf '%s\n' "$capabilities" | grep -qx 'mir-project-hooks-tdd-v1'; then
+    if ! "$native" tdd-matrix prewrite "$PROJECT_DIR" "$rel" >/dev/null 2>&1; then
       echo "[TddGuard WARN] composite TDD evidence is incomplete for $rel (advisory only)" >&2
     fi
   else
-    echo "[TddGuard WARN] Missing helper: $TDD_MATRIX_GUARD_SCRIPT (advisory only)" >&2
+    echo "[TddGuard WARN] Native TDD validation unavailable (advisory only)" >&2
   fi
   exit 0
 }

@@ -205,6 +205,19 @@ fn matrix_prewrite() {
     replay("prewrite");
 }
 #[test]
+fn w5_pinned_retirement_replay() {
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/w5-tdd.json")).unwrap();
+    assert_eq!(
+        fixture["oracle"],
+        "abb0dd82:.claude/hooks/tdd-matrix-guard.py"
+    );
+    let mut count = 0;
+    for mode in ["prewrite", "precommit", "precommit-merge"] {
+        count += replay_fixture(&fixture, mode);
+    }
+    assert_eq!(count, 196);
+}
+#[test]
 fn matrix_precommit_first_match() {
     replay("precommit");
 }

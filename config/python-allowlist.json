@@ -9,9 +9,6 @@
     "tools/harness_consistency/": "Maintainer repository-contract analysis; see python_allowed_categories. No blanket tools/, scripts/, plugin or runtime exemption."
   },
   "baseline": {
-    ".claude/hooks": [
-      "tdd-matrix-guard.py"
-    ],
     "native/handoff-packet": [
       "benchmark.py"
     ],
