@@ -6467,7 +6467,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/session_upfront.rs",
-      "sha256": "2913417fcbeee1dce829fe16c8dfadac04da1b51b69fd339ce737a21961481a9"
+      "sha256": "5fc674c6f80bcb604788d6e9f420ac4a8673336da565edf446aa306135689b67"
     },
     {
       "classification": "template-maintainer-tool",
