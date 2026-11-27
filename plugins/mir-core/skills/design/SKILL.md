@@ -57,6 +57,9 @@ An advisory design-skill discipline (no runtime hook): extract the user's real i
 Second-pass reinforcements (dryforge):
 
 - **Derive-first elicit** — Before surfacing any question, first attempt to derive the answer from stated goals, constraints, and code facts; ask only when a specific unresolved decision remains. Question count is not a quality metric.
+  Before asking the owner, check the repository's register of decisions in force when it keeps one.
+  In delegated briefs, cite the command or file location establishing every factual premise; label any unsupported premise an assumption for the delegate to verify first.
+  Use the [improvement loop](../repo-maintenance/references/improvement-loop.md) for recording questions and brief-premise corrections.
 - **Proposal-as-material** — A user-proposed solution is material serving the stated intent, not automatic specification authority. Confirm the underlying intent and surface a simpler path when one satisfies it; the user's explicit trade-off decision remains binding once made.
 - **Specification-over-plan precedence** — The specification (design behavior, constraints, invariants) defines the result; the plan describes how to reach it. When they disagree, the specification governs and the conflict is surfaced, never silently resolved.
 - **Non-reconstructible intent** — Handoffs record authority boundaries and intent that a future executor must not re-derive from implementation evidence.

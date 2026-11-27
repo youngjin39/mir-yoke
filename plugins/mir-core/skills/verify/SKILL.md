@@ -22,6 +22,7 @@ Routing precedence: diff and PR review → code-review; completion evidence and 
 
 ## Evidence-claim discipline
 - Completion is an evidence claim, not a confidence statement.
+- Verify a recurring-problem remedy with the next period's measurement, not only its closure check; follow the [improvement loop](../repo-maintenance/references/improvement-loop.md).
 - A required check that cannot be evaluated — missing tool, unrunnable command, unreadable output — counts as a failure, not a pass.
 
 ## Workflow

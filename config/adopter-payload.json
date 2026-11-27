@@ -6803,7 +6803,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-code/skills/code-review/SKILL.md",
-      "sha256": "22e9b1d71527b3c3ac416d82a8f28047f8c9990c92195aab1eb307c356235e42"
+      "sha256": "0a3de5e13c31832857ab0fb3765a2079c0e8ef977aba69f597da63c61d22f82e"
     },
     {
       "classification": "optional-consumer-tool",
@@ -7013,7 +7013,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/design/SKILL.md",
-      "sha256": "c7b23b70c01878362572f0ad96913545390ba9e00b96c0405e6c8274661f2c8f"
+      "sha256": "5d3cc2fa9439e23f15ed551dc1da978549360a9d75989edca5ac0997ea7737e1"
     },
     {
       "classification": "optional-consumer-tool",
@@ -7079,7 +7079,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/governance/references/skill-patch-from-traces.md",
-      "sha256": "66b3cb119ccf43110b2bf1d2d7cf1113e9a9e282234feb94dd0147efe9285807"
+      "sha256": "196fb97f7d01622280c75a37024bc8005b22c2568170192c5f834d3a6fd72e8f"
     },
     {
       "classification": "optional-consumer-tool",
@@ -7157,7 +7157,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/repo-maintenance/SKILL.md",
-      "sha256": "774dd69164cd987c4b13e4582c4d755b0ec1770a0ded9247f890ba9090f68f71"
+      "sha256": "28774f65e25c9938208969589b015f648469ab5821e3f8d80dcb2d5dd55a1cf9"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-core/skills/repo-maintenance/references/improvement-loop.md",
+      "sha256": "5a4357a04b9efc95da16c3c09f2edadcd0a06ea0fd0ccab61e279efe1d83061e"
     },
     {
       "classification": "optional-consumer-tool",
@@ -7241,7 +7247,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/verify/SKILL.md",
-      "sha256": "33669c996b3d12ae4efe628162d82706f346057ed591b02ea9811d7fc609280c"
+      "sha256": "d91fe85a3e0a2b9b64d283694f06d79209f0e33006d67576754382475f06f2b7"
     },
     {
       "classification": "optional-consumer-tool",
@@ -7283,7 +7289,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/default-work-method.md",
-      "sha256": "5aae7185ca1f56738ee13d7418f6d59203cc394881860d3396f29e47b482bb86"
+      "sha256": "aa896b6cf9cadc28547b9d35bcb08cf8d7aecce741d7b61944e5a95338bbf39c"
     },
     {
       "classification": "optional-consumer-tool",

@@ -15,6 +15,8 @@ Keep repository policy, state and write authority with the repository.
 | 6 | Repeat | Repeat steps 3–5 until the tests pass. |
 | 7 | Finish | Mark done only when every matrix cell has evidence checked now; otherwise report N/M cells and the open cells. Deliver owner-only decisions last, each with a recommendation. |
 
+At a stage or release closeout, run the repository's declared improvement measurement if it has one, as described in `mir-core:repo-maintenance`'s `references/improvement-loop.md` when available.
+
 Throughout, keep the request matrix current; maintain recorded intent only when the request authorizes writes. Keep any
 repository-declared relation graph and memory links/embeddings current through
 its documented lifecycle. Surface conflicting new instructions with both sides.
