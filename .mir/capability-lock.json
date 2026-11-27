@@ -325,7 +325,7 @@
     "mir-code": {
       "package_kind": "skills",
       "path": "plugins/mir-code",
-      "sha256": "b3715c15afc9c9185c440ccc5367072171148b7f2a78abedc957309d9330b5e6"
+      "sha256": "93824bf52d294a45d6eae27f7ec2fc22946df0dc1d30bc17f8db074f87687e32"
     },
     "mir-content": {
       "package_kind": "skills",
@@ -335,12 +335,12 @@
     "mir-core": {
       "package_kind": "skills",
       "path": "plugins/mir-core",
-      "sha256": "47293589b1dd4fa484fce59016fd6616111ab55d86bcc017dcacfdc119a86ede"
+      "sha256": "4f26d76af53642304b92c49aff25f539054edf57faa1e91105e4d4f487ce042e"
     },
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",
       "path": "plugins/mir-lifecycle-hooks",
-      "sha256": "4252a209b4d99767b6e6ca10a26b2812972e65c3f5c772e6f96132b91dd33bde"
+      "sha256": "26d9d736ffaa90fec907fee48f81ba9ec42fd0ff3e7ce3614368d4393725647d"
     },
     "mir-mcp": {
       "mcp": {
