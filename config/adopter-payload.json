@@ -419,7 +419,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "2f6d89e02de0d46f7d40e475858c000f534b00cecec52d9e5e096ba3daff52a8"
+      "sha256": "71dc9f73787f385d1fe01fd1047cdb4fc17456a05246441f1dac3002ac327088"
     },
     {
       "classification": "reference",
@@ -3761,7 +3761,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/post_edit_memory_sync.rs",
-      "sha256": "7ff56d170c8c1b17003906d8df44486df562b47ef1ac7df914f4e57a85c75a3b"
+      "sha256": "948ec5780435c839fff3f95564fd7c11777534156c7246a861724d33519497c1"
     },
     {
       "classification": "template-maintainer-tool",
