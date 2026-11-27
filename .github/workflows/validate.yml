@@ -60,40 +60,52 @@ jobs:
       # cargo fmt has no --locked option: it only checks source formatting.
       - run: cargo fmt --check
         working-directory: native/handoff-packet
-      - run: cargo clippy --all-targets --locked -- -D warnings
+      # From here each step reports its own result: a failed lint must not hide the tests.
+      - if: ${{ !cancelled() }}
+        run: cargo clippy --all-targets --locked -- -D warnings
         working-directory: native/handoff-packet
-      - run: cargo test --locked --no-fail-fast
+      - if: ${{ !cancelled() }}
+        run: cargo test --locked --no-fail-fast
         working-directory: native/handoff-packet
-      - run: cargo build --release --locked
+      - if: ${{ !cancelled() }}
+        run: cargo build --release --locked
         working-directory: native/handoff-packet
-      - run: >-
+      - if: ${{ !cancelled() }}
+        run: >-
           uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_delegation_gate_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py
           tests/test_lifecycle_native_commands.py
           tests/test_line_endings.py
       # These oracles use Python 3.12 argparse, Unicode and pathlib behavior.
-      - run: >-
+      - if: ${{ !cancelled() }}
+        run: >-
           uv run --no-sync pytest -q -p no:cacheprovider
           tests/test_executor_query_native_parity.py tests/test_runtime_verify_native_parity.py
         env:
           UV_PROJECT_ENVIRONMENT: .venv-312
-      - run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
+      - if: ${{ !cancelled() }}
+        run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
 
-      - run: cargo fmt --check
+      - if: ${{ !cancelled() }}
+        run: cargo fmt --check
         working-directory: native/mir-mcp
-      - run: cargo clippy --all-targets --locked -- -D warnings
-        working-directory: native/mir-mcp
-        env:
-          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
-      - run: cargo test --locked --no-fail-fast
+      - if: ${{ !cancelled() }}
+        run: cargo clippy --all-targets --locked -- -D warnings
         working-directory: native/mir-mcp
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
-      - run: cargo build --release --locked
+      - if: ${{ !cancelled() }}
+        run: cargo test --locked --no-fail-fast
         working-directory: native/mir-mcp
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
-      - run: >-
+      - if: ${{ !cancelled() }}
+        run: cargo build --release --locked
+        working-directory: native/mir-mcp
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
+      - if: ${{ !cancelled() }}
+        run: >-
           uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_mir_mcp_native_core.py tests/test_mir_mcp_native_io.py
           tests/test_mir_mcp_native_ontology.py tests/test_mir_mcp_native_relations.py
@@ -311,38 +323,49 @@ jobs:
         run: uv run --no-sync --python 3.14 python scripts/ci_preflight.py --runtime-only --sqlite-vector
       - run: cargo fmt --check
         working-directory: native/handoff-packet
-      - run: cargo clippy --all-targets --locked -- -D warnings
+      # From here each step reports its own result: a failed lint must not hide the tests.
+      - if: ${{ !cancelled() }}
+        run: cargo clippy --all-targets --locked -- -D warnings
         working-directory: native/handoff-packet
-      - run: cargo test --locked --no-fail-fast
+      - if: ${{ !cancelled() }}
+        run: cargo test --locked --no-fail-fast
         working-directory: native/handoff-packet
-      - run: cargo build --release --locked
+      - if: ${{ !cancelled() }}
+        run: cargo build --release --locked
         working-directory: native/handoff-packet
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_delegation_gate_native_parity.py tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py tests/test_lifecycle_native_commands.py
+      - if: ${{ !cancelled() }}
+        run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_delegation_gate_native_parity.py tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py tests/test_lifecycle_native_commands.py
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
+      - if: ${{ !cancelled() }}
+        run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
 
-      - run: cargo fmt --check
+      - if: ${{ !cancelled() }}
+        run: cargo fmt --check
         working-directory: native/mir-mcp
-      - run: cargo clippy --all-targets --locked -- -D warnings
-        working-directory: native/mir-mcp
-        env:
-          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
-      - run: cargo test --locked --no-fail-fast
+      - if: ${{ !cancelled() }}
+        run: cargo clippy --all-targets --locked -- -D warnings
         working-directory: native/mir-mcp
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
-      - run: cargo build --release --locked
+      - if: ${{ !cancelled() }}
+        run: cargo test --locked --no-fail-fast
         working-directory: native/mir-mcp
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
-      - run: >-
+      - if: ${{ !cancelled() }}
+        run: cargo build --release --locked
+        working-directory: native/mir-mcp
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
+      - if: ${{ !cancelled() }}
+        run: >-
           uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_mir_mcp_native_core.py tests/test_mir_mcp_native_io.py
           tests/test_mir_mcp_native_ontology.py tests/test_mir_mcp_native_relations.py
