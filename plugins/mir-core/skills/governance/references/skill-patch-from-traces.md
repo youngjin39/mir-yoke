@@ -10,6 +10,7 @@ Generated derivatives are regenerated, never hand-edited.
 1. Group authorized, redacted traces by recurring success or failure pattern. Cite
    the supporting cases and separate a systematic omission from a one-off incident.
    Do not harvest transcripts or promote an observed preference into binding policy.
+   Give each grouped case set a problem-class ID under the [improvement loop](../../repo-maintenance/references/improvement-loop.md).
 2. Identify the canonical skill source and propose the smallest justified add,
    replace or delete edits. Declare an edit budget before drafting; explain each edit
    and avoid redundant rules or task-specific constants. An empty proposal is valid.
@@ -20,6 +21,7 @@ Generated derivatives are regenerated, never hand-edited.
 4. Keep the patch staged for Main review. Put source identity, supporting evidence
    and rejected-edit reasons in the existing evidence sink. Apply an approved change
    through existing generation and verification, preserving cross-runtime parity.
+   Each staged patch names the witness showing that its remedy handles the recorded cases.
 
 Neither learned wording nor a score grants instruction or memory write authority.
 Main retains recommendations and dispatch under centrally owned model selection.

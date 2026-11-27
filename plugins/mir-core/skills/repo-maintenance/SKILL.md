@@ -34,16 +34,19 @@ Apply each item proportionately. Mark it done, no change needed (with evidence),
 8. Skills and agents: unused or duplicate capabilities, stale model or tool references, broken frontmatter.
 9. Instruction docs: CLAUDE.md and AGENTS.md stay within size limits and carry the same rules for both runtimes.
 10. Rules and lessons: each rule has one home, and lessons live in the declared location.
+    Apply the [improvement loop](references/improvement-loop.md) using existing lessons and evidence.
 11. Architecture: the overview matches the actual layout and lists no removed components.
 12. Delegation: model routing, delegation lanes and sub-agent limits follow the governing policy.
 13. Continuity: one cursor, one resume pointer, one status projection and one evidence log.
 14. Work context: one retrieval smoke query returns relevant anchors when retrieval is supported.
 15. Token efficiency: session-start and hook output size, always-loaded file sizes, oversized routine reads.
 16. Test health: the whole suite runs by default, stays hermetic, is not flaky under load, and new regression tests fail without their fix.
+    Run the repository's declared improvement measurement when it has one.
 17. Code, security, dependencies: real defects, secret exposure, vulnerable or outdated dependencies, licenses.
 18. Integrity evidence: locks, ledgers, receipts, audit chains and profile baselines are rebound through their documented commands after edits. Never fabricate provenance.
 19. Runtime behavior: hooks fire, plugins and skills load, tool servers connect, and CLI versions match. Static documentation is not proof.
 20. Open decisions: every pending owner decision is listed once, with both sides and the item it blocks.
+    List open improvement items past their due date; if a decision register is kept, check that every line cites its source.
 21. Main-runtime parity: either Claude CLI or Codex CLI is Main and recognizes the same current rules, memory, design records, hooks, workflows and user intent. Check:
     - CLAUDE.md versus generated AGENTS.md, including nested instructions, carries the same rules and current design-record references.
     - Both register equivalent hook events and commands; list runtime-only events (Claude StopFailure, Codex-only events) as documented exemptions.

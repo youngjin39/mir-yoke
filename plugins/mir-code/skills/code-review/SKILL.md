@@ -61,6 +61,9 @@ Report counts by status. For a fix, cite the executed check and observed result 
 closure evidence. A fix to a finding gets rows for the flow it changes and is
 reviewed again when it changes state or asynchronous behaviour. Repair ownership
 and the round limit follow the `mir-lifecycle-hooks:runtime-continuity` default work method.
+Keep the reviewer's submitted severity unchanged; the orchestrator records its ruling separately and cites the rubric clause when lowering or rejecting a finding.
+Close a finding from reading only after its check has run; record the result.
+For recurrence tracking, use `mir-core:repo-maintenance`'s `references/improvement-loop.md` when available.
 
 | ID | File:Line | Severity | Scenario and finding | Evidence | Scope status | Smallest fix | Closure evidence |
 |---|---|---|---|---|---|---|---|
