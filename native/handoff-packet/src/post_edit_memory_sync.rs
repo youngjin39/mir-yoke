@@ -37,6 +37,15 @@ fn absolute(path: &Path) -> io::Result<PathBuf> {
     }
     Ok(result)
 }
+// Account lookup exists only on Unix; elsewhere only HOME can answer.
+#[cfg(unix)]
+fn account_home(user: Option<&std::ffi::OsStr>) -> Option<PathBuf> {
+    crate::runtime_account_home(user)
+}
+#[cfg(not(unix))]
+fn account_home(_user: Option<&std::ffi::OsStr>) -> Option<PathBuf> {
+    None
+}
 fn expanded(path: &Path) -> io::Result<PathBuf> {
     let Some(text) = path.to_str() else {
         return Ok(path.to_owned());
@@ -46,25 +55,11 @@ fn expanded(path: &Path) -> io::Result<PathBuf> {
     }
     let (user, rest) = text.split_once('/').unwrap_or((text, ""));
     let home = if user == "~" {
-        env::var_os("HOME").map(PathBuf::from).or_else(|| {
-            #[cfg(unix)]
-            {
-                crate::runtime_account_home(None)
-            }
-            #[cfg(not(unix))]
-            {
-                None
-            }
-        })
+        env::var_os("HOME")
+            .map(PathBuf::from)
+            .or_else(|| account_home(None))
     } else {
-        #[cfg(unix)]
-        {
-            crate::runtime_account_home(Some(std::ffi::OsStr::new(&user[1..])))
-        }
-        #[cfg(not(unix))]
-        {
-            None
-        }
+        account_home(Some(std::ffi::OsStr::new(&user[1..])))
     }
     .ok_or_else(|| io::Error::other("could not determine home directory"))?;
     Ok(home.join(rest))
