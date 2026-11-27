@@ -515,12 +515,18 @@ if [ "${MIR_TOOL_CONTRACT_REQUIRED:-0}" = "1" ]; then
     if [ -f "$_MIR_TC_VALIDATOR" ] && [ -x "$_MIR_TC_VALIDATOR" ] && \
        [ ! -L "$_MIR_TC_VALIDATOR" ] && [ ! -L "$PROJECT_DIR/.mir" ] && \
        [ ! -L "$PROJECT_DIR/.mir/bin" ]; then
+        _MIR_TC_UNAVAILABLE="required native tool contract validator unavailable or outdated; run scripts/mir.sh project-hooks install --project-root ."
+        if ! { "$_MIR_TC_VALIDATOR" --mir-warmup </dev/null >/dev/null 2>&1 && \
+           _MIR_TC_CAPABILITIES="$("$_MIR_TC_VALIDATOR" capabilities </dev/null 2>/dev/null)" && \
+           printf '%s\n' "$_MIR_TC_CAPABILITIES" | grep -qx 'mir-project-hooks-tool-contract-v1'; }; then
+            block "$_MIR_TC_UNAVAILABLE"
+        fi
         # Replay INPUT through stdin to the validator
         printf '%s' "${INPUT:-}" | "$_MIR_TC_VALIDATOR" tool-contract >/dev/null 2>&1
         _mir_tc_exit=$?
         case "$_mir_tc_exit" in
             64|126|127)
-                block "required native tool contract validator unavailable or outdated; run scripts/mir.sh project-hooks install --project-root ."
+                block "$_MIR_TC_UNAVAILABLE"
                 ;;
         esac
         if [ "$_mir_tc_exit" -ne 0 ]; then

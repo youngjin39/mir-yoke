@@ -268,7 +268,10 @@ def test_should_redact_validator_output_when_required_contract_fails(tmp_path):
     validator = tmp_path / ".mir/bin/project-hooks"
     validator.parent.mkdir(parents=True)
     validator.write_text(
-        "#!/bin/bash\ncat >&2\nexit 1\n",
+        '#!/bin/bash\ncase "$1" in\n'
+        '  --mir-warmup) exit 0 ;;\n'
+        '  capabilities) echo mir-project-hooks-tool-contract-v1 ;;\n'
+        '  tool-contract) cat >&2; exit 1 ;;\nesac\n',
         encoding="utf-8",
     )
     validator.chmod(0o755)

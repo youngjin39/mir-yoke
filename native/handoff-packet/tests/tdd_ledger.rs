@@ -225,6 +225,102 @@ fn matrix_precommit_first_match() {
 fn matrix_merge_unused() {
     replay("precommit-merge");
 }
+
+#[cfg(unix)]
+fn inherited_git_pipe_times_out(redirect: &str) {
+    use std::os::unix::fs::PermissionsExt;
+    use std::time::{Duration, Instant};
+
+    let project = tempfile::tempdir().unwrap();
+    let root = project.path();
+    fs::create_dir(root.join("tasks")).unwrap();
+    fs::write(
+        root.join("tasks/tdd.json"),
+        r#"{"changes":[{"id":"fallback","targets":["src/example.py"],"categories":{"unit":{"status":"planned"}}}]}"#,
+    )
+    .unwrap();
+
+    let git = root.join("git");
+    fs::write(
+        &git,
+        format!(
+            r#"#!/bin/sh
+case "$3" in
+  '@{{upstream}}..HEAD')
+    (
+      closed() {{ : > pipe-closed; exit 0; }}
+      trap closed PIPE
+      n=0
+      while [ "$n" -lt 160 ]; do
+        printf '.' || closed
+        /bin/sleep 0.1
+        n=$((n + 1))
+      done
+    ) {redirect} &
+    printf '%s\n' "$!" > descendant.pid
+    exit 0 ;;
+  'origin/main..HEAD')
+    n=0
+    while [ ! -f pipe-closed ] && [ "$n" -lt 10 ]; do
+      /bin/sleep 0.1
+      n=$((n + 1))
+    done
+    [ -f pipe-closed ] || exit 1
+    printf '%s\n' src/example.py ;;
+  *) exit 1 ;;
+esac
+"#
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(&git, fs::Permissions::from_mode(0o755)).unwrap();
+
+    let started = Instant::now();
+    let output = Command::new(env!("CARGO_BIN_EXE_project-hooks"))
+        .args(["tdd-matrix", "precommit-merge"])
+        .arg(root)
+        .current_dir(root)
+        .env("PATH", root)
+        .output()
+        .unwrap();
+    let elapsed = started.elapsed();
+    let saw_close = root.join("pipe-closed").exists();
+    // A detached reader keeps the descendant alive even after Git falls back.
+    if !saw_close && elapsed < Duration::from_secs(14) {
+        let pid = fs::read_to_string(root.join("descendant.pid")).unwrap();
+        assert!(
+            Command::new("/bin/kill")
+                .args(["-KILL", pid.trim()])
+                .status()
+                .unwrap()
+                .success()
+        );
+    }
+    assert!(
+        elapsed < Duration::from_secs(14),
+        "capture took {elapsed:?}"
+    );
+    assert!(saw_close, "Git fallback did not close the inherited pipe");
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("fallback: unit.status='planned'")
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn matrix_merge_git_timeout_includes_inherited_stdout() {
+    inherited_git_pipe_times_out("2>/dev/null");
+}
+
+#[cfg(unix)]
+#[test]
+fn matrix_merge_git_timeout_includes_inherited_stderr() {
+    inherited_git_pipe_times_out("1>&2");
+}
+
 #[test]
 fn guard_always_advisory() {
     replay("tdd-guard");

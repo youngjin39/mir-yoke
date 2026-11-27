@@ -1,11 +1,13 @@
 //! Yoke's own ledger contract. Unknown composite category names are intentional.
 use handoff_packet::mir_cli::bootstrap_adoption::is_python_space;
 use handoff_packet::python_json::{self, Value, python_splitlines, python_strip};
+#[cfg(not(unix))]
+use std::sync::mpsc;
 use std::{
     fs,
     io::{self, Read},
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::{Child, Command, Output, Stdio},
     thread,
     time::{Duration, Instant},
 };
@@ -220,6 +222,125 @@ fn git_text(bytes: Vec<u8>) -> Result<String, String> {
         format!("UnicodeDecodeError: 'utf-8' codec can't decode {position}: {reason}")
     })
 }
+#[cfg(unix)]
+fn read_git_pipe(
+    pipe: &mut Option<impl Read>,
+    output: &mut Vec<u8>,
+    buffer: &mut [u8],
+) -> io::Result<bool> {
+    let Some(stream) = pipe else {
+        return Ok(false);
+    };
+    match stream.read(buffer) {
+        Ok(0) => {
+            *pipe = None;
+            Ok(false)
+        }
+        Ok(count) => {
+            output.extend_from_slice(&buffer[..count]);
+            Ok(true)
+        }
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted
+            ) =>
+        {
+            Ok(false)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+#[cfg(unix)]
+fn capture_git(child: &mut Child, deadline: Instant) -> Result<Option<Output>, String> {
+    use handoff_packet::mir_cli::project_hooks::nonblocking_pipe;
+
+    // Own both read handles here so the timeout closes them before fallback,
+    // even if a descendant still owns a write handle after Git exits.
+    let mut stdout = child.stdout.take();
+    let mut stderr = child.stderr.take();
+    if let Some(pipe) = &stdout {
+        nonblocking_pipe(pipe).map_err(git_error)?;
+    }
+    if let Some(pipe) = &stderr {
+        nonblocking_pipe(pipe).map_err(git_error)?;
+    }
+
+    let mut out = Vec::new();
+    let mut err = Vec::new();
+    let mut buffer = [0; 8192];
+    while Instant::now() < deadline {
+        let read_stdout = read_git_pipe(&mut stdout, &mut out, &mut buffer).map_err(git_error)?;
+        let read_stderr = read_git_pipe(&mut stderr, &mut err, &mut buffer).map_err(git_error)?;
+        if stdout.is_none()
+            && stderr.is_none()
+            && let Some(status) = child.try_wait().map_err(git_error)?
+        {
+            return Ok(Some(Output {
+                status,
+                stdout: out,
+                stderr: err,
+            }));
+        }
+        if !read_stdout && !read_stderr {
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+    Ok(None)
+}
+
+#[cfg(not(unix))]
+fn git_reader(pipe: Option<impl Read + Send + 'static>) -> mpsc::Receiver<io::Result<Vec<u8>>> {
+    let (send, receive) = mpsc::channel();
+    thread::spawn(move || {
+        let mut bytes = Vec::new();
+        let result = match pipe {
+            Some(mut pipe) => pipe.read_to_end(&mut bytes).map(|_| bytes),
+            None => Ok(bytes),
+        };
+        let _ = send.send(result);
+    });
+    receive
+}
+#[cfg(not(unix))]
+fn capture_git(child: &mut Child, deadline: Instant) -> Result<Option<Output>, String> {
+    // Drain both pipes while waiting, like subprocess.run(capture_output=True).
+    let stdout = git_reader(child.stdout.take());
+    let stderr = git_reader(child.stderr.take());
+    let status = loop {
+        if let Some(status) = child.try_wait().map_err(git_error)? {
+            break status;
+        }
+        if Instant::now() >= deadline {
+            return Ok(None);
+        }
+        thread::sleep(Duration::from_millis(10));
+    };
+    // Git can exit before descendants close inherited pipes. Use the same
+    // deadline for the capture and discard partial output on timeout.
+    let capture = |reader: mpsc::Receiver<io::Result<Vec<u8>>>| match reader
+        .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+    {
+        Ok(result) => result.map(Some).map_err(git_error),
+        Err(mpsc::RecvTimeoutError::Timeout) => Ok(None),
+        Err(mpsc::RecvTimeoutError::Disconnected) => {
+            Err("RuntimeError: Git output reader failed".into())
+        }
+    };
+    let Some(stdout) = capture(stdout)? else {
+        return Ok(None);
+    };
+    let Some(stderr) = capture(stderr)? else {
+        return Ok(None);
+    };
+    Ok(Some(Output {
+        status,
+        stdout,
+        stderr,
+    }))
+}
+
 fn git_run(project: &Path, args: &[&str]) -> Result<Option<String>, String> {
     let mut child = match Command::new("git")
         .args(args)
@@ -232,54 +353,25 @@ fn git_run(project: &Path, args: &[&str]) -> Result<Option<String>, String> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(git_error(error)),
     };
-    // Drain both pipes while waiting, like subprocess.run(capture_output=True).
-    let read = |pipe: Option<std::process::ChildStdout>| {
-        thread::spawn(move || {
-            let mut bytes = Vec::new();
-            if let Some(mut pipe) = pipe {
-                pipe.read_to_end(&mut bytes)?;
+    let output = match capture_git(&mut child, Instant::now() + Duration::from_secs(10)) {
+        Ok(Some(output)) => output,
+        Ok(None) => {
+            if child.try_wait().map_err(git_error)?.is_none() {
+                child.kill().map_err(git_error)?;
+                child.wait().map_err(git_error)?;
             }
-            Ok::<_, io::Error>(bytes)
-        })
-    };
-    let stdout = read(child.stdout.take());
-    let stderr = thread::spawn({
-        let pipe = child.stderr.take();
-        move || {
-            let mut bytes = Vec::new();
-            if let Some(mut pipe) = pipe {
-                pipe.read_to_end(&mut bytes)?;
-            }
-            Ok::<_, io::Error>(bytes)
+            // The Python reference catches TimeoutExpired without decoding its output.
+            return Ok(None);
         }
-    });
-    let deadline = Instant::now() + Duration::from_secs(10);
-    let status = loop {
-        if let Some(status) = child.try_wait().map_err(git_error)? {
-            break Some(status);
+        Err(error) => {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(error);
         }
-        if Instant::now() >= deadline {
-            child.kill().map_err(git_error)?;
-            child.wait().map_err(git_error)?;
-            break None;
-        }
-        thread::sleep(Duration::from_millis(10));
     };
-    let join = |reader: thread::JoinHandle<io::Result<Vec<u8>>>| {
-        reader
-            .join()
-            .map_err(|_| "RuntimeError: Git output reader failed".to_string())?
-            .map_err(git_error)
-    };
-    let stdout = join(stdout)?;
-    let stderr = join(stderr)?;
-    let Some(status) = status else {
-        // The Python reference catches TimeoutExpired without decoding its output.
-        return Ok(None);
-    };
-    let stdout = git_text(stdout)?;
-    git_text(stderr)?;
-    Ok(status.success().then_some(stdout))
+    let stdout = git_text(output.stdout)?;
+    git_text(output.stderr)?;
+    Ok(output.status.success().then_some(stdout))
 }
 fn git_changed(project: &Path) -> Result<Vec<String>, String> {
     let lines = |s: String| {

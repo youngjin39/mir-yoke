@@ -75,13 +75,49 @@ def test_shell_required_validator_outdated_blocks(tmp_path, status):
     script = _isolated_guard(tmp_path)
     binary = tmp_path / ".mir/bin/project-hooks"
     binary.parent.mkdir(parents=True)
-    binary.write_text(f"#!/bin/bash\nexit {status}\n")
+    binary.write_text(
+        '#!/bin/bash\ncase "$1" in\n'
+        '  --mir-warmup) exit 0 ;;\n'
+        '  capabilities) echo mir-project-hooks-tool-contract-v1 ;;\n'
+        f'  tool-contract) exit {status} ;;\nesac\n'
+    )
     binary.chmod(0o755)
     result = _run_pre_tool_use("echo safe", tmp_path, script=script,
                                extra_env={"MIR_TOOL_CONTRACT_REQUIRED": "1"})
     assert result.returncode == 2
     assert "validator unavailable or outdated" in result.stderr
     assert "scripts/mir.sh project-hooks install" in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("warmup_status", "capability"),
+    [
+        (0, ""),
+        (0, "mir-project-hooks-tool-contract-v10"),
+        (1, "mir-project-hooks-tool-contract-v1"),
+    ],
+)
+def test_shell_required_validator_admission_blocks(tmp_path, warmup_status, capability):
+    script = _isolated_guard(tmp_path)
+    binary = tmp_path / ".mir/bin/project-hooks"
+    binary.parent.mkdir(parents=True)
+    binary.write_text(
+        '#!/bin/bash\ncase "$1" in\n'
+        f'  --mir-warmup) exit {warmup_status} ;;\n'
+        f'  capabilities) printf "%s" "{capability}" ;;\n'
+        '  tool-contract) touch "$CLAUDE_PROJECT_DIR/validated" ;;\n'
+        'esac\n'
+    )
+    binary.chmod(0o755)
+    result = _run_pre_tool_use(
+        "", tmp_path, script=script,
+        payload={"tool_name": "Edit", "tool_input": {"file_path": "file.txt"}},
+        extra_env={"MIR_TOOL_CONTRACT_REQUIRED": "1"},
+    )
+    assert result.returncode == 2, result.stderr
+    assert "required native tool contract validator unavailable or outdated" in result.stderr
+    assert "scripts/mir.sh project-hooks install --project-root ." in result.stderr
+    assert not (tmp_path / "validated").exists()
 
 
 @pytest.mark.parametrize("linked", ["binary", "bin", "placement"])
@@ -108,3 +144,4 @@ def test_shell_required_validator_linked_placement_blocks(tmp_path, linked):
                                extra_env={"MIR_TOOL_CONTRACT_REQUIRED": "1"})
     assert result.returncode == 2
     assert not marker.exists()
+    assert "required native tool contract validator missing or linked" in result.stderr

@@ -201,6 +201,12 @@ fn probe_timeout_message(argv: &[String; 2], timeout: u64, remaining: Option<f64
     )
 }
 
+/// Allow hook subprocesses to drain their own pipes without blocking on reads.
+#[cfg(unix)]
+pub fn nonblocking_pipe(pipe: &impl std::os::fd::AsRawFd) -> io::Result<()> {
+    crate::adoption_fs::nonblocking(pipe)
+}
+
 /// Drain both real pipes until EOF, including writers inherited by descendants.
 #[cfg(unix)]
 pub fn run_probe(request: ProbeRequest<'_>) -> Result<ProbeOutput, String> {

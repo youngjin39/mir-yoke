@@ -21,9 +21,16 @@ unavailable() {
   printf '%s\n' 'mandatory_safety: inspect repository-local instructions before mutation'
   # Read declarations only, never secret files. Show the complete profile so
   # quoted keys and multiline safety arrays need no second TOML parser.
-  if [ -r "$project_root/.mir/repo-profile.toml" ]; then
+  local profile="$project_root/.mir/repo-profile.toml" profile_bytes
+  if [ -L "$project_root/.mir" ] || [ -L "$profile" ]; then
+    printf '%s\n' 'repository_safety_declarations: unavailable (linked profile path)'
+  elif [ ! -f "$profile" ] || [ ! -r "$profile" ]; then
+    printf '%s\n' 'repository_safety_declarations: unavailable (expected a readable regular profile)'
+  elif profile_bytes="$(wc -c 2>/dev/null <"$profile")" && [ "$profile_bytes" -le 65536 ]; then
     printf '%s\n' 'repository_safety_declarations (TOML):'
-    cat -- "$project_root/.mir/repo-profile.toml"
+    cat -- "$profile"
+  else
+    printf '%s\n' 'repository_safety_declarations: unavailable (profile size unavailable or exceeds 65536 bytes)'
   fi
   exit 0
 }

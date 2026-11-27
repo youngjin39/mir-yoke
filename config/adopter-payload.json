@@ -245,7 +245,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/pre-tool-use.sh",
-      "sha256": "bf1201216cf922b5bddb12755635ad460c59dd8c0b544c27a7702da74a3496e6"
+      "sha256": "09cd14a0b0b0eeb276aae5fe8ba77f8f7c455c2ebf39843fa1f9c7bd719848a3"
     },
     {
       "classification": "reference",
@@ -257,7 +257,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/session-start.sh",
-      "sha256": "4da1ffdf94153b877dacff88367b19ca21e911648c3310b9f9409fa9dc59968e"
+      "sha256": "22925c1f11641f3b2b99276ffd7a794bb0fde2fb1a9cf3ad0701ae36a3867806"
     },
     {
       "classification": "reference",
@@ -3449,7 +3449,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/mir_cli/project_hooks.rs",
-      "sha256": "18925db38d20daede51452f59df50043e1795202f174235dd0b3c369b2da218d"
+      "sha256": "a958484917905355ff3c94bdae9b9a0843862eec7ec79ca3b0163904dd25616b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3779,7 +3779,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/project_hooks.rs",
-      "sha256": "ff71afb3221e14753aedf544d45ee2c411eb67a47044e0b33c4db48f0c7e636c"
+      "sha256": "5cea1af8b67bb66d6cfa8cf5b330ce674475d66d4917a3c7e0ce4b219926bdd4"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3899,7 +3899,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/tdd_ledger.rs",
-      "sha256": "77c99e488a8c05dbec24f9053eb02c0be593a14aa4f39289ed5529155e533d07"
+      "sha256": "7671830d5e403c4d8c51c2b4233d933ff53e2881b50a7462a55f054ededf7fd3"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3911,7 +3911,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/tool_contract_hook.rs",
-      "sha256": "7938d8090d3fe7ad20b114aa98141eed456de0546a40e5d5793202805a015820"
+      "sha256": "9cc066bc6c66f3239b8696979c90381cf6bfb602126b7f5d1775730852ea3ff7"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6425,7 +6425,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/project_hooks.rs",
-      "sha256": "344db6376cab8dddb4840a2ad8701ef567ce768a64b953fc63b22caa0b9b3ca8"
+      "sha256": "bb69f3e31fd6de5f09fad6e11492cd9f7fbeab4f2cfad07cdf63cee9679bf8c1"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6587,7 +6587,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/tdd_ledger.rs",
-      "sha256": "9e2925c05af9034621d5d22b992b927ead01d40cf1c26f230763205252d9ae3f"
+      "sha256": "1cd25606b23777a252c3183a1148d8c90f96236b7c5be1939c978a91678f4153"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6605,7 +6605,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/w5_tool_contract.rs",
-      "sha256": "d9d4481e503b8f84ae7ed0a601f6d5c121d0117535dba122e423ea766b2bdeb5"
+      "sha256": "dabe35f7189104d87279070d3663812106ed7467812c0756c012675867a35f84"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9161,7 +9161,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_bootstrap_start_gate.py",
-      "sha256": "65fac40caa90a7ab268acaeeabba8b9e1e2b357ec736f2a46f18a71bc590f32e"
+      "sha256": "1e08ae60f0e3641facf3a811744cf25626809248364fbc228a9631e9c322e999"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9515,7 +9515,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_hook_executability.py",
-      "sha256": "43e49cf00e4ee1ce3c5d5cc822d33d8959380d256e677519233df8c473c9b655"
+      "sha256": "4250ae1043fa321906669931b718e6cfb9c086ded6dff2fedbb8f474ab92d932"
     },
     {
       "classification": "template-maintainer-tool",
@@ -10319,7 +10319,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_w5_tool_contract_native.py",
-      "sha256": "bef5177f587857dad4eed8782ce55359ca34f06418356893bcaa62f33a91e087"
+      "sha256": "a456862477aeb8eb2e777b7801b54dea9595fd90b700052a87ce4e911aa82cbb"
     },
     {
       "classification": "template-maintainer-tool",

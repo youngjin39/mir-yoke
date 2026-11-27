@@ -1199,9 +1199,67 @@ def test_session_start_requires_bootstrap_without_running_python(
     assert "run setup.sh with --profile" in completed.stdout
     assert "inside WSL on Windows hosts" in completed.stdout
     assert "setup.sh/setup.ps1" not in completed.stdout
-    assert "fixtures/protected/**" in completed.stdout
-    assert "fixtures/confidential/**" in completed.stdout
+    if unavailable_project_hook == "symlink":
+        assert (
+            "repository_safety_declarations: unavailable (linked profile path)"
+            in completed.stdout
+        )
+        assert "fixtures/protected/**" not in completed.stdout
+        assert "fixtures/confidential/**" not in completed.stdout
+    else:
+        assert "fixtures/protected/**" in completed.stdout
+        assert "fixtures/confidential/**" in completed.stdout
     _assert_unavailable_native_was_not_dispatched(tmp_path, unavailable_project_hook)
+
+
+@pytest.mark.parametrize(
+    ("profile", "reason"),
+    [
+        ("symlink", "linked profile path"),
+        ("directory", "expected a readable regular profile"),
+        pytest.param(
+            "fifo",
+            "expected a readable regular profile",
+            marks=pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="FIFO unavailable"),
+        ),
+        ("oversized", "profile size unavailable or exceeds 65536 bytes"),
+        ("missing", "expected a readable regular profile"),
+        ("limit", None),
+    ],
+)
+def test_session_start_degraded_profile_bounds(
+    tmp_path: Path, profile: str, reason: str | None
+) -> None:
+    mir = tmp_path / ".mir"
+    mir.mkdir()
+    path = mir / "repo-profile.toml"
+    declarations = "# PROFILE_DECLARATION_FIXTURE\n"
+    if profile == "symlink":
+        outside = tmp_path / "outside.toml"
+        outside.write_text(declarations, encoding="utf-8")
+        path.symlink_to(outside)
+    elif profile == "directory":
+        path.mkdir()
+    elif profile == "fifo":
+        os.mkfifo(path)
+    elif profile in {"oversized", "limit"}:
+        size = 65_537 if profile == "oversized" else 65_536
+        declarations += "#" * (size - len(declarations) - 1) + "\n"
+        path.write_text(declarations, encoding="utf-8")
+
+    completed = _run_live_hook(tmp_path, "session-start.sh")
+    assert completed.returncode == 0, completed.stderr
+    assert f"native_repair_command: {NATIVE_REPAIR}" in completed.stdout
+    if reason is None:
+        assert completed.stdout.endswith(f"repository_safety_declarations (TOML):\n{declarations}")
+    else:
+        diagnostics = [
+            line for line in completed.stdout.splitlines()
+            if line.startswith("repository_safety_declarations: unavailable")
+        ]
+        assert diagnostics == [f"repository_safety_declarations: unavailable ({reason})"]
+        assert "repository_safety_declarations (TOML):" not in completed.stdout
+        assert "PROFILE_DECLARATION_FIXTURE" not in completed.stdout
 
 
 def test_post_tool_use_reports_skipped_memory_sync(

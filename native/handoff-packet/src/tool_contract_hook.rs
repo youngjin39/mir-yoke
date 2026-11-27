@@ -5,7 +5,7 @@ use handoff_packet::python_json::{self, Value};
 use serde_json::json;
 use std::io::{self, Read, Write};
 
-const CONTRACT_REF: &str = "src/mir/core/engine/tool_contract.py";
+const CONTRACT_REF: &str = "native/handoff-packet/src/tool_contract_hook.rs";
 
 fn error(kind: &str, summary: &str, details: Option<&str>, output: &mut String) -> u8 {
     // These fixed fields satisfy StructuredError's required schema.
