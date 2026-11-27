@@ -126,6 +126,16 @@ fn shell_native_availability_and_exit_policy() {
         env!("CARGO_MANIFEST_DIR"),
         "/../../.claude/hooks/session-start.sh"
     );
+    // The degraded context and v2 capability check were introduced in 5b658946.
+    let degraded = concat!(
+        "=== SESSION CONTEXT ===\n",
+        "bootstrap_gate: required (state=missing)\n",
+        "normal_mutation: blocked until .mir/bootstrap-receipt.json has status=ready\n",
+        "phase_1: run setup.sh with --profile, --purpose, and --stack (inside WSL on Windows hosts)\n",
+        "phase_2: restart, run mir-core:design then mir-core:spec-architect, write coverage/gap evidence, and finalize\n",
+        "native_repair_command: scripts/mir.sh project-hooks install --project-root .\n",
+        "mandatory_safety: inspect repository-local instructions before mutation\n",
+    );
     for (state, status, expected) in [
         ("missing", 0, 0),
         ("disabled", 0, 0),
@@ -146,7 +156,7 @@ fn shell_native_availability_and_exit_policy() {
         fs::create_dir_all(&bin).unwrap();
         let native = bin.join("project-hooks");
         if state != "missing" {
-            fs::write(&native, format!("#!/bin/sh\nif [ \"$1\" = --mir-warmup ]; then exit {}; fi\n[ \"$1\" = session-start ] || exit 90\nprintf 'native context\\n'\nexit {status}\n", if state == "warmup-fails" { 1 } else { 0 })).unwrap();
+            fs::write(&native, format!("#!/bin/sh\nif [ \"$1\" = --mir-warmup ]; then exit {}; fi\nif [ \"$1\" = capabilities ]; then printf 'mir-project-hooks-session-start-v2\\n'; exit 0; fi\n[ \"$1\" = session-start ] || exit 90\nprintf 'native context\\n'\nexit {status}\n", if state == "warmup-fails" { 1 } else { 0 })).unwrap();
             fs::set_permissions(
                 &native,
                 fs::Permissions::from_mode(if state == "not-executable" {
@@ -181,19 +191,24 @@ fn shell_native_availability_and_exit_policy() {
             .output()
             .unwrap();
         assert_eq!(out.status.code(), Some(expected), "{state}/{status}");
-        assert_eq!(
-            out.stdout,
-            if state == "ready" {
-                b"native context\n".as_slice()
+        let unavailable = state != "ready" || [64, 126, 127].contains(&status);
+        let mut stdout = Vec::new();
+        if state == "ready" {
+            stdout.extend_from_slice(b"native context\n");
+        }
+        if unavailable {
+            stdout.extend_from_slice(degraded.as_bytes());
+            stdout.extend_from_slice(if state == "mir-symlink" {
+                b"repository_safety_declarations: unavailable (linked profile path)\n"
             } else {
-                b""
-            },
-            "{state}/{status}"
-        );
+                b"repository_safety_declarations: unavailable (expected a readable regular profile)\n"
+            });
+        }
+        assert_eq!(out.stdout, stdout, "{state}/{status}");
         assert_eq!(
             out.stderr,
-            if state != "ready" || [64, 126, 127].contains(&status) {
-                b"project-hooks: native unavailable\n".as_slice()
+            if unavailable {
+                b"[SessionStart] native context unavailable; inspect repository-local instructions before mutation.\n".as_slice()
             } else {
                 b""
             },
