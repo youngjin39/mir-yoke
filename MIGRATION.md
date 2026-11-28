@@ -22,6 +22,22 @@ A red consumer-contract stage blocks tagging. Record the Yoke candidate commit, 
 commit, and each checked artifact's SHA-256 in the release record.
 The hosted tag job does not yet verify the pre-tag consumer-contract result.
 
+## 0.14.3 native project hooks
+
+The project hook launchers `post-edit-self-ingest.sh`, `session-start.sh` and
+`pre-tool-use.sh` call the native `handoff-packet` binary for the memory sync,
+the SessionStart upfront context, the TDD matrix guard and the tool-contract
+validator. Their Python sources are removed. Refresh the managed hooks and the
+Darwin artifacts through the existing authorized capability adoption flow.
+
+When the native binary is missing, disabled or older than the pinned build,
+SessionStart prints the bootstrap gate state and the repair command, and the
+memory sync prints one skipped-sync line. Neither falls back to Python.
+
+This release is Mac first. Linux and Windows are not attested and keep the
+older native pins. No `project-hooks` artifact is published for them yet, so
+their project hooks take the unavailable path described above until one is.
+
 ## 0.14.2 native MCP registration
 
 When a lock-verified native `mir-mcp` placement belongs to the lock source build

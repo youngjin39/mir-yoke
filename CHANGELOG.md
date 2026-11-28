@@ -8,6 +8,61 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.14.3] - 2026-11-28 - Native project hooks and retired Python helpers
+
+### Changed
+
+- Project hooks run natively on Darwin: the PostToolUse memory sync
+  (`project-hooks post-edit-memory-sync`) and the SessionStart upfront context
+  (`project-hooks session-start`). The PostToolUse payload is read up to
+  16 MiB and a larger payload is reported with a diagnostic.
+- The TDD matrix guard and the tool-contract validator run in the native
+  `handoff-packet` hook. The required tool-contract route needs a warm-up and
+  the capability marker `mir-project-hooks-tool-contract-v1` before the
+  validator's exit status is trusted.
+- The native lanes of the validate workflow report their format, lint, test
+  and build steps independently; a lane still fails when any step fails.
+
+### Added
+
+- `plugins/mir-core/skills/repo-maintenance/references/improvement-loop.md`:
+  a repository-owned improvement loop (record, measure, track, verify), linked
+  from six skills. It adds no hook, gate or store.
+
+### Fixed
+
+- A missing, outdated or unusable native hook is no longer a silent no-op:
+  SessionStart prints the bootstrap gate state, the repair command and the
+  repository safety declarations, and the memory-sync launcher prints a
+  one-line skipped-sync diagnostic.
+- Malformed receipts, CLI or verify timeouts and invalid UTF-8 CLI output in
+  the memory sync fail with a diagnostic instead of crashing.
+- `handoff-packet` passes Clippy on Windows: one account-home helper per
+  platform replaces `cfg` blocks inside a closure.
+
+### Removed
+
+- Retired Python sources replaced by the native hooks:
+  `scripts/post_edit_memory_sync.py`, `scripts/build_session_upfront_context.py`,
+  the Python TDD matrix guard hook and `tools/hooks/validate_tool_contract.py`
+  with the engine `tool_contract` and `structured_error` modules.
+- Unused modules: the crypto pair, async adapter, audit log, instance id,
+  interrupt handler, the run orchestrator approval cluster, the TDD archive
+  tool, the ToolContract instrumenter and the changelog extraction helper.
+
+### Known limitations
+
+- Delivery remains Mac first. Linux and Windows are not attested in this
+  release and keep the older native pins; their validate lanes are advisory.
+- The `project-hooks` artifact is published for Darwin only. On Linux and
+  Windows the project hook launchers take the visible unavailable path: the
+  SessionStart hook prints the bootstrap gate state, the repair command and the
+  safety declarations instead of the upfront context, the memory sync is
+  skipped with one line, the TDD matrix guard warns without validating, and a
+  required tool-contract route reports the validator as unavailable.
+- The Windows advisory lane is red: its test steps ran for the first time in
+  this cycle and their failures are not yet classified.
+
 ## [v0.14.2] - 2026-11-24 - Native MCP and platform parity fixes
 
 ### Changed
