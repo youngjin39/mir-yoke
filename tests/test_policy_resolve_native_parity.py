@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import runpy
 import shutil
 import subprocess
@@ -25,6 +26,15 @@ _ORACLE = {}
 
 def stream_expectation(data, *, platform=os.name):
     return data.replace(b'\n', b'\r\n') if platform == 'nt' else data
+
+
+def frozen_expectation(value, tmp, repo, *, platform=os.name):
+    if platform == 'nt':
+        # Frozen paths below a token are POSIX-spelled; Windows prints the native form.
+        value = re.sub(r'\$\{(?:TMP|REPO)\}[^;"\n]*',
+                       lambda match: match.group().replace('/', '\\'), value)
+    return stream_expectation(
+        value.replace('${TMP}', tmp).replace('${REPO}', repo).encode(), platform=platform)
 
 
 REFUSAL = (b'', stream_expectation(
@@ -67,8 +77,7 @@ def frozen_oracle(request, tmp_path, monkeypatch):
                           if key not in ('expected', 'captured', 'reasoning')}
         output = record['expected']
         def expand(value):
-            return stream_expectation(
-                value.replace('${TMP}', str(tmp_path)).replace('${REPO}', str(ROOT)).encode())
+            return frozen_expectation(value, str(tmp_path), str(ROOT))
 
         return expand(output['stdout']), expand(output['stderr']), output['exit']
 
@@ -118,7 +127,8 @@ def home(tmp_path, binary):
     return root
 
 
-def invoke(home, argv, *, binary=None, frozen=False, environment=None, cwd=None):
+def invoke(home, argv, *, binary=None, frozen=False, environment=None, cwd=None,
+           child_environment=None):
     environment = {'HOME': str(home / 'account-home'),
                    'USERPROFILE': str(home / 'account-home'), **(environment or {})}
     if frozen:
@@ -129,6 +139,7 @@ def invoke(home, argv, *, binary=None, frozen=False, environment=None, cwd=None)
                MIR_EXECUTOR_QUERY_IMPL='native',
                MIR_SUB_AGENT_POLICY=str(home / 'empty.json'))
     env.update(environment or {})
+    env.update(child_environment or {})
     # A missing/empty overlay can reach passwd-home even with a synthetic HOME.
     # Only these POSIX calls use the public account seam; never consult the host file.
     overlay = env.get('MIR_SUB_AGENT_POLICY', '')
@@ -282,7 +293,11 @@ def test_overlay_path_and_account_home(binary, home, overlay):
         environment['MIR_SUB_AGENT_POLICY'] = '~/empty.json'
     else:
         environment['MIR_SUB_AGENT_POLICY'] = ''
-    compare(binary, home, ['--category', 'unit'], environment=environment)
+    # Windows reads account identity from USERPROFILE; POSIX runs take it from the seam.
+    child = ({'USERPROFILE': str(home / 'account-home')}
+             if os.name == 'nt' and overlay in ('missing', 'unset') else None)
+    compare(binary, home, ['--category', 'unit'], environment=environment,
+            child_environment=child)
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX double-root spelling')

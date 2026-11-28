@@ -9779,7 +9779,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_policy_resolve_native_parity.py",
-      "sha256": "eb68252717c47d5780c3208b18f88a8e0e3e6a2dbac0973854611bc981dd5e7e"
+      "sha256": "d4d627074b5bcbb9a54eced51d3090122bc9be55aaf262b67963d3e831cae198"
     },
     {
       "classification": "template-maintainer-tool",
@@ -10331,7 +10331,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_windows_parity_adapters.py",
-      "sha256": "363d26a3c95886f5c30543dc5563d0d855d2c211e1bf59c2a257ec2373dbfb80"
+      "sha256": "db425589e710d2316ea8132dacccd4e84a41523fd1f08e2aa3e222f6d38c0ca5"
     },
     {
       "classification": "template-maintainer-tool",

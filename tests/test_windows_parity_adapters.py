@@ -46,6 +46,21 @@ def test_policy_stream_expectation(platform, expected):
     assert policy.stream_expectation(b'a\nb\n', platform=platform) == expected
 
 
+@pytest.mark.parametrize('node,suffix', [
+    ('test_overlay_path_and_account_home[missing]', r'provider home\absent.json'),
+    ('test_replay_adr88_missing_env_policy_file_falls_back_to_the_rendered_policy',
+     r'retired\sub-agent-policy.global.json'),
+])
+def test_policy_frozen_warning_paths_use_platform_separator(node, suffix):
+    record = policy.GOLDEN['cases']['tests/test_policy_resolve_native_parity.py::' + node][0]
+    frozen = record['expected']['stderr']
+    assert policy.frozen_expectation(frozen, WINDOWS_ROOT, WINDOWS_ROOT, platform='nt') == (
+        '[mir policy] MIR_SUB_AGENT_POLICY names a missing file: ' + WINDOWS_ROOT + '\\'
+        + suffix + '; falling back to the rendered policy\r\n').encode()
+    assert policy.frozen_expectation(frozen, '/t', '/r', platform='posix') == (
+        frozen.replace('${TMP}', '/t').encode())
+
+
 @pytest.mark.parametrize('body_failed', [False, True])
 def test_policy_call_count_enforced_only_after_passing_body(tmp_path, monkeypatch, body_failed):
     from types import SimpleNamespace
