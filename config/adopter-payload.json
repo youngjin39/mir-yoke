@@ -9509,7 +9509,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_handoff_packet_native_parity.py",
-      "sha256": "e69345f4f4e4936279f441a1da3defd6f21e54b58c897cbc24cce1ac50a9628a"
+      "sha256": "d498b77a0e7419638bd081f5f3b61153f766f41bd39301f232462bd06a47628e"
     },
     {
       "classification": "template-maintainer-tool",

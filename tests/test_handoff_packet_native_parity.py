@@ -63,7 +63,12 @@ def test_frozen_lifecycle(binary, tmp_path, name, index, record):
             assert path.is_dir(), path_name
         elif 'symlink' in value:
             assert path.is_symlink(), path_name
-            assert os.readlink(path) == value['symlink'].replace('@TMP@', str(tmp_path))
+            link, target = os.readlink(path), value['symlink'].replace('@TMP@', str(tmp_path))
+            if os.name == 'nt':
+                # Windows reports the stored target with a verbatim prefix and native separators.
+                link = os.path.normpath(link.removeprefix('\\\\?\\'))
+                target = os.path.normpath(target)
+            assert link == target, path_name
         else:
             assert path.read_bytes() == expand(
                 value, tmp_path, context=snapshot_context(path_name)), path_name
