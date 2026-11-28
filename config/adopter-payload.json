@@ -5848,6 +5848,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/y-e17-windows.json",
+      "sha256": "11a3d0e075d3f477bf012dd72673ff576b78626bf9e627ae7679f9d62adef6b6"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/y-e17.json",
       "sha256": "bb4da85addc94455116ffbeccdcbdedfe1d02a4850a1e0f5db18498a7d8e915a"
     },
