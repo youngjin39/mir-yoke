@@ -74,7 +74,7 @@ jobs:
         run: >-
           uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_delegation_gate_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py
-          tests/test_lifecycle_native_commands.py
+          tests/test_lifecycle_native_commands.py tests/test_windows_parity_adapters.py
           tests/test_line_endings.py
       # These oracles use Python 3.12 argparse, Unicode and pathlib behavior.
       - if: ${{ !cancelled() }}
@@ -276,17 +276,24 @@ jobs:
         with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
       - name: Preflight uv lock (Python 3.12)
-        run: uv sync --extra dev --extra vector --locked
+        run: uv sync --python 3.12 --extra dev --extra vector --locked
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv-312
       - name: Preflight checkout and Python 3.12
         run: uv run --no-sync python scripts/ci_preflight.py
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv-312
       - name: Preflight handoff Cargo lock
         run: cargo fetch --locked
         working-directory: native/handoff-packet
       - name: Preflight mir-mcp Cargo lock
         run: cargo fetch --locked
         working-directory: native/mir-mcp
-      - run: >-
-          uv run pytest -q
+      - name: Windows smoke (Python 3.12)
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv-312
+        run: >-
+          uv run --no-sync pytest -q
           tests/test_line_endings.py
           tests/test_private_file.py
           tests/test_capability_materialized_acl.py
@@ -315,7 +322,10 @@ jobs:
           tests/test_mir_mcp_package.py
           tests/test_mir_mcp_checker.py
           tests/test_mir_mcp_relations.py
-      - run: uv run pytest -q tests/test_setup_wrappers.py -k powershell_launcher
+      - name: PowerShell launcher (Python 3.12)
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv-312
+        run: uv run --no-sync pytest -q tests/test_setup_wrappers.py -k powershell_launcher
       # Native handoff byte parity on Windows (same steps as native_handoff).
       - name: Preflight uv lock (Python 3.14)
         run: uv sync --python 3.14 --extra dev --extra vector --locked
@@ -335,12 +345,21 @@ jobs:
         working-directory: native/handoff-packet
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - if: ${{ !cancelled() }}
-        run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_delegation_gate_native_parity.py tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py tests/test_lifecycle_native_commands.py
+      - name: Native parity (Python 3.14)
+        if: ${{ !cancelled() }}
+        run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_delegation_gate_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py tests/test_lifecycle_native_commands.py tests/test_windows_parity_adapters.py
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - if: ${{ !cancelled() }}
+      - name: Native oracle parity (Python 3.12)
+        if: ${{ !cancelled() }}
+        run: uv run --no-sync pytest -q -p no:cacheprovider tests/test_executor_query_native_parity.py tests/test_runtime_verify_native_parity.py
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv-312
+          PYTHONUTF8: '1'
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
+      - name: Caller environment parity (Python 3.14)
+        if: ${{ !cancelled() }}
         run: uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
         env:
           PYTHONUTF8: '1'
@@ -364,7 +383,8 @@ jobs:
         working-directory: native/mir-mcp
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
-      - if: ${{ !cancelled() }}
+      - name: MCP parity (Python 3.14)
+        if: ${{ !cancelled() }}
         run: >-
           uv run --no-sync --python 3.14 pytest -q -p no:cacheprovider
           tests/test_mir_mcp_native_core.py tests/test_mir_mcp_native_io.py

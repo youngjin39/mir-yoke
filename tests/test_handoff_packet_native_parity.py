@@ -17,6 +17,7 @@ from tests.lifecycle_golden import (
     expand,
     expected_result,
     install_snapshot,
+    snapshot_context,
     unpack,
 )
 from tests.test_mechanical_handoff import HANDLER_PYTHON
@@ -46,7 +47,8 @@ def test_frozen_lifecycle(binary, tmp_path, name, index, record):
     env.update(HOME=str(tmp_path), PATH='', MIR_HANDOFF_PYTHON=HANDLER_PYTHON,
                PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1', GIT_OPTIONAL_LOCKS='0')
     start = time.monotonic()
-    result = subprocess.run([str(executable)], input=expand(record['input'], tmp_path),
+    result = subprocess.run([str(executable)],
+                            input=expand(record['input'], tmp_path, context='json'),
                             capture_output=True, env=env, cwd=ROOT, timeout=15)
     if 'test_supply_timeout_tree' in name:
         assert time.monotonic() - start < 5.6
@@ -63,7 +65,8 @@ def test_frozen_lifecycle(binary, tmp_path, name, index, record):
             assert path.is_symlink(), path_name
             assert os.readlink(path) == value['symlink'].replace('@TMP@', str(tmp_path))
         else:
-            assert path.read_bytes() == expand(value, tmp_path), path_name
+            assert path.read_bytes() == expand(
+                value, tmp_path, context=snapshot_context(path_name)), path_name
     actual = {p.relative_to(tmp_path).as_posix() for p in tmp_path.rglob('*')}
     assert actual == set(record['after'])
 

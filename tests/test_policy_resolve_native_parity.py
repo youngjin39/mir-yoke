@@ -21,10 +21,17 @@ install_pin = SUPPORT['install_pin']
 
 GOLDEN = json.loads((ROOT / 'native/handoff-packet/tests/fixtures/g6/policy-cli.json').read_text())
 _ORACLE = {}
-REFUSAL = (b'', b'[mir policy] unsupported native policy input or environment; '
-           b'no routing result\n', 2)
-UNAVAILABLE = (b'', b'[mir policy] pinned native policy resolver unavailable or incompatible; '
-               b'no routing result\n', 2)
+
+
+def stream_expectation(data, *, platform=os.name):
+    return data.replace(b'\n', b'\r\n') if platform == 'nt' else data
+
+
+REFUSAL = (b'', stream_expectation(
+    b'[mir policy] unsupported native policy input or environment; no routing result\n'), 2)
+UNAVAILABLE = (b'', stream_expectation(
+    b'[mir policy] pinned native policy resolver unavailable or incompatible; '
+    b'no routing result\n'), 2)
 
 
 @pytest.fixture(autouse=True)
@@ -60,13 +67,16 @@ def frozen_oracle(request, tmp_path, monkeypatch):
                           if key not in ('expected', 'captured', 'reasoning')}
         output = record['expected']
         def expand(value):
-            return value.replace('${TMP}', str(tmp_path)).replace('${REPO}', str(ROOT)).encode()
+            return stream_expectation(
+                value.replace('${TMP}', str(tmp_path)).replace('${REPO}', str(ROOT)).encode())
 
         return expand(output['stdout']), expand(output['stderr']), output['exit']
 
     monkeypatch.setitem(_ORACLE, 'expected', expected)
+    failures = request.session.testsfailed
     yield
-    assert cursor == len(records), 'Frozen oracle calls were removed or reordered'
+    if request.session.testsfailed == failures:
+        assert cursor == len(records), 'Frozen oracle calls were removed or reordered'
 
 
 @pytest.fixture(scope='module')
@@ -132,12 +142,6 @@ def invoke(home, argv, *, binary=None, frozen=False, environment=None, cwd=None)
     command = ([str(driver if isolated else binary), '--home-root', str(home),
                 'policy-resolve', *argv]
                if binary else [sys.executable, '-m', 'mir', 'policy', 'resolve', *argv])
-    if os.name == 'nt' and not binary:
-        # Match the frozen UTF-8/LF stream contract.
-        command = [sys.executable, '-c',
-                   'import runpy, sys; sys.stdout.reconfigure(newline="\\n"); '
-                   'sys.stderr.reconfigure(newline="\\n"); '
-                   'runpy.run_module("mir", run_name="__main__")', *command[3:]]
     pin = home / '.mir/bin/executor-query.json'
     saved = pin.read_bytes() if isolated and not binary and pin.exists() else None
     if saved is not None:

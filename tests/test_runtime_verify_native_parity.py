@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+from itertools import zip_longest
 from pathlib import Path
 
 import pytest
@@ -21,14 +22,18 @@ pytestmark = pytest.mark.skipif(shutil.which("cargo") is None, reason="cargo una
 
 @pytest.fixture(scope="module")
 def binary():
-    command = ["cargo", "build", "--release", "--locked", "--bin", "runtime-verify"]
+    return build_binary("runtime-verify")
+
+
+def build_binary(name):
+    command = ["cargo", "build", "--release", "--locked", "--bin", name]
     if os.environ.get("MIR_HANDOFF_CARGO_OFFLINE") == "1":
         command.append("--offline")
     subprocess.run(command, cwd=CRATE, check=True)
     target = Path(os.environ.get("CARGO_TARGET_DIR", "target"))
     if not target.is_absolute():
         target = CRATE / target
-    return target / "release" / ("runtime-verify.exe" if os.name == "nt" else "runtime-verify")
+    return target / "release" / (name + ".exe" if os.name == "nt" else name)
 
 
 @pytest.fixture
@@ -45,10 +50,15 @@ def closure(tmp_path):
     return root, manifest
 
 
-def pair(binary, root, manifest, metadata=None):
+def runtime_args(root, manifest, metadata):
     argv = ["--runtime-root", str(root), "--manifest", str(manifest)]
-    for key, value in (META if metadata is None else metadata).items():
+    for key, value in metadata.items():
         argv.extend(["--" + key.replace("_", "-"), value])
+    return argv
+
+
+def pair(binary, root, manifest, metadata=None):
+    argv = runtime_args(root, manifest, META if metadata is None else metadata)
     env = dict(os.environ, PYTHONUTF8="1", PYTHONPATH=str(ROOT / "src"))
     reference = [sys.executable, "-c", "import sys; from mir.cli.runtime_manifest import main; "
                  "sys.exit(main(['verify', *sys.argv[1:]]))", *argv]
@@ -287,6 +297,28 @@ def test_runtime_verify_empty_home(binary, closure, monkeypatch):
     assert native == reference
 
 
+def describe_closure_difference(root, manifest):
+    # Creation and verification use the same native closure collector.
+    original = manifest.read_bytes()
+    python_entries = json.loads(original)["entries"]
+    try:
+        native_creator = build_binary("runtime-manifest")
+        result = subprocess.run(
+            [str(native_creator), "create", *runtime_args(root, manifest, META)],
+            capture_output=True, timeout=15, check=True,
+        )
+        native_entries = json.loads(manifest.read_bytes())["entries"]
+    except subprocess.CalledProcessError as error:
+        return f"native closure collection failed with exit {error.returncode}: {error.stderr!r}"
+    finally:
+        manifest.write_bytes(original)
+    for python_entry, native_entry in zip_longest(python_entries, native_entries):
+        if python_entry != native_entry:
+            return (f"first differing closure entry: Python={python_entry!r}, "
+                    f"native={native_entry!r}")
+    return f"closure entries match after native creation: {result.stdout!r}"
+
+
 @pytest.mark.parametrize("absolute", [False, True])
 @pytest.mark.parametrize("metadata_matches", [False, True])
 def test_runtime_verify_link_fallback_precedence(binary, closure, absolute, metadata_matches):
@@ -302,4 +334,4 @@ def test_runtime_verify_link_fallback_precedence(binary, closure, absolute, meta
         metadata["source_commit"] = "different"
     reference, native = pair(binary, root, manifest, metadata)
     assert reference[2] == (0 if metadata_matches else 2)
-    assert native == reference
+    assert native == reference, describe_closure_difference(root, manifest)

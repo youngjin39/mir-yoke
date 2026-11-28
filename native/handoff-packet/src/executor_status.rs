@@ -919,6 +919,12 @@ pub fn cwd_failure(error: io::Error) -> i32 {
         1,
     )
 }
+fn encoding_error_line(error: &str) -> String {
+    let line = format!("{error}\n");
+    #[cfg(windows)]
+    let line = line.replace('\n', "\r\n");
+    line
+}
 fn emit_frames(out: Vec<String>, err: String, code: i32) -> i32 {
     #[cfg(windows)]
     let (out, err) = (
@@ -937,12 +943,14 @@ fn emit_frames(out: Vec<String>, err: String, code: i32) -> i32 {
     let (out, err, code) =
         match encoded.and_then(|out| encode(&err, true, true).map(|err| (out, err))) {
             Ok((out, err)) => (out, err, code),
-            Err(error) => (
-                Vec::new(),
-                encode(&format!("{error}\n"), true, true)
-                    .unwrap_or_else(|_| format!("{error}\n").into_bytes()),
-                1,
-            ),
+            Err(error) => {
+                let line = encoding_error_line(&error);
+                (
+                    Vec::new(),
+                    encode(&line, true, true).unwrap_or_else(|_| line.into_bytes()),
+                    1,
+                )
+            }
         };
     if io::stdout().lock().write_all(&out).is_err() || io::stderr().lock().write_all(&err).is_err()
     {
@@ -1093,6 +1101,20 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn encoding_failure_uses_crlf_on_windows() {
+        let line = encoding_error_line("UnicodeEncodeError: sample failure");
+        assert_eq!(line.as_bytes(), b"UnicodeEncodeError: sample failure\r\n");
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn encoding_failure_uses_lf_on_non_windows() {
+        let line = encoding_error_line("UnicodeEncodeError: sample failure");
+        assert_eq!(line.as_bytes(), b"UnicodeEncodeError: sample failure\n");
+    }
 
     #[test]
     fn wt_path_non_reparse_and_real_errors() {

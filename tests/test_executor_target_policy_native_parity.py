@@ -8,6 +8,7 @@ separate gate because the historical native bridge refuses post-hook redirects.
 from __future__ import annotations
 
 import json
+import os
 import re
 import runpy
 import shutil
@@ -372,7 +373,7 @@ def test_invoking_home_reauthorizes_alias_target(binary, tmp_path, authorize_ali
     prefix = 'argument parse error: ' if authorize_alias_target else ''
     assert result.stderr == (
         f'[mir_executor] {prefix}authorize_target refused {target}: ValueError: '
-        'Run from the target repository Git root.\n').encode()
+        f'Run from the target repository Git root.{os.linesep}').encode()
     for root in (home, target):
         for path in ('tasks/jobs.db', 'provider-started'):
             assert not (root / path).exists()

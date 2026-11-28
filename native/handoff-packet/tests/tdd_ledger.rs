@@ -26,21 +26,27 @@ fn snapshot(root: &Path) -> Value {
     walk(root, root, &mut out);
     Value::Object(out)
 }
-fn replay_fixture(fixture: &Value, mode: &str) -> usize {
+fn replay_fixture(fixture: &Value, mode: &str) -> (usize, usize) {
     let started = std::time::Instant::now();
     let mut setup_time = std::time::Duration::ZERO;
     let mut hook_time = std::time::Duration::ZERO;
     let tools = tempfile::tempdir().unwrap();
     let mut count = 0;
+    let mut skipped_git_mode = 0;
     for record in fixture["records"]
         .as_array()
         .unwrap()
         .iter()
         .filter(|r| r["mode"] == mode)
     {
+        let non_executable_git = record["git_mode"].as_u64().unwrap_or(0o755) != 0o755;
+        // The permission-refusal record models POSIX executable bits.
+        if non_executable_git && !cfg!(unix) {
+            skipped_git_mode += 1;
+            continue;
+        }
         // The permission-refusal record must not alter the shared executable.
-        let private_tools = (record["git_mode"].as_u64().unwrap_or(0o755) != 0o755)
-            .then(|| tempfile::tempdir().unwrap());
+        let private_tools = non_executable_git.then(|| tempfile::tempdir().unwrap());
         let tools = private_tools.as_ref().unwrap_or(&tools);
         let record_started = std::time::Instant::now();
         let setup_started = std::time::Instant::now();
@@ -59,8 +65,7 @@ fn replay_fixture(fixture: &Value, mode: &str) -> usize {
         cmd.env("HOME", root)
             .env("USERPROFILE", root)
             .env("PATH", tools.path());
-        // Only this record models POSIX executable bits, not Windows permissions.
-        if record["git_mode"].as_u64().unwrap_or(0o755) != 0o755 {
+        if non_executable_git {
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
@@ -68,8 +73,6 @@ fn replay_fixture(fixture: &Value, mode: &str) -> usize {
                 fs::write(&git, "#!/bin/sh\n").unwrap();
                 fs::set_permissions(&git, fs::Permissions::from_mode(0o644)).unwrap();
             }
-            #[cfg(not(unix))]
-            continue;
         } else {
             let mode = match record["id"].as_str().unwrap() {
                 "precommit-merge-git-invalid-stdout" => "invalid-stdout",
@@ -103,23 +106,21 @@ fn replay_fixture(fixture: &Value, mode: &str) -> usize {
         count += 1;
     }
     eprintln!(
-        "timing fixture replay {mode}: {count} records, setup={setup_time:?}, hooks={hook_time:?}, total={:?}",
+        "timing fixture replay {mode}: {count} records, {skipped_git_mode} git_mode skips, setup={setup_time:?}, hooks={hook_time:?}, total={:?}",
         started.elapsed()
     );
-    count
+    (count, skipped_git_mode)
 }
 fn replay(mode: &str) {
     let fixture: Value = serde_json::from_str(include_str!("fixtures/w1/tdd-ledger.json")).unwrap();
-    assert_eq!(
-        replay_fixture(&fixture, mode),
-        match mode {
-            "prewrite" => 53,
-            "precommit" => 27,
-            "precommit-merge" => 13,
-            "tdd-guard" => 150,
-            _ => panic!("unknown fixture mode"),
-        }
-    );
+    let expected = match mode {
+        "prewrite" => 53,
+        "precommit" => 27,
+        "precommit-merge" => 13,
+        "tdd-guard" => 150,
+        _ => panic!("unknown fixture mode"),
+    };
+    assert_eq!(replay_fixture(&fixture, mode), (expected, 0));
 }
 fn run(cmd: &mut Command, r: &Value, mode: &str, expand: &impl Fn(&str) -> String, root: &Path) {
     if mode == "tdd-guard" {
@@ -128,7 +129,12 @@ fn run(cmd: &mut Command, r: &Value, mode: &str, expand: &impl Fn(&str) -> Strin
         cmd.arg("tdd-matrix");
         if let Some(args) = r["args"].as_array() {
             for arg in args {
-                cmd.arg(expand(arg.as_str().unwrap()));
+                let arg = arg.as_str().unwrap();
+                if arg == "@PROJECT@/changed" {
+                    cmd.arg(root.join("changed"));
+                } else {
+                    cmd.arg(expand(arg));
+                }
             }
         } else {
             cmd.args(
@@ -212,10 +218,16 @@ fn w5_pinned_retirement_replay() {
         "abb0dd82:.claude/hooks/tdd-matrix-guard.py"
     );
     let mut count = 0;
+    let mut skipped_git_mode = 0;
     for mode in ["prewrite", "precommit", "precommit-merge"] {
-        count += replay_fixture(&fixture, mode);
+        let (replayed, skipped) = replay_fixture(&fixture, mode);
+        count += replayed;
+        skipped_git_mode += skipped;
     }
-    assert_eq!(count, 196);
+    assert_eq!(
+        (count, skipped_git_mode),
+        if cfg!(unix) { (196, 0) } else { (195, 1) }
+    );
 }
 #[test]
 fn matrix_precommit_first_match() {

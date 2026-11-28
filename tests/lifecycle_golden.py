@@ -1,7 +1,9 @@
 """Decode immutable lifecycle reference captures without executing an oracle."""
+import ast
 import base64
 import json
 import os
+import re
 import subprocess
 import zlib
 from pathlib import Path
@@ -21,15 +23,57 @@ def unpack(blob):
     return zlib.decompress(data) if 'zlib_base64' in blob else data
 
 
-def expand(blob, tmp_path, *, stream=False):
+def _replacement(text, token, value, context):
+    """Escape only inserted bytes, retaining every original capture byte."""
+    pattern = r'"(?:\\.|[^"\\])*"'
+    if context == 'python':
+        pattern = r"'(?:\\.|[^'\\])*'|" + pattern
+    position = text.find(token)
+    for match in re.finditer(pattern, text):
+        if not match.start() <= position < match.end():
+            continue
+        try:
+            inner = (ast.literal_eval(match.group()) if context == 'python'
+                     else json.loads(match.group()))
+        except (ValueError, SyntaxError):
+            break
+        inserted = _replacement(inner, token, value, context)
+        if context == 'python':
+            # Both quote styles may occur in synthetic helper source.
+            return inserted.replace('\\', '\\\\').replace(match.group()[0],
+                                                        '\\' + match.group()[0])
+        return json.dumps(inserted, ensure_ascii=False)[1:-1]
+    return value
+
+
+def expand(blob, tmp_path, *, stream=False, context='json'):
     import sys
-    data = unpack(blob)
+    data = unpack(blob).decode('utf-8', errors='surrogateescape')
+    if stream:
+        context = 'json'
     for token, value in [('@TMP@', str(tmp_path)), ('@REPO@', str(ROOT)),
                          ('@PYTHON@', sys.executable)]:
-        data = data.replace(token.encode(), value.encode())
+        if context == 'plain':
+            data = data.replace(token, value)
+        else:
+            # Each occurrence may have a different serialization depth.
+            offset = 0
+            while (position := data.find(token, offset)) >= 0:
+                inserted = _replacement(data, token, value, context)
+                data = data[:position] + inserted + data[position + len(token):]
+                offset = position + len(inserted)
+    data = data.encode('utf-8', errors='surrogateescape')
     if stream and os.name == 'nt':
         data = data.replace(b'\n', b'\r\n')
     return data
+
+
+def snapshot_context(name):
+    if name.endswith('.py'):
+        return 'python'
+    if name.endswith(('.json', '.jsonl')):
+        return 'json'
+    return 'plain'
 
 
 def expected_result(record, tmp_path):
@@ -51,7 +95,7 @@ def install_snapshot(snapshot, tmp_path):
             except OSError:
                 pytest.skip('symlink privilege unavailable')
         else:
-            path.write_bytes(expand(value, tmp_path))
+            path.write_bytes(expand(value, tmp_path, context=snapshot_context(name)))
 
 
 FROZEN_CASES = [

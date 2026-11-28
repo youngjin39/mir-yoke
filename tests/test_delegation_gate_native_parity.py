@@ -66,7 +66,9 @@ def test_gate_parity(gate, tmp_path, case):
     binary = tmp_path / '.mir/bin' / gate.name
     binary.parent.mkdir(parents=True)
     shutil.copy2(gate, binary)
-    native = subprocess.run(['bash', str(ROOT / '.claude/hooks/sub-agent-policy-gate.sh')],
+    command = ([str(binary)] if os.name == 'nt' else
+               ['bash', str(ROOT / '.claude/hooks/sub-agent-policy-gate.sh')])
+    native = subprocess.run(command,
                             input=payload.encode(), capture_output=True, env=env)
     assert (native.returncode, native.stdout, native.stderr) == (
         expected['expected']['exit'], expected['expected']['stdout'].encode(),

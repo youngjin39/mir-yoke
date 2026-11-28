@@ -318,7 +318,9 @@ def test_executor_query_local_files_match_python(
     reference = invoke(binary, home, argv, python=True)
     assert reference[2] == 0, (reference, trace_details())
     before = (home / "tasks/jobs.db").read_bytes()
-    legacy_error = f'[mir_executor] legacy {argv[0]} hooks require the Python facade\n'.encode()
+    legacy_error = (
+        f'[mir_executor] legacy {argv[0]} hooks require the Python facade{os.linesep}'
+    ).encode()
     expected_native = ((b'', legacy_error, 2)
                        if argv[0] in {'status', 'result', 'list-jobs'} and files != 'config'
                        else reference)
@@ -342,7 +344,9 @@ def test_executor_query_local_import_failure_accepted_divergence(binary, home, r
     python = invoke(binary, home, argv, python=True)
     assert python[2] != 0, trace_details()
     assert b"local import failed" in python[1], trace_details()
-    legacy_error = f'[mir_executor] legacy {argv[0]} hooks require the Python facade\n'.encode()
+    legacy_error = (
+        f'[mir_executor] legacy {argv[0]} hooks require the Python facade{os.linesep}'
+    ).encode()
     expected_native = ((b'', legacy_error, 2)
                        if argv[0] in {'status', 'result', 'list-jobs'} else reference)
     assert invoke(binary, home, argv) == expected_native, trace_details()
@@ -571,8 +575,9 @@ def test_native_cancel_declines_local_hook(binary, home):
     (home / "tools/mir_executor/local.py").write_text("raise RuntimeError('local hook')\n")
     database = home / "tasks/jobs.db"
     saved = database.read_bytes()
+    legacy_error = f'[mir_executor] legacy cancel hooks require the Python facade{os.linesep}'
     assert invoke(binary, home, ["cancel", "--job-id", "running"]) == (
-        b"", b"[mir_executor] legacy cancel hooks require the Python facade\n", 2), (
+        b"", legacy_error.encode(), 2), (
         trace_details()
     )
     assert database.read_bytes() == saved, trace_details()
@@ -729,5 +734,6 @@ def test_current_resume_module_missing_value_program_name(binary, home):
     stdout, stderr, code = pinned_cli(home, "module", ["resume", "--job-id"])
     assert code == 2, (stdout, stderr)
     assert stdout == b""
-    assert stderr.startswith(b"usage: __main__.py [--job-id JOB_ID]\n"), stderr
-    assert b"__main__.py: error: argument --job-id: expected one argument\n" in stderr
+    newline = os.linesep.encode()
+    assert stderr.startswith(b"usage: __main__.py [--job-id JOB_ID]" + newline), stderr
+    assert b"__main__.py: error: argument --job-id: expected one argument" + newline in stderr

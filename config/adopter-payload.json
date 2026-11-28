@@ -419,7 +419,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "71dc9f73787f385d1fe01fd1047cdb4fc17456a05246441f1dac3002ac327088"
+      "sha256": "7e63a9b7cdd4e094fb941abb8807c3ac3b6bbf42303614c887b8ed0c9f50e498"
     },
     {
       "classification": "reference",
@@ -3179,7 +3179,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_status.rs",
-      "sha256": "4acc4bcccc19b32ab6d416bcb810e00cf1463814d91d46c36be24c15f15cd789"
+      "sha256": "d8c35aeb2862177b803807b3d7b8e8578d649879ec6c36c6edc65540400769cb"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3851,7 +3851,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/runtime_verify.rs",
-      "sha256": "93f1f2d24ff2d76b12e977bd15849c90deb9b1f560766e1a0ae7daaaa0872b6e"
+      "sha256": "569a57b7bdb287671d83643e20ef237e86c11e87086f24e0528237aab22f70c1"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6587,7 +6587,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/tdd_ledger.rs",
-      "sha256": "1cd25606b23777a252c3183a1148d8c90f96236b7c5be1939c978a91678f4153"
+      "sha256": "47edaad5db65a58245f137067bae2639bd8ee1e4d18fa7e2dcd1e35f899580cf"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9029,7 +9029,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/lifecycle_golden.py",
-      "sha256": "4a654c0b9492e6080cbe9a734c1b4dfe28447ac9b7430211c2156a7b4e47ffe6"
+      "sha256": "f8225e13b1ae47ac6071beb667a3f01c87c340894e9968eb27189608e198bcff"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9305,7 +9305,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_delegation_gate_native_parity.py",
-      "sha256": "f18a86cb941e3554eb1c2af64280abf704413bca6238a93f5505572760f55425"
+      "sha256": "b40bb7ae0b085fd625a8fc0430b1c5894ec8c059016234fa05bc7fe688f7044b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9395,7 +9395,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_hooks_native_parity.py",
-      "sha256": "9d0a1e58986ab3b954b345b18a700326416cac53411712877b58ae0a38faed68"
+      "sha256": "02b63127405c7aaa2d14ad03aa69ed4759f563796740f36fc30dfc39d1293d1c"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9443,7 +9443,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_query_native_parity.py",
-      "sha256": "c46735c385be1613ee78911f28d6a784530e083b4658bc6df9fd874e77282d50"
+      "sha256": "6d3773385f32b567dee5f58a2dbd4798e48f8ecd8fd341aa0671a7eea7ed785e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9485,7 +9485,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_target_policy_native_parity.py",
-      "sha256": "80715f6d635d71baff958b44ea97306f2890299299be57c7a2d92cd2c5a152e5"
+      "sha256": "6e683f513fe04a592055feafa1dd8c463ca7e968f878b4ad3007c2b8e2ae7b1b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9509,7 +9509,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_handoff_packet_native_parity.py",
-      "sha256": "e9fa4ec4828e80aef2b243f3032674a2d864892c56d069a899602c8d61664dcc"
+      "sha256": "e69345f4f4e4936279f441a1da3defd6f21e54b58c897cbc24cce1ac50a9628a"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9779,7 +9779,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_policy_resolve_native_parity.py",
-      "sha256": "809b3d68ae6048d65dcc914809ebb08e577514a37d738ef09bdc6aabf0a5a6ff"
+      "sha256": "eb68252717c47d5780c3208b18f88a8e0e3e6a2dbac0973854611bc981dd5e7e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -9941,7 +9941,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_runtime_verify_native_parity.py",
-      "sha256": "7dcbe84362bd680a3ae2022575e76f5b614ab62d4af20a6dab23deaaf8330c68"
+      "sha256": "fecde4e8afcbce4ebfb31c5382c5f0e34852ae8e9e91bc8129cc87e5d2bfcf20"
     },
     {
       "classification": "template-maintainer-tool",
@@ -10326,6 +10326,12 @@
       "disposition": "remove",
       "path": "tests/test_w5_tool_contract_native.py",
       "sha256": "a456862477aeb8eb2e777b7801b54dea9595fd90b700052a87ce4e911aa82cbb"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_windows_parity_adapters.py",
+      "sha256": "363d26a3c95886f5c30543dc5563d0d855d2c211e1bf59c2a257ec2373dbfb80"
     },
     {
       "classification": "template-maintainer-tool",

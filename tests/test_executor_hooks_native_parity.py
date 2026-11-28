@@ -244,7 +244,8 @@ def test_digest_mismatch_never_starts_hook_child_or_provider(binary, hook_fixtur
     result = PARITY['invoke'](binary, root, environment, arguments)
     assert result.returncode == 1
     assert result.stdout == b''
-    assert result.stderr == b'[mir_executor] native hook executable SHA-256 mismatch\n'
+    assert result.stderr == (
+        f'[mir_executor] native hook executable SHA-256 mismatch{os.linesep}').encode()
     for name in ('hook-started', 'wire.jsonl', 'lease', 'provider-methods', 'tasks/jobs.db'):
         assert not (root / name).exists(), (name, result.stderr)
 
@@ -385,8 +386,8 @@ def test_pinned_entrypoint_keeps_hook_failure_final(binary, hook_fixture, tmp_pa
     assert result.returncode == 1
     if route == 'native':
         context = b'RuntimeError' if failure == 'writer_enter' else b'background insert failed'
-        newline = b'\n' if failure == 'writer_enter' else os.linesep.encode()
-        assert result.stderr == b'[mir_executor] ' + context + b': offline hook refusal' + newline
+        assert result.stderr == (
+            b'[mir_executor] ' + context + b': offline hook refusal' + os.linesep.encode())
         assert (root / 'owned-receipt').read_bytes() == b'owned'
         assert (root / 'receipt-observed').exists()
         assert not (root / 'compatibility-imports').exists()
@@ -491,7 +492,10 @@ def test_surrogate_job_inserted_error_preserves_running_row(binary, tmp_path):
             stdout, stderr = b'', stderr.splitlines()[-1] + b'\n'
         assert completed.returncode == expected['exit'], (route, completed.stderr)
         assert stdout.hex() == expected['stdout_hex'], route
-        assert stderr.hex() == expected['stderr_hex'], (route, stderr)
+        expected_stderr = bytes.fromhex(expected['stderr_hex'])
+        if route == 'native':
+            expected_stderr = expected_stderr.replace(b'\n', os.linesep.encode())
+        assert stderr == expected_stderr, (route, stderr)
         with sqlite3.connect(root / 'tasks/jobs.db') as connection:
             rows = connection.execute(
                 'SELECT status,exit_code,stderr,completed_at FROM jobs').fetchall()

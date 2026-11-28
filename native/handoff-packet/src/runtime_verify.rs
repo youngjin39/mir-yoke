@@ -644,6 +644,11 @@ fn parse(args: Vec<OsString>) -> Result<BTreeMap<String, String>> {
     Ok(options)
 }
 
+fn manifest_error_line(message: &str) -> String {
+    let newline = if cfg!(windows) { "\r\n" } else { "\n" };
+    format!("runtime manifest error: {message}{newline}")
+}
+
 fn main() {
     if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--mir-warmup")) {
         return;
@@ -661,7 +666,7 @@ fn main() {
         Ok(()) => 0,
         Err(Failure::Unsupported) => 64,
         Err(Failure::Error(message)) => {
-            eprintln!("runtime manifest error: {message}");
+            eprint!("{}", manifest_error_line(&message));
             2
         }
         Err(Failure::Exception(message)) => {
@@ -669,8 +674,7 @@ fn main() {
             1
         }
         Err(Failure::Finding(message)) => {
-            let newline = if cfg!(windows) { "\r\n" } else { "\n" };
-            let output = format!("runtime manifest error: {message}{newline}");
+            let output = manifest_error_line(message);
             if io::stderr().write_all(output.as_bytes()).is_err() {
                 64
             } else {
@@ -684,6 +688,23 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn manifest_error_uses_crlf_on_windows() {
+        let line = manifest_error_line("invalid UTF-8");
+        assert_eq!(
+            line.as_bytes(),
+            b"runtime manifest error: invalid UTF-8\r\n"
+        );
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn manifest_error_uses_lf_on_non_windows() {
+        let line = manifest_error_line("invalid UTF-8");
+        assert_eq!(line.as_bytes(), b"runtime manifest error: invalid UTF-8\n");
+    }
 
     #[test]
     fn python_numeric_entry_equality() {
