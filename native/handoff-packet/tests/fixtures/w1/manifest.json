@@ -65,7 +65,7 @@
     "native/handoff-packet/src/executor_job_identity.rs": "61ca2f9169d32d112e122bd0e583652544e54bcdea0c8637f6b5e5a237e7630e",
     "native/handoff-packet/src/runtime_continuity.rs": "46725fe9b103423c9d23166889dd38646875e8cd93f52bbc2dd95ba1024279c9",
     "native/handoff-packet/src/local_bridge.rs": "84171d7149bf43290cba252eb6975285d9bb4c51b5b764cd8605432cb609629d",
-    "native/handoff-packet/src/runtime_verify.rs": "569a57b7bdb287671d83643e20ef237e86c11e87086f24e0528237aab22f70c1",
+    "native/handoff-packet/src/runtime_verify.rs": "f637330e3feafab80b7f2a7881f105a1d1f2e77fbe077a66fae46cdb5981bbb2",
     "native/handoff-packet/src/executor_ledger_json.rs": "128ef1a186c6909ef7c2f75126cfec4d8444549ad2586d9ba2c73a80ff3b7ab8",
     "native/handoff-packet/src/executor_review.rs": "9b25934e493862a25d00e7cf12f765dc7b9faf82283f5efb5128a9e87a3b0a2d",
     "native/handoff-packet/src/executor_execute.rs": "8fb506075adbb9cbc705a4db57d48774df241764268ef8fb378b783ee94bdd78",

@@ -257,6 +257,37 @@ fn py_equal(left: &PyValue, right: &PyValue) -> bool {
     true
 }
 
+#[cfg(any(windows, test))]
+fn windows_link_target_codes(target: &[u32]) -> Vec<u32> {
+    // Rust strips the NT substitute-name prefix from non-relative links;
+    // CPython os.readlink exposes it as the Win32 verbatim prefix instead.
+    let drive = target.len() >= 3
+        && matches!(target[0], 65..=90 | 97..=122)
+        && target[1..3] == [u32::from(':'), u32::from('\\')];
+    let unc = target.starts_with(&[85, 78, 67, 92]); // UNC\
+    if drive || unc {
+        [vec![92, 92, 63, 92], target.to_vec()].concat()
+    } else {
+        target.to_vec()
+    }
+}
+
+fn expanded_home_path(home: OsString, rest: &Path, windows: bool) -> PathBuf {
+    if windows && home.is_empty() {
+        return if rest.as_os_str().is_empty() {
+            PathBuf::from(".")
+        } else {
+            rest.to_path_buf()
+        };
+    }
+    let home = if home.is_empty() {
+        PathBuf::from(std::path::MAIN_SEPARATOR.to_string())
+    } else {
+        PathBuf::from(home)
+    };
+    home.join(rest)
+}
+
 pub(crate) fn expand_path(path: &Path) -> Result<PathBuf> {
     #[cfg(unix)]
     {
@@ -275,12 +306,11 @@ pub(crate) fn expand_path(path: &Path) -> Result<PathBuf> {
         let home = home.ok_or_else(|| {
             Failure::Exception("RuntimeError: Could not determine home directory.".into())
         })?;
-        let home = if home.is_empty() {
-            PathBuf::from(std::path::MAIN_SEPARATOR.to_string())
-        } else {
-            PathBuf::from(home)
-        };
-        return Ok(home.join(components.as_path()));
+        return Ok(expanded_home_path(
+            home,
+            components.as_path(),
+            cfg!(windows),
+        ));
     }
     if path.as_os_str().to_string_lossy().starts_with('~') {
         #[cfg(unix)]
@@ -540,9 +570,12 @@ pub(crate) fn runtime_entries(root: &Path, manifest: &Path) -> Result<Vec<PyValu
             );
             if metadata.file_type().is_symlink() {
                 let target = fs::read_link(&path).map_err(|e| io_failure(&path, e))?;
+                let target_codes = path_codes(&target);
+                #[cfg(windows)]
+                let target_codes = windows_link_target_codes(&target_codes);
                 body.push_str(&format!(
                     ",\"type\":\"symlink\",\"target\":{}}}",
-                    quote_codes(&path_codes(&target))
+                    quote_codes(&target_codes)
                 ));
             } else {
                 let contents = fs::read(&path).map_err(|e| {
@@ -688,6 +721,57 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn windows_link_target_spelling() {
+        let codes = |text: &str| text.chars().map(u32::from).collect::<Vec<_>>();
+        for (target, expected) in [
+            (r"C:\library\module.py", r"\\?\C:\library\module.py"),
+            (
+                r"UNC\server\share\module.py",
+                r"\\?\UNC\server\share\module.py",
+            ),
+            (r"..\library\module.py", r"..\library\module.py"),
+            (r"C:module.py", r"C:module.py"),
+            (r"\library\module.py", r"\library\module.py"),
+            (r"\\?\C:\library\module.py", r"\\?\C:\library\module.py"),
+            ("", ""),
+        ] {
+            assert_eq!(
+                windows_link_target_codes(&codes(target)),
+                codes(expected),
+                "{target}"
+            );
+        }
+        let mut target = codes(r"C:\");
+        target.push(0xd800);
+        let mut expected = codes(r"\\?\C:\");
+        expected.push(0xd800);
+        assert_eq!(windows_link_target_codes(&target), expected);
+    }
+
+    #[test]
+    fn empty_home_expansion_by_platform() {
+        for rest in ["", "runtime", "runtime/manifest.json"] {
+            let rest = Path::new(rest);
+            let expected = if rest.as_os_str().is_empty() {
+                Path::new(".")
+            } else {
+                rest
+            };
+            assert_eq!(expanded_home_path(OsString::new(), rest, true), expected);
+            assert_eq!(
+                expanded_home_path(OsString::new(), rest, false),
+                PathBuf::from(std::path::MAIN_SEPARATOR.to_string()).join(rest)
+            );
+            for windows in [false, true] {
+                assert_eq!(
+                    expanded_home_path(OsString::from("home"), rest, windows),
+                    Path::new("home").join(rest)
+                );
+            }
+        }
+    }
 
     #[cfg(windows)]
     #[test]
